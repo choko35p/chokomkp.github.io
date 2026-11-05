@@ -697,7 +697,7 @@
     return `${M} 人口站位圖`;
   }
   function boardArea(c, M) {
-    const b = board(c.boards?.["lv" + M], M);
+    const b = board(c.boards?.["lv" + M], M, c);
     if (!b) return null;
     const side = sidePanel(c, M);
     const list = b.querySelector(":scope > .unit-list");  // 棋子清單另外排：手機上放在「升等要補／可以替換」下面
@@ -758,13 +758,21 @@
     return Object.entries(c).map(([k, n]) => PLANT[k] + (n > 1 ? ` ×${n}` : "")).join("、") + (ps[0].star > 1 ? `（${ps[0].star} 星）` : "");
   };
 
-  function board(b, level) {
+  function board(b, level, c) {
     if (!b || b.status === "na") return h("p", { class: "muted small" }, b?.reason || "不適用");
     if (b.status !== "ok") return null;  // 沒有棋盤就整區不顯示（新手用不到「樣本不足」）
-    const cs = champsOnly(b.units);
+    let units = b.units, auto = false;
+    // 站主 2026-11-05：「有些陣容的站位圖在正式版的不見了」→ 沒有站位資料的棋盤，照站主編輯器同樣的規則自動排示意站位
+    // （同陣容其他等級有站位的照抄位置；其餘坦在前排、持裝輸出在後排角落）
+    if (c && !champsOnly(units).every((u) => Array.isArray(u.pos))) {
+      const ref = [8, 9, 7, 6, 5].map((lv) => c.boards?.["lv" + lv]).find((x) => x?.units?.length && champsOnly(x.units).every((u) => Array.isArray(u.pos)));
+      units = autoPlace(units.map((u) => ({ ...u, items: u.items || [], pos: Array.isArray(u.pos) ? [...u.pos] : null })), c, ref ? champsOnly(ref.units) : null);
+      auto = true;
+    }
+    const cs = champsOnly(units);
     const pop = cs.reduce((n, u) => n + (CH[u.key]?.slots || 1), 0);
     const hasPos = cs.every((u) => Array.isArray(u.pos));
-    const all = hasPos ? withPlants(b.units.map((u) => ({ ...u }))) : cs;
+    const all = hasPos ? withPlants(units.map((u) => ({ ...u }))) : cs;
     const traits = {};
     for (const u of cs) for (const t of CH[u.key]?.traits || []) traits[t] = (traits[t] || 0) + 1;
     for (const u of cs) for (const it of u.items || []) if (it.endsWith("Emblem")) { const t = it.slice(0, -6); traits[t] = (traits[t] || 0) + 1; }
@@ -787,7 +795,8 @@
         }
         grid.append(row);
       }
-      wrap.append(h("div", { class: "tablewrap" }, grid), h("p", { class: "xs muted" }, "上方為前排（第一排），下方為後排。"));
+      wrap.append(h("div", { class: "tablewrap" }, grid), h("p", { class: "xs muted" }, "上方為前排（第一排），下方為後排。",
+        auto ? "這張是依角色排的示意站位（坦在前排、主C在後排角落），實際依對手調整。" : ""));
     } else wrap.append(h("p", { class: "xs muted" }, "這份棋盤還沒有站位資料，先列出角色、星級與裝備。"));
     wrap.append(h("div", { class: "unit-list" }, cs.map((u) => h("div", { class: "unit" }, icon("champion", u.key, "sm"),
       h("div", null, h("b", null, champName(u.key)), h("div", { class: "xs muted" }, `${u.star} 星${u.mark ? "｜首領標記" : ""}${u.rider && spryOn(cs) ? "｜騎乘者" : ""}`), h("div", null, (u.items || []).map((i) => icon("item", i, "xs"))))))));

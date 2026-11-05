@@ -256,7 +256,42 @@
       c.tier ? h("span", { class: "tag tier" }, c.tier + " 級") : c.status !== "ready" ? h("span", { class: "tag" }, "研究中") : null,
       c.lane === "conditional" ? h("span", { class: "tag" }, "條件") : null);
   }
+  // 站主 2026-11-05 20:17：「定陣路線做的很難懂…易讀性更高」→ 路線圖（一到五費 × 遊戲階段）＋選一條看逐步說明
+  let ROUTE_SEL = 4;  // 預設八等四費：普通局最常走的一條
+  const KIND_TXT = { keep: "先留著", decide: "定下來", do: "照計畫做" };
+  const mark = (kind) => h("span", { class: "mk mk-" + kind, "aria-hidden": "true" });
+  function routeMap(r) {
+    const cols = r.cols || [];
+    const grid = h("div", { class: "rmap", role: "tablist", "aria-label": "選一條路線看怎麼打", style: `--ncol:${cols.length}` },
+      h("div", { class: "rm-head", "aria-hidden": "true" }, h("span", { class: "rm-corner" }, "階段"), cols.map((c) => h("span", { class: "rm-col" }, c))));
+    for (const x of r.routes) {
+      const at = cols.map((c) => { const ks = x.steps.filter((st) => (st.cols || []).includes(c)).map((st) => st.kind); return ks.includes("decide") ? "decide" : ks.includes("keep") ? "keep" : ks.includes("do") ? "do" : null; });
+      const on = at.map((k, i) => (k ? i : -1)).filter((i) => i >= 0), lo = Math.min(...on), hi = Math.max(...on);
+      const said = x.steps.filter((st) => (st.cols || []).length).map((st) => `${st.at} ${KIND_TXT[st.kind]}`).join("、");
+      grid.append(h("button", { type: "button", role: "tab", class: "rm-row", "aria-selected": x.cost === ROUTE_SEL ? "true" : "false", "aria-controls": "route-panel",
+        "aria-label": `${x.tag}：${x.goal}。${said}`, style: `--cc:var(--c${x.cost})`,
+        onclick: () => { ROUTE_SEL = x.cost; track("route_tab", x.cost); renderRoute(); document.getElementById("route-panel")?.focus({ preventScroll: true }); } },
+        h("span", { class: "rm-lab" }, h("b", null, x.tag.replace("核心", "")), h("span", null, tx(`route:c${x.cost}.goal`, x.goal))),
+        at.map((k, i) => h("span", { class: "rm-cell" + (i >= lo && i <= hi ? " on" : "") + (i === lo ? " first" : "") + (i === hi ? " last" : "") }, k ? mark(k) : null))));
+    }
+    const lg = r.legend || {};
+    return [grid, h("p", { class: "rm-legend xs" }, ["keep", "decide", "do"].map((k) => h("span", null, mark(k), lg[k] || KIND_TXT[k])), h("span", { class: "rm-hint" }, "點一列看這條怎麼打"))];
+  }
+  function routePanel(r) {
+    const x = r.routes.find((y) => y.cost === ROUTE_SEL) || r.routes[0];
+    return h("div", { class: "rpanel", id: "route-panel", role: "tabpanel", tabindex: "-1", style: `--cc:var(--c${x.cost})`, "aria-label": `${x.tag}怎麼打` },
+      h("div", { class: "rp-head" },
+        h("div", null, h("span", { class: "rp-tag" }, x.tag), h("h3", null, tx(`route:c${x.cost}.goal`, x.goal)), h("p", { class: "rp-sub small" }, tx(`route:c${x.cost}.title`, x.title))),
+        x.comps?.length ? h("div", { class: "rcomps" }, h("span", { class: "rc-h" }, "代表陣容"), x.comps.map(routeComp)) : null),
+      h("ol", { class: "rsteps" }, x.steps.map((st, j) => h("li", { class: "rstep k-" + st.kind },
+        h("span", { class: "rs-at" }, mark(st.kind), h("span", null, st.at)),
+        h("div", { class: "rs-body" },
+          h("p", { class: "rs-title" }, h("b", null, tx(`route:c${x.cost}.s${j}.title`, st.title)), h("span", { class: "rs-kind" }, KIND_TXT[st.kind])),
+          h("p", { class: "rs-rule" }, rich(`route:c${x.cost}.s${j}.rule`, st.rule)),
+          st.detail ? h("p", { class: "rs-detail" }, rich(`route:c${x.cost}.s${j}.detail`, st.detail)) : null)))));
+  }
   function renderRoute() {
+    document.querySelector('.nav a[href="#updates-sec"]')?.parentElement?.remove();  // 站主 2026-11-05：「本次更新不要顯示在最上面的索引」
     const r = D.routeGuide;
     let sec = $("#route-sec");
     if (!r?.routes?.length) { sec?.remove(); $("#nav-route")?.remove(); return; }
@@ -267,20 +302,20 @@
       const a = document.querySelector('.nav a[href="#picker"]');
       if (a && !$("#nav-route")) a.parentElement.after(h("li", { id: "nav-route" }, h("a", { href: "#route-sec" }, "定陣路線")));
     }
+    if (!r.routes.some((x) => x.cost === ROUTE_SEL)) ROUTE_SEL = r.routes[0].cost;
     sec.textContent = "";
     sec.append(...[
-      h("p", { class: "eyebrow" }, tx("route:label", r.label)),
       h("h2", null, tx("route:title", r.title)),
       r.stale ? h("p", { class: "notice small" }, `這是 ${r.patch} 的定陣建議；新版本的高手資料足夠後會重新研究。`) : null,
       h("p", { class: "rlead" }, rich("route:lead", r.lead)),
-      h("div", { class: "ropen" }, (r.opening || []).map((o, i) => h("div", { class: "card" },
-        h("h3", null, tx(`route:open${i}.title`, o.title)), h("p", null, rich(`route:open${i}.text`, o.text))))),
-      r.key ? h("div", { class: "rkey" }, rich("route:key", r.key)) : null,
-      h("div", { class: "rgrid" }, r.routes.map((x) => h("article", { class: "rcard card", id: "route-c" + x.cost },
-        h("span", { class: "rtag" }, x.tag),
-        h("h3", null, tx(`route:c${x.cost}.title`, x.title)),
-        x.paras.map((t, j) => h("p", null, rich(`route:c${x.cost}.p${j}`, t))),
-        x.comps?.length ? h("div", { class: "rcomps" }, h("span", { class: "rc-h" }, "代表陣容"), x.comps.map(routeComp)) : null)))].filter(Boolean));
+      h("div", { class: "ropen" }, h("h3", null, tx("route:openingTitle", r.openingTitle || "2-1 先看裝備")),
+        h("div", { class: "ro-grid" }, (r.opening || []).map((o, i) => h("div", { class: "ro-item ro-" + i },
+          h("p", { class: "ro-if" }, tx(`route:open${i}.title`, o.title)), h("p", null, rich(`route:open${i}.text`, o.text)))))),
+      h("h3", { class: "rmap-title" }, "一到五費，什麼時候定下來"),
+      ...routeMap(r),
+      routePanel(r),
+      r.count ? h("aside", { class: "rcount small" }, h("b", null, tx("route:countTitle", r.countTitle || "怎麼數張數")), " ", rich("route:count", r.count)) : null,
+    ].filter(Boolean));
   }
 
   /* ---------- T 度表 ---------- */

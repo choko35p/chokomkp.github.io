@@ -1083,7 +1083,7 @@
     const first = xs.slice(0, 8), rest = xs.slice(8);
     return h("div", { class: "vodbox stack" },
       c.vodFrom ? h("p", { class: "small muted" }, `這個分支沒有單獨分出來，下面是主陣容〈${c.vodFrom}〉的對局。`) : null,
-      h("p", { class: "small" }, `高手的實況錄影（MetaTFT 影片庫 ${d.patch || ""}），共 ${xs.length} 場；最近的排前面。點一場會跳到 Twitch 那一場開始的地方。增幅前面的 2-1、3-2、4-2 是第幾階段選的（逐場抓畫面辨識）。`),
+      h("p", { class: "small" }, `高手的實況錄影（MetaTFT 影片庫 ${d.patch || ""}），共 ${xs.length} 場（只放打進前四的）；最近的排前面。點一場會跳到 Twitch 那一場開始的地方。增幅前面的 2-1、3-2、4-2 是第幾階段選的（逐場抓畫面辨識）。`),
       h("div", { class: "vods" }, first.map(row)),
       rest.length ? h("details", { class: "vodmore" }, h("summary", null, `顯示其他 ${rest.length} 場`), h("div", { class: "vods" }, rest.map(row))) : null);
   }

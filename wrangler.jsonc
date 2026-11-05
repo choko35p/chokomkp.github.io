@@ -1,12 +1,27 @@
 {
-  // 巧克力MKP的戰棋研究室：純靜態網站（Cloudflare Workers 靜態資產）
+  // 巧克力MKP的戰棋研究室：靜態網站（site/）＋站主專用讀者統計（worker/，只處理 /stats）
   // 網站檔案在 site/，由 Claude 從 choko-lab 的 tools/build_standalone.py 產生後推上來。
+  // 推網站時不要刪掉 worker/ 和這個檔案裡的 main、run_worker_first、vars。
   "name": "chokomkp",
   "compatibility_date": "2026-11-01",
+  "main": "worker/index.js",
   // 開啟免費的 workers.dev 網址
   "workers_dev": true,
   "preview_urls": true,
   "assets": {
-    "directory": "./site"
+    "directory": "./site",
+    "binding": "ASSETS",
+    // 只有 /stats 會先經過程式；其他網址照舊直接給靜態檔案，不算 Worker 用量
+    "run_worker_first": ["/stats", "/stats/*"]
+  },
+  "vars": {
+    // 這些都不是密碼。讀取金鑰 CF_API_TOKEN 是放在 Cloudflare 後台的「密鑰」，不在這裡。
+    "ACCOUNT_ID": "ced2c213e9120972c01e4ed81d310e49",
+    "ZONE_ID": "4a837d2d400e326f45daa672d059e8fd",
+    "SITE_TAG": "e0939763734f47fe96eb7bb8a65da5c1",
+    "SITE_SINCE": "2026-11-05T02:00:00Z",
+    // Cloudflare Access 設好後填入；空白時 /stats 一律不給看
+    "ACCESS_TEAM": "",
+    "ACCESS_AUD": ""
   }
 }

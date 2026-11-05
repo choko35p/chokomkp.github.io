@@ -831,7 +831,7 @@
         grid.append(row);
       }
       wrap.append(h("div", { class: "tablewrap" }, grid), h("p", { class: "xs muted" }, "上方為前排（第一排），下方為後排。",
-        auto ? "這張是依角色排的示意站位（坦在前排、主C在後排角落），實際依對手調整。" : ""));
+        b.source === "template" ? "這版高手棋盤樣本還不夠，先放原站的示意盤（主C、副C、主坦掛首選裝備）。" : auto ? "這張是依角色排的示意站位（坦在前排、主C在後排角落），實際依對手調整。" : ""));
     } else wrap.append(h("p", { class: "xs muted" }, "這份棋盤還沒有站位資料，先列出角色、星級與裝備。"));
     wrap.append(h("div", { class: "unit-list" }, cs.map((u) => h("div", { class: "unit" }, icon("champion", u.key, "sm"),
       h("div", null, h("b", null, champName(u.key)), h("div", { class: "xs muted" }, `${u.star} 星${u.mark ? "｜首領標記" : ""}${u.rider && spryOn(cs) ? "｜騎乘者" : ""}`), h("div", null, (u.items || []).map((i) => icon("item", i, "xs"))))))));
@@ -1220,6 +1220,146 @@
     }, { rootMargin: "-72px 0px -55% 0px" });
     targets.forEach((t) => SPY.observe(t));
   }
+  /* ---------- 小百科（站主 2026-11-05：「弄個小百科，裡面有所有的裝備跟增幅，放在索引最後面，
+     裝備滑鼠移上去要能顯示是甚麼散件合的，也可以直接用散件搜索」） ---------- */
+  const WK = { d: null, p: null, tab: "items", sel: [], q: "", aq: "", tier: "all", open: null };
+  const loadWiki = () => (WK.p ||= fetch("data/wiki.json").then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => (WK.d = d)));
+  const wkName = (k) => { const c = (D.gamedata.components || []).find((x) => x.key === k); return c ? (c.zh || c.en) : itemName(k); };
+  const AUG_TIERS = [["all", "全部"], ["1", "銀色"], ["2", "金色"], ["3", "稜鏡"], ["0", "特性與其他"]];
+  const TIER_LB = { 1: "銀色", 2: "金色", 3: "稜鏡" };
+  function recipeLine(it, size = "xs") {
+    if (it.recipe?.length === 2) return h("span", { class: "wk-rec" }, icon("item", it.recipe[0], size), h("span", null, wkName(it.recipe[0])),
+      h("span", { class: "plus", "aria-hidden": "true" }, "＋"), icon("item", it.recipe[1], size), h("span", null, wkName(it.recipe[1])));
+    if (it.base) return h("span", { class: "wk-rec" }, icon("item", it.base, size), h("span", null, `${wkName(it.base)}升級成聖光版`));
+    return h("span", { class: "wk-rec wk-norec" }, it.note || "不能合成");
+  }
+  function wkTip() { let t = $("#wk-tip"); if (!t) { t = h("div", { id: "wk-tip", role: "tooltip" }); t.hidden = true; document.body.append(t); } return t; }
+  function showTip(el, it) {
+    const t = wkTip(); t.textContent = "";
+    t.append(h("b", null, wkName(it.key)), recipeLine(it, "sm"));
+    t.hidden = false;
+    const r = el.getBoundingClientRect(), w = t.offsetWidth, hh = t.offsetHeight;
+    const x = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, innerWidth - w - 8));
+    const y = r.top - hh - 8 < 8 ? r.bottom + 8 : r.top - hh - 8;
+    t.style.left = x + "px"; t.style.top = y + "px";
+  }
+  const hideTip = () => { const t = $("#wk-tip"); if (t) t.hidden = true; };
+  function wkItems() {
+    const d = WK.d, box = h("div", { class: "wk-items" });
+    const comps = d.components || [];
+    const sel = WK.sel;
+    const find = h("div", { class: "wk-find" },
+      h("p", { class: "wk-find-h" }, h("b", null, "用散件找"), h("span", { class: "small muted" }, sel.length ? "再點一件看合出什麼；同一件點兩次也可以" : "點一件散件，看它能合出哪些裝備")),
+      h("div", { class: "wk-comps", role: "group", "aria-label": "散件" }, comps.map((k) => h("button", { type: "button", class: "wk-comp" + (sel.includes(k) ? " on" : ""), "aria-pressed": sel.includes(k) ? "true" : "false",
+        onclick: () => { WK.sel = sel.length >= 2 ? [k] : [...sel, k]; WK.open = null; track("wiki_comp", k); drawWiki(); } },
+        icon("item", k, "sm"), h("span", null, wkName(k)), sel.filter((x) => x === k).length === 2 ? h("span", { class: "wk-x2" }, "×2") : null))),
+      sel.length ? h("p", { class: "wk-picked" }, h("span", { class: "small" }, "已選："), sel.map((k, i) => [i ? h("span", { class: "plus" }, "＋") : null, h("b", null, wkName(k))]),
+        h("button", { type: "button", class: "btn ghost", onclick: () => { WK.sel = []; WK.open = null; drawWiki(); } }, "清除")) : null);
+    const q = h("input", { type: "search", class: "wk-q", placeholder: "搜尋裝備名稱", "aria-label": "搜尋裝備名稱", value: WK.q });
+    q.addEventListener("input", () => { WK.q = q.value.trim(); WK.open = null; drawGroups(); });
+    const groupsBox = h("div", { class: "wk-groups" });
+    const has = (it, k) => (it.recipe || []).includes(k);
+    const exact = (it) => it.recipe?.length === 2 && [...it.recipe].sort().join() === [...sel].sort().join();
+    function tile(it) {
+      const other = sel.length === 1 && it.recipe ? it.recipe[1 - it.recipe.indexOf(sel[0])] : null;
+      return h("button", { type: "button", class: "wk-it" + (other ? " has-other" : "") + (WK.open === it.key ? " on" : ""), "aria-expanded": WK.open === it.key ? "true" : "false", "data-key": it.key,
+        onmouseenter: (e) => showTip(e.currentTarget, it), onmouseleave: hideTip, onfocus: (e) => showTip(e.currentTarget, it), onblur: hideTip,
+        onclick: () => { WK.open = WK.open === it.key ? null : it.key; hideTip(); drawGroups(); } },
+        icon("item", it.key, "sm"), h("span", { class: "nm" }, wkName(it.key)),
+        other ? h("span", { class: "wk-other" }, "＋", icon("item", other, "xs"), h("span", null, wkName(other))) : null);
+    }
+    function detail(it, g) {
+      const use = (d.use || {})[it.key] || [];
+      return h("div", { class: "wk-detail", role: "region", "aria-label": wkName(it.key) },
+        h("div", { class: "wk-dh" }, icon("item", it.key, "md"), h("div", null, h("b", null, wkName(it.key)), h("p", { class: "small" }, recipeLine({ ...it, note: it.note || g.note }, "sm")))),
+        use.length ? h("p", { class: "small" }, h("span", { class: "muted" }, "這些陣容的首選組合有它："), use.map((u, i) => [i ? "、" : "", h("a", { href: "#" + slug(u.c) }, `${champName(u.h)}（${nameOf(u.c)}）`)])) : null);
+    }
+    function drawGroups() {
+      groupsBox.textContent = "";
+      const term = WK.q;
+      if (sel.length === 2) {
+        const hit = d.groups.flatMap((g) => g.items.filter(exact).map((it) => ({ it, g })));
+        groupsBox.append(h("div", { class: "wk-answer", role: "status" }, sel.map((k, i) => [i ? h("span", { class: "plus" }, "＋") : null, icon("item", k, "sm"), h("span", null, wkName(k))]),
+          h("span", { class: "eq" }, "＝"), hit.length ? hit.map(({ it }) => [icon("item", it.key, "md"), h("b", null, wkName(it.key))]) : h("span", null, "合不出裝備")));
+        for (const { it, g } of hit) groupsBox.append(detail(it, g));
+        return;
+      }
+      let shown = 0;
+      for (const g of d.groups) {
+        let items = g.items;
+        if (sel.length === 1) items = items.filter((it) => has(it, sel[0]));
+        if (term) items = items.filter((it) => wkName(it.key).includes(term) || (it.recipe || []).some((k) => wkName(k).includes(term)));
+        if (!items.length) continue;
+        shown += items.length;
+        const grid = h("div", { class: "wk-grid" }, items.map(tile));
+        const open = items.find((it) => it.key === WK.open);
+        groupsBox.append(h("div", { class: "wk-group" }, h("h3", null, g.label, h("span", { class: "wk-n" }, String(items.length))), g.note && !sel.length ? h("p", { class: "small muted wk-gnote" }, g.note) : null,
+          grid, open ? detail(open, g) : null));
+      }
+      if (sel.length === 1) groupsBox.prepend(h("p", { class: "wk-answer small", role: "status" }, h("b", null, wkName(sel[0])), `可以合出 ${shown} 件；每件後面是另一個要的散件。`));
+      if (!shown) groupsBox.append(h("p", { class: "empty small" }, "找不到符合的裝備，換個關鍵字或清除散件。"));
+    }
+    drawGroups();
+    box.append(find, q, groupsBox);
+    return box;
+  }
+  // 增幅圖示：一張精靈圖（icons/aug-sprite.webp），sp = 第幾格；框內 40px（44px 減 2px 邊框）
+  function augIcon(a, sp) {
+    const cls = "wk-ai t" + (a.tier || 0);
+    if (!sp || a.sp == null) return h("span", { class: cls, "aria-hidden": "true" });
+    const D = 40, c = a.sp % sp.cols, r = Math.floor(a.sp / sp.cols);
+    return h("span", { class: cls + " sp", "aria-hidden": "true",
+      style: `background-image:url(${sp.src});background-size:${sp.cols * D}px ${sp.rows * D}px;background-position:-${c * D}px -${r * D}px` });
+  }
+  function wkAugs() {
+    const d = WK.d, box = h("div", { class: "wk-augs-box" });
+    const q = h("input", { type: "search", class: "wk-q", placeholder: "搜尋增幅名稱或效果（例如：金錢、徽章、攻速）", "aria-label": "搜尋增幅", value: WK.aq });
+    const listBox = h("div");
+    const chips = h("div", { class: "tabs wk-tiers", role: "group", "aria-label": "增幅分級" }, AUG_TIERS.map(([k, l]) => h("button", { type: "button", "aria-pressed": WK.tier === k ? "true" : "false", class: "wk-tier t" + k,
+      onclick: () => { WK.tier = k; drawWiki(); } }, l)));
+    function drawList() {
+      listBox.textContent = "";
+      const term = WK.aq;
+      const xs = d.augments.filter((a) => (WK.tier === "all" || String(a.tier || 0) === WK.tier) && (!term || a.name.includes(term) || a.desc.includes(term)));
+      listBox.append(h("p", { class: "small muted wk-count" }, `共 ${xs.length} 個`));
+      listBox.append(h("ul", { class: "wk-augs" }, xs.map((a) => h("li", { class: "wk-aug" },
+        augIcon(a, d.sprite),
+        h("div", null,
+          h("p", { class: "wk-an" }, h("b", null, a.name), h("span", { class: "tag wk-t t" + (a.tier || 0) }, TIER_LB[a.tier] || "特性／其他")),
+          h("p", { class: "wk-ad small" }, a.desc),
+          a.for?.length ? h("p", { class: "xs wk-for" }, h("span", { class: "muted" }, "高手實況推薦："), a.for.map((u, i) => [i ? "、" : "", h("a", { href: "#" + slug(u.c) }, nameOf(u.c)), `（${u.s}）`])) : null)))));
+      if (!xs.length) listBox.append(h("p", { class: "empty small" }, "找不到符合的增幅。"));
+    }
+    q.addEventListener("input", () => { WK.aq = q.value.trim(); drawList(); });
+    drawList();
+    box.append(chips, q, listBox);
+    return box;
+  }
+  function drawWiki() {
+    const sec = $("#wiki-sec"); if (!sec) return;
+    const body = sec.querySelector(".wk-body"); body.textContent = "";
+    if (!WK.d) { body.append(h("p", { class: "small muted" }, WK.p ? "載入中…" : "小百科資料讀不到。")); return; }
+    const tabs = [["items", `裝備 ${WK.d.groups.reduce((n, g) => n + g.items.length, 0)}`], ["augs", `增幅 ${WK.d.augments.length}`]];
+    body.append(h("div", { class: "tabs wk-tabs", role: "tablist", "aria-label": "小百科分類" }, tabs.map(([k, l]) => h("button", { type: "button", role: "tab", "aria-selected": WK.tab === k ? "true" : "false",
+      onclick: () => { WK.tab = k; track("wiki_tab", k); drawWiki(); } }, l))),
+      h("div", { role: "tabpanel" }, WK.tab === "items" ? wkItems() : wkAugs()),
+      h("p", { class: "xs muted wk-src" }, `資料來源：${WK.d.source}。「首選組合」「高手實況推薦」是本站的陣容資料。`));
+  }
+  function renderWiki() {
+    let sec = $("#wiki-sec");
+    if (!sec) {
+      sec = h("section", { class: "block", id: "wiki-sec" }, h("h2", null, "小百科"),
+        h("p", { class: "rlead" }, "這版所有的裝備和增幅。裝備滑上去（手機點一下）就能看是哪兩件散件合的，也可以直接選散件，找它能合出什麼。"),
+        h("div", { class: "wk-body" }));
+      $("#home")?.append(sec);
+      const ul = document.querySelector(".nav ul");
+      if (ul && !$("#nav-wiki")) ul.append(h("li", { id: "nav-wiki" }, h("a", { href: "#wiki-sec" }, "小百科")));
+    }
+    drawWiki();
+    loadWiki().then(drawWiki);
+    addEventListener("scroll", hideTip, { passive: true });
+  }
+
   function renderResearch() {
     // 站主 2026-11-04：「研究補充與資料限制」新手用不到，整區和導覽連結都拿掉
     $("#research")?.remove();
@@ -1233,7 +1373,8 @@
   function navH() { const n = document.querySelector(".nav"); if (n) document.documentElement.style.setProperty("--navh", n.offsetHeight + "px"); }
   addEventListener("resize", navH);
   function homeSpy() {
-    const secs = ["#tierlist", "#updates-sec", "#version", "#picker", "#comps"].map((x) => $(x)).filter(Boolean);
+    // 導覽列有的段落都追（含定陣路線、小百科這些後來加的）
+    const secs = [...document.querySelectorAll(".nav a[href^='#']")].map((a) => document.getElementById(a.getAttribute("href").slice(1))).filter(Boolean);
     spy(secs, (id) => document.querySelectorAll(".nav a").forEach((a) => a.setAttribute("aria-current", a.getAttribute("href") === "#" + id ? "true" : "false")));
   }
   function route() {
@@ -1863,7 +2004,7 @@
     TR = Object.fromEntries(D.gamedata.traits.map((t) => [t.key, t]));
     $("#loading").remove();
     adaptLayout();
-    renderTop(); renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderPicker(); renderRoute(); renderCompList(); renderResearch(); applyDataTx();
+    renderTop(); renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderPicker(); renderRoute(); renderCompList(); renderResearch(); renderWiki(); applyDataTx();
     document.querySelectorAll("a.out").forEach((a) => a.addEventListener("click", () => track("out", a.dataset.ch)));
     addEventListener("hashchange", route); route();
     startAnalytics();

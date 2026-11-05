@@ -3,6 +3,9 @@
   // 網站檔案在 site/，由 Claude 從 choko-lab 的 tools/build_standalone.py 產生後推上來。
   "name": "chokomkp",
   "compatibility_date": "2026-11-01",
+  // 開啟免費的 workers.dev 網址
+  "workers_dev": true,
+  "preview_urls": true,
   "assets": {
     "directory": "./site"
   }

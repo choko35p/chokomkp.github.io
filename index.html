@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>巧克力MKP的戰棋研究室</title>
+<meta name="description" content="聯盟戰棋選陣速查與陣容研究：這版玩什麼、這局能玩什麼、什麼時候該轉陣。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;800;900&display=swap" rel="stylesheet">
+<link rel="icon" href="assets/brand/choko-c-lab-c5.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#DC6B4F">
+<meta property="og:title" content="巧克力MKP的戰棋研究室">
+<meta property="og:description" content="聯盟戰棋選陣速查與陣容研究：這版玩什麼、這局能玩什麼、什麼時候該轉陣。">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://choko35p.github.io/icon-512.png">
+<meta property="og:url" content="https://choko35p.github.io/">
+<link rel="canonical" href="https://choko35p.github.io/">
+<meta name="twitter:card" content="summary">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top" id="top">
+  <div class="wrap">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"><img src="assets/brand/choko-c-lab-c5.svg" alt="" width="48" height="48"></div>
+      <div>
+        <h1>巧克力MKP的戰棋研究室</h1>
+        <div class="sub" id="patch">載入中…</div>
+      </div>
+    </div>
+    <nav class="channels" aria-label="頻道">
+      <a class="out" data-ch="youtube" id="yt" href="#">YouTube</a>
+      <a class="out" data-ch="threads" id="th" href="#">Threads</a>
+    </nav>
+  </div>
+  <div class="wrap"><div class="meta" id="meta"></div></div>
+</header>
+
+<nav class="nav" aria-label="頁面區塊">
+  <ul>
+    <li><a href="#updates-sec">本次更新</a></li>
+    <li><a href="#version">版本主軸</a></li>
+    <li><a href="#tierlist">T 度表</a></li>
+    <li><a href="#picker">隨手速查</a></li>
+    <li><a href="#comps">陣容攻略</a></li>
+    <li><a href="#research">研究補充</a></li>
+  </ul>
+</nav>
+
+<main>
+  <div class="wrap">
+    <p id="loading" class="muted" style="padding:24px 0">資料載入中…</p>
+    <div id="home">
+      <section class="block" id="updates-sec">
+        <h2>本次更新重點</h2>
+        <ul class="list updates" id="updates"></ul>
+      </section>
+      <section class="block" id="version">
+        <h2>版本主軸與優先選陣</h2>
+        <div id="version-body" class="stack"></div>
+      </section>
+      <section class="block" id="tierlist">
+        <h2>T 度表</h2>
+        <p class="small muted">同一級內由左到右依推薦強度排列，卡片右上角是順序。手機上也維持相同順序。</p>
+        <div id="tiers"></div>
+      </section>
+      <section class="block" id="picker">
+        <h2>隨手速查：我這局能玩什麼？</h2>
+        <div class="picker">
+          <div class="card">
+            <div class="tabs" id="picker-tabs" role="tablist" aria-label="條件類型"></div>
+            <div id="picker-body"></div>
+          </div>
+          <div class="card result" aria-live="polite" id="picker-result"></div>
+        </div>
+      </section>
+      <section class="block" id="comps">
+        <h2>各陣容詳細攻略</h2>
+        <div class="comp-list" id="comp-list"></div>
+      </section>
+      <section class="block" id="research">
+        <h2>研究補充與資料限制</h2>
+        <div id="research-body"></div>
+      </section>
+    </div>
+    <article id="detail" class="detail block" hidden></article>
+  </div>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p><b>巧克力MKP的戰棋研究室</b>｜評級由本站研究產生，不引用其他網站的 T 度結論。</p>
+    <p><a class="out" data-ch="youtube" id="yt2" href="#">YouTube @choko35-yt</a>　<a class="out" data-ch="threads" id="th2" href="#">Threads @chokomkp</a></p>
+    <p class="xs">本站與 Riot Games 無關；遊戲名稱與素材屬於其權利人。</p>
+  </div>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>

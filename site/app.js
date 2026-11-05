@@ -253,7 +253,7 @@
     return h("a", { class: "rcomp", href: "#" + slug(id), onclick: () => track("route", id) },
       h("span", { class: "picons" }, keys.map((k, j) => icon("champion", k, j ? "xs" : "sm"))),
       h("span", { class: "nm" }, c.name),
-      c.tier ? h("span", { class: "tag tier" }, c.tier + " 級") : null,
+      c.tier ? h("span", { class: "tag tier" }, c.tier + " 級") : c.status !== "ready" ? h("span", { class: "tag" }, "研究中") : null,
       c.lane === "conditional" ? h("span", { class: "tag" }, "條件") : null);
   }
   function renderRoute() {

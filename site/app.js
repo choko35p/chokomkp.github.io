@@ -237,6 +237,52 @@
     }
   }
 
+  /* 從2-1選路線（站主 2026-11-05：「舊網址的這個部分你也要做出來，定陣容，這是新手會看最多的地方」）
+     文字裡 **粗體**；每張卡的代表陣容由建置時依最新資料挑。區塊和導覽連結由這裡插入，不用改 index.html。 */
+  function rich(key, text) {
+    const t = tx(key, text);
+    const parse = (s) => String(s).split(/\*\*(.+?)\*\*/).map((x, i) => (i % 2 ? h("strong", null, x) : x));
+    if (t == null || typeof t === "string") return t == null ? t : parse(t);
+    t.replaceChildren(...parse(t.textContent).map((x) => (typeof x === "string" ? document.createTextNode(x) : x)));
+    return t;
+  }
+  function routeComp(id) {
+    const c = D.comps.find((x) => x.id === id);
+    if (!c) return null;
+    const keys = [...new Set((c.core || [c.carrier]).filter(Boolean))].slice(0, 2);
+    return h("a", { class: "rcomp", href: "#" + slug(id), onclick: () => track("route", id) },
+      h("span", { class: "picons" }, keys.map((k, j) => icon("champion", k, j ? "xs" : "sm"))),
+      h("span", { class: "nm" }, c.name),
+      c.tier ? h("span", { class: "tag tier" }, c.tier + " 級") : null,
+      c.lane === "conditional" ? h("span", { class: "tag" }, "條件") : null);
+  }
+  function renderRoute() {
+    const r = D.routeGuide;
+    let sec = $("#route-sec");
+    if (!r?.routes?.length) { sec?.remove(); $("#nav-route")?.remove(); return; }
+    if (!sec) {
+      sec = h("section", { class: "block", id: "route-sec" });
+      const pk = $("#picker");
+      if (pk) pk.after(sec); else $("#home")?.append(sec);
+      const a = document.querySelector('.nav a[href="#picker"]');
+      if (a && !$("#nav-route")) a.parentElement.after(h("li", { id: "nav-route" }, h("a", { href: "#route-sec" }, "定陣路線")));
+    }
+    sec.textContent = "";
+    sec.append(...[
+      h("p", { class: "eyebrow" }, tx("route:label", r.label)),
+      h("h2", null, tx("route:title", r.title)),
+      r.stale ? h("p", { class: "notice small" }, `這是 ${r.patch} 的定陣建議；新版本的高手資料足夠後會重新研究。`) : null,
+      h("p", { class: "rlead" }, rich("route:lead", r.lead)),
+      h("div", { class: "ropen" }, (r.opening || []).map((o, i) => h("div", { class: "card" },
+        h("h3", null, tx(`route:open${i}.title`, o.title)), h("p", null, rich(`route:open${i}.text`, o.text))))),
+      r.key ? h("div", { class: "rkey" }, rich("route:key", r.key)) : null,
+      h("div", { class: "rgrid" }, r.routes.map((x) => h("article", { class: "rcard card", id: "route-c" + x.cost },
+        h("span", { class: "rtag" }, x.tag),
+        h("h3", null, tx(`route:c${x.cost}.title`, x.title)),
+        x.paras.map((t, j) => h("p", null, rich(`route:c${x.cost}.p${j}`, t))),
+        x.comps?.length ? h("div", { class: "rcomps" }, h("span", { class: "rc-h" }, "代表陣容"), x.comps.map(routeComp)) : null)))].filter(Boolean));
+  }
+
   /* ---------- T 度表 ---------- */
   /* 站主 2026-11-04：均名、前四、吃雞新手看不懂 → 改成「下限」「上限」各分高／中／低 */
   const lvTag = (v) => h("b", { class: "lv lv-" + ({ 高: "hi", 中: "mid", 低: "lo" }[v] || "na") }, v || "—");
@@ -1233,7 +1279,7 @@
       onclick: open, onkeydown: (ev) => { if (ev.key === "Enter" || ev.key === " ") open(ev); } }, shown);
   }
   function rerender() {
-    applyDataTx(); renderTop(); renderUpdates(); renderPatch(); renderVersion(); renderTiers();
+    applyDataTx(); renderTop(); renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderRoute();
     const hsh = location.hash.slice(1), c = D.comps.find((x) => slug(x.id) === hsh) || (O.on ? O.custom.map(customToComp).find((x) => slug(x.id) === hsh) : null);
     if (c) { const y = scrollY; renderDetail(c.id); scrollTo(0, y); }
     ownerPanel();
@@ -1773,7 +1819,7 @@
     TR = Object.fromEntries(D.gamedata.traits.map((t) => [t.key, t]));
     $("#loading").remove();
     adaptLayout();
-    renderTop(); renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderPicker(); renderCompList(); renderResearch(); applyDataTx();
+    renderTop(); renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderPicker(); renderRoute(); renderCompList(); renderResearch(); applyDataTx();
     document.querySelectorAll("a.out").forEach((a) => a.addEventListener("click", () => track("out", a.dataset.ch)));
     addEventListener("hashchange", route); route();
     startAnalytics();

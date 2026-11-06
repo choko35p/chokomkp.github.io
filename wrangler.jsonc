@@ -21,7 +21,7 @@
     "SITE_TAG": "e0939763734f47fe96eb7bb8a65da5c1",
     "SITE_SINCE": "2026-11-05T02:00:00Z",
     // Cloudflare Access 設好後填入；空白時 /stats 一律不給看
-    "ACCESS_TEAM": "",
-    "ACCESS_AUD": ""
+    "ACCESS_TEAM": "winter-band-3846",
+    "ACCESS_AUD": "34d1f6380880dda16464025a47dd1f35ef842ae43309beaa9b941e12b1be2f97"
   }
 }

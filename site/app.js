@@ -756,6 +756,29 @@
     if (c.rerollLevel && M === c.rerollLevel) return rerollTitle(c);
     return `${M} 人口站位圖`;
   }
+  /* 站主給的公式（站主 2026-11-06：三張盤面「研究這套，把他排在a，很強」）：同一套陣容的幾種盤面，主頁和公式頁的棋盤上方都可以切換 */
+  const formulaOf = (c) => { const b = c.formulaOf ? compById(c.formulaOf) : c; return b?.formulas?.length > 1 ? b : null; };
+  function formulaArea(c) {
+    const base = formulaOf(c);
+    let cur = c.id;
+    const info = h("div", { class: "fm-info" }), area = h("div", { class: "fm-board" });
+    const draw = () => {
+      const f = base.formulas.find((x) => x.id === cur) || base.formulas[0];
+      const v = compById(f.id);
+      const lv = v ? mainLevel(v) : null;
+      info.textContent = ""; area.textContent = "";
+      if (f.note) info.append(h("p", { class: "small fm-note" }, f.note));
+      if (f.stats) info.append(h("p", { class: "xs muted fm-st" }, `MetaTFT 大師以上 ${f.games} 場：均名 ${f.stats.avg.toFixed(2)}・前四率 ${pct(f.stats.top4)}${f.games < 30 ? "（場數少，參考就好）" : ""}`));
+      area.append((v && lv && boardArea(v, lv)) || h("p", { class: "small muted" }, "這個公式還沒有棋盤。"));
+    };
+    const chips = h("div", { class: "chips fm-chips", role: "group", "aria-label": "公式" }, base.formulas.map((f) => h("button", { type: "button", class: "chip fm-chip", "aria-pressed": f.id === cur ? "true" : "false", "data-fid": f.id,
+      onclick: () => { cur = f.id; track("formula", f.id); chips.querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", x.dataset.fid === cur ? "true" : "false")); draw(); } }, f.name)));
+    draw();
+    return h("div", { class: "fm" }, chips, info, area);
+  }
+  // 站主編輯時：這頁的編輯器只改這個公式；其他公式到各自的頁面調整
+  const formulaLinks = (c) => { const base = formulaOf(c); return h("p", { class: "small fm-links" }, "這套有幾個公式，這裡改的是「", base.formulas.find((f) => f.id === c.id)?.name || c.name, "」。其他公式到各自的頁面改：",
+    base.formulas.filter((f) => f.id !== c.id).map((f, i) => [i ? "、" : "", h("a", { href: "#" + slug(f.id) }, f.name)])); };
   function boardArea(c, M) {
     const b = board(c.boards?.["lv" + M], M, c);
     if (!b) return null;
@@ -1204,8 +1227,10 @@
         tile("avg", ui("detail.avg", "均名"), s.avg.toFixed(2), "平均名次（1～8 名），越小越好"),
         tile("top4", ui("detail.top4", "前四率"), pct(s.top4), "打進前四名的比例"),
         tile("win", ui("detail.win", "勝率"), pct(s.win), "拿第一名的比例")),
-      h("p", { class: "dst-n small muted" }, `${m.version ? m.version + " " : ""}高手實戰 ${m.games} 場${m.players ? `（${m.players} 位）` : ""}`,
-        watch ? "；樣本少，還在研究，參考就好" : m.games < 10 ? "；場數少，參考就好" : "", "。均名越小越好。"));
+      h("p", { class: "dst-n small muted" }, m.source === "metatft"
+        ? `${m.version ? m.version + " " : ""}${m.sourceLabel || "MetaTFT"} ${m.games} 場${c.variantKind ? "" : "（本站高手樣本還不夠，先用這個）"}`
+        : `${m.version ? m.version + " " : ""}高手實戰 ${m.games} 場${m.players ? `（${m.players} 位）` : ""}`,
+        watch ? "；樣本少，還在研究，參考就好" : m.games < (m.source === "metatft" ? 30 : 10) ? "；場數少，參考就好" : "", "。均名越小越好。"));
   }
   const compById = (id) => D.comps.find((x) => x.id === id) || (O.on ? (O.custom.find((x) => x.id === id) && customToComp(O.custom.find((x) => x.id === id))) : null);
   function renderDetail(id) {
@@ -1226,9 +1251,10 @@
             c.conditional || c.lane === "conditional" ? h("span", { class: "tag cond" }, "") : null, c.lane === "highroll" ? h("span", { class: "tag" }, "九等五費") : null,
             D.inference && c.patchImpact?.tierFrom ? h("span", { class: "was" }, `推測（原 ${c.patchImpact.tierFrom}）`) : null)
             : c.variantKind === "trait" ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag watch" }, "轉職分支"), h("span", { class: "small muted" }, `${c.statsMeta?.games || 0} 場高手對局整理，只放站位、裝備和升等，不評級`))
+            : c.variantKind === "formula" ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag watch" }, "公式"), h("span", { class: "small muted" }, "站主給的盤面，不另外評級；評級看"), h("a", { class: "small", href: "#" + slug(c.formulaOf) }, nameOf(c.formulaOf)))
             : c.watch ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag watch" }, "研究中"), r.ceil ? [lvPill("下限", r.floor), lvPill("上限", r.ceil)] : null, h("span", { class: "small muted" }, "數據很好、樣本還少，還沒正式評級"))
             : h("div", { class: "small muted" }, c.status === "custom" ? "站主新增，待補資料" : "研究中，尚無合資格數據"),
-          c.status === "ready" ? dStats(c) : c.watch ? dStats(c, true) : null)));
+          c.status === "ready" || c.variantKind === "formula" ? dStats(c) : c.watch ? dStats(c, true) : null)));
     if (c.status === "custom") {
       v.append(h("div", { class: "notice", style: "margin-top:16px" }, h("b", null, "站主手動加的陣容"),
         h("p", { class: "small", style: "margin:4px 0 0" }, "Claude 下次更新時會去查高手對局的數據，補上棋盤、裝備和攻略；補完才會放到正式站。")),
@@ -1239,7 +1265,7 @@
     // 轉職分支（站主 2026-11-06）照常顯示棋盤、裝備、升等；其他沒評級的陣容維持研究中說明
     // 站主 2026-11-06：研究中的陣容「直接給棋盤跟裝備」→ 有棋盤或推薦裝就照常顯示，連一個都沒有才放研究中說明
     const hasBody = levelsOf(c).some((lv) => boardOk(c, lv)) || [7, 6, 5].some((lv) => boardOk(c, lv)) || (c.itemModel || []).length;
-    if (c.status !== "ready" && c.variantKind !== "trait" && !hasBody) {
+    if (c.status !== "ready" && !c.variantKind && !hasBody) {
       v.append(h("div", { class: "notice", style: "margin-top:16px" }, h("b", null, "這套還在研究中"),
         h("p", { class: "small", style: "margin:4px 0 0" }, "高手玩的場數還不夠，先不提供棋盤、裝備與評級。")),
         c.required?.length ? h("p", { class: "small" }, "定義上的必要條件：", c.required.map((r) => r.text).join("、")) : null,
@@ -1257,11 +1283,12 @@
       ["不順時轉哪套", "轉哪套", switchBox(c)],
       ["分支（拿到轉職或特定來牌時）", "分支", c.variants?.some((v) => v.status === "ready") ? h("div", { class: "small stack" },
         h("div", { class: "vlist" }, c.variants.filter((v) => v.status === "ready").map((v) => variantLine(v)))) : null],
-      ["和主陣容比較", "和主陣容比較", c.baseOf?.length && c.variantKind !== "trait" ? h("div", { class: "small stack" },
+      ["和主陣容比較", "和主陣容比較", c.baseOf?.length && !c.variantKind ? h("div", { class: "small stack" },
         h("p", null, "這個分支：", rangeLine(c)),
         ul(c.baseOf.map((b) => [h("a", { href: "#" + slug(b.id) }, b.name), "（主陣容）：", b.status === "ready" ? rangeLine(b) : "研究中"]))) : null],
-      ...(O.on ? [[`${boardTitle(c, mainLevel(c) || 8)}（站主編輯：站位、星級、裝備）`, "棋盤", boardEditor(c)]]
-        : [mainLevel(c) ? [boardTitle(c, mainLevel(c)), "棋盤", boardArea(c, mainLevel(c))] : null]),
+      ...(O.on ? [[`${boardTitle(c, mainLevel(c) || 8)}（站主編輯：站位、星級、裝備）`, "棋盤", formulaOf(c) ? h("div", { class: "stack" }, formulaLinks(c), boardEditor(c)) : boardEditor(c)]]
+        : [formulaOf(c) ? [`站位圖（${formulaOf(c).formulas.length} 個公式，點上面切換）`, "棋盤", formulaArea(c)]
+          : mainLevel(c) ? [boardTitle(c, mainLevel(c)), "棋盤", boardArea(c, mainLevel(c))] : null]),
       ["升等放什麼（各人口的棋子）", "升等", levelUpBox(c)],
       ["前排替換", "前排替換", c.roles?.swap ? h("p", { class: "small" }, tx(`comp:${c.id}:roles.swap`, c.roles.swap)) : null],
       ["星級要求", "星級", ul((c.stars || []).map((s) => `${champName(s.key)}：${s.need}${s.note ? "（" + s.note + "）" : ""}`))],

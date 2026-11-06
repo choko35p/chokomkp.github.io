@@ -993,3 +993,11 @@ button.bcard { font: inherit; color: inherit; text-align: left; cursor: pointer;
 .bonus-pane { padding: .75rem; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
 .bp-head { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin-bottom: .6rem; }
 .bp-more { margin-left: auto; font-size: var(--fs-s); font-weight: 700; }
+/* 站主給的公式（站主 2026-11-06）：棋盤上方切換公式 */
+.fm { display: flex; flex-direction: column; gap: .5rem; }
+.fm-chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+.fm-chip { padding: 4px 14px; font-weight: 600; }
+.fm-info p { margin: 0; }
+.fm-info { display: flex; flex-direction: column; gap: .25rem; padding: .5rem .75rem; border-left: 3px solid var(--accent); background: var(--surface); border-radius: 0 10px 10px 0; }
+.fm-info:empty { display: none; }
+.fm-links { margin: 0; }

@@ -149,7 +149,8 @@ export function buildQueries(env, w, tw) {
   const s0 = Math.max(w.start, since);
   const p0 = Math.max(w.prevStart, since);
   const cur = s0 < w.end ? chunks(s0, w.end) : [];
-  const prev = p0 < w.prevEnd ? chunks(p0, w.prevEnd) : [];
+  // 比較的那一段只要有一部分在上線前，就不比（不然會變成「昨天同時段是 0」這種假比較）
+  const prev = p0 <= w.prevStart + 60e3 && p0 < w.prevEnd ? chunks(p0, w.prevEnd) : [];
 
   const account = cur.map(([a, b]) => acct([
     grp("hours", "datetimeHour", a, b, "datetimeHour_ASC", 1000),

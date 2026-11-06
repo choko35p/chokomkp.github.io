@@ -228,7 +228,7 @@ ul.lim li+li{margin-top:4px}
   };
 
   function delta(cur, prev, label) {
-    if (prev == null) return `${label}網站還沒上線，沒得比`;
+    if (prev == null) return `${label}網站還沒完整上線，沒得比`;
     if (!prev) return `${label}是 0`;
     const d = Math.round(((cur - prev) / prev) * 100);
     return `${label} ${fmt.format(prev)}（${d > 0 ? "+" : ""}${d}%）`;

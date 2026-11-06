@@ -344,14 +344,24 @@
       u.add.length ? `放 ${nm(u.add)}` : "棋子不變（升星、補裝）", u.remove.length ? `；拿掉 ${nm(u.remove)}` : ""])),
       h("p", { class: "xs muted" }, "照這些高手對局各人口最常出現的棋子整理；上面的棋盤可以切人口看站位。"));
   }
-  function variantLine(v) {
-    if (v.kind === "trait") return h("button", { class: "vline", type: "button", onclick: () => go(v.id) },
-      h("span", { class: "vk" }, reqText(v.required)), h("span", { class: "vs" }, `看站位和裝備｜${v.games} 場高手對局`));
+  // 站主 2026-11-07：「我不是說了這邊不要只有文字要有圖」→ 分支每一行前面放圖：徽章／神器＋拿的英雄頭像（跟加分卡片一樣），來牌分支放那隻英雄
+  function variantIcon(v, c) {
+    const r = (v.required || [])[0];
+    if (!r?.key) return null;
+    if (r.type === "champion") return CH[r.key] ? h("span", { class: "bc-ico vl-ico" }, icon("champion", r.key)) : null;
+    const hero = (c?.bonus || []).find((b) => b.branch === v.id)?.hero
+      || Object.keys(CH).filter((k) => (r.text || "").startsWith(champName(k))).sort((a, b) => champName(b).length - champName(a).length)[0];
+    return h("span", { class: "bc-ico vl-ico" }, icon("item", r.key), hero && CH[hero] ? h("span", { class: "bc-hero" }, icon("champion", hero, "sm")) : null);
+  }
+  function variantLine(v, c) {
+    const ico = variantIcon(v, c);
+    if (v.kind === "trait") return h("button", { class: "vline" + (ico ? " has-ico" : ""), type: "button", onclick: () => go(v.id) }, ico,
+      h("span", { class: "vl-txt" }, h("span", { class: "vk" }, reqText(v.required)), h("span", { class: "vs" }, `看站位和裝備｜${v.games} 場高手對局`)));
     const ready = v.status === "ready";
-    return h("button", { class: "vline" + (v.better ? " better" : ""), type: "button", onclick: () => go(v.id) },
-      h("span", { class: "vk" }, reqText(v.required).replace("持有", "帶")),
-      h("span", { class: "vs" }, ready ? rangeLine(v) : "研究中"),
-      v.better ? h("span", { class: "tag up" }, "比主陣容強") : null);
+    return h("button", { class: "vline" + (v.better ? " better" : "") + (ico ? " has-ico" : ""), type: "button", onclick: () => go(v.id) }, ico,
+      h("span", { class: "vl-txt" }, h("span", { class: "vk" }, reqText(v.required).replace("持有", "帶")),
+        h("span", { class: "vs" }, ready ? rangeLine(v) : "研究中"),
+        v.better ? h("span", { class: "tag up" }, "比主陣容強") : null));
   }
   // 分支短名：「卡瑪持有處刑者徽章（轉職）」→「卡瑪處刑者轉」；來牌分支用名稱後半（「雷葛爾疊層」）
   const branchShort = (v) => {
@@ -1295,7 +1305,7 @@
       ["一句話選陣", "一句話選陣", c.oneLiner ? h("p", null, tx(`comp:${c.id}:oneLiner`, c.oneLiner)) : null],
       ["不順時轉哪套", "轉哪套", switchBox(c)],
       ["分支（拿到轉職或特定來牌時）", "分支", c.variants?.some((v) => v.status === "ready") ? h("div", { class: "small stack" },
-        h("div", { class: "vlist" }, c.variants.filter((v) => v.status === "ready").map((v) => variantLine(v)))) : null],
+        h("div", { class: "vlist" }, c.variants.filter((v) => v.status === "ready").map((v) => variantLine(v, c)))) : null],
       ["和主陣容比較", "和主陣容比較", c.baseOf?.length && !c.variantKind ? h("div", { class: "small stack" },
         h("p", null, "這個分支：", rangeLine(c)),
         ul(c.baseOf.map((b) => [h("a", { href: "#" + slug(b.id) }, b.name), "（主陣容）：", b.status === "ready" ? rangeLine(b) : "研究中"]))) : null],
@@ -1319,7 +1329,14 @@
     // 站主 2026-11-04：詳細頁加索引，點了跳到那一段
     // 電腦：左邊固定目錄、右邊內容；手機：目錄是一排可以點的標籤
     const toc = h("nav", { class: "toc", "aria-label": "這頁的段落" }, h("span", { class: "toc-h" }, "目錄"),
-      parts.map(([t, short], i) => h("button", { type: "button", class: "tocb", "data-sec": "sec-" + i, onclick: () => { track("toc", short); document.getElementById("sec-" + i)?.scrollIntoView({ behavior: "smooth", block: "start" }); } }, short)));
+      parts.map(([t, short], i) => {
+        // 站主 2026-11-07：「目錄裡面裝備很常用到，看可不可以把她弄得明顯或是特別一點」→ 裝備那顆放主C第一件推薦裝的小圖、用主色框起來
+        const key = short === "裝備";
+        const ic = c.itemsFrom ? compById(c.itemsFrom) || c : c;
+        const it = key ? (ic.items?.top?.[0]?.key || (ic.itemModel || []).find((x) => x.role === "主C")?.builds?.[0]?.items?.[0]) : null;  // 主C持有率最高的那件（三件組合是照字母排，第一件不一定最重要）
+        return h("button", { type: "button", class: "tocb" + (key ? " tocb-key" : ""), "data-sec": "sec-" + i, onclick: () => { track("toc", short); document.getElementById("sec-" + i)?.scrollIntoView({ behavior: "smooth", block: "start" }); } },
+          key && it ? icon("item", it, "xs") : null, short);
+      }));
     const main = h("div", { class: "dmain" });
     parts.forEach(([title, , content], i) => {
       const out = section(title, content);

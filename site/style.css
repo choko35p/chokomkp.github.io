@@ -185,6 +185,10 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--fs-s); }
 .vline .vk { font-weight: 700; font-size: var(--fs-s); }
 .vline .vs { font-size: var(--fs-s); color: var(--muted); }
 .vline.better { border-style: solid; border-color: var(--accent); }
+.vline.has-ico { display: flex; align-items: center; gap: 14px; padding: 10px 14px 10px 12px; }
+.vline .vl-txt { display: grid; gap: 2px; min-width: 0; }
+.vline .vl-ico, .vline .vl-ico > .ico { width: 2.75rem; height: 2.75rem; }
+.vline .vl-ico > .ico { border-radius: 10px; }
 .tag.up { justify-self: start; border-color: var(--accent); color: var(--accent); }
 
 /* ---------- 版本主軸：練線路線 ---------- */
@@ -610,6 +614,15 @@ details.fold > ul { padding: 0 1.25rem 1.25rem calc(1.25rem + 1.25em); }
   .tocb { min-height: 0; padding: .4rem 1rem; margin-left: -2px; border: 0; border-left: 2px solid transparent; border-radius: 0; background: none; text-align: left; font-weight: 600; color: var(--muted); }
   .tocb:hover { color: var(--text); }
   .tocb[aria-current="true"] { background: none; color: var(--accent); border-left-color: var(--coral); }
+}
+/* 站主 2026-11-07：目錄的「裝備」最常用 → 主C第一件推薦裝的小圖＋主色框，跟其他標籤分得出來 */
+.tocb.tocb-key { display: inline-flex; align-items: center; gap: 6px; padding-left: 5px; border: 2px solid var(--coral); background: var(--cream); color: var(--accent); font-weight: 800; }
+.tocb.tocb-key .ico { width: 24px; height: 24px; flex: 0 0 24px; border-radius: 6px; }
+.tocb.tocb-key[aria-current="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+@media (min-width: 1100px) {
+  .tocb.tocb-key { display: flex; margin: 2px 0; padding: .35rem .75rem .35rem .7rem; border: 0; border-left: 2px solid var(--coral); border-radius: 0 10px 10px 0; background: var(--cream); color: var(--accent); }
+  .tocb.tocb-key:hover { color: var(--accent); filter: brightness(.97); }
+  .tocb.tocb-key[aria-current="true"] { background: var(--cream); color: var(--accent); border-left-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
 }
 /* 頁尾 */
 .foot { margin-top: 4rem; }

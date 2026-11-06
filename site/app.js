@@ -389,7 +389,7 @@
           h("span", { class: "tc-nm" }, h("span", { class: "nm" }, c.name), impArrow(c),
             c.patchImpact?.tierFrom && D.inference && c.tierSource !== "owner" ? h("span", { class: "was", title: `推測前是 ${c.patchImpact.tierFrom} 級` }, "原" + c.patchImpact.tierFrom) : null,
             c.custom ? h("span", { class: "tag todo" }, "待補資料") : null),
-          r.ceil ? h("span", { class: "tc-sub" }, lvPill("下限", r.floor), lvPill("上限", r.ceil), c.freq != null ? h("span", { class: "tc-freq" }, `頻率 ${pct(c.freq)}`) : null)
+          r.ceil ? h("span", { class: "tc-sub" }, c.watch ? h("b", { class: "tag watch" }, "研究中") : null, lvPill("下限", r.floor), lvPill("上限", r.ceil), c.watch ? h("span", { class: "tag few" }, `樣本少：${c.watch.n} 場`) : c.freq != null ? h("span", { class: "tc-freq" }, `頻率 ${pct(c.freq)}`) : null)
             : h("span", { class: "tc-sub" }, c.custom ? "待補資料" : "研究中"),
           showReq ? h("span", { class: "tc-req", title: req }, "需要：", req) : null)),
       vs.length ? h("div", { class: "tc-br" }, h("span", { class: "tc-brh" }, "分支"), vs.sort(cellSort).map((v) => {
@@ -401,6 +401,19 @@
       })) : null,
       O.tmode ? ownerTierCtl(c, pool) : null);
     return el;
+  }
+  // 「研究中」卡片：還沒有下限／上限，改列均名、前四率和場數（站主 2026-11-06）
+  function wcard(c) {
+    const w = c.watch;
+    return h("div", { class: "tc wc", "data-id": c.id },
+      h("button", { class: "tc-main", type: "button", onclick: () => go(c.id) },
+        icon("champion", c.carrier, "sm"),
+        h("span", { class: "tc-txt" },
+          h("span", { class: "tc-nm" }, h("span", { class: "nm" }, c.name)),
+          // T 度表只用下限／上限（站主 11/4）；均名、前四率在詳細頁
+          h("span", { class: "tc-sub" }, c.range?.floor ? [lvPill("下限", c.range.floor), lvPill("上限", c.range.ceil)] : null,
+            h("span", { class: "tag few" }, `樣本少：${w.n} 場・${w.players} 位`)),
+          c.lane === "conditional" && c.required?.length ? h("span", { class: "tc-req", title: reqText(c.required) }, "需要：", reqText(c.required)) : null)));
   }
   function renderTiers() {
     const root = $("#tiers"); root.textContent = "";
@@ -414,7 +427,9 @@
       ui("tier.infer", `${D.inference.patch} 剛上線，先用 ${D.inference.basePatch} 的高手資料加上 ${D.inference.patch} 改動推測：↑ 變強、↓ 變弱，「原B」是推測前的評級。改版 ${D.inference.hours} 小時後、對局夠多就改用 ${D.inference.patch} 的資料。`)));
     root.append(h("p", { class: "tb-legend small" }, h("b", null, ui("tier.legendHead", "下限與上限：")), ui("tier.legend", "逆風選下限高的，順風選上限高的。"),
       h("span", { class: "lv-scale", "aria-label": "分五級，由好到差" }, ["很高", "高", "中", "低", "很低"].map(lvTag))));
-    const lanes = LANES.filter((l) => O.tmode || shown.some((c) => c.lane === l.id));
+    // 站主 2026-11-06：數據很好但樣本很少的陣容，在 T 度表最下面另開一列「研究中」（站主調 T 表時不顯示）
+    const watch = O.tmode ? [] : D.comps.filter((c) => c.watch && !ids.has(c.id) && !c.hidden).map((c) => (c.lane ? c : { ...c, lane: c.conditional ? "conditional" : "normal" }));
+    const lanes = LANES.filter((l) => O.tmode || shown.some((c) => c.lane === l.id) || watch.some((c) => c.lane === l.id));
     const rows = ["S", "A", "B", "C"].filter((t) => O.tmode || shown.some((c) => c.tier === t));
     if (O.tmode || shown.some((c) => !c.tier)) rows.push("?");
     if (!shown.length) {
@@ -424,7 +439,7 @@
     }
     const nav = h("div", { class: "tb-lanes", role: "group", "aria-label": "跳到分區" });
     // 寬螢幕：陣容多的分區（例：條件陣容）給兩倍寬、一格放兩欄，整張表比較矮，一頁看得完
-    const maxCell = (l) => Math.max(...["S", "A", "B", "C", "?"].map((t) => shown.filter((c) => c.lane === l.id && (t === "?" ? !c.tier : c.tier === t)).length));
+    const maxCell = (l) => Math.max(...["S", "A", "B", "C", "?"].map((t) => shown.filter((c) => c.lane === l.id && (t === "?" ? !c.tier : c.tier === t)).length), watch.filter((c) => c.lane === l.id).length);
     const widest = [...lanes].sort((a, b) => maxCell(b) - maxCell(a))[0];
     const wide = (l) => (l === widest && maxCell(l) >= 5 && lanes.length <= 3 ? 2 : 1);
     const tplD = "2.75rem " + lanes.map((l) => `minmax(${wide(l) * 14}rem, ${wide(l)}fr)`).join(" ");
@@ -442,10 +457,22 @@
         grid.append(h("div", { class: "tb-cell" + (wide(l) > 1 ? " w2" : ""), role: "cell", "data-lane": l.id, "data-tier": t }, cs.length ? cs.map((c) => tcard(c, pool)) : h("span", { class: "tb-none", "aria-label": "沒有" }, "—")));
       }
     }
+    if (watch.length) {
+      grid.append(h("div", { class: "tb-tier t-R", role: "rowheader", id: "tier-watch" }, "研究中"));
+      for (const l of lanes) {
+        const cs = watch.filter((c) => c.lane === l.id).sort((a, b) => a.watch.rank - b.watch.rank);
+        grid.append(h("div", { class: "tb-cell watch" + (wide(l) > 1 ? " w2" : ""), role: "cell", "data-lane": l.id, "data-tier": "R" }, cs.length ? cs.map(wcard) : h("span", { class: "tb-none", "aria-label": "沒有" }, "—")));
+      }
+    }
     const scroll = h("div", { class: "tb-scroll" }, grid);
     const wrap = h("div", { class: "tb-wrap" }, scroll);
     const hint = h("p", { class: "tb-hint xs" }, h("span", { class: "tb-swipe", "aria-hidden": "true" }, "⇆"), " ", ui("tier.hint", "左右滑動：右邊還有九等五費、條件陣容"));
     root.append(nav, hint, wrap);
+    if (watch.length) {
+      const wi = D.watchInfo || {};
+      root.append(h("p", { class: "tb-watch-note small" }, h("b", { class: "tag watch" }, "研究中"), " ",
+        ui("tier.watch", `數據很好、但樣本還少，還沒正式評級，先列出來給你參考。下限、上限已經往全站平均拉過，場數越少越容易看走眼；點進去看均名、前四率。樣本夠了會自動進 T 度表。`)));
+    }
     const heads = [...grid.querySelectorAll(".tb-head")], btns = [...nav.querySelectorAll("button")];
     const upd = () => {
       const max = scroll.scrollWidth - scroll.clientWidth;
@@ -782,7 +809,14 @@
   const spryOn = (units) => traitN(units, SPRY) >= ((TR[SPRY]?.breakpoints || [3])[0]);
   const starTag = (n) => h("span", { class: "stars s" + n, "aria-label": n + " 星" }, "★".repeat(n));
   const riderBadge = () => h("span", { class: "rider-badge", title: "騎乘者（騎上毛茸茸大夥伴）" }, h("img", { src: "icons/traits/Sprykin.png", alt: "" }));
-  const plantTile = (u) => h("span", { class: "plant", title: PLANT[u.plant] }, h("img", { src: "icons/traits/Elderwood.png", alt: "" }), h("span", { class: "pl-n" }, PLANT[u.plant]));
+  // 站主 2026-11-06：「神木的那些小東西不要用字，遊戲裡面也有圖片」→ 用遊戲內頭像（tools/fetch_plant_icons.py）。
+  // 石皮樹和生命花在遊戲資料裡是同一隻單位、同一張頭像，所以兩棵樹左下角留一個小字（石／花）分辨
+  const PLANT_IMG = { stonebark: "tree", lifebloom: "tree", protector: "protector" };
+  const PLANT_MARK = { stonebark: "石", lifebloom: "花" };
+  const plantTile = (u) => h("span", { class: "plant pic", title: PLANT[u.plant], "aria-label": PLANT[u.plant] },
+    h("img", { src: `icons/plants/${PLANT_IMG[u.plant] || "tree"}.webp`, alt: "", onerror: (e) => { e.target.closest(".plant")?.classList.remove("pic"); e.target.src = "icons/traits/Elderwood.png"; } }),
+    PLANT_MARK[u.plant] ? h("span", { class: "pl-m", "aria-hidden": "true" }, PLANT_MARK[u.plant]) : null,
+    h("span", { class: "pl-n" }, PLANT[u.plant]));
   function hexInner(u, showMark = true) {
     if (isPlant(u)) return [starTag(u.star || 1), plantTile(u)];
     return [starTag(u.star), icon("champion", u.key), showMark && u.mark ? markBadge() : null, u.rider ? riderBadge() : null,
@@ -1140,8 +1174,9 @@
   }
 
   // 站主 2026-11-06：詳細頁加上均名、前四率、勝率（T 表和卡片維持下限／上限）。數字跟下限、上限同一份主資料（台服優先、美服補），場數照實列出
-  function dStats(c) {
-    const s = c.stats, m = c.statsMeta || {};
+  function dStats(c, watch) {
+    // 研究中（watch）的陣容用評級樣本（全部高手場次）的數字，場數照實寫、標「樣本少」
+    const s = watch ? c.watch : c.stats, m = watch ? { games: c.watch.n, players: c.watch.players, version: c.statsMeta?.version } : (c.statsMeta || {});
     if (!s || s.avg == null) return null;
     const tile = (k, label, val, hint) => h("div", { class: "dst", "data-k": k, title: hint }, h("span", { class: "dst-l" }, label), h("b", { class: "dst-v" }, val));
     return h("div", { class: "dstats" },
@@ -1150,7 +1185,7 @@
         tile("top4", ui("detail.top4", "前四率"), pct(s.top4), "打進前四名的比例"),
         tile("win", ui("detail.win", "勝率"), pct(s.win), "拿第一名的比例")),
       h("p", { class: "dst-n small muted" }, `${m.version ? m.version + " " : ""}高手實戰 ${m.games} 場${m.players ? `（${m.players} 位）` : ""}`,
-        m.games < 10 ? "；場數少，參考就好" : "", "。均名越小越好。"));
+        watch ? "；樣本少，還在研究，參考就好" : m.games < 10 ? "；場數少，參考就好" : "", "。均名越小越好。"));
   }
   const compById = (id) => D.comps.find((x) => x.id === id) || (O.on ? (O.custom.find((x) => x.id === id) && customToComp(O.custom.find((x) => x.id === id))) : null);
   function renderDetail(id) {
@@ -1170,8 +1205,9 @@
           c.status === "ready" ? h("div", { class: "tc-sub dhero-sub" }, r.ceil ? [lvPill("下限", r.floor), lvPill("上限", r.ceil)] : null, c.freq != null ? h("span", { class: "tc-freq" }, `頻率 ${pct(c.freq)}`) : null,
             c.conditional || c.lane === "conditional" ? h("span", { class: "tag cond" }, "") : null, c.lane === "highroll" ? h("span", { class: "tag" }, "九等五費") : null,
             D.inference && c.patchImpact?.tierFrom ? h("span", { class: "was" }, `推測（原 ${c.patchImpact.tierFrom}）`) : null)
+            : c.watch ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag watch" }, "研究中"), r.ceil ? [lvPill("下限", r.floor), lvPill("上限", r.ceil)] : null, h("span", { class: "small muted" }, "數據很好、樣本還少，還沒正式評級"))
             : h("div", { class: "small muted" }, c.status === "custom" ? "站主新增，待補資料" : "研究中，尚無合資格數據"),
-          c.status === "ready" ? dStats(c) : null)));
+          c.status === "ready" ? dStats(c) : c.watch ? dStats(c, true) : null)));
     if (c.status === "custom") {
       v.append(h("div", { class: "notice", style: "margin-top:16px" }, h("b", null, "站主手動加的陣容"),
         h("p", { class: "small", style: "margin:4px 0 0" }, "Claude 下次更新時會去查高手對局的數據，補上棋盤、裝備和攻略；補完才會放到正式站。")),
@@ -1364,7 +1400,7 @@
       listBox.textContent = "";
       const term = WK.aq;
       const xs = d.augments.filter((a) => (WK.tier === "all" || String(a.tier || 0) === WK.tier) && (!term || a.name.includes(term) || a.desc.includes(term)));
-      listBox.append(h("p", { class: "small muted wk-count" }, `共 ${xs.length} 個`));
+      listBox.append(h("p", { class: "small muted wk-count" }, `共 ${xs.length} 個（只列 ${D.patch?.patch || "這個版本"} 會出現的增幅）`));
       listBox.append(h("ul", { class: "wk-augs" }, xs.map((a) => h("li", { class: "wk-aug" },
         augIcon(a, d.sprite),
         h("div", null,

@@ -641,7 +641,9 @@
 
   // 站主 2026-11-04：賭一費 5 等就要有盤面、賭二費 6 等、賭三費 7 等
   const rerollTitle = (c) => `${c.rerollLevel} 等盤面（賭${"一二三"[(c.rerollCost || 1) - 1]}費：${c.rerollLevel} 等就要有這個盤面）`;
-  const levelsOf = (c) => [c.rerollLevel, c.variantKind && c.boards?.lv7?.status === "ok" && c.rerollLevel !== 7 ? 7 : null, 8, 9].filter(Boolean).sort((a, b) => a - b);
+  // 站主 2026-11-06：「這是五等，所以應該是678」→ 主圖 5／6 等時，中間每一等的棋盤也算進來（升等要補一等一等列）
+  const levelsOf = (c) => [...new Set([c.rerollLevel, ...[6, 7].filter((lv) => c.rerollLevel && lv > c.rerollLevel && c.boards?.["lv" + lv]?.status === "ok"),
+    c.variantKind && c.boards?.lv7?.status === "ok" && c.rerollLevel !== 7 ? 7 : null, 8, 9])].filter(Boolean).sort((a, b) => a - b);
   /* ---------- 攻略頁棋盤：只放一張主圖，升等要補的、可以替換的放旁邊（站主 2026-11-04，參考 TFT Academy 的 Flex Units） ---------- */
   // 主圖人口：一費 5、二費 6、三費 7、四費 8（站主指定）；五費主C 放 9；沒有那張棋盤就退回 8／9
   const COST_LV = { 1: 5, 2: 6, 3: 7, 4: 8, 5: 9 };
@@ -883,16 +885,22 @@
         const row = h("div", { class: "brow" + (r % 2 ? " odd" : ""), role: "row" });
         for (let col = 0; col < 7; col++) {
           const u = all.find((x) => x.pos && x.pos[0] === r && x.pos[1] === col);
-          row.append(h("div", { class: "hex" + (u ? " has" : "") + (isPlant(u) ? " is-plant" : ""), role: "gridcell" }, u ? hexInner(u) : null));
+          const tip = u && !isPlant(u) ? `${champName(u.key)} ${u.star} 星${starMixText(u)}${u.seen != null ? `｜出現 ${Math.round(u.seen * 100)}%` : ""}${(u.items || []).length ? "｜" + u.items.map(itemName).join("、") : ""}` : null;
+          row.append(h("div", { class: "hex" + (u ? " has" : "") + (isPlant(u) ? " is-plant" : ""), role: "gridcell", title: tip, "aria-label": tip }, u ? hexInner(u) : null));
         }
         grid.append(row);
       }
-      wrap.append(h("div", { class: "tablewrap" }, grid), h("p", { class: "xs muted" }, "上方為前排（第一排），下方為後排。",
-        b.source === "template" ? "這版高手棋盤樣本還不夠，先放原站的示意盤（主C、副C、主坦掛首選裝備）。" : auto ? "這張是依角色排的示意站位（坦在前排、主C在後排角落），實際依對手調整。" : ""),
-        b.basis === "consensus" ? h("p", { class: "xs muted bd-basis" }, `這張是 MetaTFT 大師以上 ${b.games} 場（${level} 人口）一起算的：依出現率挑棋子、星級取最常見的；下面清單有每隻的出現率和星級比例。`) : null);
-    } else wrap.append(h("p", { class: "xs muted" }, "這份棋盤還沒有站位資料，先列出角色、星級與裝備。"));
-    wrap.append(h("div", { class: "unit-list" }, cs.map((u) => h("div", { class: "unit" }, icon("champion", u.key, "sm"),
-      h("div", null, h("b", null, champName(u.key)), h("div", { class: "xs muted" }, `${u.star} 星${starMixText(u)}${u.seen != null ? `｜出現 ${Math.round(u.seen * 100)}%` : ""}${u.mark ? "｜首領標記" : ""}${u.rider && spryOn(cs) ? "｜騎乘者" : ""}`), h("div", null, (u.items || []).map((i) => icon("item", i, "xs"))))))));
+      // 站主 2026-11-06：棋盤下面的棋子清單「蠻多餘的」→ 有站位圖就不列清單；一起算的棋盤只把「星級不一定、不一定會放」的寫成一行
+      const unsure = b.basis === "consensus" ? cs.filter((u) => starMixText(u) || (u.seen != null && u.seen < 0.6)).map((u) => `${champName(u.key)}${starMixText(u)}${u.seen != null && u.seen < 0.6 ? `（出現 ${Math.round(u.seen * 100)}%）` : ""}`) : [];
+      const stepNote = b.source === "steps" ? (b.basis === "metatft" ? `${level} 等補哪隻是照 MetaTFT 這套在 ${level} 等最常見的場上棋子排的。` : `${level} 等補哪隻是照費用排的（便宜的先補）。`) : "";
+      wrap.append(...[h("div", { class: "tablewrap" }, grid), h("p", { class: "xs muted" }, "上方為前排（第一排），下方為後排。",
+        b.source === "template" ? "這版高手棋盤樣本還不夠，先放原站的示意盤（主C、副C、主坦掛首選裝備）。" : auto ? "這張是依角色排的示意站位（坦在前排、主C在後排角落），實際依對手調整。" : "", stepNote),
+        b.basis === "consensus" ? h("p", { class: "xs muted bd-basis" }, `這張是 MetaTFT 大師以上 ${b.games} 場（${level} 人口）一起算的：依出現率挑棋子、星級取最常見的。`, unsure.length ? `星級不一定或不一定會放：${unsure.join("、")}。` : "") : null].filter(Boolean));
+    } else {
+      wrap.append(h("p", { class: "xs muted" }, "這份棋盤還沒有站位資料，先列出角色、星級與裝備。"));
+      wrap.append(h("div", { class: "unit-list" }, cs.map((u) => h("div", { class: "unit" }, icon("champion", u.key, "sm"),
+        h("div", null, h("b", null, champName(u.key)), h("div", { class: "xs muted" }, `${u.star} 星${starMixText(u)}${u.seen != null ? `｜出現 ${Math.round(u.seen * 100)}%` : ""}${u.mark ? "｜首領標記" : ""}${u.rider && spryOn(cs) ? "｜騎乘者" : ""}`), h("div", null, (u.items || []).map((i) => icon("item", i, "xs"))))))));
+    }
     return wrap;
   }
 
@@ -1494,6 +1502,85 @@
     addEventListener("scroll", hideTip, { passive: true });
   }
 
+  /* ---------- 高手 RP（站主 2026-11-06：「在小百科上面那區加一區高手rp，在YT上面有開的人也要加進去，特別是我自己的頻道的rp。
+     找高手rp然後分析有分的以最近的排序分好陣容跟選的海克斯，跟實戰對局那樣附上鏈接」）
+     data/rp.json（lab/pro_rp.py）：本版、大師以上、打進前四的實況錄影，最近的在前；上面的按鈕依陣容篩。 ---------- */
+  const RP = { p: null, d: null, comp: "all", n: 20 };
+  const loadRp = () => (RP.p ||= fetch("data/rp.json").then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => (RP.d = d)));
+  // 海克斯圖示（小百科同一張精靈圖），20px
+  const rpAugIcon = (i, sp) => { const S = 20, c = i % sp.cols, r = Math.floor(i / sp.cols);
+    return h("span", { class: "rp-ai", "aria-hidden": "true", style: `background-image:url(${sp.src});background-size:${sp.cols * S}px ${sp.rows * S}px;background-position:-${c * S}px -${r * S}px` }); };
+  function rpCard(g) {
+    const c = g.c ? D.comps.find((x) => x.id === g.c) : null;
+    return h("div", { class: "case rp" },
+      h("div", { class: "case-head" },
+        h("span", { class: "plc p" + Math.min(g.p, 5) }, `第 ${g.p} 名`),
+        h("b", null, g.s), g.own ? h("span", { class: "tag up" }, "站主") : null, h("span", { class: "tag rp-pf" }, g.pf === "youtube" ? "YouTube" : "Twitch"), g.rk ? h("span", { class: "tag score" }, g.rk) : null,
+        h("span", { class: "xs muted" }, [g.rg, g.lv ? g.lv + " 級" : null, fmtTime(g.t)?.replace("（台灣時間）", "")].filter(Boolean).join("｜"))),
+      h("div", { class: "rp-comp" }, c ? [g.near ? h("span", { class: "xs muted" }, "接近 ") : null, h("a", { href: "#" + slug(c.id), onclick: () => track("rp_comp", c.id) }, c.name, " →")]
+        : h("span", { class: "muted" }, g.f ? `其他：${g.f}` : "其他陣容")),
+      h("div", { class: "vod-augs rp-augs" }, g.a.length ? [...g.a.map(([n, st, r, ic, sp]) => h("span", { class: "vod-aug " + (RAR_V[r] || ""), title: `${st} 選的海克斯：${n}` },
+        h("span", { class: "st" }, st), sp != null && RP.d?.sprite ? rpAugIcon(sp, RP.d.sprite) : ic ? h("img", { src: "icons/" + ic, alt: "", loading: "lazy", onerror: (e) => e.target.remove() }) : null, n)),
+        g.ap ? h("span", { class: "xs muted" }, "（有一個沒辨識出來）") : null] : h("span", { class: "xs muted" }, "海克斯：待錄影辨識")),
+      h("div", { class: "case-units" }, g.u.map(([k, st, its]) => h("span", { class: "cu" }, h("span", { class: "stars" }, "★".repeat(st)), icon("champion", k, "sm"), h("span", { class: "its" }, its.map((i) => icon("item", i, "xs")))))),
+      h("a", { class: "rp-go", href: g.v, target: "_blank", rel: "noopener", onclick: () => track("rp", g.c || "other") }, "▶ 看這場 RP"));
+  }
+  function drawRp() {
+    const sec = $("#rp-sec"); if (!sec) return;
+    const body = sec.querySelector(".rp-body"); body.textContent = "";
+    const d = RP.d;
+    if (!d) { body.append(h("p", { class: "small muted" }, RP.p ? "載入中…" : "高手 RP 資料讀不到。")); return; }
+    if (!d.games.length) { body.append(h("p", { class: "small muted" }, "這版還沒有打進前四的高手 RP。")); return; }
+    // 篩選按鈕照主陣容分（分支、轉職併到主陣容），卡片上寫實際是哪個分支
+    const grp = (g) => (!g.c ? "other" : D.comps.some((x) => x.id === g.c.split("__")[0]) ? g.c.split("__")[0] : g.c);
+    const short = (k) => D.comps.find((x) => x.id === k)?.name || k;
+    const cnt = {};
+    for (const g of d.games) { const k = grp(g); cnt[k] = (cnt[k] || 0) + 1; }
+    const keys = Object.keys(cnt).filter((k) => k !== "other").sort((a, b) => cnt[b] - cnt[a] || short(a).localeCompare(short(b)));
+    if (cnt.other) keys.push("other");
+    // 站主 2026-11-06：「特別是我自己的頻道的rp」→ 站主自己的場次有一個按鈕
+    const nOwn = d.games.filter((g) => g.own).length;
+    if (RP.comp !== "all" && RP.comp !== "own" && !cnt[RP.comp]) RP.comp = "all";
+    const xs = d.games.filter((g) => RP.comp === "all" || (RP.comp === "own" ? g.own : grp(g) === RP.comp));
+    // 站主 2026-11-06：「上面的按鈕盡量用圖案，都是字易讀性太差」→ 陣容按鈕用主C、副C頭像＋場數，名字放在滑鼠提示和下面那行
+    const label = (k) => (k === "all" ? "全部" : k === "own" ? "站主的 RP" : k === "other" ? "其他陣容" : short(k));
+    const n = (k) => (k === "all" ? d.games.length : k === "own" ? nOwn : cnt[k]);
+    const face = (k) => {
+      if (k === "all") return [h("span", { class: "rp-all" }, "全部")];
+      if (k === "own") return [h("img", { class: "rp-brand", src: "assets/brand/choko-c-lab-c5.svg", alt: "" })];
+      if (k === "other") return [h("span", { class: "rp-q", "aria-hidden": "true" }, "？")];
+      const c = D.comps.find((x) => x.id === k);
+      const two = [c?.carrier || c?.roles?.mainC?.[0], (c?.roles?.subC || []).find((x) => x && x !== c?.carrier)].filter((x) => x && CH[x]);
+      return two.length ? two.map((x) => icon("champion", x, "sm")) : [h("span", { class: "rp-all" }, short(k).slice(0, 2))];
+    };
+    const ks = ["all", ...(nOwn ? ["own"] : []), ...keys];
+    body.append(
+      h("div", { class: "rp-chips", role: "group", "aria-label": "依陣容篩選" }, ks.map((k) =>
+        h("button", { type: "button", class: "rp-chip" + (k === "all" || k === "own" ? " wide" : ""), "aria-pressed": RP.comp === k ? "true" : "false", title: `${label(k)}（${n(k)} 場）`, "aria-label": `${label(k)}，${n(k)} 場`,
+          onclick: () => { RP.comp = k; RP.n = 20; track("rp_filter", k); drawRp(); } },
+          h("span", { class: "rp-face" }, face(k)), h("span", { class: "rp-n" }, n(k))))),
+      h("p", { class: "rp-cur" }, h("b", null, label(RP.comp)), `　${xs.length} 場`, RP.comp !== "all" && RP.comp !== "own" && RP.comp !== "other" ? h("a", { href: "#" + slug(RP.comp), class: "rp-cur-go" }, "看這套攻略 →") : null),
+      h("div", { class: "cases rp-list" }, xs.slice(0, RP.n).map(rpCard)),
+      xs.length > RP.n ? h("button", { type: "button", class: "btn rp-more", onclick: () => { RP.n += 20; drawRp(); } }, `再顯示 ${Math.min(20, xs.length - RP.n)} 場（還有 ${xs.length - RP.n} 場）`) : null,
+      h("p", { class: "xs muted" }, `資料來源：${d.source || "MetaTFT 影片庫"}＋站主的 YouTube 直播存檔，${d.patch || ""} 版、大師以上、打進前四，最近的排前面${d.asOf ? `（${fmtTime(d.asOf)?.replace("（台灣時間）", "") || ""} 更新）` : ""}。`,
+        "陣容用本站的分類；分類對不到、但主C一樣而且棋子有 5 隻以上一樣的寫「接近」；都不像的寫主C。點「看這場 RP」會跳到錄影裡那一場開始的地方。海克斯對局資料裡沒有，要看錄影辨識，還沒辨識的寫「待錄影辨識」。",
+        d.pendingYoutube?.length ? `YouTube 頻道（${d.pendingYoutube.join("、")}）還在接。` : ""));
+  }
+  function renderRp() {
+    if (!D.rpMeta) return;
+    let sec = $("#rp-sec");
+    if (!sec) {
+      sec = h("section", { class: "block", id: "rp-sec" }, h("h2", null, "高手 RP"),
+        h("p", { class: "rlead" }, "高手實況裡打進前四的對局，最近的排前面。可以照陣容篩，看他們選了哪些海克斯，再點進錄影看那一場怎麼打。"),
+        h("div", { class: "rp-body" }));
+      $("#home")?.append(sec);
+      const ul = document.querySelector(".nav ul");
+      if (ul && !$("#nav-rp")) ul.append(h("li", { id: "nav-rp" }, h("a", { href: "#rp-sec" }, "高手RP")));
+    }
+    drawRp();
+    loadRp().then(drawRp);
+  }
+
   function renderResearch() {
     // 站主 2026-11-04：「研究補充與資料限制」新手用不到，整區和導覽連結都拿掉
     $("#research")?.remove();
@@ -1614,7 +1701,8 @@
       O.db = db;
       const timer = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000));
       const opt = (c) => db.collection(c).get().catch(() => ({ docs: [] }));  // T 表與手動陣容是新集合，讀不到就當作空的
-      const [es, ts, bs, tis, cus] = await Promise.race([Promise.all([db.collection("edits").get(), db.collection("terms").get(), db.collection("boards").get(), opt("tiers"), opt("customComps")]), timer]);
+      const [es, ts, bs, tis, cus, rel] = await Promise.race([Promise.all([db.collection("edits").get(), db.collection("terms").get(), db.collection("boards").get(), opt("tiers"), opt("customComps"), opt("releases")]), timer]);
+      O.releases = (rel.docs || []).map((d) => d.data()).filter((x) => x?.at).sort((a, b) => (b.at > a.at ? 1 : -1));
       for (const d of es.docs || []) { const x = d.data(); if (x?.key) O.edits[x.key] = x; }
       O.terms = (ts.docs || []).map((d) => d.data()).filter((x) => x?.from);
       for (const d of bs.docs || []) { const x = d.data(); if (x?.compId) O.boards[x.compId] = x; }
@@ -1632,6 +1720,38 @@
     if (!n) { n = h("div", { id: "owner-note", class: "owner-note", role: "status" }); document.body.append(n); }
     n.textContent = msg; clearTimeout(n._t); n._t = setTimeout(() => n.remove(), 4000);
   }
+  /* 站主 2026-11-06：「你給我預覽頁一個按鈕，我按下去你就更新到主頁」
+     按下確定：先在資料庫 releases/ 記一筆要求（Claude 更新完會把 status 改成 done），
+     再用留言「傳給 Claude」叫醒有在看這個預覽站的對話；叫不到就留著要求，在對話說一聲就會照這筆處理。 */
+  function releaseBox() {
+    const last = (O.releases || [])[0];
+    const st = !last ? "" : last.status === "done" ? `正式站最後更新：${fmtTime(last.doneAt || last.at)}` : `已送出更新要求（${fmtTime(last.at)}），等 Claude 處理`;
+    const send = async (ev) => {
+      const anchorEl = ev.currentTarget.closest(".rel-box") || ev.currentTarget;
+      O.relAsk = false; O.relBusy = true; ownerPanel();
+      const at = new Date().toISOString(), id = "r" + at.replace(/\D/g, "").slice(0, 14);
+      const req = { id, at, status: "requested", where: location.hash || "#home" };
+      try { await O.db.doc("releases/" + id).set(req); O.releases = [req, ...(O.releases || [])]; }
+      catch (err) { O.relBusy = false; ownerPanel(); ownerNotice("送出失敗：" + (err?.message || "請再試一次")); return; }
+      let sent = false;
+      try {
+        const cm = await window.claude.use("comments");
+        if (cm && (await cm.canSendToClaude().catch(() => "off")) === "available") {
+          const anchor = await cm.anchorFor(document.body.contains(anchorEl) ? anchorEl : document.body);
+          await cm.sendToClaude({ anchor, text: `【站主按鈕】更新正式站（要求 ${id}）：請把預覽站的修改同步並更新到正式站 chokomkp.com。` });
+          sent = true;
+        }
+      } catch { sent = false; }
+      O.relBusy = false; ownerPanel();
+      ownerNotice(sent ? "已通知 Claude 更新正式站，好了這裡會顯示時間。" : "已記下更新要求。Claude 現在沒有連上這個頁面，在對話跟 Claude 說「更新正式站」就會照這筆處理。");
+    };
+    return h("div", { class: "rel-box" },
+      O.relAsk ? [h("p", { class: "xs rel-q" }, "把預覽站的修改（文字、棋盤、T 表）更新到正式站？"),
+        h("div", { class: "row" }, h("button", { class: "btn", type: "button", onclick: send }, "確定更新"),
+          h("button", { class: "btn ghost", type: "button", onclick: () => { O.relAsk = false; ownerPanel(); } }, "取消"))]
+        : h("button", { class: "btn ghost", type: "button", disabled: O.relBusy || null, onclick: () => { O.relAsk = true; ownerPanel(); } }, O.relBusy ? "送出中…" : "⇪ 更新到正式站"),
+      st ? h("p", { class: "xs muted rel-st", role: "status" }, st) : null);
+  }
   function ownerPanel() {
     $("#owner-fab")?.remove();
     if (!O.on) return;
@@ -1644,6 +1764,7 @@
       h("button", { class: "btn" + (O.tmode ? "" : " ghost"), type: "button", "aria-pressed": O.tmode ? "true" : "false",
         onclick: () => { O.tmode = !O.tmode; rerender(); if (O.tmode) $("#tierlist")?.scrollIntoView({ behavior: "smooth" }); ownerNotice(O.tmode ? "調整 T 表：卡片下面可以改評級、分區、順序，也可以手動加陣容。" : "已結束調整 T 表。"); } },
         O.tmode ? "▦ 調整 T 表中（點這裡結束）" : "▦ 調整 T 表"),
+      releaseBox(),
       O.mode ? h("details", { class: "owner-terms" }, h("summary", null, `已改 ${nEdits} 段｜用詞規則 ${O.terms.length} 條`),
         h("div", { class: "in small stack" },
           h("p", { class: "xs muted" }, "用詞規則會套到全站同樣的說法，下次產生新文字時也照著寫。"),
@@ -1837,6 +1958,7 @@
     const d8 = withPlants(autoPlace(pick(8), c, null));
     const data = { 8: d8, 9: withPlants(autoPlace(pick(9), c, d8)) };
     if (c.rerollLevel) data[c.rerollLevel] = withPlants(autoPlace(pick(c.rerollLevel), c, d8));
+    for (const lv of levelsOf(c)) if (!data[lv]) data[lv] = withPlants(autoPlace(pick(lv), c, d8));
     const two = (lv) => !!((sv?.["lv" + lv]) || c.boards?.["lv" + lv] || {}).twoMarks;
     const main = levelsOf(c).includes(mainLevel(c)) ? mainLevel(c) : levelsOf(c).find((lv) => (data[lv] || []).length) || 8;
     // 旁邊「可以替換」：站主存過就用站主的，沒有就用資料算的（站主一改就整份變成站主的）
@@ -2139,7 +2261,7 @@
     TR = Object.fromEntries(D.gamedata.traits.map((t) => [t.key, t]));
     $("#loading").remove();
     adaptLayout();
-    renderTop(); renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderPicker(); renderRoute(); renderCompList(); renderResearch(); renderWiki(); applyDataTx();
+    renderTop(); renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderPicker(); renderRoute(); renderCompList(); renderResearch(); renderRp(); renderWiki(); applyDataTx();
     document.querySelectorAll("a.out").forEach((a) => a.addEventListener("click", () => track("out", a.dataset.ch)));
     addEventListener("hashchange", route); route();
     startAnalytics();

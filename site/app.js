@@ -335,7 +335,18 @@
     const sym = { up: "↑", down: "↓", mixed: "↕" }[p.dir];
     return h("span", { class: "imp " + p.dir, title: `${D.inference.patch}：${p.notes.join("、")}`, "aria-label": `${D.inference.patch} ${p.dir === "up" ? "變強" : p.dir === "down" ? "變弱" : "有加有減"}：${p.notes.join("、")}` }, sym);
   };
+  // 轉職分支（站主 2026-11-06：「要有站位圖、上面要裝備、要有上等放甚麼」）：各人口之間加了哪些、拿掉哪些
+  function levelUpBox(c) {
+    const ups = c.levelUps || [];
+    if (!ups.length) return null;
+    const nm = (ks) => ks.map(champName).join("、");
+    return h("div", { class: "small stack" }, ul(ups.map((u) => [h("b", null, `${u.from} → ${u.to} 人口：`),
+      u.add.length ? `放 ${nm(u.add)}` : "棋子不變（升星、補裝）", u.remove.length ? `；拿掉 ${nm(u.remove)}` : ""])),
+      h("p", { class: "xs muted" }, "照這些高手對局各人口最常出現的棋子整理；上面的棋盤可以切人口看站位。"));
+  }
   function variantLine(v) {
+    if (v.kind === "trait") return h("button", { class: "vline", type: "button", onclick: () => go(v.id) },
+      h("span", { class: "vk" }, reqText(v.required)), h("span", { class: "vs" }, `看站位和裝備｜${v.games} 場高手對局`));
     const ready = v.status === "ready";
     return h("button", { class: "vline" + (v.better ? " better" : ""), type: "button", onclick: () => go(v.id) },
       h("span", { class: "vk" }, reqText(v.required).replace("持有", "帶")),
@@ -345,10 +356,11 @@
   // 分支短名：「卡瑪持有處刑者徽章（轉職）」→「卡瑪處刑者轉」；來牌分支用名稱後半（「雷葛爾疊層」）
   const branchShort = (v) => {
     const r = (v.required || [])[0];
+    if (r?.type === "trait") return String(v.name).split(/\s*[·・]\s*/).pop();  // 轉職分支：「武鬥家轉」
     const m = r?.type === "emblem" && /(.+?)持有(.+?)徽章/.exec(r.text);
     return m ? `${m[1]}${m[2]}轉` : String(v.name).split(/\s*[·・]\s*/).pop();
   };
-  const branchIcon = (v) => { const r = (v.required || [])[0]; return r?.type === "emblem" ? icon("item", r.key, "xs") : r?.key && CH[r.key] ? icon("champion", r.key, "xs") : null; };
+  const branchIcon = (v) => { const r = (v.required || [])[0]; return r?.type === "emblem" || r?.type === "trait" ? icon("item", r.key, "xs") : r?.key && CH[r.key] ? icon("champion", r.key, "xs") : null; };
 
   // 站主 T 表調整（預覽站）：評級、分區、順序、隱藏；站主手動加的陣容
   const withOwner = (c) => {
@@ -399,6 +411,10 @@
           branchIcon(v), h("span", { class: "brn" }, branchShort(v)),
           h("span", { class: "brchg " + (chg == null ? "" : chg < 0 ? "good" : chg > 0 ? "bad" : "") }, "名次 ", fmtChg(chg)));
       })) : null,
+      // 站主 2026-11-06：靠徽章開到其他羈絆的盤面＝轉職分支（只放站位、裝備、升等，不評級）
+      !O.tmode && (c.variants || []).some((v) => v.kind === "trait") ? h("div", { class: "tc-br tv" }, h("span", { class: "tc-brh" }, "轉職"),
+        c.variants.filter((v) => v.kind === "trait").map((v) => h("button", { class: "brc", type: "button", title: `${v.name}：${reqText(v.required)}（${v.games} 場高手對局）`, onclick: () => go(v.id) },
+          branchIcon(v), h("span", { class: "brn" }, branchShort(v)), h("span", { class: "brchg" }, `${v.games} 場`)))) : null,
       O.tmode ? ownerTierCtl(c, pool) : null);
     return el;
   }
@@ -441,7 +457,8 @@
     // 寬螢幕：陣容多的分區（例：條件陣容）給兩倍寬、一格放兩欄，整張表比較矮，一頁看得完
     const maxCell = (l) => Math.max(...["S", "A", "B", "C", "?"].map((t) => shown.filter((c) => c.lane === l.id && (t === "?" ? !c.tier : c.tier === t)).length), watch.filter((c) => c.lane === l.id).length);
     const widest = [...lanes].sort((a, b) => maxCell(b) - maxCell(a))[0];
-    const wide = (l) => (l === widest && maxCell(l) >= 5 && lanes.length <= 3 ? 2 : 1);
+    // 站主 2026-11-06：「你不要這樣弄成兩行，我看 S TIER 要從左往右看還是從上往下看」→ 每格一律一欄、由上往下照順序排
+    const wide = () => 1;
     const tplD = "2.75rem " + lanes.map((l) => `minmax(${wide(l) * 14}rem, ${wide(l)}fr)`).join(" ");
     const grid = h("div", { class: "tb", style: `--cols:${lanes.length};--tpl-d:${tplD}`, role: "table", "aria-label": "T 度表：橫的是分區、直的是評級" });
     grid.append(h("div", { class: "tb-corner", role: "columnheader" }));
@@ -645,7 +662,7 @@
 
   // 站主 2026-11-04：賭一費 5 等就要有盤面、賭二費 6 等、賭三費 7 等
   const rerollTitle = (c) => `${c.rerollLevel} 等盤面（賭${"一二三"[(c.rerollCost || 1) - 1]}費：${c.rerollLevel} 等就要有這個盤面）`;
-  const levelsOf = (c) => [c.rerollLevel, 8, 9].filter(Boolean);
+  const levelsOf = (c) => [c.rerollLevel, c.variantKind && c.boards?.lv7?.status === "ok" && c.rerollLevel !== 7 ? 7 : null, 8, 9].filter(Boolean).sort((a, b) => a - b);
   /* ---------- 攻略頁棋盤：只放一張主圖，升等要補的、可以替換的放旁邊（站主 2026-11-04，參考 TFT Academy 的 Flex Units） ---------- */
   // 主圖人口：一費 5、二費 6、三費 7、四費 8（站主指定）；五費主C 放 9；沒有那張棋盤就退回 8／9
   const COST_LV = { 1: 5, 2: 6, 3: 7, 4: 8, 5: 9 };
@@ -1205,6 +1222,7 @@
           c.status === "ready" ? h("div", { class: "tc-sub dhero-sub" }, r.ceil ? [lvPill("下限", r.floor), lvPill("上限", r.ceil)] : null, c.freq != null ? h("span", { class: "tc-freq" }, `頻率 ${pct(c.freq)}`) : null,
             c.conditional || c.lane === "conditional" ? h("span", { class: "tag cond" }, "") : null, c.lane === "highroll" ? h("span", { class: "tag" }, "九等五費") : null,
             D.inference && c.patchImpact?.tierFrom ? h("span", { class: "was" }, `推測（原 ${c.patchImpact.tierFrom}）`) : null)
+            : c.variantKind === "trait" ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag watch" }, "轉職分支"), h("span", { class: "small muted" }, `${c.statsMeta?.games || 0} 場高手對局整理，只放站位、裝備和升等，不評級`))
             : c.watch ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag watch" }, "研究中"), r.ceil ? [lvPill("下限", r.floor), lvPill("上限", r.ceil)] : null, h("span", { class: "small muted" }, "數據很好、樣本還少，還沒正式評級"))
             : h("div", { class: "small muted" }, c.status === "custom" ? "站主新增，待補資料" : "研究中，尚無合資格數據"),
           c.status === "ready" ? dStats(c) : c.watch ? dStats(c, true) : null)));
@@ -1215,7 +1233,8 @@
         c.ownerNote ? h("p", { class: "small" }, h("b", null, "站主說明："), c.ownerNote) : null);
       return;
     }
-    if (c.status !== "ready") {
+    // 轉職分支（站主 2026-11-06）照常顯示棋盤、裝備、升等；其他沒評級的陣容維持研究中說明
+    if (c.status !== "ready" && c.variantKind !== "trait") {
       v.append(h("div", { class: "notice", style: "margin-top:16px" }, h("b", null, "這套還在研究中"),
         h("p", { class: "small", style: "margin:4px 0 0" }, "高手玩的場數還不夠，先不提供棋盤、裝備與評級。")),
         c.required?.length ? h("p", { class: "small" }, "定義上的必要條件：", c.required.map((r) => r.text).join("、")) : null,
@@ -1231,13 +1250,14 @@
       ["加分（拿到會更強）", "加分", bonusBox(c)],
       ["一句話選陣", "一句話選陣", c.oneLiner ? h("p", null, tx(`comp:${c.id}:oneLiner`, c.oneLiner)) : null],
       ["不順時轉哪套", "轉哪套", switchBox(c)],
-      ["分支（拿到轉職或特定來牌時）", "分支", c.variants?.some((v) => v.status === "ready") ? h("div", { class: "small stack" },
-        h("div", { class: "vlist" }, c.variants.filter((v) => v.status === "ready").map((v) => variantLine(v)))) : null],
-      ["和主陣容比較", "和主陣容比較", c.baseOf?.length ? h("div", { class: "small stack" },
+      ["分支（拿到轉職或特定來牌時）", "分支", c.variants?.some((v) => v.status === "ready" || v.kind === "trait") ? h("div", { class: "small stack" },
+        h("div", { class: "vlist" }, c.variants.filter((v) => v.status === "ready" || v.kind === "trait").map((v) => variantLine(v)))) : null],
+      ["和主陣容比較", "和主陣容比較", c.baseOf?.length && c.variantKind !== "trait" ? h("div", { class: "small stack" },
         h("p", null, "這個分支：", rangeLine(c)),
         ul(c.baseOf.map((b) => [h("a", { href: "#" + slug(b.id) }, b.name), "（主陣容）：", b.status === "ready" ? rangeLine(b) : "研究中"]))) : null],
       ...(O.on ? [[`${boardTitle(c, mainLevel(c) || 8)}（站主編輯：站位、星級、裝備）`, "棋盤", boardEditor(c)]]
         : [mainLevel(c) ? [boardTitle(c, mainLevel(c)), "棋盤", boardArea(c, mainLevel(c))] : null]),
+      ["升等放什麼（各人口的棋子）", "升等", levelUpBox(c)],
       ["前排替換", "前排替換", c.roles?.swap ? h("p", { class: "small" }, tx(`comp:${c.id}:roles.swap`, c.roles.swap)) : null],
       ["星級要求", "星級", ul((c.stars || []).map((s) => `${champName(s.key)}：${s.need}${s.note ? "（" + s.note + "）" : ""}`))],
       ["裝備（一般、神器、光明／特殊同區）", "裝備", itemArea(c)],

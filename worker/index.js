@@ -192,7 +192,8 @@ async function gql(env, query, fetchImpl) {
   return j.data.viewer;
 }
 
-const sampledRows = (rows) => (rows || []).some((x) => x.avg && x.avg.sampleInterval > 1.01);
+// 造訪數（Web Analytics）只要不是 1 就是抽樣；網站流量那邊即使很小也常回 1.0x，超過 1.5 才算真的在抽樣
+const sampledRows = (rows, limit = 1.01) => (rows || []).some((x) => x.avg && x.avg.sampleInterval > limit);
 
 // 把各段的分組結果依維度加總
 function merge(list, keyFn) {
@@ -235,7 +236,8 @@ export async function buildStats(env, range, tw, fetchImpl = fetch, now = Date.n
     perf: (misc.perf || []).map((x) => ({ device: x.dimensions.deviceType, n: x.count, load50: x.quantiles.pageLoadTimeP50, load90: x.quantiles.pageLoadTimeP90, fcp50: x.quantiles.firstContentfulPaintP50 })),
     comps: zmerge(zc),
     sessions: zmerge(zs),
-    sampled: sampledRows(hours) || sampledRows(all("sources")) || sampledRows(zc),
+    sampled: sampledRows(hours) || sampledRows(all("sources")),
+    compsSampled: sampledRows(zc, 1.5),
     queries: q.account.length + (q.misc ? 1 : 0) + q.zone.length,
   };
 }

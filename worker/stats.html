@@ -201,6 +201,7 @@ ul.lim li+li{margin-top:4px}
     if (b === "ChromeMobileWebview") return "App 內建瀏覽器（Android）";
     if (b === "Unknown") return "無法辨識（多半是 App 內）";
     if (b === "MobileSafari") return "Safari（iPhone／iPad）";
+    if (b === "ChromeDerivative") return `其他 Chrome 系瀏覽器（${os === "Windows" ? "Windows" : os}）`;
     if (b === "ChromeMobile") return `Chrome（${os === "iOS" ? "iPhone" : "Android"}）`;
     const o = { Windows: "Windows", MacOSX: "Mac", Linux: "Linux", iOS: "iPhone", Android: "Android" }[os] || os;
     return `${b}（${o}）`;
@@ -308,7 +309,7 @@ ul.lim li+li{margin-top:4px}
 
     // 陣容
     const comps = group(d.comps, (x) => x.path.replace(/^\/data\/items\//, "").replace(/\.json$/, ""), (x) => x.n);
-    $("#comps-note").textContent = "從陣容頁載入的裝備資料推算。同一位讀者沒重新整理前重複打開同一套只算一次。";
+    $("#comps-note").textContent = "從陣容頁載入的裝備資料推算。同一位讀者沒重新整理前重複打開同一套只算一次。" + (d.compsSampled ? "這段時間的次數是抽樣估算的大約值。" : "");
     if (!comps.length) $("#comps").replaceChildren(el("p", { class: "empty" }, "這段時間沒有人打開陣容頁。"));
     else {
       const max = comps[0].value;

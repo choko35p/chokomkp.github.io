@@ -1,7 +1,7 @@
 {
   // 巧克力MKP的戰棋研究室：靜態網站（site/）＋站主專用讀者統計（worker/，只處理 /stats）
   // 網站檔案在 site/，由 Claude 從 choko-lab 的 tools/build_standalone.py 產生後推上來。
-  // 推網站時不要刪掉 worker/ 和這個檔案裡的 main、run_worker_first、vars。
+  // 推網站時不要刪掉 worker/、site/_headers，和這個檔案裡的 main、run_worker_first、vars。
   "name": "chokomkp",
   "compatibility_date": "2026-11-01",
   "main": "worker/index.js",

@@ -14,3 +14,8 @@
 - 讀取金鑰放在 Cloudflare 後台的密鑰 `CF_API_TOKEN`（權限：Account Analytics 讀取、Zone Analytics 讀取），不要寫進這個專案。
 - 改畫面：編輯 `worker/stats.html` 後執行 `node worker/build_page.mjs`；測試：`node worker/test.mjs`。
 - 推網站檔案時，不要刪掉 `worker/`，也不要拿掉 `wrangler.jsonc` 裡的 `main`、`run_worker_first`、`vars`。
+
+## 快取設定（site/_headers）
+
+- `site/_headers` 讓圖示、字型留在讀者的瀏覽器裡，回訪時不用重新下載。推網站檔案時請保留這個檔案。
+- 圖示記 1 天（換圖最慢隔天生效）；字型記 30 天；`data/`、`app.js`、`style.css`、`index.html` 不受影響，每次都會拿最新的。

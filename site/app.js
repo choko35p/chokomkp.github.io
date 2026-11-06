@@ -848,6 +848,8 @@
     return Object.entries(c).map(([k, n]) => PLANT[k] + (n > 1 ? ` ×${n}` : "")).join("、") + (ps[0].star > 1 ? `（${ps[0].star} 星）` : "");
   };
 
+  // 站主 2026-11-06：「二星還三星你要確定欸」→ 一起算的盤面，另一種星級也常見（≥20%）就寫出來
+  const starMixText = (u) => { const o = Object.entries(u.starMix || {}).filter(([k, r]) => +k !== u.star && r >= 0.2).map(([k, r]) => `${k} 星 ${Math.round(r * 100)}%`); return o.length ? `（${o.join("、")}）` : ""; };
   function board(b, level, c) {
     if (!b || b.status === "na") return h("p", { class: "muted small" }, b?.reason || "不適用");
     if (b.status !== "ok") return null;  // 沒有棋盤就整區不顯示（新手用不到「樣本不足」）
@@ -886,10 +888,11 @@
         grid.append(row);
       }
       wrap.append(h("div", { class: "tablewrap" }, grid), h("p", { class: "xs muted" }, "上方為前排（第一排），下方為後排。",
-        b.source === "template" ? "這版高手棋盤樣本還不夠，先放原站的示意盤（主C、副C、主坦掛首選裝備）。" : auto ? "這張是依角色排的示意站位（坦在前排、主C在後排角落），實際依對手調整。" : ""));
+        b.source === "template" ? "這版高手棋盤樣本還不夠，先放原站的示意盤（主C、副C、主坦掛首選裝備）。" : auto ? "這張是依角色排的示意站位（坦在前排、主C在後排角落），實際依對手調整。" : ""),
+        b.basis === "consensus" ? h("p", { class: "xs muted bd-basis" }, `這張是 MetaTFT 大師以上 ${b.games} 場（${level} 人口）一起算的：依出現率挑棋子、星級取最常見的；下面清單有每隻的出現率和星級比例。`) : null);
     } else wrap.append(h("p", { class: "xs muted" }, "這份棋盤還沒有站位資料，先列出角色、星級與裝備。"));
     wrap.append(h("div", { class: "unit-list" }, cs.map((u) => h("div", { class: "unit" }, icon("champion", u.key, "sm"),
-      h("div", null, h("b", null, champName(u.key)), h("div", { class: "xs muted" }, `${u.star} 星${u.mark ? "｜首領標記" : ""}${u.rider && spryOn(cs) ? "｜騎乘者" : ""}`), h("div", null, (u.items || []).map((i) => icon("item", i, "xs"))))))));
+      h("div", null, h("b", null, champName(u.key)), h("div", { class: "xs muted" }, `${u.star} 星${starMixText(u)}${u.seen != null ? `｜出現 ${Math.round(u.seen * 100)}%` : ""}${u.mark ? "｜首領標記" : ""}${u.rider && spryOn(cs) ? "｜騎乘者" : ""}`), h("div", null, (u.items || []).map((i) => icon("item", i, "xs"))))))));
     return wrap;
   }
 

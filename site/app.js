@@ -319,8 +319,9 @@
   }
 
   /* ---------- T 度表 ---------- */
-  /* 站主 2026-11-04：均名、前四、吃雞新手看不懂 → 改成「下限」「上限」各分高／中／低 */
-  const lvTag = (v) => h("b", { class: "lv lv-" + ({ 高: "hi", 中: "mid", 低: "lo" }[v] || "na") }, v || "—");
+  /* 站主 2026-11-04：均名、前四、吃雞新手看不懂 → 改成「下限」「上限」；11/06：「分五個等級好了，三個有點難判斷」→ 很高／高／中／低／很低 */
+  const LVC = { 很高: "vhi", 高: "hi", 中: "mid", 低: "lo", 很低: "vlo" };
+  const lvTag = (v) => h("b", { class: "lv lv-" + (LVC[v] || "na") }, v || "—");
   const rangeLine = (c) => {
     const r = c.range || {};
     if (!r.ceil) return h("span", null, c.status === "custom" ? "待補資料" : "研究中");
@@ -373,7 +374,7 @@
   ];
   const cellSort = (a, b) => (a.ownerOrder ?? 999) - (b.ownerOrder ?? 999) || (a.rank ?? 99) - (b.rank ?? 99);
   // T 表卡片：名稱一行、下限／上限做成有顏色的標籤、頻率淡色；條件只留一行淡色說明
-  const lvPill = (label, v) => h("b", { class: "lvp lv-" + ({ 高: "hi", 中: "mid", 低: "lo" }[v] || "na") }, `${label} ${v || "—"}`);
+  const lvPill = (label, v) => h("b", { class: "lvp lv-" + (LVC[v] || "na") }, `${label} ${v || "—"}`);
   const fmtChg = (v) => (v == null ? "—" : (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v).toFixed(2));
   function tcard(c, pool) {
     const showReq = c.lane === "conditional" && c.required?.length;
@@ -411,7 +412,8 @@
     const shown = pool.filter((c) => (O.tmode || !c.hidden) && !isChip(c));
     if (D.inference) root.append(h("div", { class: "tb-infer small" }, h("b", { class: "tag infer" }, "推測"), " ",
       ui("tier.infer", `${D.inference.patch} 剛上線，先用 ${D.inference.basePatch} 的高手資料加上 ${D.inference.patch} 改動推測：↑ 變強、↓ 變弱，「原B」是推測前的評級。改版 ${D.inference.hours} 小時後、對局夠多就改用 ${D.inference.patch} 的資料。`)));
-    root.append(h("p", { class: "tb-legend small" }, h("b", null, ui("tier.legendHead", "下限與上限：")), ui("tier.legend", "逆風選下限高的，順風選上限高的。")));
+    root.append(h("p", { class: "tb-legend small" }, h("b", null, ui("tier.legendHead", "下限與上限：")), ui("tier.legend", "逆風選下限高的，順風選上限高的。"),
+      h("span", { class: "lv-scale", "aria-label": "分五級，由好到差" }, ["很高", "高", "中", "低", "很低"].map(lvTag))));
     const lanes = LANES.filter((l) => O.tmode || shown.some((c) => c.lane === l.id));
     const rows = ["S", "A", "B", "C"].filter((t) => O.tmode || shown.some((c) => c.tier === t));
     if (O.tmode || shown.some((c) => !c.tier)) rows.push("?");

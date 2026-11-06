@@ -305,6 +305,9 @@ body:has(#float-back) { padding-bottom: 72px; }
 .lv-mid { background: #f3ecd9; color: #7a5a12; }
 .lv-lo { background: #f6e1de; color: #9a3226; }
 .lv-na { background: #eee; color: #666; }
+.lv-vhi { background: #1f6b35; color: #fff; }
+.lv-vlo { background: #a8382b; color: #fff; }
+.lv-scale { display: inline-flex; flex-wrap: wrap; gap: 4px; margin-left: 6px; vertical-align: middle; }
 .catbar { margin-bottom: 12px; flex-wrap: wrap; }
 
 /* ---------- 2026-11-04 改版：本次更新收起來 ---------- */
@@ -387,7 +390,7 @@ details.pgroup > .in { padding-top: var(--s2); }
 .tc-nm .nm { overflow-wrap: anywhere; }
 .tc-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: var(--fs-xs); color: var(--muted); }
 .lvp { display: inline-block; padding: 1px 8px; border-radius: 6px; font-weight: 700; white-space: nowrap; }
-.lvp.lv-hi { background: #dcefe1; color: #1f6b35; } .lvp.lv-mid { background: #f3ecd9; color: #7a5a12; } .lvp.lv-lo { background: #f6e1de; color: #9a3226; } .lvp.lv-na { background: #eee; color: #666; }
+.lvp.lv-hi { background: #dcefe1; color: #1f6b35; } .lvp.lv-mid { background: #f3ecd9; color: #7a5a12; } .lvp.lv-lo { background: #f6e1de; color: #9a3226; } .lvp.lv-na { background: #eee; color: #666; } .lvp.lv-vhi { background: #1f6b35; color: #fff; } .lvp.lv-vlo { background: #a8382b; color: #fff; }
 .tc-freq { white-space: nowrap; margin-left: 2px; }
 .tc-req { font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tc-br { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px var(--s3) var(--s2); border-top: 1px solid var(--line); }
@@ -403,9 +406,9 @@ details.pgroup > .in { padding-top: var(--s2); }
 .tl { display: inline-grid; place-items: center; min-width: 18px; height: 18px; border-radius: 4px; font-size: 12px; color: #fff; font-weight: 900; }
 .tl.t-S { background: #d4553d; } .tl.t-A { background: #e08a3c; } .tl.t-B { background: #c9a43a; } .tl.t-C { background: #8c8c86; }
 @media (prefers-color-scheme: dark) {
-  .lvp.lv-hi { background: #1d3a24; color: #9fe0b0; } .lvp.lv-mid { background: #3d3216; color: #f0d58a; } .lvp.lv-lo { background: #47211c; color: #ffb3a8; } .lvp.lv-na { background: #333; color: #bbb; }
+  .lvp.lv-hi { background: #1d3a24; color: #9fe0b0; } .lvp.lv-mid { background: #3d3216; color: #f0d58a; } .lvp.lv-lo { background: #47211c; color: #ffb3a8; } .lvp.lv-na { background: #333; color: #bbb; } .lvp.lv-vhi { background: #5fbf7b; color: #0b1f11; } .lvp.lv-vlo { background: #e8705f; color: #2b0b06; }
   .brchg.good { color: #9fe0b0; } .brchg.bad { color: #ffb3a8; }
-  .lv-hi { background: #1d3a24; color: #9fe0b0; } .lv-mid { background: #3d3216; color: #f0d58a; } .lv-lo { background: #47211c; color: #ffb3a8; } .lv-na { background: #333; color: #bbb; }
+  .lv-hi { background: #1d3a24; color: #9fe0b0; } .lv-mid { background: #3d3216; color: #f0d58a; } .lv-lo { background: #47211c; color: #ffb3a8; } .lv-na { background: #333; color: #bbb; } .lv-vhi { background: #5fbf7b; color: #0b1f11; } .lv-vlo { background: #e8705f; color: #2b0b06; }
   .tc { box-shadow: none; }
 }
 /* 站主：T 表調整 */

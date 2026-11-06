@@ -577,6 +577,15 @@ details.fold > ul { padding: 0 1.25rem 1.25rem calc(1.25rem + 1.25em); }
 .detail h3 { display: flex; align-items: center; gap: .55rem; font-size: 1.25rem; border-top: 0; padding-top: 0; margin: 2.75rem 0 .9rem; }
 .detail h3::before { content: ""; flex: 0 0 .25rem; height: 1em; border-radius: 2px; background: var(--coral); }
 .dmain > h3:first-child, .dmain > .review:first-child + h3 { margin-top: 1.5rem; }
+/* 站主 2026-11-06：窄螢幕（含手機）目錄也要跟著畫面 → 一排可以左右滑的標籤，貼在導覽列下面 */
+@media (max-width: 1099.98px) {
+  .dside { position: sticky; top: var(--navh, 3.2rem); z-index: 15; margin-top: .75rem; padding: .4rem 0; background: var(--bg); }
+  .dside .toc { margin: 0; flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; padding-right: 1.75rem;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 1.75rem), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 1.75rem), transparent); }
+  .dside .toc::-webkit-scrollbar { display: none; }
+  .dside .tocb, .dside .toc-h { flex: 0 0 auto; white-space: nowrap; }
+  .detail h3 { scroll-margin-top: calc(var(--navh, 3.2rem) + var(--toch, 4rem) + .75rem); }
+}
 @media (min-width: 1100px) {
   .dlayout { display: grid; grid-template-columns: 11.5rem minmax(0, 1fr); gap: 3rem; align-items: start; }
   .dside { position: sticky; top: 4.25rem; max-height: calc(100vh - 5rem); overflow: auto; }

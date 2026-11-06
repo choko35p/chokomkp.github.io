@@ -1225,22 +1225,41 @@
       if (h3) h3.id = "sec-" + i;
       main.append(...out);
     });
-    v.append(h("div", { class: "dlayout" }, h("aside", { class: "dside" }, toc), main));
-    spy([...main.querySelectorAll("h3[id]")], (id) => toc.querySelectorAll(".tocb").forEach((b) => b.setAttribute("aria-current", b.dataset.sec === id ? "true" : "false")));
+    const side = h("aside", { class: "dside" }, toc);
+    v.append(h("div", { class: "dlayout" }, side, main));
+    // 站主 2026-11-06：「螢幕窄的時候沒辦法跟著，會不會手機也沒辦法」→ 窄螢幕（含手機）目錄改成一排、貼在導覽列下面跟著畫面；
+    // 目前段落的標籤自動捲到看得到的地方；點標籤跳過去時，標題不會被導覽列和目錄蓋住
+    const narrow = () => !matchMedia("(min-width: 1100px)").matches;
+    const tocH = () => { document.documentElement.style.setProperty("--toch", (narrow() ? side.offsetHeight : 0) + "px"); };
+    tocH();
+    const topOcc = () => (document.querySelector(".nav")?.offsetHeight || 56) + (narrow() ? side.offsetHeight : 0) + 8;
+    spy([...main.querySelectorAll("h3[id]")], (id) => {
+      let cur = null;
+      toc.querySelectorAll(".tocb").forEach((b) => { const on = b.dataset.sec === id; b.setAttribute("aria-current", on ? "true" : "false"); if (on) cur = b; });
+      if (cur && narrow() && toc.scrollWidth > toc.clientWidth + 2) toc.scrollTo({ left: Math.max(0, cur.offsetLeft - (toc.clientWidth - cur.offsetWidth) / 2), behavior: "smooth" });
+    }, topOcc());
   }
   // 捲動時標出目前看到的段落（首頁導覽列、攻略頁目錄共用）
-  let SPY = null;
-  function spy(targets, onChange) {
-    SPY?.disconnect();
-    if (!window.IntersectionObserver || !targets.length) return;
-    const seen = new Map();
-    SPY = new IntersectionObserver((es) => {
-      for (const e of es) seen.set(e.target.id, e.isIntersecting ? e.boundingClientRect.top : null);
-      const vis = targets.filter((t) => seen.get(t.id) != null);
-      const cur = vis.length ? vis[0].id : null;
-      if (cur) onChange(cur);
-    }, { rootMargin: "-72px 0px -55% 0px" });
-    targets.forEach((t) => SPY.observe(t));
+  let SPY = null;  // 取消目前的追蹤
+  function spy(targets, onChange, top = 72) {
+    // 目前段落＝最後一個捲過「導覽列（＋窄螢幕目錄）下緣」的標題；在兩個標題中間的長段落也標得出來（站主 2026-11-06）
+    SPY?.();
+    if (!targets.length) return;
+    let last = null, raf = 0;
+    const f = () => {
+      raf = 0;
+      let cur = null;
+      for (const t of targets) {
+        if (!t.offsetParent && t.getClientRects().length === 0) continue;  // 隱藏中的段落（例如在攻略頁時的首頁區塊）
+        if (t.getBoundingClientRect().top - top <= innerHeight * 0.25) cur = t; else if (cur) break;
+      }
+      if (cur && cur.id !== last) { last = cur.id; onChange(cur.id); }
+    };
+    const on = () => { if (!raf) raf = requestAnimationFrame(f); };
+    addEventListener("scroll", on, { passive: true });
+    addEventListener("resize", on);
+    SPY = () => { removeEventListener("scroll", on); removeEventListener("resize", on); if (raf) cancelAnimationFrame(raf); };
+    f();
   }
   /* ---------- 小百科（站主 2026-11-05：「弄個小百科，裡面有所有的裝備跟增幅，放在索引最後面，
      裝備滑鼠移上去要能顯示是甚麼散件合的，也可以直接用散件搜索」） ---------- */
@@ -1394,6 +1413,7 @@
   // 導覽列高度（T 表的分區標題、評級字母跟著畫面時，貼在導覽列下面）
   function navH() { const n = document.querySelector(".nav"); if (n) document.documentElement.style.setProperty("--navh", n.offsetHeight + "px"); }
   addEventListener("resize", navH);
+  addEventListener("resize", () => { const s = document.querySelector("#detail:not([hidden]) .dside"); document.documentElement.style.setProperty("--toch", (s && !matchMedia("(min-width: 1100px)").matches ? s.offsetHeight : 0) + "px"); });
   function homeSpy() {
     // 導覽列有的段落都追（含定陣路線、小百科這些後來加的）
     const secs = [...document.querySelectorAll(".nav a[href^='#']")].map((a) => document.getElementById(a.getAttribute("href").slice(1))).filter(Boolean);

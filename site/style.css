@@ -556,10 +556,18 @@ details.fold > ul { padding: 0 1.25rem 1.25rem calc(1.25rem + 1.25em); }
 .dhero-txt { grid-area: txt; min-width: 0; }
 .dhero h2 { margin: 0 0 .4rem; font-size: 1.875rem; font-weight: 800; }
 .dhero-sub { font-size: var(--fs-s); }
+.dstats { margin-top: .75rem; }
+.dst-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.dst { display: flex; flex-direction: column; gap: 2px; min-width: 88px; padding: 6px 14px 7px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.dst-l { font-size: var(--fs-xs); color: var(--muted); }
+.dst-v { font-family: var(--num); font-size: 1.5rem; font-weight: 700; line-height: 1.1; letter-spacing: .01em; font-variant-numeric: tabular-nums; }
+.dst-n { margin: 6px 0 0; }
 @media (max-width: 640px) {
   .dhero { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "tier txt" "icons icons"; padding: 1rem; }
   .dtier { width: 3.5rem; height: 3.5rem; font-size: 2.8rem; }
   .dhero h2 { font-size: 1.5rem; }
+  .dst { min-width: 0; flex: 1 1 0; padding: 5px 10px 6px; }
+  .dst-v { font-size: 1.25rem; }
 }
 .pimpact { border: 0; background: var(--kinari); border-left: 4px solid var(--line); border-radius: 0 10px 10px 0; }
 .pimpact.up { border-left-color: #3f9a5a; } .pimpact.down { border-left-color: #c2493a; }

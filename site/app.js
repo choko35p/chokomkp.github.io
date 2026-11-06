@@ -1130,6 +1130,19 @@
     document.body.append(h("a", { id: "float-back", class: "float-back", href: "#comps", "aria-label": "回陣容列表" }, "← 返回"));
   }
 
+  // 站主 2026-11-06：詳細頁加上均名、前四率、勝率（T 表和卡片維持下限／上限）。數字跟下限、上限同一份主資料（台服優先、美服補），場數照實列出
+  function dStats(c) {
+    const s = c.stats, m = c.statsMeta || {};
+    if (!s || s.avg == null) return null;
+    const tile = (k, label, val, hint) => h("div", { class: "dst", "data-k": k, title: hint }, h("span", { class: "dst-l" }, label), h("b", { class: "dst-v" }, val));
+    return h("div", { class: "dstats" },
+      h("div", { class: "dst-row" },
+        tile("avg", ui("detail.avg", "均名"), s.avg.toFixed(2), "平均名次（1～8 名），越小越好"),
+        tile("top4", ui("detail.top4", "前四率"), pct(s.top4), "打進前四名的比例"),
+        tile("win", ui("detail.win", "勝率"), pct(s.win), "拿第一名的比例")),
+      h("p", { class: "dst-n small muted" }, `${m.version ? m.version + " " : ""}高手實戰 ${m.games} 場${m.players ? `（${m.players} 位）` : ""}`,
+        m.games < 10 ? "；場數少，參考就好" : "", "。均名越小越好。"));
+  }
   const compById = (id) => D.comps.find((x) => x.id === id) || (O.on ? (O.custom.find((x) => x.id === id) && customToComp(O.custom.find((x) => x.id === id))) : null);
   function renderDetail(id) {
     const c = compById(id);
@@ -1148,7 +1161,8 @@
           c.status === "ready" ? h("div", { class: "tc-sub dhero-sub" }, r.ceil ? [lvPill("下限", r.floor), lvPill("上限", r.ceil)] : null, c.freq != null ? h("span", { class: "tc-freq" }, `頻率 ${pct(c.freq)}`) : null,
             c.conditional || c.lane === "conditional" ? h("span", { class: "tag cond" }, "") : null, c.lane === "highroll" ? h("span", { class: "tag" }, "九等五費") : null,
             D.inference && c.patchImpact?.tierFrom ? h("span", { class: "was" }, `推測（原 ${c.patchImpact.tierFrom}）`) : null)
-            : h("div", { class: "small muted" }, c.status === "custom" ? "站主新增，待補資料" : "研究中，尚無合資格數據"))));
+            : h("div", { class: "small muted" }, c.status === "custom" ? "站主新增，待補資料" : "研究中，尚無合資格數據"),
+          c.status === "ready" ? dStats(c) : null)));
     if (c.status === "custom") {
       v.append(h("div", { class: "notice", style: "margin-top:16px" }, h("b", null, "站主手動加的陣容"),
         h("p", { class: "small", style: "margin:4px 0 0" }, "Claude 下次更新時會去查高手對局的數據，補上棋盤、裝備和攻略；補完才會放到正式站。")),

@@ -411,10 +411,6 @@
           branchIcon(v), h("span", { class: "brn" }, branchShort(v)),
           h("span", { class: "brchg " + (chg == null ? "" : chg < 0 ? "good" : chg > 0 ? "bad" : "") }, "名次 ", fmtChg(chg)));
       })) : null,
-      // 站主 2026-11-06：靠徽章開到其他羈絆的盤面＝轉職分支（只放站位、裝備、升等，不評級）
-      !O.tmode && (c.variants || []).some((v) => v.kind === "trait") ? h("div", { class: "tc-br tv" }, h("span", { class: "tc-brh" }, "轉職"),
-        c.variants.filter((v) => v.kind === "trait").map((v) => h("button", { class: "brc", type: "button", title: `${v.name}：${reqText(v.required)}（${v.games} 場高手對局）`, onclick: () => go(v.id) },
-          branchIcon(v), h("span", { class: "brn" }, branchShort(v)), h("span", { class: "brchg" }, `${v.games} 場`)))) : null,
       O.tmode ? ownerTierCtl(c, pool) : null);
     return el;
   }
@@ -431,6 +427,7 @@
             h("span", { class: "tag few" }, `樣本少：${w.n} 場・${w.players} 位`)),
           c.lane === "conditional" && c.required?.length ? h("span", { class: "tc-req", title: reqText(c.required) }, "需要：", reqText(c.required)) : null)));
   }
+  let TB_LANE = "normal";  // T 度表目前的分頁（站主 2026-11-06：三個分區各自一頁）
   function renderTiers() {
     const root = $("#tiers"); root.textContent = "";
     $("#tierlist > p.small")?.remove();
@@ -453,58 +450,40 @@
       if (O.tmode) root.append(ownerTierBar());
       return;
     }
-    const nav = h("div", { class: "tb-lanes", role: "group", "aria-label": "跳到分區" });
-    // 寬螢幕：陣容多的分區（例：條件陣容）給兩倍寬、一格放兩欄，整張表比較矮，一頁看得完
-    const maxCell = (l) => Math.max(...["S", "A", "B", "C", "?"].map((t) => shown.filter((c) => c.lane === l.id && (t === "?" ? !c.tier : c.tier === t)).length), watch.filter((c) => c.lane === l.id).length);
-    const widest = [...lanes].sort((a, b) => maxCell(b) - maxCell(a))[0];
-    // 站主 2026-11-06：「你不要這樣弄成兩行，我看 S TIER 要從左往右看還是從上往下看」→ 每格一律一欄、由上往下照順序排
-    const wide = () => 1;
-    const tplD = "2.75rem " + lanes.map((l) => `minmax(${wide(l) * 14}rem, ${wide(l)}fr)`).join(" ");
-    const grid = h("div", { class: "tb", style: `--cols:${lanes.length};--tpl-d:${tplD}`, role: "table", "aria-label": "T 度表：橫的是分區、直的是評級" });
-    grid.append(h("div", { class: "tb-corner", role: "columnheader" }));
-    lanes.forEach((l, i) => {
+    // 站主 2026-11-06：「9等五費跟條件陣容不要放在跟普通的放在一起，每個自己弄個分頁，我電腦一個頁面要能看完全部的陣容」
+    // → 三個分區各一個分頁；分頁裡每個評級一列，卡片由左往右照順序排（站主前一句：「不要弄成兩行，看不出從左往右還是從上往下」）。
+    // 站主調 T 表時三個分區全部攤開，方便搬來搬去。
+    if (!lanes.some((l) => l.id === TB_LANE)) TB_LANE = lanes[0].id;
+    const tabs = h("div", { class: "tb-tabs", role: "tablist", "aria-label": "陣容分區" });
+    const panels = [];
+    for (const l of lanes) {
       const n = shown.filter((c) => c.lane === l.id).length;
-      grid.append(h("div", { class: "tb-head", role: "columnheader", "data-lane": l.id }, h("b", null, ui(`lane.${l.id}`, l.label)), h("span", { class: "xs" }, ` ${n}`), h("span", { class: "tb-sub" }, ui(`lane.${l.id}.sub`, l.sub))));
-      nav.append(h("button", { type: "button", onclick: () => { const hd = grid.querySelector(`.tb-head[data-lane="${l.id}"]`); const sc = grid.parentElement; sc.scrollTo({ left: hd.offsetLeft - grid.querySelector(".tb-corner").offsetWidth, behavior: "smooth" }); } }, uiStr(`lane.${l.id}`, l.label), h("span", { class: "xs" }, ` ${n}`)));
-    });
-    for (const t of rows) {
-      grid.append(h("div", { class: "tb-tier t-" + (t === "?" ? "Q" : t), role: "rowheader" }, t === "?" ? "未分級" : t));
-      for (const l of lanes) {
+      const grid = h("div", { class: "tbx", role: "table", "data-lane": l.id, "aria-label": `${uiStr(`lane.${l.id}`, l.label)} T 度表：每一列是一個評級，由左往右排` });
+      for (const t of rows) {
         const cs = shown.filter((c) => c.lane === l.id && (t === "?" ? !c.tier : c.tier === t)).sort(cellSort);
-        grid.append(h("div", { class: "tb-cell" + (wide(l) > 1 ? " w2" : ""), role: "cell", "data-lane": l.id, "data-tier": t }, cs.length ? cs.map((c) => tcard(c, pool)) : h("span", { class: "tb-none", "aria-label": "沒有" }, "—")));
+        if (!cs.length && !O.tmode) continue;
+        grid.append(h("div", { class: "tb-tier t-" + (t === "?" ? "Q" : t), role: "rowheader" }, t === "?" ? "未分級" : t),
+          h("div", { class: "tb-cell", role: "cell", "data-lane": l.id, "data-tier": t }, cs.length ? cs.map((c) => tcard(c, pool)) : h("span", { class: "tb-none", "aria-label": "沒有" }, "—")));
       }
+      const ws = watch.filter((c) => c.lane === l.id).sort((a, b) => a.watch.rank - b.watch.rank);
+      if (ws.length) grid.append(h("div", { class: "tb-tier t-R", role: "rowheader", id: "tier-watch-" + l.id }, "研究中"),
+        h("div", { class: "tb-cell watch", role: "cell", "data-lane": l.id, "data-tier": "R" }, ws.map(wcard)));
+      const panel = h("div", { class: "tb-panel", role: "tabpanel", "data-lane": l.id, id: "tbp-" + l.id },
+        O.tmode ? h("h3", { class: "tb-ptitle" }, uiStr(`lane.${l.id}`, l.label)) : null, grid,
+        ws.length ? h("p", { class: "tb-watch-note small" }, h("b", { class: "tag watch" }, "研究中"), " ",
+          ui("tier.watch", `數據很好、但樣本還少，還沒正式評級，先列出來給你參考。下限、上限已經往全站平均拉過，場數越少越容易看走眼；點進去看棋盤、裝備和均名。樣本夠了會自動進 T 度表。`)) : null);
+      panel.hidden = !O.tmode && l.id !== TB_LANE;
+      panels.push(panel);
+      tabs.append(h("button", { type: "button", role: "tab", class: "tb-tab", "data-lane": l.id, "aria-controls": "tbp-" + l.id, "aria-selected": l.id === TB_LANE ? "true" : "false",
+        onclick: () => {
+          TB_LANE = l.id; track("lane", l.id);
+          tabs.querySelectorAll(".tb-tab").forEach((b) => b.setAttribute("aria-selected", b.dataset.lane === l.id ? "true" : "false"));
+          if (!O.tmode) panels.forEach((p) => { p.hidden = p.dataset.lane !== l.id; });
+        } },
+        h("span", { class: "tb-tl" }, h("b", null, ui(`lane.${l.id}`, l.label)), h("span", { class: "xs" }, ` ${n + ws.length}`)), h("span", { class: "tb-sub" }, ui(`lane.${l.id}.sub`, l.sub))));
     }
-    if (watch.length) {
-      grid.append(h("div", { class: "tb-tier t-R", role: "rowheader", id: "tier-watch" }, "研究中"));
-      for (const l of lanes) {
-        const cs = watch.filter((c) => c.lane === l.id).sort((a, b) => a.watch.rank - b.watch.rank);
-        grid.append(h("div", { class: "tb-cell watch" + (wide(l) > 1 ? " w2" : ""), role: "cell", "data-lane": l.id, "data-tier": "R" }, cs.length ? cs.map(wcard) : h("span", { class: "tb-none", "aria-label": "沒有" }, "—")));
-      }
-    }
-    const scroll = h("div", { class: "tb-scroll" }, grid);
-    const wrap = h("div", { class: "tb-wrap" }, scroll);
-    const hint = h("p", { class: "tb-hint xs" }, h("span", { class: "tb-swipe", "aria-hidden": "true" }, "⇆"), " ", ui("tier.hint", "左右滑動：右邊還有九等五費、條件陣容"));
-    root.append(nav, hint, wrap);
-    if (watch.length) {
-      const wi = D.watchInfo || {};
-      root.append(h("p", { class: "tb-watch-note small" }, h("b", { class: "tag watch" }, "研究中"), " ",
-        ui("tier.watch", `數據很好、但樣本還少，還沒正式評級，先列出來給你參考。下限、上限已經往全站平均拉過，場數越少越容易看走眼；點進去看均名、前四率。樣本夠了會自動進 T 度表。`)));
-    }
-    const heads = [...grid.querySelectorAll(".tb-head")], btns = [...nav.querySelectorAll("button")];
-    const upd = () => {
-      const max = scroll.scrollWidth - scroll.clientWidth;
-      wrap.classList.toggle("can-scroll", max > 4);
-      wrap.classList.toggle("at-start", scroll.scrollLeft < 4);
-      wrap.classList.toggle("at-end", scroll.scrollLeft > max - 4);
-      hint.hidden = !(max > 4); nav.hidden = !(max > 4);
-      const x = scroll.scrollLeft + 60;  // 目前看的分區：按鈕標起來
-      let cur = 0; heads.forEach((hd, i) => { if (hd.offsetLeft <= x) cur = i; });
-      if (scroll.scrollLeft > max - 4) cur = heads.length - 1;
-      btns.forEach((b, i) => b.setAttribute("aria-current", i === cur ? "true" : "false"));
-    };
-    scroll.addEventListener("scroll", upd, { passive: true });
-    if (window.ResizeObserver) new ResizeObserver(upd).observe(scroll); else addEventListener("resize", upd);
-    requestAnimationFrame(upd); setTimeout(upd, 400);
+    if (O.tmode) tabs.hidden = true;
+    root.append(tabs, ...panels);
     if (O.tmode) root.append(ownerTierBar());
   }
 
@@ -1068,21 +1047,45 @@
   let CASES = null, CASES_P = null;
   const loadCases = () => (CASES_P ||= fetch("data/cases.json").then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => (CASES = d)));
   /* 加分（站主 2026-11-04：「我說的明明就是這裡要有圖案」）：每一項一張卡，大圖示＋英雄頭像，數字分開排 */
+  // 站主 2026-11-06：「你有用的你要在詳情頁那邊給我版面，沒用的就不要列出來」→ 加分裡的轉職每個都有版面（b.branch），
+  // 點卡片就在加分下面打開那個轉職的棋盤（站位、裝備、可切人口），也可以點進完整頁面看升等放什麼
   function bonusBox(c) {
     if (!c.bonus?.length) return null;
-    return h("div", { class: "bonus-grid" }, c.bonus.map((b) => {
+    const pane = h("div", { class: "bonus-pane" });
+    let open = null;
+    const show = (b, card) => {
+      pane.textContent = "";
+      grid.querySelectorAll(".bcard").forEach((x) => x.setAttribute("aria-expanded", x === card && open !== b.branch ? "true" : "false"));
+      if (open === b.branch) { open = null; return; }
+      open = b.branch;
+      const v = compById(b.branch);
+      if (!v) return;
+      const lvs = levelsOf(v).filter((lv) => boardOk(v, lv));
+      let cur = mainLevel(v) || lvs[0];
+      const area = h("div", null);
+      const draw = () => { area.textContent = ""; area.append(boardArea(v, cur) || h("p", { class: "small muted" }, "沒有這個人口的棋盤。")); };
+      pane.append(h("div", { class: "bp-head" }, h("b", null, `${b.type === "trait" ? itemName(b.key) : b.text.split("：")[0].replace(/（[^）]*）/g, "")}的版面`),
+        lvs.length > 1 ? h("div", { class: "chips" }, lvs.map((lv) => h("button", { type: "button", class: "chip", "aria-pressed": lv === cur ? "true" : "false",
+          onclick: (e) => { cur = lv; e.target.parentElement.querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", x === e.target ? "true" : "false")); draw(); } }, `${lv} 人口`))) : null,
+        h("a", { class: "bp-more", href: "#" + slug(v.id) }, "完整頁面（升等放什麼）→")), area);
+      draw();
+    };
+    const grid = h("div", { class: "bonus-grid" }, c.bonus.map((b) => {
       // 站主 2026-11-04：括號裡的說明多餘；「多一個特性／多一個野性」重複又不直觀 → 直接寫「野性徽章」
       const title = b.type === "trait" ? itemName(b.key) : b.text.split("：")[0].replace(/（[^）]*）/g, "");
       const kind = b.type === "trait" ? null : b.type === "artifact" ? "神器" : b.type === "emblem" ? "轉職" : "裝備";
-      return h("div", { class: "bcard" },
+      const card = h(b.branch ? "button" : "div", { class: "bcard" + (b.branch ? " has-board" : ""), ...(b.branch ? { type: "button", "aria-expanded": "false", onclick: () => show(b, card) } : {}) },
         h("div", { class: "bc-ico" }, icon("item", b.key), b.hero && CH[b.hero] ? h("span", { class: "bc-hero" }, icon("champion", b.hero, "sm")) : null),
         h("div", { class: "bc-txt" },
           kind ? h("span", { class: "bc-kind" }, kind) : null,
           h("b", { class: "bc-title" }, title),
           h("span", { class: "bc-meta" }, b.tier ? h("span", { class: "bc-tier t-" + b.tier }, b.tier) : null,
             h("span", { class: "brchg " + (b.chg < -0.05 ? "good" : b.chg > 0.05 ? "bad" : "") }, `名次 ${fmtChg(b.chg)}`),
-            b.share != null ? h("span", null, `頻率 ${pct(b.share)}`) : null)));
+            b.share != null ? h("span", null, `頻率 ${pct(b.share)}`) : null),
+          b.branch ? h("span", { class: "bc-open" }, "看版面 ▾") : null));
+      return card;
     }));
+    return h("div", { class: "stack" }, grid, pane);
   }
   /* 推薦增幅（站主 2026-11-04：「你明明就能看影片，另一個工作已經有數據了抓進去」）：
      MetaTFT 影片庫的實況錄影逐場辨識增幅，不是別人的評價。名次變動用全站同一套寫法（負的＝比較好）。 */
@@ -1234,7 +1237,9 @@
       return;
     }
     // 轉職分支（站主 2026-11-06）照常顯示棋盤、裝備、升等；其他沒評級的陣容維持研究中說明
-    if (c.status !== "ready" && c.variantKind !== "trait") {
+    // 站主 2026-11-06：研究中的陣容「直接給棋盤跟裝備」→ 有棋盤或推薦裝就照常顯示，連一個都沒有才放研究中說明
+    const hasBody = levelsOf(c).some((lv) => boardOk(c, lv)) || [7, 6, 5].some((lv) => boardOk(c, lv)) || (c.itemModel || []).length;
+    if (c.status !== "ready" && c.variantKind !== "trait" && !hasBody) {
       v.append(h("div", { class: "notice", style: "margin-top:16px" }, h("b", null, "這套還在研究中"),
         h("p", { class: "small", style: "margin:4px 0 0" }, "高手玩的場數還不夠，先不提供棋盤、裝備與評級。")),
         c.required?.length ? h("p", { class: "small" }, "定義上的必要條件：", c.required.map((r) => r.text).join("、")) : null,
@@ -1250,8 +1255,8 @@
       ["加分（拿到會更強）", "加分", bonusBox(c)],
       ["一句話選陣", "一句話選陣", c.oneLiner ? h("p", null, tx(`comp:${c.id}:oneLiner`, c.oneLiner)) : null],
       ["不順時轉哪套", "轉哪套", switchBox(c)],
-      ["分支（拿到轉職或特定來牌時）", "分支", c.variants?.some((v) => v.status === "ready" || v.kind === "trait") ? h("div", { class: "small stack" },
-        h("div", { class: "vlist" }, c.variants.filter((v) => v.status === "ready" || v.kind === "trait").map((v) => variantLine(v)))) : null],
+      ["分支（拿到轉職或特定來牌時）", "分支", c.variants?.some((v) => v.status === "ready") ? h("div", { class: "small stack" },
+        h("div", { class: "vlist" }, c.variants.filter((v) => v.status === "ready").map((v) => variantLine(v)))) : null],
       ["和主陣容比較", "和主陣容比較", c.baseOf?.length && c.variantKind !== "trait" ? h("div", { class: "small stack" },
         h("p", null, "這個分支：", rangeLine(c)),
         ul(c.baseOf.map((b) => [h("a", { href: "#" + slug(b.id) }, b.name), "（主陣容）：", b.status === "ready" ? rangeLine(b) : "研究中"]))) : null],
@@ -1260,7 +1265,7 @@
       ["升等放什麼（各人口的棋子）", "升等", levelUpBox(c)],
       ["前排替換", "前排替換", c.roles?.swap ? h("p", { class: "small" }, tx(`comp:${c.id}:roles.swap`, c.roles.swap)) : null],
       ["星級要求", "星級", ul((c.stars || []).map((s) => `${champName(s.key)}：${s.need}${s.note ? "（" + s.note + "）" : ""}`))],
-      ["裝備（一般、神器、光明／特殊同區）", "裝備", itemArea(c)],
+      ["裝備（一般、神器、光明／特殊同區）", "裝備", itemArea(c.itemsFrom ? compById(c.itemsFrom) || c : c)],
       ["推薦增幅（高手實戰影片辨識）", "增幅", augBox(c)],
       ["各階段重點", "各階段", c.stages ? h("div", { class: "small stack" }, [["s2", "二階段"], ["s3", "三階段"], ["s4", "四階段"], ["late", "後期"]].map(([k, l]) => c.stages[k] ? h("p", null, h("b", null, l + "："), tx(`comp:${c.id}:stages.${k}`, c.stages[k])) : null)) : null],
       ["升等、抽牌、停手、追三與止損", "升等抽牌", c.tempo ? ul(Object.entries({ level: "升等", roll: "抽牌", stop: "停手", reroll3: "追三星", cutLoss: "止損轉陣" }).filter(([k]) => c.tempo[k]).map(([k, l]) => [`${l}：`, tx(`comp:${c.id}:tempo.${k}`, c.tempo[k])])) : null],

@@ -717,7 +717,9 @@
       const lvs = [...new Set([...ups.map((s) => s.level), ...upLvs])].sort((a, b) => a - b);
       for (const lv of lvs) {
         const s = ups.find((x) => x.level === lv) || { level: lv, add: [], rem: [] };
-        const addBtn = ed ? h("button", { class: "chip add fx-add", type: "button", onclick: () => ed.addStep(lv) }, "＋ 加棋子") : null;
+        // 站主 2026-11-06：「七等要換棋子你這裡不能選」→ 每一等除了加棋子，也可以把前面的棋子換掉（或只拿掉）
+        const addBtn = ed ? [h("button", { class: "chip add fx-add", type: "button", onclick: () => ed.addStep(lv) }, "＋ 加棋子"),
+          ed.swapStep ? h("button", { class: "chip add fx-add fx-swap", type: "button", onclick: () => ed.swapStep(lv) }, "⇄ 換棋子") : null] : null;
         if (!s.rem.length) {
           box.append(h("div", { class: "fx-step" + (ed ? " fx-group" : "") }, h("span", { class: "fx-lvtag" }, `${lv} 等`),
             h("div", { class: "fx-units" }, stepUnits(s, lv), s.add.length || !ed ? null : h("span", { class: "xs muted" }, "（和前一張一樣）"), addBtn), stepSel(lv, s.add)));
@@ -751,7 +753,7 @@
       }
       box.append(h("p", { class: "xs muted fx-note" }, "「可以替換」是高手同等級的終局棋盤裡，和這張圖比最常見的換法；名次是換了之後平均名次的變化（負的＝比較好）。頭像下面是推薦裝備。"));
     }
-    if (ed) box.append(h("p", { class: "xs muted fx-note" }, "站主編輯：點旁邊的頭像可以改裝備或拿掉；「＋ 加棋子」加在那個等級（更高等級也會一起加）。改完按棋盤下面的「儲存棋盤」。"));
+    if (ed) box.append(h("p", { class: "xs muted fx-note" }, "站主編輯：點旁邊的頭像可以改裝備或拿掉；「＋ 加棋子」加在那個等級（更高等級也會一起加）；「⇄ 換棋子」把那一等場上的棋子換掉或拿掉（更高等級也會一起換）。改完按棋盤下面的「儲存棋盤」。"));
     return box;
   }
   function boardTitle(c, M) {
@@ -1996,7 +1998,7 @@
       const main = h("div", { class: "be-main" });
       const live = Object.fromEntries(levelsOf(c).filter((lv) => champsOnly(st.data[lv]).length).map((lv) => ["lv" + lv, { status: "ok", units: st.data[lv] }]));
       const ed = { flex: st.flex, flexLevels: levelsOf(c).filter((lv) => lv >= M), stepLevels: levelsOf(c).filter((lv) => lv > M),
-        sel: st.side, select: (k) => { st.side = k; st.flexForm = null; draw(); }, selPanel: sideSelPanel, addStep: pickStep,
+        sel: st.side, select: (k) => { st.side = k; st.flexForm = null; draw(); }, selPanel: sideSelPanel, addStep: pickStep, swapStep: pickSwap,
         delFlex: (lv, i) => { ownFlex(); st.flex["lv" + lv].splice(i, 1); st.side = null; changed("已刪除這組替換。"); },
         flexForm: st.flexForm, openFlexForm: (lv) => { st.flexForm = { lv, out: [], in: [] }; st.side = null; draw(); }, flexFormBox };
       const side = sidePanel(c, M, live, ed);
@@ -2064,6 +2066,27 @@
         }
         st.side = { kind: "step", lv, key }; st.flexForm = null;
         changed(`${lv} 等補上${champName(key)}。`);
+      });
+    }
+    // 升等換棋子：先選這一等場上要換掉的，再選換上的（或只拿掉）；這一等和更高等級（主圖以上）一起換，換上的站在原本那格
+    function pickSwap(lv) {
+      const here = champsOnly(st.data[lv] || []);
+      if (!here.length) return;
+      picker(`${lv} 等要換掉哪隻`, [{ label: `${lv} 等場上`, items: here.map((u) => ({ key: u.key, name: champName(u.key), ico: icon("champion", u.key, "sm") })) }], (outKey) => {
+        const used = new Set(here.map((u) => u.key));
+        const groups = [...champGroups(used), { label: "不換上", items: [{ key: "__none__", name: `只拿掉${champName(outKey)}`, ico: icon("champion", outKey, "sm") }] }];
+        picker(`${lv} 等：${champName(outKey)}換成`, groups, (inKey) => {
+          const none = inKey === "__none__", its = none ? [] : recItems(inKey);
+          for (const L of levelsOf(c).filter((L) => L >= lv && L > st.main)) {
+            const arr = st.data[L] ||= [];
+            const i = arr.findIndex((u) => u.key === outKey);
+            const pos = i >= 0 ? arr[i].pos : null;
+            if (i >= 0) arr.splice(i, 1);
+            if (!none && !champsOnly(arr).some((u) => u.key === inKey)) { arr.push({ key: inKey, star: 2, items: [...its], pos }); if (!pos) autoPlace(arr, c, null); }
+          }
+          st.side = none ? null : { kind: "step", lv, key: inKey }; st.flexForm = null;
+          changed(none ? `${lv} 等起拿掉${champName(outKey)}。` : `${lv} 等起${champName(outKey)}換成${champName(inKey)}。`);
+        });
       });
     }
     function sideSelPanel(k) {

@@ -1011,7 +1011,7 @@
             s.when ? h("span", { class: "small" }, tx(`comp:${c.id}:switch.${s.id}`, s.when)) : null));
       })));
   }
-  /* 高手實戰對局：最多 20 場，有重播、有時間軸的優先；點過去 MetaTFT 看完整運營（data/cases.json，預覽站才有） */
+  /* 近期有分的對戰紀錄：高手打進前四的單場，最多 20 場，有時間軸的優先；點過去 MetaTFT 看完整運營（data/cases.json；站主 11/6 開到正式站） */
   let CASES = null, CASES_P = null;
   const loadCases = () => (CASES_P ||= fetch("data/cases.json").then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => (CASES = d)));
   /* 加分（站主 2026-11-04：「我說的明明就是這裡要有圖案」）：每一項一張卡，大圖示＋英雄頭像，數字分開排 */
@@ -1102,17 +1102,24 @@
   // 站主 2026-11-04：先放別人的實況（每一場的連結），再放冠軍選手的 YouTube 影片
   function casesBox(c) {
     const box = h("div", { class: "stack" }, h("p", { class: "small muted" }, "載入中…"));
-    Promise.all([c.caseCount ? loadCases() : null, c.vodCount ? loadVods() : null]).then(([d, vd]) => {
+    Promise.all([c.vodCount ? loadVods() : null]).then(([vd]) => {
       box.textContent = "";
-      const xs = d?.cases?.[c.id] || [];
       const vb = vodBox(c, vd), yb = videoBox(c);
       if (vb) box.append(h("p", { class: "case-h" }, `高手實況 ${c.vodCount} 場（每一場的連結）`), vb);
       if (yb) box.append(h("p", { class: "case-h" }, `冠軍選手的 YouTube 影片 ${c.videos.length} 支`), yb);
       if (!vb && !yb) box.append(h("p", { class: "small muted" }, "這套目前還沒找到高手實況或冠軍選手的影片。"));
-      if (!xs.length) { if (c.caseCount) box.append(h("p", { class: "small muted" }, "目前沒有可以公開的單場對局。")); return; }
-      box.append(h("p", { class: "case-h" }, `單場對局 ${xs.length} 場`));
+    });
+    return box;
+  }
+  // 站主 2026-11-06：「另外加一區有顯示近期有分的對戰紀錄，並且有時間軸的優先」→ 高手打進前四的單場（MetaTFT），有時間軸的在前、其他新到舊
+  function matchBox(c) {
+    const box = h("div", { class: "stack" }, h("p", { class: "small muted" }, "載入中…"));
+    loadCases().then((d) => {
+      box.textContent = "";
+      const xs = d?.cases?.[c.id] || [];
+      if (!xs.length) { box.append(h("p", { class: "small muted" }, "目前沒有可以公開的對戰紀錄。")); return; }
       const nT = xs.filter((x) => x.timeline).length, nR = xs.filter((x) => x.replay).length;
-      box.append(h("p", { class: "small" }, `高手用這套的單場對局 ${xs.length} 場（有時間軸 ${nT} 場${nR ? `、有重播 ${nR} 場` : ""}，排在前面）。點一場到 MetaTFT，可以看每個階段的升級、搜牌和站位。`));
+      box.append(h("p", { class: "small" }, `${d.patch ? d.patch + " " : ""}高手用這套打進前四的對局 ${xs.length} 場（有時間軸 ${nT} 場${nR ? `、有重播 ${nR} 場` : ""}排在前面，其他照時間新到舊；同一位高手最多 2 場）。點一場到 MetaTFT，可以看每個階段的升級、搜牌和站位。`));
       box.append(h("div", { class: "cases" }, xs.map((x) => h("a", { class: "case", href: x.url, target: "_blank", rel: "noopener", onclick: () => track("case", c.id) },
         h("div", { class: "case-head" },
           h("span", { class: "plc p" + Math.min(x.placement, 5) }, `第 ${x.placement} 名`),
@@ -1203,7 +1210,8 @@
       ["普通局怎麼保名次", "保名次", ul(c.safeTop4)],
       ["大順風的吃雞上限與轉接成本", "吃雞上限", c.highroll ? h("p", { class: "small" }, c.highroll.ceiling, " ", c.highroll.cost) : null],
       ["常見失敗原因與避免方式", "失敗原因", ul((c.failures || []).map((f) => `${f.why} → ${f.avoid}`))],
-      ["高手實戰對局（實況優先）", "實戰對局", c.caseCount || c.vodCount || c.videos?.length ? casesBox(c) : null],
+      ["高手實戰對局（實況優先）", "實戰對局", c.vodCount || c.videos?.length ? casesBox(c) : null],
+      ["近期有分的對戰紀錄（有時間軸的優先）", "對戰紀錄", c.caseCount ? matchBox(c) : null],
     ].filter((x) => x && x[2] != null && !(Array.isArray(x[2]) && !x[2].length));
     // 站主 2026-11-04：詳細頁加索引，點了跳到那一段
     // 電腦：左邊固定目錄、右邊內容；手機：目錄是一排可以點的標籤

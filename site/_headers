@@ -1,0 +1,15 @@
+# 快取設定（Cloudflare 靜態檔案）：讓讀者的瀏覽器記住圖示和字型，回訪時不用一張一張重新確認
+# 圖示：1 天內直接用，之後 7 天內先用舊的、背景更新（換圖最慢隔天生效）
+/icons/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/assets/tft/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/assets/brand/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+# 字型不會改，記 30 天
+/assets/fonts/*
+  Cache-Control: public, max-age=2592000, immutable
+# 圖示清單會跟著內容更新，維持每次都確認
+/icons/manifest.json
+  ! Cache-Control
+  Cache-Control: public, max-age=0, must-revalidate

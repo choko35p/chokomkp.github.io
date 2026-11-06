@@ -54,6 +54,16 @@ ul.lim{margin:0;padding-left:1.2em;font-size:.9375rem}
 ul.lim li+li{margin-top:4px}
 .empty{color:var(--muted);font-size:.9375rem}
 @media (max-width:560px){td.b{width:24%}.kpis{grid-template-columns:1fr 1fr}.kpi .v{font-size:1.5rem}.w{padding:12px 12px 40px}}
+.adv{border-left:4px solid var(--accent);padding:4px 0 4px 12px;margin:0 0 16px}
+.adv:last-child{margin-bottom:0}
+.adv h3{font-size:1rem;margin:0 0 4px}
+.adv.good{border-left-color:#4f8a4f}
+.adv dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:.9375rem}
+.adv dt{color:var(--muted);white-space:nowrap}
+.adv dd{margin:0}
+.tag{display:inline-block;font-size:.8125rem;font-weight:700;border-radius:999px;padding:0 8px;margin-right:6px;vertical-align:1px;background:var(--cream);color:var(--accent)}
+.tag.good{background:#eef7ee;color:#2f6b2f}
+@media (prefers-color-scheme:dark){.tag.good{background:#1f3320;color:#9fd09f}}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
 </head>
@@ -87,6 +97,12 @@ ul.lim li+li{margin-top:4px}
     <div class="kpi"><div class="l">頁面瀏覽</div><div class="v" id="k-views">—</div><div class="d" id="k-views-d">&nbsp;</div></div>
     <div class="kpi"><div class="l">每次造訪看幾頁</div><div class="v" id="k-ppv">—</div><div class="d">切換陣容、回到 T 表都算一頁</div></div>
     <div class="kpi"><div class="l">最近 1 小時造訪</div><div class="v" id="k-hour">—</div><div class="d" id="k-hour-d">&nbsp;</div></div>
+  </section>
+
+  <section class="card" aria-labelledby="adv-h">
+    <h2 id="adv-h">建議</h2>
+    <p class="note" id="adv-note">照固定規則從上面的數字自動判斷，跟著時間範圍和「只看台灣」一起變。每條都附上依據、可能的其他原因和驗證方法。</p>
+    <div id="advice"></div>
   </section>
 
   <section class="card">
@@ -284,6 +300,118 @@ ul.lim li+li{margin-top:4px}
     svg.setAttribute("aria-label", pts.map((p) => `${p.label} ${p.v}`).join("，"));
   }
 
+
+  /* ---------- 建議：固定規則，不經過 Claude ---------- */
+  const MIN_VISITS = 20;
+  const pctf = (x) => Math.round(x * 100) + "%";
+  function advise(d, names, ctx) {
+    const out = [];
+    const add = (kind, title, basis, alt, verify) => out.push({ kind, title, basis, alt, verify });
+    const V = d.total.visits;
+    if (V < MIN_VISITS) {
+      return { items: [], note: `這段時間只有 ${V} 次造訪（門檻 ${MIN_VISITS} 次），數字太少，先不下判斷，免得把偶然當成趨勢。可以切到 24 小時或 7 天看看。` };
+    }
+    // 來源
+    const src = group(d.sources, (x) => SRC(x.host), (x) => x.visits);
+    const srcTotal = src.reduce((a, x) => a + x.value, 0) || 1;
+    const share = (label) => ((src.find((x) => x.label === label) || { value: 0 }).value) / srcTotal;
+    const gpt = share("GPT 舊站轉址"), yt = share("YouTube"), direct = share("直接打開／App 內");
+    if (gpt >= 0.25) add("todo", "還有很多人從 GPT 舊站進來，把各處的舊連結換成 chokomkp.com",
+      `${pctf(gpt)} 的造訪是從舊站轉過來的。`,
+      "也可能是舊讀者存了書籤，不是因為哪裡還掛著舊連結。",
+      "把 YouTube 說明欄、置頂留言、Threads 簡介和舊貼文裡的連結都換成 chokomkp.com，一週後看這個比例有沒有下降、「直接打開」有沒有上升。");
+    if (yt < 0.1) add("todo", "YouTube 帶來的讀者偏少，在影片和直播放上網站連結",
+      `只有 ${pctf(yt)} 的造訪來自 YouTube。`,
+      "YouTube App 裡點連結時常常不會帶來源，這些人會被算進「直接打開」，實際可能比這個多。",
+      "在直播說明、置頂留言和影片說明欄第一行放 chokomkp.com，並在直播時口頭提一次。之後比較有放和沒放的那幾天，YouTube 的造訪差多少。");
+    // App 內建瀏覽器
+    const br = group(d.browsers, (x) => BROWSER(x.browser, x.os), (x) => x.visits);
+    const brTotal = br.reduce((a, x) => a + x.value, 0) || 1;
+    const inApp = br.filter((x) => /App 內/.test(x.label)).reduce((a, x) => a + x.value, 0) / brTotal;
+    if (inApp >= 0.2) add("todo", "很多人是在 App 裡直接打開網站，要確認在 App 內建瀏覽器裡好不好用",
+      `${pctf(inApp)} 的造訪是在 Threads、IG、LINE 等 App 的內建瀏覽器裡打開的。`,
+      "「無法辨識」不一定都是 App 內，也可能是比較少見的瀏覽器。",
+      "用 Threads 和 LINE 各點一次網站連結，檢查字有沒有太小、按鈕點不點得到、能不能左右滑 T 表。");
+    // 陣容
+    const comps = group(d.comps, (x) => x.path.replace(/^\/data\/items\//, "").replace(/\.json$/, ""), (x) => x.n);
+    const opens = comps.reduce((a, x) => a + x.value, 0);
+    if (opens >= 15) {
+      const unrated = comps.filter((c) => !(names[c.label] || {}).tier);
+      const uShare = unrated.reduce((a, x) => a + x.value, 0) / opens;
+      if (uShare >= 0.2 && unrated.length) {
+        const top = unrated[0];
+        add("todo", `研究中的陣容也很多人看，優先補「${(names[top.label] || { name: top.label }).name}」`,
+          `沒有評級的陣容占了 ${pctf(uShare)} 的打開次數，其中這套最多（${top.value} 次）。`,
+          "可能只是好奇點進去看看，不代表真的想玩這套。",
+          "先替它補上核心英雄、主要裝備和適合的時機，一週後看打開次數有沒有維持，或是讀者有沒有留言問。");
+      }
+      const tierRank = { S: 4, A: 3, B: 2, C: 1, D: 0 };
+      const rated = comps.filter((c) => (names[c.label] || {}).tier);
+      const topS = rated.filter((c) => names[c.label].tier === "S").map((c) => c.value);
+      const minS = topS.length ? Math.min(...topS) : null;
+      const hot = rated.filter((c) => !c.label.includes("__") && tierRank[names[c.label].tier] <= 2 && minS != null && c.value > minS && c.value >= 3);
+      if (hot.length) add("todo", `評級不高但很多人看：${hot.slice(0, 3).map((c) => names[c.label].name).join("、")}`,
+        `這幾套是 B 級以下，打開次數卻比部分 S 級多（${hot.slice(0, 3).map((c) => `${names[c.label].name} ${c.value} 次`).join("、")}）。`,
+        "可能是上個版本很強，讀者還在找；也可能是直播或影片剛好介紹過。",
+        "在陣容頁的評級理由寫清楚「為什麼這版只到這個評級、什麼情況下還能玩」，再看讀者看完後有沒有轉去看推薦的陣容。");
+      const allRated = Object.entries(names).filter(([k, v]) => v.tier && !v.branch && !k.includes("__")).map(([k, v]) => ({ id: k, ...v }));
+      const zero = allRated.filter((c) => !comps.some((x) => x.label === c.id));
+      if (zero.length && opens >= 40) add("todo", `有評級卻幾乎沒人點：${zero.slice(0, 3).map((c) => c.name).join("、")}`,
+        `這段時間陣容頁被打開 ${opens} 次，這幾套一次都沒有。`,
+        "可能是 T 表上的位置比較後面，或卡片上的一句話沒有吸引力，不一定是讀者不需要。",
+        "把這幾套的一句話介紹改得更具體（例如「拿到什麼就玩」），或調整排序，一週後再比較。");
+    }
+    // 手機／電腦
+    const ses = (dev, file) => d.sessions.filter((x) => x.device === dev && x.path === file).reduce((a, x) => a + x.n, 0);
+    const openN = (dev) => d.comps.filter((c) => c.device === dev).reduce((a, c) => a + c.n, 0);
+    const devStat = (dev) => { const s = ses(dev, "/data/site-data.json"), o = ses(dev, "/data/vods.json"); return { s, o, rate: s ? Math.min(o, s) / s : null, per: o ? openN(dev) / o : null }; };
+    const mob = devStat("mobile"), desk = devStat("desktop");
+    if (mob.s >= 10 && desk.s >= 10) {
+      if (mob.per != null && desk.per != null && desk.per - mob.per >= 0.7) add("todo", "手機讀者看的陣容比較少，手機上的「轉陣」入口可以做大一點",
+        `有點開陣容的人裡，手機平均看 ${mob.per.toFixed(1)} 套，電腦 ${desk.per.toFixed(1)} 套。`,
+        "電腦這邊混了你自己檢查網站的瀏覽；手機讀者也可能本來就只是來查這局玩什麼。",
+        "在陣容頁底部加大「同類陣容／不順時轉哪套」的按鈕，比較改版前後一週手機的「看幾套」。");
+      else if (mob.rate != null && desk.rate != null && desk.rate - mob.rate >= 0.15) add("todo", "手機讀者比較少點進陣容頁",
+        `手機 ${pctf(mob.rate)} 有點開陣容，電腦 ${pctf(desk.rate)}。`,
+        "手機讀者可能只看 T 表就夠了。",
+        "確認手機上陣容卡片看起來可以點（有箭頭或按鈕感），改完比較一週。");
+    }
+    // 速度
+    const slow = d.perf.filter((p) => p.n >= 10 && p.load90 > 3e6);
+    if (slow.length) add("todo", "部分讀者載入偏慢，可以讓圖示和字型在讀者的瀏覽器裡留久一點",
+      slow.map((p) => `${DEVICE(p.device)}最慢一成要 ${(p.load90 / 1e6).toFixed(1)} 秒`).join("、") + "。",
+      "也可能是少數讀者網路很差，或混進了海外的測試流量。",
+      "替圖示和字型設定長時間快取（跟我說就能改，不用動網站內容），一週後比較「最慢一成」。");
+    // 時段
+    if (d.range === "7d" || d.range === "30d") {
+      const byH = new Array(24).fill(0);
+      for (const x of d.trend) byH[twHour(Date.parse(x.t))] += x.visits;
+      const peak = byH.indexOf(Math.max(...byH));
+      if (byH[peak] >= 10) add("info", `讀者最多的時段是 ${peak} 點`,
+        `這段時間 ${peak} 點～${(peak + 1) % 24} 點的造訪最多（${byH[peak]} 次）。`,
+        "可能剛好是你發文或開台的時間，不一定是讀者本來的習慣。",
+        `試著在 ${(peak + 23) % 24} 點左右發 Threads 或更新網站，比較前後幾週的高峰有沒有變大。`);
+    }
+    // 做得好的地方
+    const sAll = ses("mobile", "/data/site-data.json") + ses("desktop", "/data/site-data.json");
+    const oAll = ses("mobile", "/data/vods.json") + ses("desktop", "/data/vods.json");
+    if (sAll >= 10 && oAll / sAll >= 0.7) add("good", "讀者會往下看陣容", `打開網站的人裡，${pctf(Math.min(oAll, sAll) / sAll)} 至少點開一套陣容頁。`, "你自己的檢查也算在內，實際比例可能低一點。", "持續觀察，如果掉到六成以下，就要檢查首頁到陣容頁的入口。");
+    const fastMob = d.perf.find((p) => p.device === "mobile" && p.n >= 10 && p.load50 < 1.5e6);
+    if (fastMob) add("good", "手機載入很快", `手機一半的讀者 ${(fastMob.load50 / 1e6).toFixed(1)} 秒內就載完。`, "樣本還不多。", "之後網站內容變多時，留意這個數字有沒有超過 1.5 秒。");
+    return { items: out, note: null };
+  }
+  function renderAdvice(d, names) {
+    const box = $("#advice");
+    const { items, note } = advise(d, names);
+    if (note) { box.replaceChildren(el("p", { class: "empty" }, note)); return; }
+    if (!items.length) { box.replaceChildren(el("p", { class: "empty" }, "這段時間沒有發現需要特別處理的地方。")); return; }
+    const order = { todo: 0, info: 1, good: 2 };
+    items.sort((a, b) => order[a.kind] - order[b.kind]);
+    box.replaceChildren(...items.map((x) => el("div", { class: "adv" + (x.kind === "good" ? " good" : "") },
+      el("h3", null, el("span", { class: "tag" + (x.kind === "good" ? " good" : "") }, x.kind === "good" ? "做得好" : x.kind === "info" ? "參考" : "建議"), x.title),
+      el("dl", null, el("dt", null, "依據"), el("dd", null, x.basis), el("dt", null, "其他可能"), el("dd", null, x.alt), el("dt", null, "怎麼驗證"), el("dd", null, x.verify)))));
+  }
+
   async function render(d) {
     window.__last = d;
     const names = await loadNames();
@@ -301,6 +429,7 @@ ul.lim li+li{margin-top:4px}
     $("#scope").textContent = notes.join("");
     $("#scope").style.display = notes.length ? "" : "none";
     drawTrend(d);
+    renderAdvice(d, names);
 
     $("#sources").replaceChildren(barTable(group(d.sources, (x) => SRC(x.host), (x) => x.visits), ["來源", "造訪"]));
     $("#browsers").replaceChildren(barTable(group(d.browsers, (x) => BROWSER(x.browser, x.os), (x) => x.visits).slice(0, 10), ["瀏覽器", "造訪"]));

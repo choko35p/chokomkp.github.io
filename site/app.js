@@ -1148,8 +1148,23 @@
         h("p", { class: "small" }, `影片庫裡這套只有 ${t.games} 場（高手 ${t.pro} 場），樣本太少，不列推薦表。`,
           t.best.length ? "目前看起來比較好的：" + t.best.map((b) => `${b.name}（名次 ${fmtChg(-b.score)}，${b.games} 場）`).join("、") + "。" : ""), src);
     }
+    // 站主 2026-11-07：「增幅推薦那邊有點太難看懂，詳細的可以作為補充，先做類似這樣讓人一眼就能看懂的推薦」
+    // → 上面一排增幅圖（框色＝稀有度、右上角＋幾名、下面場數），下面一行「表現較差」；分階段的詳細表收進折疊
+    const sgn = (v) => (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v).toFixed(2);
+    const tile = (x, bad) => h("div", { class: "ag-tile " + (RAR[x.rarity] || "") + (bad ? " bad" : ""), title: `${x.name}（${x.rarity}，常在 ${x.stage || "—"} 選）：${x.games} 場、高手 ${x.pro} 場，平均第 ${x.avg != null ? x.avg.toFixed(2) : "—"} 名` },
+      h("span", { class: "ag-ico" }, x.icon ? h("img", { src: "icons/" + x.icon, alt: "", loading: "lazy", onerror: (e) => e.target.remove() }) : null,
+        bad ? null : h("b", { class: "ag-d" }, sgn(x.score))),
+      h("span", { class: "ag-nm" }, x.name),
+      h("span", { class: "ag-n" }, bad ? [h("b", null, sgn(x.score)), `・${x.games} 場・平均第 ${x.avg.toFixed(1)} 名`] : `${x.games} 場・高手 ${x.pro}`));
+    const hd = a.head;
+    const quick = h("div", { class: "agq" },
+      hd ? h("p", { class: "ag-head small muted" }, `${hd.games} 場｜高手 ${hd.pro} 場｜平均第 ${hd.avg.toFixed(2)} 名｜前四率 ${Math.round(hd.top4 * 100)}%`) : null,
+      h("div", { class: "ag-tiles" }, a.rows.slice(0, 6).map((x) => tile(x))),
+      a.bad?.length ? h("div", { class: "ag-bad" }, h("b", { class: "ag-badh" }, "表現較差（≥3 場）"), h("div", { class: "ag-tiles" }, a.bad.map((x) => tile(x, true)))) : null,
+      h("p", { class: "xs muted", style: "margin:0" }, "＋幾＝選了這個增幅的場次，平均名次比這套平均好幾名；框的顏色是稀有度（銀、金、稜鏡）。"));
     // 站主 2026-11-04：「你要做的是要在每個增幅裡面推薦拿甚麼」→ 2-1、3-2、4-2 每一次選增幅，依出現的稀有度各推薦拿什麼
-    const TIERS = [["稜鏡", "r-p"], ["金", "r-g"], ["銀", "r-s"]];
+    // 站主 2026-11-07：「銀色應該是在左邊，從左到右是從小到大不是從大到小」
+    const TIERS = [["銀", "r-s"], ["金", "r-g"], ["稜鏡", "r-p"]];
     const chip = (x) => h("span", { class: "as-pick", title: `${x.name}：${x.games} 場（高手 ${x.pro} 場），平均第 ${x.avg.toFixed(1)} 名` },
       x.icon ? h("img", { src: "icons/" + x.icon, alt: "", loading: "lazy", onerror: (e) => e.target.remove() }) : null,
       h("span", { class: "as-nm" }, x.name), h("span", { class: "brchg good" }, `名次 ${fmtChg(-x.score)}`), h("span", { class: "xs muted" }, `${x.games} 場`));
@@ -1158,9 +1173,10 @@
       h("div", { class: "as-cells" }, TIERS.map(([t, cls]) => h("div", { class: "as-cell " + cls + ((a.stages[st] || {})[t]?.length ? "" : " empty") },
         h("span", { class: "as-tier" }, `出${t}色時`),
         (a.stages[st] || {})[t]?.length ? h("div", { class: "as-picks" }, a.stages[st][t].map(chip)) : h("span", { class: "xs muted" }, "資料不夠，沒有推薦"))))))) : null;
-    return h("div", { class: "augbox stack" }, from, grid,
-      grid ? h("p", { class: "xs muted", style: "margin:0" }, "每格是那個階段、那種稀有度裡，選了之後平均名次比這套平均好的增幅（最多 3 個，好的排前面）。") : null,
-      h("details", { class: "augfold" }, h("summary", null, "不分階段：評分最高的 6 個"), h("div", { class: "tablewrap" }, h("table", { class: "t aug-t" },
+    return h("div", { class: "augbox stack" }, from, quick,
+      grid ? h("details", { class: "augfold" }, h("summary", null, "詳細：每次選增幅（2-1／3-2／4-2）出銀、金、稜鏡時各拿什麼"), grid,
+        h("p", { class: "xs muted", style: "margin:.5rem 0 0" }, "每格是那個階段、那種稀有度裡，選了之後平均名次比這套平均好的增幅（最多 3 個，好的排前面）。")) : null,
+      h("details", { class: "augfold" }, h("summary", null, "詳細：評分最高的 6 個（數字表）"), h("div", { class: "tablewrap" }, h("table", { class: "t aug-t" },
         h("tr", null, h("th", null, "增幅"), h("th", null, "名次變動"), h("th", null, "平均名次"), h("th", null, "場次（高手）"), h("th", null, "常見選點")),
         a.rows.map((r) => h("tr", null,
           h("td", null, h("span", { class: "aug " + (RAR[r.rarity] || ""), title: `${r.name}（${r.rarity}）` },

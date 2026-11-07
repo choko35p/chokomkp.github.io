@@ -1051,3 +1051,23 @@ button.bcard { font: inherit; color: inherit; text-align: left; cursor: pointer;
   .rp-chips { flex-wrap: nowrap; overflow-x: auto; padding: 8px 4px 6px; margin: 0 -4px var(--s2); scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
   .rp-chip { flex: 0 0 auto; }
 }
+
+/* 推薦增幅一眼看懂版（站主 2026-11-07）：增幅圖一排，框色＝稀有度、右上角＋幾名 */
+.agq { display: grid; gap: .6rem; }
+.ag-head { margin: 0; }
+.ag-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr)); gap: .75rem .6rem; }
+.ag-tile { display: grid; justify-items: center; gap: 3px; text-align: center; min-width: 0; }
+.ag-ico { position: relative; display: grid; place-items: center; width: 3.6rem; height: 3.6rem; border-radius: 10px; border: 2px solid var(--line); background: var(--surface-2); }
+.ag-ico img { width: 2.9rem; height: 2.9rem; object-fit: contain; }
+.ag-tile.r-s .ag-ico { border-color: #9aa7b4; } .ag-tile.r-g .ag-ico { border-color: #d6a73a; } .ag-tile.r-p .ag-ico { border-color: #c48cf0; }
+.ag-d { position: absolute; top: -.6rem; right: -.85rem; padding: 0 .38rem; border-radius: 6px; background: #2f9e5b; color: #fff; font-family: var(--num); font-size: .82rem; font-weight: 800; line-height: 1.35; }
+.ag-nm { font-size: .9rem; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.ag-n { font-size: var(--fs-xs); color: var(--muted); }
+.ag-bad { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: .5rem 1rem; padding-top: .6rem; border-top: 1px solid var(--line); }
+.ag-badh { color: #d0574a; font-size: .9rem; }
+.ag-bad .ag-tiles { grid-template-columns: repeat(auto-fill, minmax(13.5rem, 1fr)); }
+.ag-tile.bad { grid-template-columns: auto 1fr; justify-items: start; text-align: left; column-gap: .55rem; align-items: center; }
+.ag-tile.bad .ag-ico { grid-row: span 2; width: 2.8rem; height: 2.8rem; }
+.ag-tile.bad .ag-ico img { width: 2.2rem; height: 2.2rem; }
+.ag-tile.bad .ag-n { color: #d0574a; white-space: nowrap; }
+@media (max-width: 640px) { .ag-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ag-bad { grid-template-columns: 1fr; } }

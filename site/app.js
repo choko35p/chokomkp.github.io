@@ -475,13 +475,13 @@
         grid.append(h("div", { class: "tb-tier t-" + (t === "?" ? "Q" : t), role: "rowheader" }, t === "?" ? "未分級" : t),
           h("div", { class: "tb-cell", role: "cell", "data-lane": l.id, "data-tier": t }, cs.length ? cs.map((c) => tcard(c, pool)) : h("span", { class: "tb-none", "aria-label": "沒有" }, "—")));
       }
-      const ws = watch.filter((c) => c.lane === l.id).sort((a, b) => a.watch.rank - b.watch.rank);
+      const ws = watch.filter((c) => c.lane === l.id).sort((a, b) => a.watch.rank - b.watch.rank).slice(0, 4);  // 站主規格：電腦一個畫面看完一個分區 → 研究中每區只列最有希望的 4 套
       if (ws.length) grid.append(h("div", { class: "tb-tier t-R", role: "rowheader", id: "tier-watch-" + l.id }, "研究中"),
         h("div", { class: "tb-cell watch", role: "cell", "data-lane": l.id, "data-tier": "R" }, ws.map(wcard)));
       const panel = h("div", { class: "tb-panel", role: "tabpanel", "data-lane": l.id, id: "tbp-" + l.id },
         O.tmode ? h("h3", { class: "tb-ptitle" }, uiStr(`lane.${l.id}`, l.label)) : null, grid,
         ws.length ? h("p", { class: "tb-watch-note small" }, h("b", { class: "tag watch" }, "研究中"), " ",
-          ui("tier.watch", `數據很好、但樣本還少，還沒正式評級，先列出來給你參考。下限、上限已經往全站平均拉過，場數越少越容易看走眼；點進去看棋盤、裝備和均名。樣本夠了會自動進 T 度表。`)) : null);
+          ui("tier.watch", `數據很好、但樣本還少，還沒正式評級，先列最有希望的幾套給你參考。下限、上限已經往全站平均拉過，場數越少越容易看走眼；點進去看棋盤、裝備和均名。樣本夠了會自動進 T 度表。`)) : null);
       panel.hidden = !O.tmode && l.id !== TB_LANE;
       panels.push(panel);
       tabs.append(h("button", { type: "button", role: "tab", class: "tb-tab", "data-lane": l.id, "aria-controls": "tbp-" + l.id, "aria-selected": l.id === TB_LANE ? "true" : "false",

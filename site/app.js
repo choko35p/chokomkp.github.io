@@ -1139,8 +1139,8 @@
   function augBox(c) {
     const a = c.augPicks, M = D.augPicksMeta || {};
     if (!a || !(a.rows?.length || a.thin)) return null;
-    const src = h("p", { class: "xs muted" }, `資料來源：MetaTFT 影片庫 ${M.patch || ""} 期間的高手實況錄影，逐場抓畫面辨識當場選的增幅，共 ${M.games || "—"} 場（其中高手 ${M.proGames || "—"} 場）。`,
-      "名次變動＝選了這個增幅的場次，平均名次比這套的平均好多少（高手場次和其他場次各佔一半；場數少的往平均拉回）。多數增幅只有 2～4 場，當參考就好；18.6 改版後會重算。");
+    const src = h("p", { class: "xs muted" }, `資料來源：MetaTFT 影片庫 ${M.patch || ""} 期間的高手實況錄影，逐場抓畫面辨識當場選的增幅，共 ${M.games || "—"} 場（其中高手 ${M.proGames || "—"} 場${M.games186 ? `；18.6 有 ${M.games186} 場` : ""}）。`,
+      "名次變動＝選了這個增幅的場次，平均名次比這套的平均好多少（高手場次和其他場次各佔一半；場數少的往平均拉回）。多數增幅只有 2～6 場，當參考就好。");
     const from = a.from ? h("p", { class: "small muted" }, `這個分支沒有單獨的資料，下面是主陣容〈${a.from}〉的。`) : null;
     if (!a.rows?.length) {
       const t = a.thin;
@@ -1149,7 +1149,8 @@
           t.best.length ? "目前看起來比較好的：" + t.best.map((b) => `${b.name}（名次 ${fmtChg(-b.score)}，${b.games} 場）`).join("、") + "。" : ""), src);
     }
     // 站主 2026-11-07：「增幅推薦那邊有點太難看懂，詳細的可以作為補充，先做類似這樣讓人一眼就能看懂的推薦」
-    // → 上面一排增幅圖（框色＝稀有度、右上角＋幾名、下面場數），下面一行「表現較差」；分階段的詳細表收進折疊
+    // → 上面一排增幅圖（框色＝稀有度、右上角＋幾名、下面場數），下面一行「陷阱」；分階段的詳細表收進折疊
+    // 站主 2026-11-08：「增幅可以推薦多一點推12個，表現較差這幾個字改成：陷阱，內容可以多放一點放6個」
     const sgn = (v) => (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v).toFixed(2);
     const tile = (x, bad) => h("div", { class: "ag-tile " + (RAR[x.rarity] || "") + (bad ? " bad" : ""), title: `${x.name}（${x.rarity}，常在 ${x.stage || "—"} 選）：${x.games} 場、高手 ${x.pro} 場，平均第 ${x.avg != null ? x.avg.toFixed(2) : "—"} 名` },
       h("span", { class: "ag-ico" }, x.icon ? h("img", { src: "icons/" + x.icon, alt: "", loading: "lazy", onerror: (e) => e.target.remove() }) : null,
@@ -1159,8 +1160,8 @@
     const hd = a.head;
     const quick = h("div", { class: "agq" },
       hd ? h("p", { class: "ag-head small muted" }, `${hd.games} 場｜高手 ${hd.pro} 場｜平均第 ${hd.avg.toFixed(2)} 名｜前四率 ${Math.round(hd.top4 * 100)}%`) : null,
-      h("div", { class: "ag-tiles" }, a.rows.slice(0, 6).map((x) => tile(x))),
-      a.bad?.length ? h("div", { class: "ag-bad" }, h("b", { class: "ag-badh" }, "表現較差（≥3 場）"), h("div", { class: "ag-tiles" }, a.bad.map((x) => tile(x, true)))) : null,
+      h("div", { class: "ag-tiles" }, a.rows.slice(0, 12).map((x) => tile(x))),
+      a.bad?.length ? h("div", { class: "ag-bad" }, h("b", { class: "ag-badh" }, "陷阱（≥3 場）"), h("div", { class: "ag-tiles" }, a.bad.slice(0, 6).map((x) => tile(x, true)))) : null,
       h("p", { class: "xs muted", style: "margin:0" }, "＋幾＝選了這個增幅的場次，平均名次比這套平均好幾名；框的顏色是稀有度（銀、金、稜鏡）。"));
     // 站主 2026-11-04：「你要做的是要在每個增幅裡面推薦拿甚麼」→ 2-1、3-2、4-2 每一次選增幅，依出現的稀有度各推薦拿什麼
     // 站主 2026-11-07：「銀色應該是在左邊，從左到右是從小到大不是從大到小」
@@ -1176,7 +1177,7 @@
     return h("div", { class: "augbox stack" }, from, quick,
       grid ? h("details", { class: "augfold" }, h("summary", null, "詳細：每次選增幅（2-1／3-2／4-2）出銀、金、稜鏡時各拿什麼"), grid,
         h("p", { class: "xs muted", style: "margin:.5rem 0 0" }, "每格是那個階段、那種稀有度裡，選了之後平均名次比這套平均好的增幅（最多 3 個，好的排前面）。")) : null,
-      h("details", { class: "augfold" }, h("summary", null, "詳細：評分最高的 6 個（數字表）"), h("div", { class: "tablewrap" }, h("table", { class: "t aug-t" },
+      h("details", { class: "augfold" }, h("summary", null, `詳細：評分最高的 ${a.rows.length} 個（數字表）`), h("div", { class: "tablewrap" }, h("table", { class: "t aug-t" },
         h("tr", null, h("th", null, "增幅"), h("th", null, "名次變動"), h("th", null, "平均名次"), h("th", null, "場次（高手）"), h("th", null, "常見選點")),
         a.rows.map((r) => h("tr", null,
           h("td", null, h("span", { class: "aug " + (RAR[r.rarity] || ""), title: `${r.name}（${r.rarity}）` },
@@ -1637,8 +1638,15 @@
   function route() {
     const hsh = location.hash.slice(1);
     const c = D.comps.find((x) => slug(x.id) === hsh) || (O.on ? O.custom.map(customToComp).find((x) => slug(x.id) === hsh) : null);
+    const fromDetail = !$("#detail").hidden;
     $("#home").hidden = !!c; $("#detail").hidden = !c;
-    if (!c) { floatBack(false); homeSpy(); navH(); }
+    if (!c) {
+      floatBack(false); homeSpy(); navH();
+      // 站主 2026-11-07：在陣容詳細頁點最上面的「T 度表」會先跳出去、要再按一次才到 → 首頁顯示出來後直接捲到那一區
+      // （詳細頁時首頁是隱藏的，瀏覽器原本的錨點跳轉找不到位置）
+      const t = fromDetail && hsh ? document.getElementById(hsh) : null;
+      if (t && $("#home").contains(t)) requestAnimationFrame(() => t.scrollIntoView({ block: "start" }));
+    }
     if (c) { renderDetail(c.id); window.scrollTo(0, 0); }
   }
 

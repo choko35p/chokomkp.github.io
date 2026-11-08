@@ -979,12 +979,12 @@ button.fhex:focus-visible { outline: 2px solid var(--accent); outline-offset: 2p
 .tb-tab:hover { border-color: var(--lc); }
 .tb-tab[aria-selected="true"] { background: color-mix(in srgb, var(--lc) 16%, var(--surface)); border-color: var(--lc); box-shadow: 0 0 0 1px var(--lc) inset; }
 .tb-ptitle { margin: 1.2rem 0 .5rem; }
-.tbx { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr); gap: .4rem .9rem; }  /* 站主 2026-11-07：條件區多了 C 列，列距收一點，電腦一個畫面看得完 */
+.tbx { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr); gap: .3rem .9rem; }  /* 站主 2026-11-07：條件區多了 C 列，列距收一點，電腦一個畫面看得完 */
 .tbx .tb-tier { position: static; align-self: stretch; height: auto; min-height: 4.5rem; margin: 0; padding: 0; font-size: 2.6rem; box-shadow: none; }
 .tbx .tb-tier.t-R, .tbx .tb-tier.t-Q { font-size: 1rem; }
-.tbx .tb-cell { display: grid; grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr)); gap: .45rem; align-content: start; padding: .4rem .5rem; border-radius: 14px; }
+.tbx .tb-cell { display: grid; grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr)); gap: .4rem; align-content: start; padding: .3rem .5rem; border-radius: 14px; }
 /* 卡片壓扁一點：一個畫面看得完（名稱、下限上限頻率同一行、需要一行省略、分支標籤一行） */
-.tbx .tc-main { padding: .38rem .65rem; gap: .55rem; grid-template-columns: 2.1rem 1fr; }
+.tbx .tc-main { padding: .32rem .65rem; gap: .55rem; grid-template-columns: 2.1rem 1fr; }
 .tbx .tc-txt { gap: 2px; line-height: 1.3; }
 .tbx .tc-nm { font-size: .98rem; }
 .tbx .tc-sub { flex-wrap: wrap; row-gap: 2px; }
@@ -992,7 +992,8 @@ button.fhex:focus-visible { outline: 2px solid var(--accent); outline-offset: 2p
 .tbx .tc-br { padding: 3px .65rem 4px; gap: 4px 6px; flex-wrap: nowrap; }
 /* C 級和「研究中」的卡片不放「需要」那行（滑過去看得到），條件區列數多時電腦一個畫面看得完（站主 2026-11-07） */
 .tbx .tb-cell[data-tier="C"] .tc-req, .tbx .tb-cell.watch .tc-req { display: none; }
-.tbx .tc-br .brc { min-width: 0; flex: 0 1 auto; }
+.tbx .tc-br .brc { min-width: 0; flex: 0 1 auto; min-height: 1.65rem; padding: 1px 7px 1px 1px; }
+.tbx .tc-br .brc .ico.xs { width: 1.3rem; }  /* 站主 2026-11-08 重抓數據後條件區多了幾套：分支那行再壓扁一點，電腦一個畫面還是看得完 */
 .tbx .tc-brh { font-size: var(--fs-xs); }
 @media (max-width: 640px) {
   .tb-tabs { gap: .35rem; }

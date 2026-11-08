@@ -777,13 +777,23 @@
   // 站主 2026-11-08：「分支公式那些不一樣的重點是主坦副坦不一樣，你要把圖放上去不要只有字」→ 每個公式放關鍵棋子頭像（主坦／副坦／副C／特色）
   const fmKeys = (f) => (f.keys || []).length ? h("span", { class: "fm-keys" }, f.keys.map((k) => h("span", { class: "fm-key", title: `${k.role}：${champName(k.key)}` },
     icon("champion", k.key, "xs"), h("small", { class: "fm-role" }, k.role)))) : null;
-  const formulaOf = (c) => { const b = c.formulaOf ? compById(c.formulaOf) : c; return b?.formulas?.length > 1 ? b : null; };
+  // 站主 2026-11-08：「讓我能手動添加公式一公式二，並且添加的時候可以複製其他的公式」→ 預覽站資料庫 boards/<陣容>__formulas
+  // （{compId: "<陣容>__formulas", of, mainName, formulas: [{id, name}]}）；每個公式的盤面存 boards/<陣容>__fx_<id>，和站主公式頁同一種格式。
+  const fxDoc = (cid) => (O.on ? O.boards[cid + "__formulas"] : null);
+  const formulasOf = (b) => {
+    const built = b?.formulas || [], doc = b && fxDoc(b.id);
+    if (!doc) return built;
+    const fixed = built.filter((f) => !f.owner).map((f, i) => (i === 0 && doc.mainName ? { ...f, name: doc.mainName } : f));
+    const head = fixed.length ? fixed : [{ id: b.id, name: doc.mainName || "公式一", dataMain: true }];
+    return [...head, ...(doc.formulas || []).map((f) => { const id = `${b.id}__fx_${f.id}`; return { ...(built.find((x) => x.id === id) || {}), id, name: f.name, owner: true }; })];
+  };
+  const formulaOf = (c) => { const b = c.formulaOf ? compById(c.formulaOf) : c; return formulasOf(b).length > 1 ? b : null; };
   function formulaArea(c) {
     const base = formulaOf(c);
     let cur = c.id;
     const info = h("div", { class: "fm-info" }), area = h("div", { class: "fm-board" });
     const draw = () => {
-      const f = base.formulas.find((x) => x.id === cur) || base.formulas[0];
+      const f = formulasOf(base).find((x) => x.id === cur) || formulasOf(base)[0];
       const v = compById(f.id);
       const lv = v ? (f.lv && boardOk(v, f.lv) ? f.lv : mainLevel(v)) : null;
       info.textContent = ""; area.textContent = "";
@@ -791,14 +801,100 @@
       if (f.stats) info.append(h("p", { class: "xs muted fm-st" }, `MetaTFT 大師以上 ${f.games} 場：均名 ${f.stats.avg.toFixed(2)}・前四率 ${pct(f.stats.top4)}${f.games < 30 ? "（場數少，參考就好）" : ""}`));
       area.append((v && lv && boardArea(v, lv)) || h("p", { class: "small muted" }, "這個公式還沒有棋盤。"));
     };
-    const chips = h("div", { class: "chips fm-chips", role: "group", "aria-label": "公式" }, base.formulas.map((f) => h("button", { type: "button", class: "chip fm-chip", "aria-pressed": f.id === cur ? "true" : "false", "data-fid": f.id,
+    const chips = h("div", { class: "chips fm-chips", role: "group", "aria-label": "公式" }, formulasOf(base).map((f) => h("button", { type: "button", class: "chip fm-chip", "aria-pressed": f.id === cur ? "true" : "false", "data-fid": f.id,
       onclick: () => { cur = f.id; track("formula", f.id); chips.querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", x.dataset.fid === cur ? "true" : "false")); draw(); } }, fmKeys(f), h("span", { class: "fm-name" }, f.name))));
     draw();
     return h("div", { class: "fm" }, chips, info, area);
   }
   // 站主編輯時：這頁的編輯器只改這個公式；其他公式到各自的頁面調整
-  const formulaLinks = (c) => { const base = formulaOf(c); return h("p", { class: "small fm-links" }, "這套有幾個公式，這裡改的是「", base.formulas.find((f) => f.id === c.id)?.name || c.name, "」。其他公式到各自的頁面改：",
-    base.formulas.filter((f) => f.id !== c.id).map((f, i) => [i ? "、" : "", h("a", { href: "#" + slug(f.id), class: "fm-link" }, fmKeys(f), f.name)])); };
+  const formulaLinks = (c) => { const base = formulaOf(c); return h("p", { class: "small fm-links" }, "這套有幾個公式，這裡改的是「", formulasOf(base).find((f) => f.id === c.id)?.name || c.name, "」。其他公式到各自的頁面改：",
+    formulasOf(base).filter((f) => f.id !== c.id).map((f, i) => [i ? "、" : "", h("a", { href: "#" + slug(f.id), class: "fm-link" }, fmKeys(f), f.name)])); };
+  // 站主加的公式在預覽站馬上出現（還沒重新建置前，用存的盤面做一個公式頁）
+  const docBoards = (d) => Object.fromEntries(Object.entries(d || {}).filter(([k, b]) => /^lv\d$/.test(k) && b?.units?.length)
+    .map(([k, b]) => [k, { status: "ok", source: "owner", units: b.units.map((u) => ({ ...u, items: u.items || [] })), ...(b.twoMarks ? { twoMarks: true } : {}) }]));
+  function ownerFormulaComps() {
+    for (const doc of Object.values(O.boards)) {
+      const base = doc?.of && D.comps.find((x) => x.id === doc.of && !x.formulaOf);
+      if (!base || !String(doc.compId).endsWith("__formulas")) continue;
+      for (const f of doc.formulas || []) {
+        const id = `${base.id}__fx_${f.id}`;
+        let v = D.comps.find((x) => x.id === id);
+        if (!v) {
+          v = { ...JSON.parse(JSON.stringify(base)), id, status: "variant", variantKind: "formula", formulaOf: base.id, tier: null, tierAuto: null, tierSource: null, rank: 99,
+            formulas: undefined, variants: [], baseOf: [], stats: null, statsMeta: { games: 0, players: null, version: base.statsMeta?.version, source: "owner", sourceLabel: "站主" },
+            freq: null, range: null, cases: null, caseCount: 0, levelUps: [], flex: null, itemsFrom: base.itemsFrom || base.id, boards: docBoards(O.boards[id]),
+            switchTo: [{ id: base.id, when: `湊不到「${f.name}」的棋子，就照${base.name}的其他公式放。` }],
+            research: { notes: [`${f.name}：站主在預覽站加的公式（站位、棋子、裝備都是站主放的）。`] } };
+          D.comps.push(v);
+        }
+        v.name = `${base.name} · ${f.name}`;
+      }
+    }
+  }
+  const CN_NUM = "一二三四五六七八九十";
+  // 站主編輯：這套的公式（加公式、從哪個公式複製、改名、刪掉自己加的）
+  function formulaTools(c) {
+    const base = c.formulaOf ? compById(c.formulaOf) : c;
+    if (!base || O.custom.some((x) => x.id === base.id)) return null;  // 手動陣容另外管
+    const fs = formulasOf(base), doc = fxDoc(base.id) || { compId: base.id + "__formulas", of: base.id, formulas: [] };
+    const me = fs.find((f) => f.id === c.id) || { id: c.id, name: "公式一", dataMain: true };
+    const box = h("div", { class: "card small fx-tools" });
+    const msg = h("p", { class: "xs muted", role: "status" });
+    const save = async (nd, after) => {
+      msg.textContent = "儲存中…";
+      try { nd.at = new Date().toISOString(); await O.db.doc("boards/" + base.id + "__formulas").set(nd); O.boards[base.id + "__formulas"] = nd; ownerFormulaComps(); after?.(); rerender(); }
+      catch (err) { msg.textContent = "儲存失敗：" + (err?.message || "請再試一次"); }
+    };
+    const copyDoc = (srcId, id) => {
+      const src = compById(srcId), M = src ? mainLevel(src) : null, sv = O.boards[srcId];
+      const units = (sv?.["lv" + M]?.units?.length ? sv["lv" + M].units : src?.boards?.["lv" + M]?.units) || [];
+      return { compId: id, ...(M && units.length ? { ["lv" + M]: { units: units.map((u) => (u.plant ? { plant: u.plant, star: u.star || 1, pos: u.pos } : { key: u.key, star: u.star || 2, items: (u.items || []).slice(0, 3), pos: u.pos, ...(u.mark ? { mark: true } : {}), ...(u.rider ? { rider: true } : {}) })),
+        twoMarks: !!(sv?.["lv" + M] || src?.boards?.["lv" + M] || {}).twoMarks } } : {}), at: new Date().toISOString() };
+    };
+    const form = () => {
+      const name = h("input", { type: "text", class: "fx-name-in", value: `公式${CN_NUM[fs.length ? fs.length : 1] || fs.length + 1}`, "aria-label": "新公式的名稱", maxlength: "40" });
+      const from = h("select", { class: "fx-from", "aria-label": "從哪個公式複製" }, [...(fs.length ? fs : [{ id: base.id, name: "公式一（目前的盤面）" }]).map((f) => h("option", { value: f.id }, `複製「${f.name}」`)),
+        h("option", { value: "" }, "空白盤面（自己放）")]);
+      from.value = c.id;
+      const add = async () => {
+        const nm = name.value.trim(); if (!nm) { msg.textContent = "先取個名字。"; return; }
+        const fid = "o" + Date.now().toString(36), id = `${base.id}__fx_${fid}`;
+        msg.textContent = "新增中…";
+        try {
+          const bd = from.value ? copyDoc(from.value, id) : { compId: id, at: new Date().toISOString() };
+          await O.db.doc("boards/" + id).set(bd); O.boards[id] = bd;
+          await save({ ...doc, compId: base.id + "__formulas", of: base.id, ...(fs.length ? {} : { mainName: doc.mainName || "公式一" }), formulas: [...(doc.formulas || []), { id: fid, name: nm }] }, () => { location.hash = "#" + slug(id); });
+        } catch (err) { msg.textContent = "新增失敗：" + (err?.message || "請再試一次"); }
+      };
+      return h("div", { class: "fx-form row" }, name, from, h("button", { class: "btn primary", type: "button", onclick: add }, "加上去"),
+        h("button", { class: "btn ghost", type: "button", onclick: () => { box.replaceWith(formulaTools(c)); } }, "取消"));
+    };
+    const rename = () => {
+      const inp = h("input", { type: "text", class: "fx-name-in", value: me.name, "aria-label": "公式名稱", maxlength: "40" });
+      const ok = () => { const nm = inp.value.trim(); if (!nm) return;
+        save(me.owner ? { ...doc, formulas: (doc.formulas || []).map((f) => (`${base.id}__fx_${f.id}` === me.id ? { ...f, name: nm } : f)) } : { ...doc, compId: base.id + "__formulas", of: base.id, mainName: nm }); };
+      return h("div", { class: "fx-form row" }, inp, h("button", { class: "btn primary", type: "button", onclick: ok }, "改名"), h("button", { class: "btn ghost", type: "button", onclick: () => { box.replaceWith(formulaTools(c)); } }, "取消"));
+    };
+    let armed = false;
+    const del = async (ev) => {
+      if (!armed) { armed = true; ev.currentTarget.textContent = "確定刪掉「" + me.name + "」？再按一次"; return; }
+      const fid = me.id.slice(base.id.length + 5);
+      await save({ ...doc, formulas: (doc.formulas || []).filter((f) => f.id !== fid) }, async () => {
+        try { await O.db.doc("boards/" + me.id).delete(); } catch { /* 盤面留著也不會顯示 */ }
+        delete O.boards[me.id]; const i = D.comps.findIndex((x) => x.id === me.id && x.statsMeta?.source === "owner"); if (i >= 0) D.comps.splice(i, 1);
+        location.hash = "#" + slug(base.id);
+      });
+    };
+    const canName = me.owner || me.id === base.id;
+    box.append(h("div", { class: "row fx-btns" },
+      h("b", null, fs.length > 1 ? `公式（${fs.length} 個）` : "公式"),
+      h("button", { class: "btn", type: "button", onclick: (ev) => { ev.currentTarget.closest(".fx-tools").querySelector(".fx-slot").replaceChildren(form()); } }, "＋ 加公式"),
+      fs.length > 1 && canName ? h("button", { class: "btn ghost", type: "button", onclick: (ev) => { ev.currentTarget.closest(".fx-tools").querySelector(".fx-slot").replaceChildren(rename()); } }, "改這個公式的名字") : null,
+      me.owner ? h("button", { class: "btn ghost danger", type: "button", onclick: del }, "刪掉這個公式") : null),
+      h("div", { class: "fx-slot" }),
+      h("p", { class: "xs muted" }, fs.length > 1 ? "加公式時可以複製任何一個公式的盤面，再到新公式的頁面改。" : "這套還沒有公式。加公式後，目前的盤面就是「公式一」，新的是「公式二」，頁面上方可以切換。"), msg);
+    return box;
+  }
   function boardArea(c, M) {
     const b = board(c.boards?.["lv" + M], M, c);
     if (!b) return null;
@@ -1334,8 +1430,8 @@
       ["和主陣容比較", "和主陣容比較", c.baseOf?.length && !c.variantKind ? h("div", { class: "small stack" },
         h("p", null, "這個分支：", rangeLine(c)),
         ul(c.baseOf.map((b) => [h("a", { href: "#" + slug(b.id) }, b.name), "（主陣容）：", b.status === "ready" ? rangeLine(b) : "研究中"]))) : null],
-      ...(O.on ? [[`${boardTitle(c, mainLevel(c) || 8)}（站主編輯：站位、星級、裝備）`, "棋盤", formulaOf(c) ? h("div", { class: "stack" }, formulaLinks(c), boardEditor(c)) : boardEditor(c)]]
-        : [formulaOf(c) ? [`站位圖（${formulaOf(c).formulas.length} 個公式，點上面切換）`, "棋盤", formulaArea(c)]
+      ...(O.on ? [[`${boardTitle(c, mainLevel(c) || 8)}（站主編輯：站位、星級、裝備）`, "棋盤", h("div", { class: "stack" }, formulaOf(c) ? formulaLinks(c) : null, c.variantKind && c.variantKind !== "formula" ? null : formulaTools(c), boardEditor(c))]]
+        : [formulaOf(c) ? [`站位圖（${formulasOf(formulaOf(c)).length} 個公式，點上面切換）`, "棋盤", formulaArea(c)]
           : mainLevel(c) ? [boardTitle(c, mainLevel(c)), "棋盤", boardArea(c, mainLevel(c))] : null]),
       ["升等放什麼（各人口的棋子）", "升等", levelUpBox(c)],
       ["前排替換", "前排替換", c.roles?.swap ? h("p", { class: "small" }, tx(`comp:${c.id}:roles.swap`, c.roles.swap)) : null],
@@ -1760,6 +1856,7 @@
       for (const d of tis.docs || []) { const x = d.data(); if (x?.compId) O.tiers[x.compId] = x; }
       O.custom = (cus.docs || []).map((d) => d.data()).filter((x) => x?.id && x.name);
       O.on = true;
+      ownerFormulaComps();
       rerender();
     } catch (e) {
       O.on = false;
@@ -2010,12 +2107,23 @@
     const data = { 8: d8, 9: withPlants(autoPlace(pick(9), c, d8)) };
     if (c.rerollLevel) data[c.rerollLevel] = withPlants(autoPlace(pick(c.rerollLevel), c, d8));
     for (const lv of levelsOf(c)) if (!data[lv]) data[lv] = withPlants(autoPlace(pick(lv), c, d8));
+    // 站主 2026-11-08：人口跟著棋子走 → 存過或資料裡有的其他人口（例：拿到剩 7 隻的 8-4 盤＝7 人口）也要載入
+    for (const lv of [5, 6, 7, 8, 9]) if (!data[lv] && (sv ? sv["lv" + lv]?.units?.length : c.boards?.["lv" + lv]?.units?.length)) data[lv] = withPlants(autoPlace(pick(lv), c, d8));
+    // 站主存的棋盤人口和等級對不上（例：存在 8 人口、其實只有 7 隻）→ 跟建置（owner_content.apply_boards）一樣，當作實際人口那一等（那一等沒存過才搬）
+    let moved = null;
+    if (sv) for (const L of [9, 8, 7, 6, 5]) {
+      const us = sv["lv" + L]?.units;
+      if (!us?.length || [L].includes(c.rerollLevel)) continue;
+      const P = champsOnly(us).reduce((n, u) => n + (CH[u.key]?.slots || 1), 0);
+      if (P !== L && P >= 5 && P <= 9 && P !== c.rerollLevel && !sv["lv" + P]?.units?.length) { data[P] = data[L]; data[L] = []; moved ||= `之前存在 ${L} 人口的棋盤場上只有 ${P} 人口，改成 ${P} 人口的棋盤。按「儲存棋盤」就會存成這樣。`; }
+    }
     const two = (lv) => !!((sv?.["lv" + lv]) || c.boards?.["lv" + lv] || {}).twoMarks;
-    const main = levelsOf(c).includes(mainLevel(c)) ? mainLevel(c) : levelsOf(c).find((lv) => (data[lv] || []).length) || 8;
+    const ml = mainLevel(c);
+    const main = ml && (champsOnly(data[ml]).length || levelsOf(c).includes(ml)) ? ml : Object.keys(data).map(Number).sort((a, b) => a - b).find((lv) => champsOnly(data[lv]).length) || 8;
     // 旁邊「可以替換」：站主存過就用站主的，沒有就用資料算的（站主一改就整份變成站主的）
     const flex = clone(sv?.flex || c.flex || {});
     for (const xs of Object.values(flex)) for (const x of xs || []) x.items ||= {};
-    return { lv: main, main, sel: null, dirty: false, two: Object.fromEntries(levelsOf(c).map((lv) => [lv, two(lv)])), msg: sv ? "目前是你存過的棋盤。" : "預先放好最常見的完整棋盤與推薦裝備，直接調整後按儲存。", data,
+    return { lv: main, main, sel: null, dirty: !!moved, two: Object.fromEntries(Object.keys(data).map((lv) => [lv, two(lv)])), msg: moved || (sv ? "目前是你存過的棋盤。" : "預先放好最常見的完整棋盤與推薦裝備，直接調整後按儲存。"), data,
       flex, flexOwned: !!sv?.flex, side: null, flexForm: null };
   }
   const RIFT = "Riftbeast";
@@ -2036,6 +2144,8 @@
   function boardEditor(c) {
     const root = h("div", { class: "be" });
     const st = BSTATE[c.id] ||= freshState(c, true);
+    // 編輯器的等級：資料的等級＋現在有棋子的等級（人口跟著棋子走，可能換到 5～9 任何一等）
+    const edLv = () => [...new Set([...levelsOf(c), st.main, ...Object.keys(st.data).map(Number).filter((L) => champsOnly(st.data[L]).length)])].sort((a, b) => a - b);
     const draw = () => {
       root.textContent = "";
       st.data[st.lv] = withPlants(st.data[st.lv]);  // 神木人數變了，植物跟著增減
@@ -2045,13 +2155,13 @@
       const lvLabel = (lv) => (lv === c.rerollLevel ? `${lv} 等（賭${"一二三"[(c.rerollCost || 1) - 1]}費）` : `${lv} 人口`);
       const M = st.main;
       const main = h("div", { class: "be-main" });
-      const live = Object.fromEntries(levelsOf(c).filter((lv) => champsOnly(st.data[lv]).length).map((lv) => ["lv" + lv, { status: "ok", units: st.data[lv] }]));
-      const ed = { flex: st.flex, flexLevels: levelsOf(c).filter((lv) => lv >= M), stepLevels: levelsOf(c).filter((lv) => lv > M),
+      const live = Object.fromEntries(edLv().filter((lv) => champsOnly(st.data[lv]).length).map((lv) => ["lv" + lv, { status: "ok", units: st.data[lv] }]));
+      const ed = { flex: st.flex, flexLevels: edLv().filter((lv) => lv >= M), stepLevels: edLv().filter((lv) => lv > M),
         sel: st.side, select: (k) => { st.side = k; st.flexForm = null; draw(); }, selPanel: sideSelPanel, addStep: pickStep, swapStep: pickSwap,
         delFlex: (lv, i) => { ownFlex(); st.flex["lv" + lv].splice(i, 1); st.side = null; changed("已刪除這組替換。"); },
         flexForm: st.flexForm, openFlexForm: (lv) => { st.flexForm = { lv, out: [], in: [] }; st.side = null; draw(); }, flexFormBox };
       const side = sidePanel(c, M, live, ed);
-      const others = levelsOf(c).filter((lv) => lv !== M);
+      const others = edLv().filter((lv) => lv !== M);
       if (others.length) side.append(h("div", { class: "fx-edit" }, h("p", { class: "fx-h" }, "調整其他人口的棋盤"),
         h("p", { class: "xs muted", style: "margin:0" }, "旁邊的「升等要補」是用這幾張算的，改完會跟著變。"),
         h("div", { class: "row" }, others.map((lv) => h("button", { type: "button", class: "chip", "aria-pressed": st.lv === lv ? "true" : "false", onclick: () => { st.lv = lv; st.sel = null; draw(); } }, lvLabel(lv))))));
@@ -2083,7 +2193,7 @@
         }
         grid.append(row);
       }
-      put(h("div", { class: "tablewrap" }, grid), h("p", { class: "xs muted" }, "上方為前排。點棋子選取；選取後點空格＝移動。按住棋子拖到別格＝移動或交換。右鍵點棋子＝移出棋盤。點空格可直接放新棋子。"));
+      put(h("div", { class: "tablewrap" }, grid), h("p", { class: "xs muted" }, "上方為前排。點棋子選取；選取後點空格＝移動。按住棋子拖到別格＝移動或交換。按住裝備小圖拖到別隻棋子＝把裝備給牠（滿三件就交換）。右鍵點棋子＝移出棋盤。點空格可直接放新棋子。"));
       put(st.sel ? selPanel(st.sel) : h("div", { class: "card small" }, "還沒選棋子。點棋盤上的棋子可以改星級和裝備。"));
       put(h("div", { class: "row" },
         h("button", { class: "btn", type: "button", onclick: () => pickChamp(null) }, "＋ 加棋子"),
@@ -2092,13 +2202,29 @@
         O.boards[c.id] ? h("button", { class: "btn ghost", type: "button", onclick: resetBoard }, "恢復資料預設") : null),
         h("p", { class: "xs muted", role: "status" }, st.msg));
     };
-    const changed = (m) => { st.dirty = true; st.msg = m || "有未儲存的變更。"; draw(); };
+    const changed = (m) => { const r = relevel(); st.dirty = true; st.msg = [m, r].filter(Boolean).join(" ") || "有未儲存的變更。"; draw(); };
+    // 站主 2026-11-08：「這是84陣容，所以應該只放8人口的版面…你要能隨著我修改而實時改動人口，旁邊的可以替換也要變」
+    // 一張棋盤的人口變了、而且那個人口還沒有棋盤 → 整張換到那個人口（主圖、旁邊的「可以替換」、首領標記設定一起搬）。
+    // 那個人口已經有棋盤（例：主圖 8 人口、正在改 9 人口那張）就不搬，照舊顯示「人口 8／9」。賭牌等級不動。建置時（owner_content.apply_boards）同一條規則。
+    function relevel(from = st.lv) {
+      const to = popOf(st.data[from]);
+      if (!from || to === from || to < 5 || to > 9 || champsOnly(st.data[to]).length || [from, to].includes(c.rerollLevel)) return null;
+      if (from !== st.main && to <= st.main) return null;  // 其他人口那張（例：9 人口）拿到比主圖還少時不搬，等加回來
+      st.data[to] = st.data[from]; st.data[from] = [];
+      st.two[to] = !!st.two[from]; st.two[from] = false;
+      if ((st.flex["lv" + from] || []).length && !(st.flex["lv" + to] || []).length) { st.flex["lv" + to] = st.flex["lv" + from]; st.flex["lv" + from] = []; }
+      if (st.flexForm?.lv === from) st.flexForm.lv = to;
+      if (st.side?.lv === from) st.side = null;
+      if (st.main === from) st.main = to;
+      if (st.lv === from) st.lv = to;
+      return `場上是 ${to} 人口，這張圖改成 ${to} 人口的棋盤。`;
+    }
     const removeUnit = (u) => { st.data[st.lv] = st.data[st.lv].filter((x) => x !== u); if (st.sel === u) st.sel = null; changed(`已從 ${st.lv} 人口的棋盤移出${champName(u.key)}。`); };
     const ownFlex = () => { st.flexOwned = true; };
     // 站主 2026-11-08：「你要給我可以拿掉原本的盤面的東西然後換上甚麼…你現在那個換掉超沒意義」
     // 主圖以上的等級還沒有完整棋盤時（空的，或只有後來加的幾隻），用下面一等的棋盤當底，再加上這一等多的；換棋子、加一組替換都從完整棋盤選
     const popOf = (us) => champsOnly(us).reduce((n, u) => n + (CH[u.key]?.slots || 1), 0);
-    const baseBelow = (L) => { const lv = levelsOf(c).filter((x) => x < L && champsOnly(st.data[x]).length).sort((a, b) => b - a)[0]; return lv ? st.data[lv] : null; };
+    const baseBelow = (L) => { const lv = edLv().filter((x) => x < L && champsOnly(st.data[x]).length).sort((a, b) => b - a)[0]; return lv ? st.data[lv] : null; };
     function fullBoard(L) {
       const cur = st.data[L] || [];
       const base = L > st.main ? baseBelow(L) : null;
@@ -2112,7 +2238,14 @@
       return st.data[L];
     }
     // 之前存過、只有幾隻的高等級棋盤，打開時先補成完整的（空的不動：代表這套不打到那一等）
-    for (const L of levelsOf(c).filter((L) => L > st.main && champsOnly(st.data[L]).length)) ensureBoard(L);
+    for (const L of edLv().filter((L) => L > st.main && champsOnly(st.data[L]).length)) ensureBoard(L);
+    // 之前存的棋盤人口和等級對不上（例：存在 9 人口、其實只放 8 隻）→ 打開時就換到實際人口，按儲存才會存成新的
+    if (!st.leveled) {
+      st.leveled = true;
+      const msgs = [...edLv()].sort((a, b) => b - a).map((L) => relevel(L)).filter(Boolean);
+      if (!champsOnly(st.data[st.main]).length) { const L = edLv().find((x) => champsOnly(st.data[x]).length); if (L) st.main = st.lv = L; }
+      if (msgs.length) { st.dirty = true; st.msg = msgs[0] + "按「儲存棋盤」就會存成這樣。"; }
+    }
     // 推薦裝備預設：資料棋盤裡這隻帶的裝備，沒有就用裝備模型的第一套
     const recItems = (key) => {
       for (const b of Object.values(c.boards || {})) { const u = champsOnly(b?.units).find((x) => x.key === key && (x.items || []).length); if (u) return [...u.items].slice(0, 3); }
@@ -2130,7 +2263,7 @@
       const used = new Set(champsOnly(st.data[lv]).map((u) => u.key));
       picker(`${lv} 等要補的棋子`, champGroups(used), (key) => {
         const its = recItems(key);
-        for (const L of levelsOf(c).filter((L) => L >= lv && L > st.main)) {
+        for (const L of edLv().filter((L) => L >= lv && L > st.main)) {
           const arr = ensureBoard(L);
           if (!champsOnly(arr).some((u) => u.key === key)) { arr.push({ key, star: 2, items: [...its], pos: null }); autoPlace(arr, c, null); }
         }
@@ -2147,7 +2280,7 @@
         const groups = [...champGroups(used), { label: "不換上", items: [{ key: "__none__", name: `只拿掉${champName(outKey)}`, ico: icon("champion", outKey, "sm") }] }];
         picker(`${lv} 等：${champName(outKey)}換成`, groups, (inKey) => {
           const none = inKey === "__none__", its = none ? [] : recItems(inKey);
-          for (const L of levelsOf(c).filter((L) => L >= lv && L > st.main)) {
+          for (const L of edLv().filter((L) => L >= lv && L > st.main)) {
             const arr = ensureBoard(L);
             const i = arr.findIndex((u) => u.key === outKey);
             const pos = i >= 0 ? arr[i].pos : null;
@@ -2164,10 +2297,10 @@
       if (k.kind === "step") {
         u = champsOnly(st.data[k.lv]).find((x) => x.key === k.key);
         if (!u) return null;
-        const higher = () => levelsOf(c).filter((L) => L > k.lv).map((L) => champsOnly(st.data[L]).find((x) => x.key === k.key)).filter(Boolean);
+        const higher = () => edLv().filter((L) => L > k.lv).map((L) => champsOnly(st.data[L]).find((x) => x.key === k.key)).filter(Boolean);
         after = () => higher().forEach((x) => (x.items = [...u.items]));  // 同一隻在更高等級的裝備跟著改
         remove = () => {
-          for (const L of levelsOf(c).filter((L) => L >= k.lv)) { const arr = st.data[L] || []; const j = arr.findIndex((x) => x.key === k.key); if (j >= 0) arr.splice(j, 1); }
+          for (const L of edLv().filter((L) => L >= k.lv)) { const arr = st.data[L] || []; const j = arr.findIndex((x) => x.key === k.key); if (j >= 0) arr.splice(j, 1); }
           st.side = null; changed(`已從 ${k.lv} 等以上拿掉${champName(k.key)}。`);
         };
       } else {
@@ -2220,22 +2353,48 @@
       u.pos = [r, col]; st.sel = u;
       changed(other ? `已和${champName(other.key)}交換位置。` : `已移到 ${"ABCD"[r]}${col + 1}。`);
     }
+    // 站主 2026-11-08：「裝備我可以直接從一隻角色拖動到另一隻角色」→ 按住棋子下面的裝備小圖拖到別隻棋子＝把那件給牠；
+    // 對方已經三件就交換（放在對方哪件裝備上就換那件，沒對準就換最後一件）。按住棋子本身拖照舊是移動／交換位置。
+    function moveItem(from, idx, to, toIdx) {
+      const it = from.items[idx];
+      if (!it || from === to) return draw();
+      to.items ||= [];
+      if (to.items.length < 3) { from.items.splice(idx, 1); to.items.push(it); changed(`${itemName(it)}：${champName(from.key)} → ${champName(to.key)}。`); return; }
+      const j = toIdx >= 0 && toIdx < to.items.length ? toIdx : to.items.length - 1;
+      const other = to.items[j]; to.items[j] = it; from.items[idx] = other;
+      changed(`${champName(to.key)}已經三件，${itemName(it)}和${itemName(other)}交換。`);
+    }
+    const unitAt = (t) => t && st.data[st.lv].find((x) => x.pos && x.pos[0] === +t.dataset.r && x.pos[1] === +t.dataset.c);
     function dragable(cell, u) {
-      let sx = 0, sy = 0, drag = false, ghost = null, pid = null;
+      let sx = 0, sy = 0, drag = false, ghost = null, pid = null, itIdx = -1;
       cell.addEventListener("dragstart", (ev) => ev.preventDefault());  // 圖片的瀏覽器原生拖曳會中斷指標事件
-      cell.addEventListener("pointerdown", (ev) => { if (ev.button > 0) return; sx = ev.clientX; sy = ev.clientY; drag = false; pid = ev.pointerId; cell.setPointerCapture(pid); });
+      cell.addEventListener("pointerdown", (ev) => { if (ev.button > 0) return; sx = ev.clientX; sy = ev.clientY; drag = false; pid = ev.pointerId; cell.setPointerCapture(pid);
+        const ic = !isPlant(u) && ev.target.closest?.(".its > *"); itIdx = ic ? [...ic.parentNode.children].indexOf(ic) : -1; });
       cell.addEventListener("pointermove", (ev) => {
         if (pid !== ev.pointerId) return;
-        if (!drag && Math.hypot(ev.clientX - sx, ev.clientY - sy) > 8) { drag = true; ghost = cell.cloneNode(true); ghost.className = "hex ghost"; document.body.append(ghost); }
-        if (drag) { ghost.style.left = ev.clientX - 24 + "px"; ghost.style.top = ev.clientY - 24 + "px";
+        if (!drag && Math.hypot(ev.clientX - sx, ev.clientY - sy) > 8) {
+          drag = true;
+          if (itIdx >= 0) { ghost = h("span", { class: "item-ghost" }, icon("item", u.items[itIdx], "sm")); cell.classList.add("item-src"); }
+          else { ghost = cell.cloneNode(true); ghost.className = "hex ghost"; }
+          document.body.append(ghost);
+        }
+        if (drag) { ghost.style.left = ev.clientX - (itIdx >= 0 ? 16 : 24) + "px"; ghost.style.top = ev.clientY - (itIdx >= 0 ? 16 : 24) + "px";
           root.querySelectorAll(".hex.drop").forEach((x) => x.classList.remove("drop"));
-          const t = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".be .hex"); if (t && t !== cell) t.classList.add("drop"); }
+          const t = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".be .hex");
+          if (t && t !== cell && (itIdx < 0 || (t.classList.contains("has") && !t.classList.contains("is-plant")))) t.classList.add("drop"); }
       });
       const end = (ev) => {
         if (pid !== ev.pointerId) return; pid = null;
         if (ghost) { ghost.remove(); ghost = null; }
+        cell.classList.remove("item-src");
         if (!drag) { tapCell(u.pos[0], u.pos[1]); return; }
-        const t = document.elementFromPoint(ev.clientX, ev.clientY)?.closest(".be .hex");
+        const el = document.elementFromPoint(ev.clientX, ev.clientY);
+        const t = el?.closest(".be .hex");
+        if (itIdx >= 0) {
+          const to = t && root.contains(t) && t !== cell ? unitAt(t) : null;
+          if (to && !isPlant(to)) { const ti = el.closest(".its > *"); moveItem(u, itIdx, to, ti ? [...ti.parentNode.children].indexOf(ti) : -1); } else draw();
+          return;
+        }
         if (t && t !== cell && root.contains(t)) moveOrSwap(u, +t.dataset.r, +t.dataset.c); else draw();
       };
       cell.addEventListener("pointerup", end);
@@ -2319,7 +2478,7 @@
           ...(on && u.mark && isRift(u.key) ? { mark: true } : {}), ...(so && u.rider && isSpry(u.key) ? { rider: true } : {}) })), twoMarks: on && !!st.two[lv] }; };
       const flex = st.flexOwned ? Object.fromEntries(Object.entries(st.flex).map(([k, xs]) => [k, (xs || []).slice(0, 8).map((x) => ({ out: x.out.slice(0, 3), in: x.in.slice(0, 3),
         items: Object.fromEntries(x.in.slice(0, 3).map((k2) => [k2, ((x.items || {})[k2] || []).slice(0, 3)])) }))])) : null;
-      const doc = { compId: c.id, ...Object.fromEntries(levelsOf(c).map((lv) => ["lv" + lv, strip(lv)])), ...(flex ? { flex } : {}), at: new Date().toISOString() };
+      const doc = { compId: c.id, ...Object.fromEntries([...new Set([...edLv(), ...Object.keys(st.data).map(Number)])].map((lv) => ["lv" + lv, strip(lv)])), ...(flex ? { flex } : {}), at: new Date().toISOString() };
       st.msg = "儲存中…"; draw();
       try { await O.db.doc("boards/" + c.id).set(doc); O.boards[c.id] = doc; st.dirty = false; st.msg = "已儲存。下次更新時會套到正式站。"; }
       catch (err) { st.msg = "儲存失敗：" + (err?.message || "請再試一次") + "。變更還在，可以再按一次儲存。"; }

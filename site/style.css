@@ -253,6 +253,11 @@ table.t { width: 100%; border-collapse: collapse; font-size: var(--fs-s); }
 .be .hex.drop { outline: 3px dashed var(--focus); }
 .be .hexlbl { font-size: 11px; color: var(--muted); }
 .hex.ghost { position: fixed; z-index: 70; width: 48px; pointer-events: none; opacity: .85; }
+/* 站主 2026-11-08：裝備拖到別隻棋子 */
+.item-ghost { position: fixed; z-index: 71; pointer-events: none; filter: drop-shadow(0 2px 6px rgba(0,0,0,.6)); }
+.item-ghost .ico { width: 32px; }
+.be .board.edit .hex.has .its .ico { cursor: grab; }
+.be .board.edit .hex.item-src .its { opacity: .45; }
 .tchips { display: flex; flex-wrap: wrap; gap: 4px; }
 .tchip { font-size: var(--fs-s); padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
 .tchip.on { border-color: var(--accent); color: var(--text); font-weight: 700; background: var(--cream); }
@@ -1088,3 +1093,12 @@ button.bcard { font: inherit; color: inherit; text-align: left; cursor: pointer;
 .ag-tile.bad .ag-ico img { width: 2.2rem; height: 2.2rem; }
 .ag-tile.bad .ag-n { color: #d0574a; white-space: nowrap; }
 @media (max-width: 640px) { .ag-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ag-bad { grid-template-columns: 1fr; } }
+/* 站主 2026-11-08：手動加公式（加公式、複製哪個公式、改名、刪掉自己加的） */
+.fx-tools .fx-btns { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.fx-tools .fx-btns b { margin-right: 4px; }
+.fx-tools .fx-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.fx-tools .fx-name-in, .fx-tools .fx-from { font: inherit; min-height: 44px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); }
+.fx-tools .fx-name-in { width: 12em; max-width: 100%; }
+.fx-tools .fx-from { max-width: 100%; }
+.btn.ghost.danger { color: var(--bad, #e5484d); border-color: var(--bad, #e5484d); }
+@media (max-width: 520px) { .fx-tools .fx-form > * { flex: 1 1 100%; width: 100%; } }

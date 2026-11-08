@@ -398,13 +398,16 @@
   // T 表卡片：名稱一行、下限／上限做成有顏色的標籤、頻率淡色；條件只留一行淡色說明
   const lvPill = (label, v) => h("b", { class: "lvp lv-" + (LVC[v] || "na") }, `${label} ${v || "—"}`);
   const fmtChg = (v) => (v == null ? "—" : (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v).toFixed(2));
+  // 站主 2026-11-08：「你這種按鈕的下面都按不到，你要步那個框框就不要框到下面按不到的部分，要不就下面那邊也做成按的到」
+  // → 整張卡片都按得到：主按鈕撐滿卡片高度；分支那行的空白處（不是分支按鈕）也連到這套。站主調 T 表時不動（卡片上有控制項）
+  const cardClick = (id) => (O.tmode ? null : (ev) => { if (!ev.target.closest("button, a, select, input, label, textarea")) go(id); });
   function tcard(c, pool) {
     const showReq = c.lane === "conditional" && c.required?.length;
     // 站主 2026-11-04：分支標「名次變動」（和主陣容比），不標評級、不標加強削弱（跟主陣容一樣，多餘）
     const vs = O.tmode ? [] : pool.filter((v) => v.baseOf?.some((b) => b.id === c.id) && !v.hidden && v.tier);
     const req = showReq ? c.required.map((r) => r.text.replace(/^入場條件：/, "").replace(/（轉職）$/, "")).join("、") : "";
     const r = c.range || {};
-    const el = h("div", { class: "tc" + (c.custom ? " custom" : "") + (c.hidden ? " hid" : ""), "data-id": c.id },
+    const el = h("div", { class: "tc" + (c.custom ? " custom" : "") + (c.hidden ? " hid" : "") + (O.tmode ? "" : " tc-click"), "data-id": c.id, onclick: cardClick(c.id) },
       h("button", { class: "tc-main", type: "button", onclick: () => go(c.id) },
         icon("champion", c.carrier, "sm"),
         h("span", { class: "tc-txt" },
@@ -427,7 +430,7 @@
   // 「研究中」卡片：還沒有下限／上限，改列均名、前四率和場數（站主 2026-11-06）
   function wcard(c) {
     const w = c.watch;
-    return h("div", { class: "tc wc", "data-id": c.id },
+    return h("div", { class: "tc wc" + (O.tmode ? "" : " tc-click"), "data-id": c.id, onclick: cardClick(c.id) },
       h("button", { class: "tc-main", type: "button", onclick: () => go(c.id) },
         icon("champion", c.carrier, "sm"),
         h("span", { class: "tc-txt" },
@@ -771,6 +774,9 @@
     return `${M} 人口站位圖`;
   }
   /* 站主給的公式（站主 2026-11-06：三張盤面「研究這套，把他排在a，很強」）：同一套陣容的幾種盤面，主頁和公式頁的棋盤上方都可以切換 */
+  // 站主 2026-11-08：「分支公式那些不一樣的重點是主坦副坦不一樣，你要把圖放上去不要只有字」→ 每個公式放關鍵棋子頭像（主坦／副坦／副C／特色）
+  const fmKeys = (f) => (f.keys || []).length ? h("span", { class: "fm-keys" }, f.keys.map((k) => h("span", { class: "fm-key", title: `${k.role}：${champName(k.key)}` },
+    icon("champion", k.key, "xs"), h("small", { class: "fm-role" }, k.role)))) : null;
   const formulaOf = (c) => { const b = c.formulaOf ? compById(c.formulaOf) : c; return b?.formulas?.length > 1 ? b : null; };
   function formulaArea(c) {
     const base = formulaOf(c);
@@ -779,20 +785,20 @@
     const draw = () => {
       const f = base.formulas.find((x) => x.id === cur) || base.formulas[0];
       const v = compById(f.id);
-      const lv = v ? mainLevel(v) : null;
+      const lv = v ? (f.lv && boardOk(v, f.lv) ? f.lv : mainLevel(v)) : null;
       info.textContent = ""; area.textContent = "";
       if (f.note) info.append(h("p", { class: "small fm-note" }, f.note));
       if (f.stats) info.append(h("p", { class: "xs muted fm-st" }, `MetaTFT 大師以上 ${f.games} 場：均名 ${f.stats.avg.toFixed(2)}・前四率 ${pct(f.stats.top4)}${f.games < 30 ? "（場數少，參考就好）" : ""}`));
       area.append((v && lv && boardArea(v, lv)) || h("p", { class: "small muted" }, "這個公式還沒有棋盤。"));
     };
     const chips = h("div", { class: "chips fm-chips", role: "group", "aria-label": "公式" }, base.formulas.map((f) => h("button", { type: "button", class: "chip fm-chip", "aria-pressed": f.id === cur ? "true" : "false", "data-fid": f.id,
-      onclick: () => { cur = f.id; track("formula", f.id); chips.querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", x.dataset.fid === cur ? "true" : "false")); draw(); } }, f.name)));
+      onclick: () => { cur = f.id; track("formula", f.id); chips.querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", x.dataset.fid === cur ? "true" : "false")); draw(); } }, fmKeys(f), h("span", { class: "fm-name" }, f.name))));
     draw();
     return h("div", { class: "fm" }, chips, info, area);
   }
   // 站主編輯時：這頁的編輯器只改這個公式；其他公式到各自的頁面調整
   const formulaLinks = (c) => { const base = formulaOf(c); return h("p", { class: "small fm-links" }, "這套有幾個公式，這裡改的是「", base.formulas.find((f) => f.id === c.id)?.name || c.name, "」。其他公式到各自的頁面改：",
-    base.formulas.filter((f) => f.id !== c.id).map((f, i) => [i ? "、" : "", h("a", { href: "#" + slug(f.id) }, f.name)])); };
+    base.formulas.filter((f) => f.id !== c.id).map((f, i) => [i ? "、" : "", h("a", { href: "#" + slug(f.id), class: "fm-link" }, fmKeys(f), f.name)])); };
   function boardArea(c, M) {
     const b = board(c.boards?.["lv" + M], M, c);
     if (!b) return null;
@@ -1269,8 +1275,10 @@
         tile("win", ui("detail.win", "勝率"), pct(s.win), "拿第一名的比例")),
       h("p", { class: "dst-n small muted" }, m.source === "metatft"
         ? `${m.version ? m.version + " " : ""}${m.sourceLabel || "MetaTFT"} ${m.games} 場${c.variantKind ? "" : "（本站高手樣本還不夠，先用這個）"}`
-        : `${m.version ? m.version + " " : ""}高手實戰 ${m.games} 場${m.players ? `（${m.players} 位）` : ""}`,
-        watch ? "；樣本少，還在研究，參考就好" : m.games < (m.source === "metatft" ? 30 : 10) ? "；場數少，參考就好" : "", "。均名越小越好。"));
+        : m.source === "own-rating"  // 站主 2026-11-08：站主新加的陣容，高手名單自己的場次不夠時用本站抓的對局（含同場對手）
+          ? `${m.version ? m.version + " " : ""}${m.sourceLabel} ${m.games} 場${m.players ? `（${m.players} 位）` : ""}（高手名單自己的場次還不夠，先用這個）`
+          : `${m.version ? m.version + " " : ""}高手實戰 ${m.games} 場${m.players ? `（${m.players} 位）` : ""}`,
+        watch ? "；樣本少，還在研究，參考就好" : m.games < (m.source === "metatft" || m.source === "own-rating" ? 30 : 10) ? "；場數少，參考就好" : "", "。均名越小越好。"));
   }
   const compById = (id) => D.comps.find((x) => x.id === id) || (O.on ? (O.custom.find((x) => x.id === id) && customToComp(O.custom.find((x) => x.id === id))) : null);
   function renderDetail(id) {
@@ -2069,11 +2077,13 @@
             u ? hexInner({ ...u, rider: u.rider && spryOn(units) && isSpry(u.key) }, rOn && isRift(u.key)) : h("span", { class: "hexlbl" }, `${"ABCD"[r]}${col + 1}`));
           cell.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); tapCell(r, col); } });
           if (u) dragable(cell, u); else cell.addEventListener("click", () => tapCell(r, col));
+          // 站主 2026-11-08：「我在版面上右鍵點那隻角色就可以把他移出盤面」（手機長按也會觸發）；神木植物張數自動算，不能移出
+          if (u && !isPlant(u)) cell.addEventListener("contextmenu", (ev) => { ev.preventDefault(); st.noTap = Date.now(); removeUnit(u); });
           row.append(cell);
         }
         grid.append(row);
       }
-      put(h("div", { class: "tablewrap" }, grid), h("p", { class: "xs muted" }, "上方為前排。點棋子選取；選取後點空格＝移動。按住棋子拖到別格＝移動或交換。點空格可直接放新棋子。"));
+      put(h("div", { class: "tablewrap" }, grid), h("p", { class: "xs muted" }, "上方為前排。點棋子選取；選取後點空格＝移動。按住棋子拖到別格＝移動或交換。右鍵點棋子＝移出棋盤。點空格可直接放新棋子。"));
       put(st.sel ? selPanel(st.sel) : h("div", { class: "card small" }, "還沒選棋子。點棋盤上的棋子可以改星級和裝備。"));
       put(h("div", { class: "row" },
         h("button", { class: "btn", type: "button", onclick: () => pickChamp(null) }, "＋ 加棋子"),
@@ -2083,7 +2093,26 @@
         h("p", { class: "xs muted", role: "status" }, st.msg));
     };
     const changed = (m) => { st.dirty = true; st.msg = m || "有未儲存的變更。"; draw(); };
+    const removeUnit = (u) => { st.data[st.lv] = st.data[st.lv].filter((x) => x !== u); if (st.sel === u) st.sel = null; changed(`已從 ${st.lv} 人口的棋盤移出${champName(u.key)}。`); };
     const ownFlex = () => { st.flexOwned = true; };
+    // 站主 2026-11-08：「你要給我可以拿掉原本的盤面的東西然後換上甚麼…你現在那個換掉超沒意義」
+    // 主圖以上的等級還沒有完整棋盤時（空的，或只有後來加的幾隻），用下面一等的棋盤當底，再加上這一等多的；換棋子、加一組替換都從完整棋盤選
+    const popOf = (us) => champsOnly(us).reduce((n, u) => n + (CH[u.key]?.slots || 1), 0);
+    const baseBelow = (L) => { const lv = levelsOf(c).filter((x) => x < L && champsOnly(st.data[x]).length).sort((a, b) => b - a)[0]; return lv ? st.data[lv] : null; };
+    function fullBoard(L) {
+      const cur = st.data[L] || [];
+      const base = L > st.main ? baseBelow(L) : null;
+      if (!base || (champsOnly(cur).length && popOf(cur) >= popOf(base))) return cur;
+      const have = new Set(champsOnly(cur).map((u) => u.key));
+      return [...clone(champsOnly(base)).filter((u) => !have.has(u.key)), ...champsOnly(cur)];
+    }
+    function ensureBoard(L) {
+      const full = fullBoard(L);
+      if (full !== st.data[L]) st.data[L] = withPlants(autoPlace(full, c, baseBelow(L)));
+      return st.data[L];
+    }
+    // 之前存過、只有幾隻的高等級棋盤，打開時先補成完整的（空的不動：代表這套不打到那一等）
+    for (const L of levelsOf(c).filter((L) => L > st.main && champsOnly(st.data[L]).length)) ensureBoard(L);
     // 推薦裝備預設：資料棋盤裡這隻帶的裝備，沒有就用裝備模型的第一套
     const recItems = (key) => {
       for (const b of Object.values(c.boards || {})) { const u = champsOnly(b?.units).find((x) => x.key === key && (x.items || []).length); if (u) return [...u.items].slice(0, 3); }
@@ -2102,7 +2131,7 @@
       picker(`${lv} 等要補的棋子`, champGroups(used), (key) => {
         const its = recItems(key);
         for (const L of levelsOf(c).filter((L) => L >= lv && L > st.main)) {
-          const arr = st.data[L] ||= [];
+          const arr = ensureBoard(L);
           if (!champsOnly(arr).some((u) => u.key === key)) { arr.push({ key, star: 2, items: [...its], pos: null }); autoPlace(arr, c, null); }
         }
         st.side = { kind: "step", lv, key }; st.flexForm = null;
@@ -2111,7 +2140,7 @@
     }
     // 升等換棋子：先選這一等場上要換掉的，再選換上的（或只拿掉）；這一等和更高等級（主圖以上）一起換，換上的站在原本那格
     function pickSwap(lv) {
-      const here = champsOnly(st.data[lv] || []);
+      const here = champsOnly(fullBoard(lv));
       if (!here.length) return;
       picker(`${lv} 等要換掉哪隻`, [{ label: `${lv} 等場上`, items: here.map((u) => ({ key: u.key, name: champName(u.key), ico: icon("champion", u.key, "sm") })) }], (outKey) => {
         const used = new Set(here.map((u) => u.key));
@@ -2119,7 +2148,7 @@
         picker(`${lv} 等：${champName(outKey)}換成`, groups, (inKey) => {
           const none = inKey === "__none__", its = none ? [] : recItems(inKey);
           for (const L of levelsOf(c).filter((L) => L >= lv && L > st.main)) {
-            const arr = st.data[L] ||= [];
+            const arr = ensureBoard(L);
             const i = arr.findIndex((u) => u.key === outKey);
             const pos = i >= 0 ? arr[i].pos : null;
             if (i >= 0) arr.splice(i, 1);
@@ -2160,10 +2189,10 @@
     }
     function flexFormBox(lv) {
       const f = st.flexForm;
-      const onBoard = [...new Set(champsOnly(st.data[lv]).map((u) => u.key))];
+      const onBoard = [...new Set(champsOnly(fullBoard(lv)).map((u) => u.key))];
       return h("div", { class: "card selp fx-form" },
         h("b", { class: "small" }, `新增一組替換（${lv} 人口）`),
-        h("p", { class: "xs muted", style: "margin:0" }, "先點要拿掉的棋子（最多 3 隻），再選要換上的棋子。"),
+        h("p", { class: "xs muted", style: "margin:0" }, `下面是 ${lv} 人口的完整棋盤：先點要拿掉的棋子（最多 3 隻），再選要換上的棋子。`),
         h("div", { class: "fx-gh" }, "拿掉："),
         h("div", { class: "row" }, onBoard.map((k) => h("button", { class: "chip", type: "button", "aria-pressed": f.out.includes(k) ? "true" : "false",
           onclick: () => { f.out = f.out.includes(k) ? f.out.filter((x) => x !== k) : [...f.out, k].slice(0, 3); draw(); } }, icon("champion", k, "xs"), champName(k)))),
@@ -2179,6 +2208,7 @@
           h("button", { class: "btn ghost", type: "button", onclick: () => { st.flexForm = null; draw(); } }, "取消")));
     }
     function tapCell(r, col) {
+      if (Date.now() - (st.noTap || 0) < 700) return;  // 長按移出後手指放開，不要接著開「放新棋子」
       const units = st.data[st.lv], u = units.find((x) => x.pos && x.pos[0] === r && x.pos[1] === col);
       if (u) { st.sel = st.sel === u ? null : u; draw(); return; }
       if (st.sel) { st.sel.pos = [r, col]; changed(`已移到 ${"ABCD"[r]}${col + 1}。`); return; }
@@ -2255,7 +2285,7 @@
           ? h("button", { class: "chip", type: "button", title: "拿掉這件", onclick: () => { its.splice(i, 1); changed(); } }, icon("item", its[i], "xs"), itemName(its[i]), " ×")
           : h("button", { class: "chip add", type: "button", onclick: () => pickItem(u) }, "＋ 裝備"))),
         h("div", { class: "row" },
-          h("button", { class: "btn ghost", type: "button", onclick: () => { st.data[st.lv] = st.data[st.lv].filter((x) => x !== u); st.sel = null; changed(`已移出${champName(u.key)}。`); } }, "移出棋盤"),
+          h("button", { class: "btn ghost", type: "button", onclick: () => removeUnit(u) }, "移出棋盤"),
           h("button", { class: "btn ghost", type: "button", onclick: () => { st.sel = null; draw(); } }, "完成")));
     }
     const picker = openPicker;

@@ -41,6 +41,14 @@
   const traitName = (k) => { const t = TR[k]; return t ? (t.zh || t.en) : k; };
   const unverifiedMark = (status) => (status && status !== "verified" ? h("span", { class: "tag unv", title: "名稱尚未與遊戲內核對" }, "名稱未核對") : null);
 
+  // 輸出／坦的小圖（劍／盾），用在裝備分頁的角標
+  const svgEl = (tag, attrs) => { const e = document.createElementNS("http://www.w3.org/2000/svg", tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
+  function roleGlyph(tank) {
+    const g = svgEl("svg", { viewBox: "0 0 16 16", width: "12", height: "12", class: "rglyph", "aria-hidden": "true" });
+    g.append(tank ? svgEl("path", { d: "M8 1.2 2.6 3.2v4.1c0 3.4 2.3 6.1 5.4 7.5 3.1-1.4 5.4-4.1 5.4-7.5V3.2z", fill: "currentColor" })
+      : svgEl("path", { d: "M13.8 1.2 7.6 7.4l1 1 6.2-6.2zM2.4 9.6l1.3-1.3 4 4-1.3 1.3-.9-.9-2 2-1.1-1.1 2-2z M6.6 8.4l1 1-2.2 2.2-1-1z", fill: "currentColor" }));
+    return g;
+  }
   function icon(kind, key, size = "") {
     const isChamp = kind === "champion";
     const c = isChamp ? CH[key] : null;
@@ -483,7 +491,7 @@
         h("div", { class: "tb-cell watch", role: "cell", "data-lane": l.id, "data-tier": "R" }, ws.map(wcard)));
       const panel = h("div", { class: "tb-panel", role: "tabpanel", "data-lane": l.id, id: "tbp-" + l.id },
         O.tmode ? h("h3", { class: "tb-ptitle" }, uiStr(`lane.${l.id}`, l.label)) : null, grid,
-        ws.length ? h("p", { class: "tb-watch-note small" }, h("b", { class: "tag watch" }, "研究中"), " ",
+        ws.length ? h("details", { class: "tb-watch-note small" }, h("summary", null, h("b", { class: "tag watch" }, "研究中"), " 是什麼？"),
           ui("tier.watch", `數據很好、但樣本還少，還沒正式評級，先列最有希望的幾套給你參考。下限、上限已經往全站平均拉過，場數越少越容易看走眼；點進去看棋盤、裝備和均名。樣本夠了會自動進 T 度表。`)) : null);
       panel.hidden = !O.tmode && l.id !== TB_LANE;
       panels.push(panel);
@@ -671,15 +679,36 @@
   const msDiff = (a, b) => { const left = [...b]; return a.filter((k) => { const i = left.indexOf(k); if (i < 0) return true; left.splice(i, 1); return false; }); };
   // 同上，但回傳棋子本身（要帶裝備）：a 是棋子陣列，b 是代碼陣列
   const msDiffU = (a, b) => { const left = [...b]; return a.filter((u) => { const i = left.indexOf(u.key); if (i < 0) return true; left.splice(i, 1); return false; }); };
+  // 站主 2026-11-09：「正確的意思是放這些都可以」→ 棋盤放的比人口多＝候選：
+  // 和低一等的棋盤一樣的棋子＝固定，多出來的＝候選，挑（人口−固定）隻放，放哪隻都可以。低一等也是候選盤就用它的固定棋子比。
+  const popU = (us) => champsOnly(us).reduce((n, u) => n + (CH[u.key]?.slots || 1), 0);
+  function candOf(boards, L, depth = 0) {
+    const b = boards?.["lv" + L];
+    if (!b || b.status !== "ok" || depth > 4) return null;
+    const cs = champsOnly(b.units);
+    if (popU(cs) <= L) return null;
+    const lv = Object.keys(boards).map((k) => +k.slice(2)).filter((x) => x < L && boards["lv" + x]?.status === "ok" && champsOnly(boards["lv" + x].units).length).sort((a, b) => b - a)[0];
+    if (!lv) return null;
+    const base = (candOf(boards, lv, depth + 1)?.fixed || champsOnly(boards["lv" + lv].units)).map((u) => u.key);
+    const fixed = [], cands = [];
+    for (const u of cs) { const i = base.indexOf(u.key); if (i >= 0) { base.splice(i, 1); fixed.push(u); } else cands.push(u); }
+    const pick = L - popU(fixed);
+    if (!fixed.length || pick < 1 || pick >= popU(cands)) return null;
+    return { fixed, cands, pick, from: lv };
+  }
   // 升等路線：主圖往上每一張棋盤和前一張比（只補＝升等要補；有拿掉＝換一組）；比主圖低的棋盤＝那個等級先怎麼放
+  // 候選盤（cands）：固定棋子照常比，多出來的另外列「挑幾隻」；下一張棋盤和候選盤的固定棋子比（after＝前一等已經放了其中幾隻）
   function levelSteps(c, M, boards = c.boards) {
     const lvs = Object.keys(boards || {}).map((k) => +k.slice(2)).filter((lv) => boards["lv" + lv]?.status === "ok").sort((a, b) => a - b);
     const out = [];
     let prev = M;
     for (const lv of lvs.filter((x) => x > M)) {
-      const a = keysOf(boards["lv" + prev]), b = keysOf(boards["lv" + lv]);
-      const add = msDiffU(champsOnly(boards["lv" + lv]?.units), a), rem = msDiff(a, b);
-      if (add.length || rem.length) out.push({ level: lv, add, rem });
+      const pc = candOf(boards, prev), cc = candOf(boards, lv);
+      const a = pc ? pc.fixed.map((u) => u.key) : keysOf(boards["lv" + prev]);
+      const now = cc ? cc.fixed : champsOnly(boards["lv" + lv]?.units);
+      const add = msDiffU(now, a), rem = msDiff(a, now.map((u) => u.key));
+      if (cc) out.push({ level: lv, add, rem, cands: cc.cands, pick: cc.pick });
+      else if (add.length || rem.length) out.push({ level: lv, add, rem, after: pc ? { level: prev, pick: pc.pick } : null });
       prev = lv;
     }
     for (const lv of lvs.filter((x) => x < M).reverse()) {
@@ -733,13 +762,23 @@
         // 站主 2026-11-06：「七等要換棋子你這裡不能選」→ 每一等除了加棋子，也可以把前面的棋子換掉（或只拿掉）
         const addBtn = ed ? [h("button", { class: "chip add fx-add", type: "button", onclick: () => ed.addStep(lv) }, "＋ 加棋子"),
           ed.swapStep ? h("button", { class: "chip add fx-add fx-swap", type: "button", onclick: () => ed.swapStep(lv) }, "⇄ 換棋子") : null] : null;
-        if (!s.rem.length) {
+        const candBox = s.cands ? h("div", { class: "fx-group fx-cand" },
+          h("div", { class: "fx-gh" }, h("span", { class: "fx-lvtag" }, `${lv} 等`), `挑 ${s.pick} 隻放（放哪${s.pick > 1 ? "幾" : ""}隻都可以）`),
+          h("div", { class: "fx-units" }, s.cands.map((u) => fhex(u.key, { badge: lv, items: u.items, onPick: pickOf({ kind: "step", lv, key: u.key }), sel: isSel({ kind: "step", lv, key: u.key }) }))),
+          stepSel(lv, s.cands)) : null;
+        const afterCap = s.after ? h("p", { class: "fx-cap" }, `${s.after.level} 等已經放了其中 ${s.after.pick} 隻，${lv} 等把其他的補上`) : null;
+        if (s.cands && !s.add.length && !s.rem.length) {
+          box.append(candBox);
+          if (ed) box.append(h("div", { class: "fx-units" }, addBtn));
+        } else if (!s.rem.length) {
           box.append(h("div", { class: "fx-step" + (ed ? " fx-group" : "") }, h("span", { class: "fx-lvtag" }, `${lv} 等`),
-            h("div", { class: "fx-units" }, stepUnits(s, lv), s.add.length || !ed ? null : h("span", { class: "xs muted" }, "（和前一張一樣）"), addBtn), stepSel(lv, s.add)));
+            h("div", { class: "fx-units" }, stepUnits(s, lv), s.add.length || !ed ? null : h("span", { class: "xs muted" }, "（和前一張一樣）"), addBtn), afterCap, stepSel(lv, s.add)));
+          if (candBox) box.append(candBox);
         } else {
           box.append(h("div", { class: "fx-group" },
             h("div", { class: "fx-gh" }, h("span", { class: "fx-lvtag" }, `${lv} 等`), "換一組：拿掉", miniRow(s.rem)),
-            h("div", { class: "fx-units" }, stepUnits(s, lv), addBtn), stepSel(lv, s.add)));
+            h("div", { class: "fx-units" }, stepUnits(s, lv), addBtn), afterCap, stepSel(lv, s.add)));
+          if (candBox) box.append(candBox);
         }
       }
     }
@@ -753,6 +792,14 @@
           const unitOf = (k) => fhex(k, { corner: x.out.length === 1 && x.in.length === 1 ? x.out[0] : null, name: !(x.out.length === 1 && x.in.length === 1), items: x.items?.[k],
             onPick: pickOf({ kind: "flex", lv, i, key: k }), sel: isSel({ kind: "flex", lv, i, key: k }) });
           const sel = x.in.map((k) => selBox({ kind: "flex", lv, i, key: k })).find(Boolean) || null;
+          // 候選盤（站主 2026-11-09「放這些都可以」）：拿掉的全是候選＝候選之外也可以放這幾隻
+          const cdx = candOf(boards, lv);
+          if (cdx && x.out.every((k) => cdx.cands.some((u) => u.key === k)) && x.in.length <= cdx.pick) {
+            box.append(h("div", { class: "fx-group fx-cand" },
+              h("div", { class: "fx-gh" }, `候選之外也可以放（佔候選的 ${x.in.length} 個位置）`),
+              h("div", { class: "fx-units" }, x.in.map(unitOf)), meta, sel));
+            return;
+          }
           if (x.out.length === 1 && x.in.length === 1) {
             box.append(h("div", { class: "fx-one-wrap" }, h("div", { class: "fx-one" }, unitOf(x.in[0]),
               h("div", { class: "fx-txt" }, h("span", null, h("b", null, champName(x.in[0])), h("span", { class: "fx-cap" }, ` 換掉${champName(x.out[0])}`)), meta)), sel));
@@ -979,17 +1026,22 @@
     }
     const cs = champsOnly(units);
     const pop = cs.reduce((n, u) => n + (CH[u.key]?.slots || 1), 0);
+    const cand = c && pop > level ? candOf(c.boards, level) : null;  // 放的比人口多＝候選（站主 2026-11-09）
+    const candKeys = cand ? cand.cands.map((u) => u.key) : [];
+    const isCand = (u) => { const i = candKeys.indexOf(u?.key); if (i < 0 || isPlant(u)) return false; candKeys.splice(i, 1); return true; };
     const hasPos = cs.every((u) => Array.isArray(u.pos));
     const all = hasPos ? withPlants(units.map((u) => ({ ...u }))) : cs;
     const traits = {};
-    for (const u of cs) for (const t of CH[u.key]?.traits || []) traits[t] = (traits[t] || 0) + 1;
-    for (const u of cs) for (const it of u.items || []) if (it.endsWith("Emblem")) { const t = it.slice(0, -6); traits[t] = (traits[t] || 0) + 1; }
+    const tcs = cand ? cand.fixed : cs;
+    for (const u of tcs) for (const t of CH[u.key]?.traits || []) traits[t] = (traits[t] || 0) + 1;
+    for (const u of tcs) for (const it of u.items || []) if (it.endsWith("Emblem")) { const t = it.slice(0, -6); traits[t] = (traits[t] || 0) + 1; }
     const active = Object.entries(traits).map(([k, n]) => { const bp = (TR[k]?.breakpoints || []).filter((x) => x <= n); return bp.length ? `${traitName(k)} ${n}` : null; }).filter(Boolean);
     const marks = cs.filter((u) => u.mark).map((u) => champName(u.key));
     const riders = spryOn(cs) ? cs.filter((u) => u.rider && isSpry(u.key)).map((u) => champName(u.key)) : [];
     const plants = plantSummary(hasPos ? all : plantPlan(cs));  // 沒站位也列出神木植物
     const wrap = h("div", { class: "stack" },
-      h("p", { class: "small" }, `人口 ${pop}／${level}${pop > level ? "（超出，請檢查）" : ""}｜啟動羈絆：${active.join("、") || "—"}`),
+      cand ? h("p", { class: "small" }, `${level} 人口：固定 ${cand.fixed.length} 隻＋虛線框的 ${cand.cands.length} 隻挑 ${cand.pick} 隻放（放哪${cand.pick > 1 ? "幾" : ""}隻都可以）｜固定棋子的羈絆：${active.join("、") || "—"}`)
+        : h("p", { class: "small" }, `人口 ${pop}／${level}${pop > level ? "（超出，請檢查）" : ""}｜啟動羈絆：${active.join("、") || "—"}`),
       marks.length ? h("p", { class: "small" }, h("b", null, "首領標記："), marks.join("、")) : null,
       riders.length ? h("p", { class: "small" }, h("b", null, "騎乘者："), riders.join("、"), "（騎上毛茸茸大夥伴）") : null,
       plants ? h("p", { class: "small" }, h("b", null, "神木植物："), plants) : null);
@@ -1000,7 +1052,8 @@
         for (let col = 0; col < 7; col++) {
           const u = all.find((x) => x.pos && x.pos[0] === r && x.pos[1] === col);
           const tip = u && !isPlant(u) ? `${champName(u.key)} ${u.star} 星${starMixText(u)}${u.seen != null ? `｜出現 ${Math.round(u.seen * 100)}%` : ""}${(u.items || []).length ? "｜" + u.items.map(itemName).join("、") : ""}` : null;
-          row.append(h("div", { class: "hex" + (u ? " has" : "") + (isPlant(u) ? " is-plant" : ""), role: "gridcell", title: tip, "aria-label": tip }, u ? hexInner(u) : null));
+          const cd = u && isCand(u);
+          row.append(h("div", { class: "hex" + (u ? " has" : "") + (isPlant(u) ? " is-plant" : "") + (cd ? " cand" : ""), role: "gridcell", title: tip && (cd ? tip + "｜候選" : tip), "aria-label": tip && (cd ? tip + "｜候選" : tip) }, u ? hexInner(u) : null));
         }
         grid.append(row);
       }
@@ -1068,15 +1121,25 @@
     const draw = () => {
       area.textContent = "";
       const hero = heroes.find((x) => x.key === st.hero) || heroes[0];
-      area.append(h("div", { class: "tabs", role: "tablist", "aria-label": "持裝英雄" }, heroes.map((x) =>
-        h("button", { type: "button", role: "tab", "aria-selected": x.key === hero.key ? "true" : "false", onclick: () => { st.hero = x.key; st.sel = []; st.msg = ""; draw(); } }, `${champName(x.key)}・${x.role}`))));
+      // 站主 2026-11-09：「標籤不要用文字要用圖」→ 頭像＋角標（劍＝輸出、盾＝坦；角標數字＝第幾隻），輸出在左、坦在右；名字和角色放在滑過提示與讀屏
+      const tabOf = (x) => {
+        const tank = /坦/.test(x.role), rank = { 主C: 1, 副C: 2, 第二副C: 3, 主坦: 1, 副坦: 2, 第三坦: 3 }[x.role];
+        const label = `${champName(x.key)}・${x.role}`;
+        return h("button", { type: "button", role: "tab", class: "htab " + (tank ? "tank" : "carry") + (x.role === "可換主C" ? " alt" : ""), title: label, "aria-label": label,
+          "aria-selected": x.key === hero.key ? "true" : "false", onclick: () => { st.hero = x.key; st.sel = []; st.msg = ""; draw(); } },
+          icon("champion", x.key, "sm"), h("span", { class: "htab-mark", "aria-hidden": "true" }, roleGlyph(tank), rank ? h("b", null, String(rank)) : null));
+      };
+      const cTabs = heroes.filter((x) => !/坦/.test(x.role)), tTabs = heroes.filter((x) => /坦/.test(x.role));
+      area.append(h("div", { class: "tabs hero-tabs", role: "tablist", "aria-label": "持裝英雄（劍＝輸出、盾＝坦）" }, cTabs.map(tabOf),
+        cTabs.length && tTabs.length ? h("span", { class: "htab-sep", "aria-hidden": "true" }) : null, tTabs.map(tabOf)));
       // 站主 2026-11-04：裝備的解釋（評價怎麼看、每欄只亮一件）刪掉
       if (hero.itemsOnly) {
         area.append(h("p", { class: "notice small" }, `${champName(hero.key)}（${hero.role}）三件套紀錄不夠，先列最常拿的裝備：`),
           h("div", { class: "ilist" }, hero.itemsOnly.map((x) => h("div", { class: "unit" }, icon("item", x.key, "sm"), h("span", null, h("b", null, itemName(x.key)), h("span", { class: "xs muted", style: "display:block" }, `持有率 ${pct(x.rate)}`))))));
         return;
       }
-      if (hero.pooled) area.append(h("p", { class: "notice small" }, `這套陣容裡${champName(hero.key)}拿三件裝的場數不夠，改用所有陣容裡${champName(hero.key)}當坦的三件套（坦裝和陣容關係較小，可以參考）。`));
+      if (hero.pooled) area.append(h("p", { class: "notice small" }, /坦/.test(hero.role) ? `這套陣容裡${champName(hero.key)}拿三件裝的場數不夠，改用所有陣容裡${champName(hero.key)}當坦的三件套（坦裝和陣容關係較小，可以參考）。`
+        : `這套陣容裡${champName(hero.key)}拿三件裝的場數不夠，改用所有陣容裡${champName(hero.key)}當輸出的三件套（可以參考）。`));
       const m = itemModel(hero, st.sel);
       const sel = h("div", { class: "selected-line" }, h("b", null, "已合裝："), st.sel.length ? st.sel.map((k) => h("button", { class: "chip", type: "button", "aria-pressed": "true", onclick: () => { st.sel = st.sel.filter((x) => x !== k); st.msg = ""; draw(); } }, icon("item", k, "xs"), itemName(k), " ×")) : h("span", { class: "small muted" }, "尚未選裝，顯示首選組合"),
         st.sel.length ? h("button", { class: "btn ghost", type: "button", onclick: () => { st.sel = []; st.msg = ""; draw(); } }, "清除選擇") : null);
@@ -2169,7 +2232,10 @@
       const put = (...xs) => main.append(...xs.filter(Boolean));
       put(st.lv === M ? h("p", { class: "be-lv" }, h("b", null, "主圖："), lvLabel(M))
         : h("div", { class: "be-lv other" }, h("b", null, `正在調整 ${lvLabel(st.lv)} 的棋盤`), h("button", { type: "button", class: "btn ghost", onclick: () => { st.lv = M; st.sel = null; draw(); } }, `← 回主圖（${lvLabel(M)}）`)));
-      put(h("p", { class: "small" }, `人口 ${pop}／${st.lv}`, pop > st.lv ? h("b", { class: "warn" }, "（超出人口）") : null),
+      const ec = pop > st.lv ? candOf(live, st.lv) : null;  // 放的比人口多＝候選（站主 2026-11-09「放這些都可以」）
+      const ecs = ec ? [...ec.cands] : [];
+      put(ec ? h("p", { class: "small" }, `人口 ${st.lv}：固定 ${ec.fixed.length} 隻（和 ${ec.from} 人口一樣）＋虛線框的 ${ec.cands.length} 隻是候選，挑 ${ec.pick} 隻放（放哪${ec.pick > 1 ? "幾" : ""}隻都可以）`)
+        : h("p", { class: "small" }, `人口 ${pop}／${st.lv}`, pop > st.lv ? h("b", { class: "warn" }, "（超出人口）") : null),
         h("div", { class: "tchips" }, traitsOf(units).map((t) => h("span", { class: "tchip" + (t.on ? " on" : "") }, t.label))));
       const rOn = riftOn(units);
       if (rOn) put(markBox(units));
@@ -2182,7 +2248,8 @@
         const row = h("div", { class: "brow" + (r % 2 ? " odd" : ""), role: "row" });
         for (let col = 0; col < 7; col++) {
           const u = at(r, col);
-          const cell = h("div", { class: "hex" + (u ? " has" : "") + (isPlant(u) ? " is-plant" : "") + (u && st.sel === u ? " sel" : ""), role: "gridcell", tabindex: "0", "data-r": r, "data-c": col,
+          const cd = u && ecs.includes(u);
+          const cell = h("div", { class: "hex" + (u ? " has" : "") + (isPlant(u) ? " is-plant" : "") + (cd ? " cand" : "") + (u && st.sel === u ? " sel" : ""), role: "gridcell", tabindex: "0", "data-r": r, "data-c": col,
             "aria-label": `${"ABCD"[r]}${col + 1}${u ? "：" + (isPlant(u) ? PLANT[u.plant] : champName(u.key)) + " " + u.star + " 星" + (rOn && u.mark ? "（首領標記）" : "") + (u.rider ? "（騎乘者）" : "") : "：空格"}` },
             u ? hexInner({ ...u, rider: u.rider && spryOn(units) && isSpry(u.key) }, rOn && isRift(u.key)) : h("span", { class: "hexlbl" }, `${"ABCD"[r]}${col + 1}`));
           cell.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); tapCell(r, col); } });

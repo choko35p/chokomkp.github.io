@@ -392,7 +392,12 @@ details.pgroup > .in { padding-top: var(--s2); }
 .wc .wst:first-child { color: var(--text); }
 .tag.few { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
 .tag.watch { background: var(--surface-2); color: var(--muted); border: 1px dashed var(--muted); }
-.tb-watch-note { margin-top: .6rem; color: var(--muted); }
+.tb-watch-note { margin-top: .35rem; color: var(--muted); border: 0; background: none; border-radius: 0; }
+.tb-watch-note > summary { cursor: pointer; min-height: 28px; padding: 0; font-weight: 400; display: flex; align-items: center; gap: .35rem; list-style: none; }
+.tb-watch-note > summary::before { content: none; }
+.tb-watch-note > summary::-webkit-details-marker { display: none; }
+.tb-watch-note > summary::after { content: "▾"; font-size: .8em; }
+.tb-watch-note[open] > summary::after { content: "▴"; }
 .tb-cell { display: grid; gap: var(--s2); align-content: start; padding: var(--s2) 0 var(--s3); border-bottom: 1px solid var(--line); }
 .tb-tier { border-bottom: 0; }
 .tb-none { color: var(--muted); padding: 6px 8px; opacity: .5; }
@@ -980,7 +985,7 @@ button.fhex:focus-visible { outline: 2px solid var(--accent); outline-offset: 2p
 }
 
 /* ---------- T 度表分頁（站主 2026-11-06：九等五費、條件陣容各自一頁；電腦一個畫面看完；每列由左往右） ---------- */
-.tb-tabs { display: flex; gap: .6rem; margin: .5rem 0 1rem; }
+.tb-tabs { display: flex; gap: .6rem; margin: .5rem 0 .6rem; }
 .tb-tab { flex: 1 1 0; min-width: 0; display: grid; gap: 2px; text-align: left; padding: .6rem .9rem .65rem; border-radius: 12px; border: 1px solid var(--line); border-top: 4px solid var(--lc, var(--line)); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
 .tb-tab[data-lane="normal"] { --lc: #3d6fb6; } .tb-tab[data-lane="highroll"] { --lc: #8a4fbf; } .tb-tab[data-lane="conditional"] { --lc: #2f8a6f; }
 .tb-tab .tb-tl b { font-size: 1.1rem; letter-spacing: .04em; }
@@ -988,13 +993,17 @@ button.fhex:focus-visible { outline: 2px solid var(--accent); outline-offset: 2p
 .tb-tab .tb-sub { font-size: var(--fs-xs); color: var(--muted); }
 .tb-tab:hover { border-color: var(--lc); }
 .tb-tab[aria-selected="true"] { background: color-mix(in srgb, var(--lc) 16%, var(--surface)); border-color: var(--lc); box-shadow: 0 0 0 1px var(--lc) inset; }
+/* 2026-11-09 重抓數據後條件區多了幾套：電腦上分區按鈕排成一行（名稱、套數、說明並排），T 表一個畫面看得完 */
+@media (min-width: 900px) {
+  .tb-tab { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: .7rem; padding: .45rem .9rem .5rem; }
+}
 .tb-ptitle { margin: 1.2rem 0 .5rem; }
-.tbx { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr); gap: .3rem .9rem; }  /* 站主 2026-11-07：條件區多了 C 列，列距收一點，電腦一個畫面看得完 */
+.tbx { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr); gap: .22rem .9rem; }  /* 站主 2026-11-07：條件區多了 C 列，列距收一點，電腦一個畫面看得完 */
 .tbx .tb-tier { position: static; align-self: stretch; height: auto; min-height: 4.5rem; margin: 0; padding: 0; font-size: 2.6rem; box-shadow: none; }
 .tbx .tb-tier.t-R, .tbx .tb-tier.t-Q { font-size: 1rem; }
-.tbx .tb-cell { display: grid; grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr)); gap: .4rem; align-content: start; padding: .3rem .5rem; border-radius: 14px; }
+.tbx .tb-cell { display: grid; grid-template-columns: repeat(auto-fill, minmax(14.5rem, 1fr)); gap: .3rem .4rem; align-content: start; padding: .18rem .45rem; border-radius: 14px; }
 /* 卡片壓扁一點：一個畫面看得完（名稱、下限上限頻率同一行、需要一行省略、分支標籤一行） */
-.tbx .tc-main { padding: .32rem .65rem; gap: .55rem; grid-template-columns: 2.1rem 1fr; }
+.tbx .tc-main { padding: .26rem .65rem; gap: .55rem; grid-template-columns: 2.1rem 1fr; }
 .tbx .tc-txt { gap: 2px; line-height: 1.3; }
 .tbx .tc-nm { font-size: .98rem; }
 .tbx .tc-sub { flex-wrap: wrap; row-gap: 2px; }
@@ -1102,3 +1111,18 @@ button.bcard { font: inherit; color: inherit; text-align: left; cursor: pointer;
 .fx-tools .fx-from { max-width: 100%; }
 .btn.ghost.danger { color: var(--bad, #e5484d); border-color: var(--bad, #e5484d); }
 @media (max-width: 520px) { .fx-tools .fx-form > * { flex: 1 1 100%; width: 100%; } }
+/* 站主 2026-11-09「放這些都可以」：放的比人口多＝候選，虛線框 */
+.board .hex.cand { border: 2px dashed color-mix(in srgb, var(--accent) 70%, transparent) !important; opacity: .82; }
+.fx-cand { border-style: dashed; }
+/* 站主 2026-11-09「標籤不要用文字要用圖」：裝備分頁＝頭像＋劍／盾角標 */
+.tabs.hero-tabs { align-items: center; gap: .45rem; }
+.tabs.hero-tabs .htab { position: relative; padding: 3px; min-height: 0; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); line-height: 0; }
+.tabs.hero-tabs .htab .ico.sm { width: 2.6rem; }
+.tabs.hero-tabs .htab[aria-selected="true"] { background: var(--surface); border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); }
+.tabs.hero-tabs .htab:not([aria-selected="true"]) .ico { opacity: .72; }
+.htab-mark { position: absolute; right: -6px; bottom: -6px; display: inline-flex; align-items: center; gap: 1px; padding: 2px 4px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); line-height: 1; font-size: 11px; }
+.htab-mark b { font-size: 11px; font-weight: 800; color: var(--text); }
+.htab.carry .htab-mark { color: #ff8f6b; }
+.htab.tank .htab-mark { color: #79aefc; }
+.htab.alt .htab-mark { color: var(--muted); }
+.htab-sep { width: 2px; align-self: stretch; margin: 4px .2rem; border-radius: 2px; background: var(--line); }

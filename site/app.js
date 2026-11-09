@@ -1680,11 +1680,31 @@
     box.append(chips, q, listBox);
     return box;
   }
+  // 站主 2026-11-09：「小百科裡面幫我放甚麼時候更新新版本，要用台灣時間來算」
+  // 官方時間表是美西日期；台服在美西更新日的隔天（台灣時間）上線。現在／下一版用台灣今天的日期判斷，不用等重建網站。
+  function wkSchedule(sc) {
+    const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+    const ps = sc.patches;
+    const cur = [...ps].reverse().find((x) => x.tw <= today);
+    const nexts = ps.filter((x) => x.tw > today);
+    const nx = nexts[0];
+    const days = nx ? Math.round((Date.parse(nx.tw) - Date.parse(today)) / 864e5) : null;
+    const seenTxt = (x) => x?.seen ? `（台服 ${+x.seen.slice(5, 7)}/${+x.seen.slice(8, 10)} ${x.seen.slice(11, 16)} 就有人在打新版本）` : "";
+    return h("div", { class: "wk-sched" },
+      h("h3", null, "版本更新時間（台灣時間）"),
+      nx ? h("p", { class: "wk-next" }, h("b", null, `下一版 ${nx.patch}：${nx.twLabel}`), days === 0 ? "　今天" : `　還有 ${days} 天`, nx.note ? h("span", { class: "tag" }, nx.note) : null)
+        : h("p", { class: "wk-next" }, "官方還沒公布下一個版本的日期。"),
+      cur ? h("p", { class: "small" }, `現在：${cur.patch}，${cur.twLabel}上線${seenTxt(cur)}`) : null,
+      nexts.length > 1 ? h("ul", { class: "wk-later small" }, nexts.slice(1).map((x) => h("li", null, `${x.patch}：${x.twLabel}`, x.note ? `　${x.note}` : ""))) : null,
+      h("p", { class: "xs muted" }, `官方時間表用美國西岸日期（例：${(nx || cur).patch} 是美西 ${(nx || cur).ptLabel}），台服是隔天（台灣時間）維護後上線；官方延期會在 48 小時內公告。`,
+        sc.source ? h("a", { href: sc.source.split(" ").pop(), target: "_blank", rel: "noopener" }, "官方時間表") : null));
+  }
   function drawWiki() {
     const sec = $("#wiki-sec"); if (!sec) return;
     const body = sec.querySelector(".wk-body"); body.textContent = "";
     if (!WK.d) { body.append(h("p", { class: "small muted" }, WK.p ? "載入中…" : "小百科資料讀不到。")); return; }
     const tabs = [["items", `裝備 ${WK.d.groups.reduce((n, g) => n + g.items.length, 0)}`], ["augs", `增幅 ${WK.d.augments.length}`]];
+    if (WK.d.schedule?.patches?.length) body.append(wkSchedule(WK.d.schedule));
     body.append(h("div", { class: "tabs wk-tabs", role: "tablist", "aria-label": "小百科分類" }, tabs.map(([k, l]) => h("button", { type: "button", role: "tab", "aria-selected": WK.tab === k ? "true" : "false",
       onclick: () => { WK.tab = k; track("wiki_tab", k); drawWiki(); } }, l))),
       h("div", { role: "tabpanel" }, WK.tab === "items" ? wkItems() : wkAugs()),
@@ -1932,36 +1952,30 @@
     n.textContent = msg; clearTimeout(n._t); n._t = setTimeout(() => n.remove(), 4000);
   }
   /* 站主 2026-11-06：「你給我預覽頁一個按鈕，我按下去你就更新到主頁」
-     按下確定：先在資料庫 releases/ 記一筆要求（Claude 更新完會把 status 改成 done），
-     再用留言「傳給 Claude」叫醒有在看這個預覽站的對話；叫不到就留著要求，在對話說一聲就會照這筆處理。 */
+     站主 2026-11-09：「我按這個不要再把更新的東西傳到留言我會看不到」→ 不再發留言。
+     按下確定：只在資料庫 releases/ 記一筆要求；Claude 更新完把 status 改成 done、寫 summary（這次更新了什麼），
+     結果直接顯示在按鈕下面（還沒處理的要求也列在這裡），不用去看留言。 */
   function releaseBox() {
-    const last = (O.releases || [])[0];
-    const st = !last ? "" : last.status === "done" ? `正式站最後更新：${fmtTime(last.doneAt || last.at)}` : `已送出更新要求（${fmtTime(last.at)}），等 Claude 處理`;
-    const send = async (ev) => {
-      const anchorEl = ev.currentTarget.closest(".rel-box") || ev.currentTarget;
+    const rs = O.releases || [];
+    const done = rs.find((x) => x.status === "done");
+    const pending = rs.filter((x) => x.status === "requested" && (!done || x.at > (done.doneAt || done.at)));
+    const send = async () => {
       O.relAsk = false; O.relBusy = true; ownerPanel();
       const at = new Date().toISOString(), id = "r" + at.replace(/\D/g, "").slice(0, 14);
       const req = { id, at, status: "requested", where: location.hash || "#home" };
-      try { await O.db.doc("releases/" + id).set(req); O.releases = [req, ...(O.releases || [])]; }
+      try { await O.db.doc("releases/" + id).set(req); O.releases = [req, ...rs]; }
       catch (err) { O.relBusy = false; ownerPanel(); ownerNotice("送出失敗：" + (err?.message || "請再試一次")); return; }
-      let sent = false;
-      try {
-        const cm = await window.claude.use("comments");
-        if (cm && (await cm.canSendToClaude().catch(() => "off")) === "available") {
-          const anchor = await cm.anchorFor(document.body.contains(anchorEl) ? anchorEl : document.body);
-          await cm.sendToClaude({ anchor, text: `【站主按鈕】更新正式站（要求 ${id}）：請把預覽站的修改同步並更新到正式站 chokomkp.com。` });
-          sent = true;
-        }
-      } catch { sent = false; }
       O.relBusy = false; ownerPanel();
-      ownerNotice(sent ? "已通知 Claude 更新正式站，好了這裡會顯示時間。" : "已記下更新要求。Claude 現在沒有連上這個頁面，在對話跟 Claude 說「更新正式站」就會照這筆處理。");
+      ownerNotice("已記下更新要求。跟 Claude 說一聲就會更新，好了這裡會顯示時間和更新了什麼。");
     };
     return h("div", { class: "rel-box" },
       O.relAsk ? [h("p", { class: "xs rel-q" }, "把預覽站的修改（文字、棋盤、T 表）更新到正式站？"),
         h("div", { class: "row" }, h("button", { class: "btn", type: "button", onclick: send }, "確定更新"),
           h("button", { class: "btn ghost", type: "button", onclick: () => { O.relAsk = false; ownerPanel(); } }, "取消"))]
         : h("button", { class: "btn ghost", type: "button", disabled: O.relBusy || null, onclick: () => { O.relAsk = true; ownerPanel(); } }, O.relBusy ? "送出中…" : "⇪ 更新到正式站"),
-      st ? h("p", { class: "xs muted rel-st", role: "status" }, st) : null);
+      pending.length ? h("p", { class: "xs rel-st rel-wait", role: "status" }, `已記下更新要求（${fmtTime(pending[0].at)}），Claude 還沒處理；跟 Claude 說一聲就會更新。`) : null,
+      done ? h("div", { class: "xs muted rel-st", role: "status" }, `正式站最後更新：${fmtTime(done.doneAt || done.at)}`,
+        (done.summary || []).length ? h("ul", { class: "rel-sum" }, done.summary.slice(0, 6).map((t) => h("li", null, t))) : null) : null);
   }
   function ownerPanel() {
     $("#owner-fab")?.remove();

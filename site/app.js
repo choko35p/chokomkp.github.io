@@ -380,6 +380,25 @@
   };
   const branchIcon = (v) => { const r = (v.required || [])[0]; return r?.type === "emblem" || r?.type === "trait" ? icon("item", r.key, "xs") : r?.key && CH[r.key] ? icon("champion", r.key, "xs") : null; };
 
+  // 站主 2026-11-09：「讓我可以改T度表上面的陣容名跟角色圖」→ tiers/ 文件多 name、icon；名字跟著換到全站（分支、公式名稱前面那段也一起換），角色圖用在 T 表和陣容頁
+  const compIcon = (c) => O.tiers[c.id]?.icon || c.iconKey || c.carrier;
+  function applyOwnerNames() {
+    const ren = {};
+    for (const [cid, t] of Object.entries(O.tiers || {})) if (t?.name) ren[cid] = t.name;
+    for (const c of D.comps) if (c._n0 == null) c._n0 = c.nameOrig || c.name;  // nameOrig＝建置前的原名（建置已經套過站主改的名字）
+    const byId = Object.fromEntries(D.comps.map((c) => [c.id, c]));
+    for (const c of D.comps) {
+      let n = ren[c.id] || c._n0;
+      if (!ren[c.id]) {
+        const parts = String(c.id).split("__");
+        for (let k = parts.length - 1; k >= 1; k--) {
+          const pid = parts.slice(0, k).join("__"), p = byId[pid];
+          if (p && ren[pid] && c._n0.startsWith(p._n0 + " · ")) { n = ren[pid] + c._n0.slice(p._n0.length); break; }
+        }
+      }
+      c.name = n;
+    }
+  }
   // 站主 T 表調整（預覽站）：評級、分區、順序、隱藏；站主手動加的陣容
   const withOwner = (c) => {
     const t = O.tiers[c.id];
@@ -417,7 +436,7 @@
     const r = c.range || {};
     const el = h("div", { class: "tc" + (c.custom ? " custom" : "") + (c.hidden ? " hid" : "") + (O.tmode ? "" : " tc-click"), "data-id": c.id, onclick: cardClick(c.id) },
       h("button", { class: "tc-main", type: "button", onclick: () => go(c.id) },
-        icon("champion", c.carrier, "sm"),
+        icon("champion", compIcon(c), "sm"),
         h("span", { class: "tc-txt" },
           h("span", { class: "tc-nm" }, h("span", { class: "nm" }, c.name), impArrow(c),
             c.patchImpact?.tierFrom && D.inference && c.tierSource !== "owner" ? h("span", { class: "was", title: `推測前是 ${c.patchImpact.tierFrom} 級` }, "原" + c.patchImpact.tierFrom) : null,
@@ -440,7 +459,7 @@
     const w = c.watch;
     return h("div", { class: "tc wc" + (O.tmode ? "" : " tc-click"), "data-id": c.id, onclick: cardClick(c.id) },
       h("button", { class: "tc-main", type: "button", onclick: () => go(c.id) },
-        icon("champion", c.carrier, "sm"),
+        icon("champion", compIcon(c), "sm"),
         h("span", { class: "tc-txt" },
           h("span", { class: "tc-nm" }, h("span", { class: "nm" }, c.name)),
           // T 度表只用下限／上限（站主 11/4）；均名、前四率在詳細頁
@@ -622,7 +641,7 @@
     const c = e.c;
     const alt = (c.compare || [])[0], sw = (c.switchTo || []);
     return h("div", { class: "card rec" },
-      h("h4", null, icon("champion", c.carrier, "sm"), h("a", { href: "#" + slug(c.id) }, c.name), c.tier ? h("span", { class: "tag" }, tierLabel(c)) : c.lane === "highroll" ? h("span", { class: "tag" }, "九等五費") : null, c.conditional ? h("span", { class: "tag cond" }, "") : null),
+      h("h4", null, icon("champion", compIcon(c), "sm"), h("a", { href: "#" + slug(c.id) }, c.name), c.tier ? h("span", { class: "tag" }, tierLabel(c)) : c.lane === "highroll" ? h("span", { class: "tag" }, "九等五費") : null, c.conditional ? h("span", { class: "tag cond" }, "") : null),
       h("dl", null,
         h("dt", null, "為什麼適合"), h("dd", null, e.why.join("；") || "—"),
         h("dt", null, "還缺什麼"), h("dd", null, e.missing.length ? e.missing.slice(0, 3).join("、") : "最重要裝備已齊"),
@@ -832,7 +851,11 @@
     if (!doc) return built;
     const fixed = built.filter((f) => !f.owner).map((f, i) => (i === 0 && doc.mainName ? { ...f, name: doc.mainName } : f));
     const head = fixed.length ? fixed : [{ id: b.id, name: doc.mainName || "公式一", dataMain: true }];
-    return [...head, ...(doc.formulas || []).map((f) => { const id = `${b.id}__fx_${f.id}`; return { ...(built.find((x) => x.id === id) || {}), id, name: f.name, owner: true }; })];
+    const all = [...head, ...(doc.formulas || []).map((f) => { const id = `${b.id}__fx_${f.id}`; return { ...(built.find((x) => x.id === id) || {}), id, name: f.name, owner: true }; })];
+    // 站主 2026-11-09：「讓我可以調每個公式的順序」→ doc.order＝公式 id 的順序（沒列到的照原本順序排在後面）
+    const ord = Array.isArray(doc.order) ? doc.order : [];
+    const rank = (f) => { const i = ord.indexOf(f.id); return i < 0 ? 1e3 + all.indexOf(f) : i; };
+    return ord.length ? [...all].sort((a, b2) => rank(a) - rank(b2)) : all;
   };
   const formulaOf = (c) => { const b = c.formulaOf ? compById(c.formulaOf) : c; return formulasOf(b).length > 1 ? b : null; };
   function formulaArea(c) {
@@ -932,11 +955,27 @@
         location.hash = "#" + slug(base.id);
       });
     };
+    // 站主 2026-11-09：調公式的順序（▲▼ 排好再按「儲存順序」；只改頁面上公式按鈕的排列）
+    const reorder = () => {
+      const ids = fs.map((f) => f.id);
+      const list = h("ol", { class: "fx-order" });
+      const draw = () => {
+        list.textContent = "";
+        ids.forEach((id, i) => list.append(h("li", { class: "row" }, fmKeys(fs.find((f) => f.id === id)) || null, h("span", { class: "fx-oname" }, fs.find((f) => f.id === id)?.name || id),
+          h("button", { class: "btn ghost xs", type: "button", "aria-label": "往前", disabled: i === 0 || null, onclick: () => { [ids[i - 1], ids[i]] = [ids[i], ids[i - 1]]; draw(); } }, "▲"),
+          h("button", { class: "btn ghost xs", type: "button", "aria-label": "往後", disabled: i === ids.length - 1 || null, onclick: () => { [ids[i + 1], ids[i]] = [ids[i], ids[i + 1]]; draw(); } }, "▼"))));
+      };
+      draw();
+      const ok = () => save({ ...doc, compId: base.id + "__formulas", of: base.id, formulas: doc.formulas || [], order: ids }, () => { msg.textContent = "已儲存公式順序。"; });
+      return h("div", { class: "fx-form" }, list, h("div", { class: "row" }, h("button", { class: "btn primary", type: "button", onclick: ok }, "儲存順序"),
+        h("button", { class: "btn ghost", type: "button", onclick: () => { box.replaceWith(formulaTools(c)); } }, "取消")));
+    };
     const canName = me.owner || me.id === base.id;
     box.append(h("div", { class: "row fx-btns" },
       h("b", null, fs.length > 1 ? `公式（${fs.length} 個）` : "公式"),
       h("button", { class: "btn", type: "button", onclick: (ev) => { ev.currentTarget.closest(".fx-tools").querySelector(".fx-slot").replaceChildren(form()); } }, "＋ 加公式"),
       fs.length > 1 && canName ? h("button", { class: "btn ghost", type: "button", onclick: (ev) => { ev.currentTarget.closest(".fx-tools").querySelector(".fx-slot").replaceChildren(rename()); } }, "改這個公式的名字") : null,
+      fs.length > 1 ? h("button", { class: "btn ghost", type: "button", onclick: (ev) => { ev.currentTarget.closest(".fx-tools").querySelector(".fx-slot").replaceChildren(reorder()); } }, "調整順序") : null,
       me.owner ? h("button", { class: "btn ghost danger", type: "button", onclick: del }, "刪掉這個公式") : null),
       h("div", { class: "fx-slot" }),
       h("p", { class: "xs muted" }, fs.length > 1 ? "加公式時可以複製任何一個公式的盤面，再到新公式的頁面改。" : "這套還沒有公式。加公式後，目前的盤面就是「公式一」，新的是「公式二」，頁面上方可以切換。"), msg);
@@ -1447,7 +1486,7 @@
     track("comp", c.id);
     floatBack(true);
     const r = c.range || {};
-    const keys = [...new Set([c.carrier, ...(c.core || [])].filter(Boolean))].slice(0, 3);
+    const keys = [...new Set([compIcon(c), c.carrier, ...(c.core || [])].filter(Boolean))].slice(0, 3);
     v.append(h("a", { class: "back btn ghost", href: "#comps" }, "← 回陣容列表"),
       h("header", { class: "dhero" },
         c.tier ? h("div", { class: "dtier t-" + c.tier, "aria-label": tierLabel(c) }, c.tier) : null,
@@ -1916,7 +1955,7 @@
       onclick: open, onkeydown: (ev) => { if (ev.key === "Enter" || ev.key === " ") open(ev); } }, shown);
   }
   function rerender() {
-    applyDataTx(); renderTop(); renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderRoute();
+    applyOwnerNames(); applyDataTx(); renderTop(); renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderRoute();
     const hsh = location.hash.slice(1), c = D.comps.find((x) => slug(x.id) === hsh) || (O.on ? O.custom.map(customToComp).find((x) => slug(x.id) === hsh) : null);
     if (c) { const y = scrollY; renderDetail(c.id); scrollTo(0, y); }
     ownerPanel();
@@ -2082,6 +2121,18 @@
       return s;
     };
     const run = async (fn, msg) => { try { await fn(); renderTiers(); ownerNotice(msg); } catch (e) { ownerNotice("儲存失敗：" + (e?.message || "請再試一次")); } };
+    // 名字、角色圖會出現在全站：存完整個重畫
+    const runAll = async (fn, msg) => { try { await fn(); rerender(); ownerNotice(msg); } catch (e) { ownerNotice("儲存失敗：" + (e?.message || "請再試一次")); } };
+    const nameForm = (c2) => {
+      const orig = D.comps.find((x) => x.id === c2.id)?._n0 || c2.name;
+      const inp = h("input", { type: "text", class: "tc-name-in", value: c2.name, maxlength: "40", "aria-label": "陣容名稱", onclick: (e) => e.stopPropagation() });
+      const t = O.tiers[c2.id] || {};
+      return h("div", { class: "tc-own tc-namef", onclick: (e) => e.stopPropagation() }, inp,
+        h("button", { class: "btn xs", type: "button", onclick: () => { const nm = inp.value.trim(); if (!nm) return; runAll(() => saveTier(c2.id, { name: nm === orig ? null : nm }), "已改陣容名稱（全站一起改）。"); } }, "儲存"),
+        t.name ? h("button", { class: "btn ghost xs", type: "button", onclick: () => runAll(() => saveTier(c2.id, { name: null }), "已恢復原本的名稱。") }, "恢復原名") : null,
+        t.icon ? h("button", { class: "btn ghost xs", type: "button", onclick: () => runAll(() => saveTier(c2.id, { icon: null }), "已恢復原本的角色圖。") }, "恢復原圖") : null,
+        h("button", { class: "btn ghost xs", type: "button", onclick: () => renderTiers() }, "取消"));
+    };
     const move = (d) => run(async () => {
       const cell = pool.filter((x) => x.lane === c.lane && x.tier === c.tier && (!x.hidden || x.id === c.id)).sort(cellSort);
       const i = cell.findIndex((x) => x.id === c.id), j = i + d;
@@ -2097,6 +2148,8 @@
       h("button", { class: "linkbtn", type: "button", "aria-label": "往前", onclick: () => move(-1) }, "◀"),
       h("button", { class: "linkbtn", type: "button", "aria-label": "往後", onclick: () => move(1) }, "▶"),
       O.tiers[c.id] && !c.custom ? h("button", { class: "linkbtn", type: "button", onclick: () => run(async () => { await O.db.doc("tiers/" + docId(c.id)).delete(); delete O.tiers[c.id]; }, "已恢復資料算出的評級。") }, "恢復") : null,
+      c.custom ? null : h("button", { class: "linkbtn", type: "button", onclick: (ev) => { ev.stopPropagation(); ev.currentTarget.closest(".tc-own").replaceWith(nameForm(c)); } }, "改名"),
+      c.custom ? null : h("button", { class: "linkbtn", type: "button", onclick: (ev) => { ev.stopPropagation(); openPicker(`${c.name}：T 表的角色圖`, champGroups(new Set([compIcon(c)])), (key) => runAll(() => saveTier(c.id, { icon: key }), "已換角色圖。")); } }, "換圖"),
       c.custom ? h("button", { class: "linkbtn", type: "button", onclick: () => openCustom(O.custom.find((y) => y.id === c.id)) }, "編輯") : null);
   }
   function ownerTierBar() {
@@ -2234,9 +2287,22 @@
       return { k, n, on: hit.length > 0, label: `${traitName(k)} ${n}${next ? "/" + next : ""}` }; })
       .sort((a, b) => b.on - a.on || b.n - a.n);
   }
+  // 站主 2026-11-09：「只要我點到其他地方自動幫我按這個完成」→ 選了棋子（或旁邊一欄的棋子）時，點到棋盤、選取面板、挑選視窗以外的地方＝按「完成」
+  // 用 click（不是 pointerdown，不會吃掉那一下）：點在編輯器外面＝先收起再做那一下（索引、連結算位置時版面已經變好）；
+  // 點在編輯器裡面的其他按鈕＝先讓按鈕做完自己的事再收起（重畫編輯器會換掉那顆按鈕）
+  let beDismissOn = false;
+  function beDismissInit() {
+    if (beDismissOn) return;
+    beDismissOn = true;
+    const skip = (t) => !(t instanceof Element) || !t.isConnected || !!t.closest(".board.edit, .selp, #picker-sheet, .fxpanel .fhex, [role=dialog], .owner-note");
+    const all = () => { for (const be of document.querySelectorAll(".be")) be._dismiss?.(); };
+    document.addEventListener("click", (ev) => { if (!skip(ev.target) && !ev.target.closest(".be")) all(); }, true);
+    document.addEventListener("click", (ev) => { if (!skip(ev.target) && ev.target.closest(".be")) all(); });
+  }
   function boardEditor(c) {
     const root = h("div", { class: "be" });
     const st = BSTATE[c.id] ||= freshState(c, true);
+    beDismissInit();
     // 編輯器的等級：資料的等級＋現在有棋子的等級（人口跟著棋子走，可能換到 5～9 任何一等）
     const edLv = () => [...new Set([...levelsOf(c), st.main, ...Object.keys(st.data).map(Number).filter((L) => champsOnly(st.data[L]).length)])].sort((a, b) => a - b);
     const draw = () => {
@@ -2587,6 +2653,7 @@
       catch (err) { st.msg = "恢復失敗：" + (err?.message || "請再試一次"); }
       draw();
     }
+    root._dismiss = () => { if (st.sel || st.side) { st.sel = null; st.side = null; draw(); } };
     draw();
     return root;
   }

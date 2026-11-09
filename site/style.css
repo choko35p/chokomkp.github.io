@@ -1137,3 +1137,10 @@ button.bcard { font: inherit; color: inherit; text-align: left; cursor: pointer;
 .rel-box .rel-sum { margin: .2rem 0 0; padding-left: 1rem; max-width: 18rem; }
 .rel-box .rel-sum li { margin: .1rem 0; }
 .rel-box .rel-wait { color: var(--accent); }
+/* 站主 2026-11-09：公式順序、T 表改名 */
+.fx-order { margin: .3rem 0 .5rem; padding-left: 1.3rem; }
+.fx-order li { gap: .4rem; align-items: center; margin: .2rem 0; }
+.fx-order .fx-oname { min-width: 6rem; }
+.btn.xs { padding: .15rem .55rem; min-height: 30px; font-size: .8rem; }
+.tc-namef { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; }
+.tc-namef .tc-name-in { flex: 1 1 8rem; min-width: 0; padding: .3rem .45rem; }

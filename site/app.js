@@ -1952,28 +1952,44 @@
     n.textContent = msg; clearTimeout(n._t); n._t = setTimeout(() => n.remove(), 4000);
   }
   /* 站主 2026-11-06：「你給我預覽頁一個按鈕，我按下去你就更新到主頁」
-     站主 2026-11-09：「我按這個不要再把更新的東西傳到留言我會看不到」→ 不再發留言。
-     按下確定：只在資料庫 releases/ 記一筆要求；Claude 更新完把 status 改成 done、寫 summary（這次更新了什麼），
-     結果直接顯示在按鈕下面（還沒處理的要求也列在這裡），不用去看留言。 */
+     站主 2026-11-09：「我按這個不要再把更新的東西傳到留言我會看不到」「我就是不想在這邊說我按了，要直接你可以自動收到」
+     按下確定：先在資料庫 releases/ 記一筆要求，再自動通知 Claude（sendToClaude；這是唯一能叫醒對話的管道，站主不用看留言）。
+     Claude 更新完把 status 改成 done、寫 summary（這次更新了什麼），結果直接顯示在按鈕下面。
+     Claude 收不到（對話沒連上）時要求留在資料庫，Claude 下次在對話裡做任何事之前會先查這裡、照這筆更新。 */
   function releaseBox() {
     const rs = O.releases || [];
     const done = rs.find((x) => x.status === "done");
     const pending = rs.filter((x) => x.status === "requested" && (!done || x.at > (done.doneAt || done.at)));
-    const send = async () => {
+    const send = async (ev) => {
+      const anchorEl = ev.currentTarget.closest(".rel-box") || ev.currentTarget;
       O.relAsk = false; O.relBusy = true; ownerPanel();
       const at = new Date().toISOString(), id = "r" + at.replace(/\D/g, "").slice(0, 14);
       const req = { id, at, status: "requested", where: location.hash || "#home" };
       try { await O.db.doc("releases/" + id).set(req); O.releases = [req, ...rs]; }
       catch (err) { O.relBusy = false; ownerPanel(); ownerNotice("送出失敗：" + (err?.message || "請再試一次")); return; }
+      let sent = false;
+      try {
+        const cm = await window.claude.use("comments");
+        if (cm && (await cm.canSendToClaude().catch(() => "off")) === "available") {
+          const anchor = await cm.anchorFor(document.body.contains(anchorEl) ? anchorEl : document.body);
+          await cm.sendToClaude({ anchor, text: `【站主按鈕】更新正式站（要求 ${id}）：請把預覽站的修改同步並更新到正式站 chokomkp.com。結果寫在按鈕下面和對話裡，不要回在留言。` });
+          sent = true;
+        }
+      } catch { sent = false; }
+      req.sent = sent;
+      try { await O.db.doc("releases/" + id).set(req); } catch { /* 記不到也沒關係，要求本身已經存了 */ }
       O.relBusy = false; ownerPanel();
-      ownerNotice("已記下更新要求。跟 Claude 說一聲就會更新，好了這裡會顯示時間和更新了什麼。");
+      ownerNotice(sent ? "已自動通知 Claude 更新正式站，好了這裡會顯示時間和更新了什麼。"
+        : "已記下更新要求，但 Claude 現在收不到（對話沒連上）。Claude 下次在對話裡動工前會先照這筆更新。");
     };
     return h("div", { class: "rel-box" },
       O.relAsk ? [h("p", { class: "xs rel-q" }, "把預覽站的修改（文字、棋盤、T 表）更新到正式站？"),
         h("div", { class: "row" }, h("button", { class: "btn", type: "button", onclick: send }, "確定更新"),
           h("button", { class: "btn ghost", type: "button", onclick: () => { O.relAsk = false; ownerPanel(); } }, "取消"))]
         : h("button", { class: "btn ghost", type: "button", disabled: O.relBusy || null, onclick: () => { O.relAsk = true; ownerPanel(); } }, O.relBusy ? "送出中…" : "⇪ 更新到正式站"),
-      pending.length ? h("p", { class: "xs rel-st rel-wait", role: "status" }, `已記下更新要求（${fmtTime(pending[0].at)}），Claude 還沒處理；跟 Claude 說一聲就會更新。`) : null,
+      pending.length ? h("p", { class: "xs rel-st rel-wait", role: "status" }, pending[0].sent === false
+        ? `已記下更新要求（${fmtTime(pending[0].at)}）；Claude 當時收不到，下次動工前會先處理。`
+        : `已通知 Claude 更新（${fmtTime(pending[0].at)}），處理中。`) : null,
       done ? h("div", { class: "xs muted rel-st", role: "status" }, `正式站最後更新：${fmtTime(done.doneAt || done.at)}`,
         (done.summary || []).length ? h("ul", { class: "rel-sum" }, done.summary.slice(0, 6).map((t) => h("li", null, t))) : null) : null);
   }

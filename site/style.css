@@ -779,6 +779,8 @@ details.fold > ul { padding: 0 1.25rem 1.25rem calc(1.25rem + 1.25em); }
 .fx-txt > span:first-child { line-height: 1.35; }
 .fx-minis { flex-wrap: wrap; gap: 4px 8px; }
 .fx-mini { display: inline-flex; align-items: center; gap: 3px; color: var(--text); font-weight: 600; text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 70%, transparent); }
+button.fx-mini { font: inherit; font-weight: 600; background: none; border: 1px dashed var(--line); border-radius: 999px; padding: 1px 6px 1px 2px; cursor: pointer; }
+button.fx-mini:hover, button.fx-mini.sel { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
 .bwrap { grid-template-areas: "main" "side" "list"; }
 .bwrap > .bmain { grid-area: main; } .bwrap > .fxpanel { grid-area: side; } .bwrap > .blist { grid-area: list; min-width: 0; }
 @media (min-width: 1000px) { .bwrap.has-side { grid-template-areas: "main side" "list side"; } }
@@ -1033,6 +1035,9 @@ button.bcard { font: inherit; color: inherit; text-align: left; cursor: pointer;
 .bonus-pane { padding: .75rem; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
 .bp-head { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; margin-bottom: .6rem; }
 .bp-more { margin-left: auto; font-size: var(--fs-s); font-weight: 700; }
+.bp-sub { font-size: var(--fs-s); color: var(--muted); font-weight: 600; }
+/* 加分版面多一層框（左右各約 13px）：棋盤格子跟著縮，手機上不會被切掉（站主 2026-11-10） */
+.bonus-pane .board { --hex: min(calc((100vw - 116px) / 7.5), 4rem); }
 /* 站主給的公式（站主 2026-11-06）：棋盤上方切換公式 */
 .fm { display: flex; flex-direction: column; gap: .5rem; }
 .fm-chips { display: flex; flex-wrap: wrap; gap: .5rem; }

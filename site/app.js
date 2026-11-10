@@ -766,21 +766,28 @@
     const selBox = (k) => (ed && isSel(k) ? ed.selPanel(k) : null);
     const stepUnits = (s, lv) => s.add.map((u) => fhex(u.key, { badge: lv, items: u.items, onPick: pickOf({ kind: "step", lv, key: u.key }), sel: isSel({ kind: "step", lv, key: u.key }) }));
     const stepSel = (lv, us) => us.map((u) => selBox({ kind: "step", lv, key: u.key })).find(Boolean) || null;
+    // 站主 2026-11-10 截圖「你旁邊的不能改」：「拿掉」的那幾隻、還沒到主圖等級時先放的，站主編輯時也都可以點
+    const remRow = (keys, lv) => (ed ? h("span", { class: "fx-minis" }, keys.map((k) => h("button", { type: "button", class: "fx-mini pick" + (isSel({ kind: "rem", lv, key: k }) ? " sel" : ""),
+      "aria-pressed": isSel({ kind: "rem", lv, key: k }) ? "true" : "false", title: `${champName(k)}（${lv} 等拿掉；點一下可以放回來）`, onclick: pickOf({ kind: "rem", lv, key: k }) }, icon("champion", k, "xs"), champName(k))))
+      : miniRow(keys));
+    const remSel = (lv, keys) => keys.map((k) => selBox({ kind: "rem", lv, key: k })).find(Boolean) || null;
+    const stepBtns = (lv) => (ed ? [h("button", { class: "chip add fx-add", type: "button", onclick: () => ed.addStep(lv) }, "＋ 加棋子"),
+      ed.swapStep ? h("button", { class: "chip add fx-add fx-swap", type: "button", onclick: () => ed.swapStep(lv) }, "⇄ 換棋子") : null] : null);
     if (steps.length || upLvs.length) {
       box.append(h("p", { class: "fx-h" }, "升等要補"));
       for (const s of steps.filter((s) => s.below)) {
+        const lv = s.level;
         box.append(h("div", { class: "fx-group" },
-          h("div", { class: "fx-gh" }, h("span", { class: "fx-lvtag" }, `${s.level} 等`), `還沒到 ${M} 等時先放`),
-          h("div", { class: "fx-units" }, s.early.map((u) => fhex(u.key, { badge: s.level, items: u.items }))),
-          s.later.length ? h("p", { class: "fx-cap" }, `${M} 等時改放 `, s.later.map(champName).join("、")) : null));
+          h("div", { class: "fx-gh" }, h("span", { class: "fx-lvtag" }, `${lv} 等`), `還沒到 ${M} 等時先放`),
+          h("div", { class: "fx-units" }, s.early.map((u) => fhex(u.key, { badge: lv, items: u.items, onPick: pickOf({ kind: "step", lv, key: u.key }), sel: isSel({ kind: "step", lv, key: u.key }) })), stepBtns(lv)),
+          s.later.length ? h("p", { class: "fx-cap" }, `${M} 等時改放 `, s.later.map(champName).join("、")) : null, stepSel(lv, s.early)));
       }
       const ups = steps.filter((s) => !s.below);
       const lvs = [...new Set([...ups.map((s) => s.level), ...upLvs])].sort((a, b) => a - b);
       for (const lv of lvs) {
         const s = ups.find((x) => x.level === lv) || { level: lv, add: [], rem: [] };
         // 站主 2026-11-06：「七等要換棋子你這裡不能選」→ 每一等除了加棋子，也可以把前面的棋子換掉（或只拿掉）
-        const addBtn = ed ? [h("button", { class: "chip add fx-add", type: "button", onclick: () => ed.addStep(lv) }, "＋ 加棋子"),
-          ed.swapStep ? h("button", { class: "chip add fx-add fx-swap", type: "button", onclick: () => ed.swapStep(lv) }, "⇄ 換棋子") : null] : null;
+        const addBtn = stepBtns(lv);
         const candBox = s.cands ? h("div", { class: "fx-group fx-cand" },
           h("div", { class: "fx-gh" }, h("span", { class: "fx-lvtag" }, `${lv} 等`), `挑 ${s.pick} 隻放（放哪${s.pick > 1 ? "幾" : ""}隻都可以）`),
           h("div", { class: "fx-units" }, s.cands.map((u) => fhex(u.key, { badge: lv, items: u.items, onPick: pickOf({ kind: "step", lv, key: u.key }), sel: isSel({ kind: "step", lv, key: u.key }) }))),
@@ -795,8 +802,8 @@
           if (candBox) box.append(candBox);
         } else {
           box.append(h("div", { class: "fx-group" },
-            h("div", { class: "fx-gh" }, h("span", { class: "fx-lvtag" }, `${lv} 等`), "換一組：拿掉", miniRow(s.rem)),
-            h("div", { class: "fx-units" }, stepUnits(s, lv), addBtn), afterCap, stepSel(lv, s.add)));
+            h("div", { class: "fx-gh" }, h("span", { class: "fx-lvtag" }, `${lv} 等`), "換一組：拿掉", remRow(s.rem, lv)),
+            h("div", { class: "fx-units" }, stepUnits(s, lv), addBtn), afterCap, remSel(lv, s.rem) || stepSel(lv, s.add)));
           if (candBox) box.append(candBox);
         }
       }
@@ -832,7 +839,7 @@
       }
       box.append(h("p", { class: "xs muted fx-note" }, "「可以替換」是高手同等級的終局棋盤裡，和這張圖比最常見的換法；名次是換了之後平均名次的變化（負的＝比較好）。頭像下面是推薦裝備。"));
     }
-    if (ed) box.append(h("p", { class: "xs muted fx-note" }, "站主編輯：點旁邊的頭像可以改裝備或拿掉；「＋ 加棋子」加在那個等級（更高等級也會一起加）；「⇄ 換棋子」把那一等場上的棋子換掉或拿掉（更高等級也會一起換）。改完按棋盤下面的「儲存棋盤」。"));
+    if (ed) box.append(h("p", { class: "xs muted fx-note" }, "站主編輯：點旁邊的頭像可以改裝備或拿掉；點「拿掉」那排的棋子可以放回來；「＋ 加棋子」加在那個等級（更高等級也會一起加；還沒到主圖等級的只改那一等）；「⇄ 換棋子」把那一等場上的棋子換掉或拿掉（更高等級也會一起換）。改完按棋盤下面的「儲存棋盤」。"));
     return box;
   }
   function boardTitle(c, M) {
@@ -1311,15 +1318,14 @@
       open = b.branch;
       const v = compById(b.branch);
       if (!v) return;
-      const lvs = levelsOf(v).filter((lv) => boardOk(v, lv));
-      let cur = mainLevel(v) || lvs[0];
-      const area = h("div", null);
-      const draw = () => { area.textContent = ""; area.append(boardArea(v, cur) || h("p", { class: "small muted" }, "沒有這個人口的棋盤。")); };
-      pane.append(h("div", { class: "bp-head" }, h("b", null, `${b.type === "trait" ? itemName(b.key) : b.text.split("：")[0].replace(/（[^）]*）/g, "")}的版面`),
-        lvs.length > 1 ? h("div", { class: "chips" }, lvs.map((lv) => h("button", { type: "button", class: "chip", "aria-pressed": lv === cur ? "true" : "false",
-          onclick: (e) => { cur = lv; e.target.parentElement.querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", x === e.target ? "true" : "false")); draw(); } }, `${lv} 人口`))) : null,
-        h("a", { class: "bp-more", href: "#" + slug(v.id) }, "完整頁面（升等放什麼）→")), area);
-      draw();
+      const title = `${b.type === "trait" ? itemName(b.key) : b.text.split("：")[0].replace(/（[^）]*）/g, "")}的版面`;
+      const more = h("a", { class: "bp-more", href: "#" + slug(v.id) }, "完整頁面（升等放什麼）→");
+      // 站主 2026-11-10：「你這個版面也要讓我可以調阿」→ 站主模式打開加分的版面＝直接是棋盤編輯器（人口、站位、星級、裝備，存到這個轉職自己的棋盤）
+      if (O.on) { pane.append(h("div", { class: "bp-head" }, h("b", null, title), more), boardEditor(v)); return; }
+      // 站主 2026-11-10：「訪客不要是789，頁面就跟一般下面的一樣就行」→ 不放人口切換；跟一般詳細頁的棋盤一樣：主圖＋旁邊「升等要補／可以替換」
+      const M = mainLevel(v) || levelsOf(v).filter((lv) => boardOk(v, lv)).at(-1);
+      pane.append(h("div", { class: "bp-head" }, h("b", null, title), h("span", { class: "bp-sub" }, boardTitle(v, M)), more),
+        boardArea(v, M) || h("p", { class: "small muted" }, "沒有這個人口的棋盤。"));
     };
     const grid = h("div", { class: "bonus-grid" }, c.bonus.map((b) => {
       // 站主 2026-11-04：括號裡的說明多餘；「多一個特性／多一個野性」重複又不直觀 → 直接寫「野性徽章」
@@ -2298,7 +2304,7 @@
   function beDismissInit() {
     if (beDismissOn) return;
     beDismissOn = true;
-    const skip = (t) => !(t instanceof Element) || !t.isConnected || !!t.closest(".board.edit, .selp, #picker-sheet, .fxpanel .fhex, [role=dialog], .owner-note");
+    const skip = (t) => !(t instanceof Element) || !t.isConnected || !!t.closest(".board.edit, .selp, #picker-sheet, .fxpanel .fhex, .fxpanel .fx-mini, [role=dialog], .owner-note");
     const all = () => { for (const be of document.querySelectorAll(".be")) be._dismiss?.(); };
     document.addEventListener("click", (ev) => { if (!skip(ev.target) && !ev.target.closest(".be")) all(); }, true);
     document.addEventListener("click", (ev) => { if (!skip(ev.target) && ev.target.closest(".be")) all(); });
@@ -2360,7 +2366,7 @@
         }
         grid.append(row);
       }
-      put(h("div", { class: "tablewrap" }, grid), h("p", { class: "xs muted" }, "上方為前排。點棋子選取；選取後點空格＝移動。按住棋子拖到別格＝移動或交換。按住裝備小圖拖到別隻棋子＝把裝備給牠（滿三件就交換）。右鍵點棋子＝移出棋盤。點空格可直接放新棋子。"));
+      put(h("div", { class: "tablewrap" }, grid), h("p", { class: "xs muted" }, "上方為前排。點棋子選取；點別格＝自動按完成、照那格做（點空格＝放新棋子，點別隻＝選那隻）。按住棋子拖到別格＝移動或交換。按住裝備小圖拖到別隻棋子＝把裝備給牠（滿三件就交換）。右鍵點棋子＝移出棋盤。"));
       put(st.sel ? selPanel(st.sel) : h("div", { class: "card small" }, "還沒選棋子。點棋盤上的棋子可以改星級和裝備。"));
       put(h("div", { class: "row" },
         h("button", { class: "btn", type: "button", onclick: () => pickChamp(null) }, "＋ 加棋子"),
@@ -2426,16 +2432,18 @@
       return groups;
     };
     // 升等要補：加在 lv，更高等級（主圖以上）也一起加
+    // 主圖以上：這一等和更高等級一起改；主圖以下（還沒到主圖等級時先放）：只改那一等（站主 2026-11-10「你旁邊的不能改」）
+    const spanLv = (lv) => (lv < st.main ? [lv] : edLv().filter((L) => L >= lv && L > st.main));
     function pickStep(lv) {
       const used = new Set(champsOnly(st.data[lv]).map((u) => u.key));
-      picker(`${lv} 等要補的棋子`, champGroups(used), (key) => {
+      picker(lv < st.main ? `${lv} 等先放的棋子` : `${lv} 等要補的棋子`, champGroups(used), (key) => {
         const its = recItems(key);
-        for (const L of edLv().filter((L) => L >= lv && L > st.main)) {
+        for (const L of spanLv(lv)) {
           const arr = ensureBoard(L);
           if (!champsOnly(arr).some((u) => u.key === key)) { arr.push({ key, star: 2, items: [...its], pos: null }); autoPlace(arr, c, null); }
         }
         st.side = { kind: "step", lv, key }; st.flexForm = null;
-        changed(`${lv} 等補上${champName(key)}。`);
+        changed(lv < st.main ? `${lv} 等先放${champName(key)}（只改 ${lv} 等）。` : `${lv} 等補上${champName(key)}。`);
       });
     }
     // 升等換棋子：先選這一等場上要換掉的，再選換上的（或只拿掉）；這一等和更高等級（主圖以上）一起換，換上的站在原本那格
@@ -2447,7 +2455,7 @@
         const groups = [...champGroups(used), { label: "不換上", items: [{ key: "__none__", name: `只拿掉${champName(outKey)}`, ico: icon("champion", outKey, "sm") }] }];
         picker(`${lv} 等：${champName(outKey)}換成`, groups, (inKey) => {
           const none = inKey === "__none__", its = none ? [] : recItems(inKey);
-          for (const L of edLv().filter((L) => L >= lv && L > st.main)) {
+          for (const L of spanLv(lv)) {
             const arr = ensureBoard(L);
             const i = arr.findIndex((u) => u.key === outKey);
             const pos = i >= 0 ? arr[i].pos : null;
@@ -2455,20 +2463,44 @@
             if (!none && !champsOnly(arr).some((u) => u.key === inKey)) { arr.push({ key: inKey, star: 2, items: [...its], pos }); if (!pos) autoPlace(arr, c, null); }
           }
           st.side = none ? null : { kind: "step", lv, key: inKey }; st.flexForm = null;
-          changed(none ? `${lv} 等起拿掉${champName(outKey)}。` : `${lv} 等起${champName(outKey)}換成${champName(inKey)}。`);
+          const at = lv < st.main ? `${lv} 等` : `${lv} 等起`;
+          changed(none ? `${at}拿掉${champName(outKey)}。` : `${at}${champName(outKey)}換成${champName(inKey)}。`);
         });
       });
     }
+    // 「換一組：拿掉」裡的棋子：點了可以放回來（這一等以上，站回前一等的位置、帶前一等的星級裝備）
+    function remSelPanel(k) {
+      const prevU = () => edLv().filter((L) => L < k.lv).reverse().map((L) => champsOnly(st.data[L]).find((x) => x.key === k.key)).find(Boolean);
+      const back = () => {
+        const p = prevU() || { key: k.key, star: 2, items: recItems(k.key), pos: null };
+        for (const L of spanLv(k.lv)) {
+          const arr = ensureBoard(L);
+          if (champsOnly(arr).some((x) => x.key === k.key)) continue;
+          const taken = p.pos && arr.some((x) => x.pos && x.pos[0] === p.pos[0] && x.pos[1] === p.pos[1]);
+          arr.push({ key: k.key, star: p.star || 2, items: [...(p.items || [])], pos: taken ? null : p.pos || null });
+          if (taken || !p.pos) autoPlace(arr, c, null);
+        }
+        st.side = null; changed(`${k.lv} 等起把${champName(k.key)}放回來。`);
+      };
+      return h("div", { class: "card selp fx-selp" },
+        h("b", { class: "small" }, `${k.lv} 等拿掉了${champName(k.key)}`),
+        h("p", { class: "xs muted", style: "margin:0" }, `要留著就按「放回來」（${k.lv} 等以上都放回去）；要換成別隻用「⇄ 換棋子」。`),
+        h("div", { class: "row" },
+          h("button", { class: "btn ghost", type: "button", onclick: back }, "放回來"),
+          h("button", { class: "btn ghost", type: "button", onclick: () => { st.side = null; draw(); } }, "完成")));
+    }
     function sideSelPanel(k) {
       let u, remove = null, after = null;
+      if (k.kind === "rem") return remSelPanel(k);
+      const below = k.lv < st.main;  // 還沒到主圖等級時先放的：只改那一等
       if (k.kind === "step") {
         u = champsOnly(st.data[k.lv]).find((x) => x.key === k.key);
         if (!u) return null;
-        const higher = () => edLv().filter((L) => L > k.lv).map((L) => champsOnly(st.data[L]).find((x) => x.key === k.key)).filter(Boolean);
+        const higher = () => (below ? [] : edLv().filter((L) => L > k.lv).map((L) => champsOnly(st.data[L]).find((x) => x.key === k.key)).filter(Boolean));
         after = () => higher().forEach((x) => (x.items = [...u.items]));  // 同一隻在更高等級的裝備跟著改
         remove = () => {
-          for (const L of edLv().filter((L) => L >= k.lv)) { const arr = st.data[L] || []; const j = arr.findIndex((x) => x.key === k.key); if (j >= 0) arr.splice(j, 1); }
-          st.side = null; changed(`已從 ${k.lv} 等以上拿掉${champName(k.key)}。`);
+          for (const L of below ? [k.lv] : edLv().filter((L) => L >= k.lv)) { const arr = st.data[L] || []; const j = arr.findIndex((x) => x.key === k.key); if (j >= 0) arr.splice(j, 1); }
+          st.side = null; changed(below ? `已從 ${k.lv} 等拿掉${champName(k.key)}。` : `已從 ${k.lv} 等以上拿掉${champName(k.key)}。`);
         };
       } else {
         const opt = st.flex["lv" + k.lv]?.[k.i];
@@ -2484,7 +2516,7 @@
           ? h("button", { class: "chip", type: "button", title: "拿掉這件", onclick: () => { its.splice(i, 1); after?.(); changed(); } }, icon("item", its[i], "xs"), itemName(its[i]), " ×")
           : h("button", { class: "chip add", type: "button", onclick: () => pickItem(u, after) }, "＋ 裝備"))),
         h("div", { class: "row" },
-          remove ? h("button", { class: "btn ghost", type: "button", onclick: remove }, `從 ${k.lv} 等以上拿掉`) : null,
+          remove ? h("button", { class: "btn ghost", type: "button", onclick: remove }, below ? `從 ${k.lv} 等拿掉` : `從 ${k.lv} 等以上拿掉`) : null,
           h("button", { class: "btn ghost", type: "button", onclick: () => { st.side = null; draw(); } }, "完成")));
     }
     function flexFormBox(lv) {
@@ -2510,8 +2542,10 @@
     function tapCell(r, col) {
       if (Date.now() - (st.noTap || 0) < 700) return;  // 長按移出後手指放開，不要接著開「放新棋子」
       const units = st.data[st.lv], u = units.find((x) => x.pos && x.pos[0] === r && x.pos[1] === col);
-      if (u) { st.sel = st.sel === u ? null : u; draw(); return; }
-      if (st.sel) { st.sel.pos = [r, col]; changed(`已移到 ${"ABCD"[r]}${col + 1}。`); return; }
+      if (u) { st.sel = st.sel === u ? null : u; st.side = null; draw(); return; }
+      // 站主 2026-11-10：「選定一個棋子之後，我按其他的格子妳不要讓棋子跳過去，要直接幫我按完成然後執行下一個動作，我按空白的格子就是要加棋子」
+      // → 有選取時點空格＝先按完成、再在那格放新棋子；要換位置用拖的
+      if (st.sel || st.side) { st.sel = null; st.side = null; draw(); }
       pickChamp([r, col]);
     }
     function moveOrSwap(u, r, col) {
@@ -2600,7 +2634,7 @@
     function selPanel(u) {
       if (isPlant(u)) return h("div", { class: "card selp" },
         h("div", { class: "comp-head" }, plantTile(u), h("div", null, h("b", null, PLANT[u.plant]), h("div", { class: "xs muted" }, `神木植物｜${u.star} 星｜位置 ${u.pos ? "ABCD"[u.pos[0]] + (u.pos[1] + 1) : "—"}`))),
-        h("p", { class: "xs muted", style: "margin:0" }, "張數和星級跟著神木精靈人數自動變，這裡只能換位置：選取後點空格，或直接拖曳。"),
+        h("p", { class: "xs muted", style: "margin:0" }, "張數和星級跟著神木精靈人數自動變，這裡只能換位置：按住拖到別格。"),
         h("div", { class: "row" }, h("button", { class: "btn ghost", type: "button", onclick: () => { st.sel = null; draw(); } }, "完成")));
       const its = u.items || (u.items = []);
       return h("div", { class: "card selp" },

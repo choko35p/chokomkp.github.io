@@ -1173,7 +1173,8 @@
         cTabs.length && tTabs.length ? h("span", { class: "htab-sep", "aria-hidden": "true" }) : null, tTabs.map(tabOf)));
       // 站主 2026-11-04：裝備的解釋（評價怎麼看、每欄只亮一件）刪掉
       if (hero.itemsOnly) {
-        area.append(h("p", { class: "notice small" }, `${champName(hero.key)}（${hero.role}）三件套紀錄不夠，先列最常拿的裝備：`),
+        area.append(h("p", { class: "notice small" }, hero.generic ? `${champName(hero.key)}（${hero.role}）在高手對局裡幾乎不拿裝，先列所有${/坦/.test(hero.role) ? "坦" : "輸出"}最常拿的裝備：`
+          : `${champName(hero.key)}（${hero.role}）三件套紀錄不夠，先列最常拿的裝備：`),
           h("div", { class: "ilist" }, hero.itemsOnly.map((x) => h("div", { class: "unit" }, icon("item", x.key, "sm"), h("span", null, h("b", null, itemName(x.key)), h("span", { class: "xs muted", style: "display:block" }, `持有率 ${pct(x.rate)}`))))));
         return;
       }
@@ -1862,6 +1863,9 @@
     spy(secs, (id) => document.querySelectorAll(".nav a").forEach((a) => a.setAttribute("aria-current", a.getAttribute("href") === "#" + id ? "true" : "false")));
   }
   function route() {
+    // 站主 2026-11-10「就是一樣的」：被併掉的陣容舊網址（例：#c-xayah）轉到併入的那套
+    const al = Object.entries(D.aliases || {}).find(([from]) => slug(from) === location.hash.slice(1));
+    if (al) { history.replaceState(null, "", "#" + slug(al[1])); }
     const hsh = location.hash.slice(1);
     const c = D.comps.find((x) => slug(x.id) === hsh) || (O.on ? O.custom.map(customToComp).find((x) => slug(x.id) === hsh) : null);
     const fromDetail = !$("#detail").hidden;

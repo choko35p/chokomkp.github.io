@@ -79,7 +79,7 @@
   function adaptLayout() {
     const ul = document.querySelector(".nav ul");
     if (ul) ul.replaceChildren(...[["#tierlist", "nav.tier", "T 度表"], ["#updates-sec", "nav.updates", "本次更新"],
-      ["#version", "nav.version", "版本主軸"], ["#picker", "nav.picker", "隨手速查"], ["#comps", "nav.comps", "陣容攻略"]].map(([href, k, t]) => h("li", null, h("a", { href, "data-tx": k }, t))));
+      ["#version", "nav.version", "版本主軸"], ["#picker", "nav.picker", "隨手速查"], ["#comps", "nav.comps", "陣容攻略"], ["sim/", "nav.sim", "戰鬥模擬"]].map(([href, k, t]) => h("li", null, h("a", { href, "data-tx": k }, t))));  // 戰鬥模擬器 2026-11-11
     const up = $("#updates-sec"), tl = $("#tierlist");
     if (up && !$("#updates-fold")) {
       up.classList.add("slim");
@@ -1090,7 +1090,9 @@
         : h("p", { class: "small" }, `人口 ${pop}／${level}${pop > level ? "（超出，請檢查）" : ""}｜啟動羈絆：${active.join("、") || "—"}`),
       marks.length ? h("p", { class: "small" }, h("b", null, "首領標記："), marks.join("、")) : null,
       riders.length ? h("p", { class: "small" }, h("b", null, "騎乘者："), riders.join("、"), "（騎上毛茸茸大夥伴）") : null,
-      plants ? h("p", { class: "small" }, h("b", null, "神木植物："), plants) : null);
+      plants ? h("p", { class: "small" }, h("b", null, "神木植物："), plants) : null,
+      // 戰鬥模擬器（2026-11-11）：把這個站位帶進模擬器
+      c?.id && c.boards?.["lv" + level] === b ? h("p", { class: "small" }, h("a", { class: "sim-link", href: `sim/#a=comp:${encodeURIComponent(c.id)}:lv${level}` }, "⚔️ 用戰鬥模擬器打打看")) : null);
     if (hasPos) {
       const grid = h("div", { class: "board", role: "grid", "aria-label": `${level} 人口站位圖，四排七格` });
       for (let r = 0; r < 4; r++) {
@@ -2222,19 +2224,27 @@
   function openPicker(title, groups, onPick) {
     $("#picker-sheet")?.remove();
     const q = h("input", { type: "search", placeholder: "搜尋名稱", "aria-label": "搜尋" });
-    const tabs = h("div", { class: "tabs", role: "tablist" }), body = h("div", { class: "pgrid" });
-    let g = 0;
+    const tabs = h("div", { class: "tabs", role: "tablist" }), body = h("div", { class: "pgrid" }), catbar = h("div");
+    let g = 0, cat = "all";
     const show = () => {
-      tabs.textContent = ""; body.textContent = "";
-      groups.forEach((x, i) => tabs.append(h("button", { type: "button", role: "tab", "aria-selected": i === g && !q.value ? "true" : "false", onclick: () => { g = i; q.value = ""; show(); } }, x.label)));
+      tabs.textContent = ""; body.textContent = ""; catbar.textContent = "";
+      groups.forEach((x, i) => tabs.append(h("button", { type: "button", role: "tab", "aria-selected": i === g && !q.value ? "true" : "false", onclick: () => { g = i; cat = "all"; q.value = ""; show(); } }, x.label)));
       const term = q.value.trim();
+      const mk = (x) => h("button", { class: "pick", type: "button", onclick: () => { sheet.remove(); onPick(x.key); } }, x.ico, h("span", null, x.name));
       const list = term ? groups.flatMap((x) => x.items).filter((x) => x.name.includes(term) || x.key.toLowerCase().includes(term.toLowerCase())) : groups[g].items;
-      for (const x of list) body.append(h("button", { class: "pick", type: "button", onclick: () => { sheet.remove(); onPick(x.key); } }, x.ico, h("span", null, x.name)));
+      if (!term && groups[g].cats) {  // 成品／光明裝備：分類按鈕＋「全部」時分區
+        catbar.append(catChips(list, cat, (id) => { cat = id; show(); }));
+        const nodes = catView(list, cat, mk);
+        body.append(...nodes);
+        if (!nodes.length) body.append(h("p", { class: "small muted" }, "找不到。"));
+        return;
+      }
+      for (const x of list) body.append(mk(x));
       if (!list.length) body.append(h("p", { class: "small muted" }, "找不到。"));
     };
     q.addEventListener("input", show);
     const sheet = h("div", { id: "picker-sheet", class: "sheet-bg", onclick: (ev) => { if (ev.target === sheet) sheet.remove(); } },
-      h("div", { class: "sheet tall", role: "dialog", "aria-label": title }, h("div", { class: "row between" }, h("b", null, title), h("button", { class: "btn ghost", type: "button", onclick: () => sheet.remove() }, "關閉")), q, tabs, body));
+      h("div", { class: "sheet tall", role: "dialog", "aria-label": title }, h("div", { class: "row between" }, h("b", null, title), h("button", { class: "btn ghost", type: "button", onclick: () => sheet.remove() }, "關閉")), q, tabs, catbar, body));
     document.body.append(sheet); show();
   }
 
@@ -2242,6 +2252,54 @@
   const BSTATE = {};
   const TANKY = /Gargoyle|Warmog|Steadfast|Bramble|DragonsClaw|SpiritVisage|Sunfire|Crownguard|AdaptiveHelm|ProtectorsVow|Evenshroud|TitansResolve/;
   const clone = (x) => JSON.parse(JSON.stringify(x));
+  // 裝備分類（站主 2026-11-11：「裝備要分類，至少要分出物理裝、魔攻裝、攻速裝、啟動裝等等」；隊伍編輯器的挑選視窗和旁邊常駐的挑選區都用這張表）
+  // 注意：這張表是從戰鬥模擬器 site/sim/ui/item-cats.js 複製來的（app.js 是單一檔案、沒有模組系統）。改一邊要改另一邊（兩邊的內容要一樣）。
+  const ITEM_CATS = [
+    { id: "ad", zh: "物理" }, { id: "ap", zh: "魔攻" }, { id: "as", zh: "攻速" }, { id: "mana", zh: "啟動（回魔）" },
+    { id: "tank", zh: "坦克" }, { id: "util", zh: "功能" }, { id: "tactician", zh: "棋手裝" },
+  ];
+  const ITEM_CAT_MAP = {
+    // 物理
+    Deathblade: ["ad"], InfinityEdge: ["ad"], Bloodthirster: ["ad"], SteraksGage: ["ad", "tank"], EdgeOfNight: ["ad", "as"],
+    GiantSlayer: ["ad", "as", "ap"], HandOfJustice: ["ad", "ap", "mana"], StrikersFlail: ["ad", "ap"], KrakensFury: ["ad", "as"],
+    // 魔攻
+    RabadonsDeathcap: ["ap"], JeweledGauntlet: ["ap"], ArchangelsStaff: ["ap"], Morellonomicon: ["ap"], HextechGunblade: ["ap", "ad"],
+    // 攻速
+    RedBuff: ["as"], GuinsoosRageblade: ["as", "ap"], LastWhisper: ["as", "ad"], NashorsTooth: ["ap", "as"], VoidStaff: ["ap", "as"],  // 站主 2026-11-11：虛空之杖、納什之牙是魔攻裝
+    TitansResolve: ["as", "tank"], Quicksilver: ["as", "util"],
+    // 啟動（回魔）
+    BlueBuff: ["mana", "ad", "ap"], SpearOfShojin: ["mana", "ad", "ap"], AdaptiveHelm: ["mana", "tank"], ProtectorsVow: ["mana", "tank"],
+    // 坦克
+    BrambleVest: ["tank"], DragonsClaw: ["tank"], GargoyleStoneplate: ["tank"], WarmogsArmor: ["tank"], SunfireCape: ["tank"],
+    Evenshroud: ["tank"], IonicSpark: ["tank", "ap"], SpiritVisage: ["tank"], SteadfastHeart: ["tank"], Crownguard: ["tank", "ap"],
+    // 功能
+    ThiefsGloves: ["util"],
+    // 棋手裝
+    TacticiansCape: ["tactician"], TacticiansCrown: ["tactician"], TacticiansShield: ["tactician"],
+  };
+  const catsOf = (key) => ITEM_CAT_MAP[key] || ITEM_CAT_MAP[String(key).replace(/_?Radiant$/, "")] || ["util"];  // 第一個是主要分類（「全部」時分區用），其餘只影響篩選；光明裝照原本那件
+  const primaryCat = (key) => catsOf(key)[0];
+  const catChips = (items, cur, onPick) => h("div", { class: "row pcats", role: "group", "aria-label": "裝備分類" },
+    [{ id: "all", zh: "全部" }, ...ITEM_CATS].filter((c) => c.id === "all" || items.some((x) => catsOf(x.key).includes(c.id)))
+      .map((c) => h("button", { class: "chip", type: "button", "aria-pressed": cur === c.id ? "true" : "false", onclick: () => onPick(c.id) }, c.zh)));
+  // 「全部」：照主要分類分區（物理／魔攻／攻速／啟動／坦克／功能／棋手裝）；選了某一類：只留屬於那一類的（一件可以屬於多類）
+  function catView(items, cat, mk) {
+    if (cat !== "all") return items.filter((x) => catsOf(x.key).includes(cat)).map(mk);
+    const out = [];
+    for (const c of ITEM_CATS) { const xs = items.filter((x) => primaryCat(x.key) === c.id); if (xs.length) out.push(h("h4", { class: "pgh" }, c.zh), ...xs.map(mk)); }
+    return out;
+  }
+  // 挑裝備的分頁（挑選視窗和常駐挑選區共用）：成品和光明裝備（cats）有分類按鈕
+  function itemGroups() {
+    const g = D.gamedata, mk = (arr) => arr.map((x) => ({ key: x.key, name: itemName(x.key), ico: icon("item", x.key, "sm") }));
+    return [
+      { label: "一般成裝", cats: true, items: mk(g.items.filter((x) => (x.kind || "completed") === "completed")) },
+      { label: "光明", cats: true, items: mk((g.extraItems || []).filter((x) => x.kind === "radiant")) },
+      { label: "神器", items: mk([...g.items.filter((x) => x.kind === "artifact"), ...(g.extraItems || []).filter((x) => x.kind === "artifact")]) },
+      { label: "徽章", items: mk(g.emblems || []) },
+      { label: "其他", items: mk((g.extraItems || []).filter((x) => x.kind === "special")) },
+    ].filter((x) => x.items.length);
+  }
   function autoPlace(units, c, ref) {
     const taken = new Set(units.filter((u) => u.pos).map((u) => u.pos.join(",")));
     const tank = new Set(c.roles?.tank || []), car = new Set([...(c.roles?.mainC || []), ...(c.roles?.subC || [])]);
@@ -2300,11 +2358,37 @@
   // 站主 2026-11-09：「只要我點到其他地方自動幫我按這個完成」→ 選了棋子（或旁邊一欄的棋子）時，點到棋盤、選取面板、挑選視窗以外的地方＝按「完成」
   // 用 click（不是 pointerdown，不會吃掉那一下）：點在編輯器外面＝先收起再做那一下（索引、連結算位置時版面已經變好）；
   // 點在編輯器裡面的其他按鈕＝先讓按鈕做完自己的事再收起（重畫編輯器會換掉那顆按鈕）
+  // 站主 2026-11-11：「ctrl+z 可以回復上一個動作 ctrl+shift+z 則是撤回回復」→ 編輯器的復原／重做。
+  // 歷史＝每次重畫時的快照（棋盤、旁邊「可以替換」、首領標記／騎乘者都在棋子裡；只有選取、目前看哪個人口不算），每個陣容的編輯器各一份，
+  // 存了棋盤之後保留（復原後會變成「有未儲存的變更」，要再存）；「取消變更」「恢復資料預設」會清掉。上限 100 步；復原後做新動作就清掉重做。
+  // 快捷鍵只在編輯器開著時攔截（焦點在輸入框／下拉時不攔，讓瀏覽器自己處理），多個編輯器時以最後操作的那個為準。和戰鬥模擬器 sim/ui/history.js 同一套規則。
+  const BHIST = {};
+  let beKeysOn = false, beLast = null;
+  function beKeysInit() {
+    if (beKeysOn) return;
+    beKeysOn = true;
+    const mark = (ev) => { const be = ev.target.closest?.(".be"); if (be) beLast = be; };
+    document.addEventListener("pointerdown", mark, true); document.addEventListener("focusin", mark, true);
+    document.addEventListener("keydown", (ev) => {
+      if (ev.defaultPrevented || ev.altKey || !(ev.ctrlKey || ev.metaKey)) return;
+      const k = String(ev.key || "").toLowerCase();
+      const act = k === "z" ? (ev.shiftKey ? "redo" : "undo") : k === "y" && !ev.shiftKey ? "redo" : null;
+      if (!act) return;
+      const t = ev.target, tag = (t?.tagName || "").toLowerCase();
+      if (tag === "textarea" || tag === "select" || t?.isContentEditable || (tag === "input" && !["button", "checkbox", "radio", "range", "submit", "reset", "image", "file", "color"].includes((t.type || "text").toLowerCase()))) return;
+      if (document.querySelector("[role=dialog]")) return;
+      const bes = [...document.querySelectorAll(".be")].filter((x) => x._undo);
+      const be = beLast && beLast.isConnected && bes.includes(beLast) ? beLast : bes[bes.length - 1];
+      if (!be) return;
+      ev.preventDefault();
+      be[act === "undo" ? "_undo" : "_redo"]();
+    });
+  }
   let beDismissOn = false;
   function beDismissInit() {
     if (beDismissOn) return;
     beDismissOn = true;
-    const skip = (t) => !(t instanceof Element) || !t.isConnected || !!t.closest(".board.edit, .selp, #picker-sheet, .fxpanel .fhex, .fxpanel .fx-mini, [role=dialog], .owner-note");
+    const skip = (t) => !(t instanceof Element) || !t.isConnected || !!t.closest(".board.edit, .selp, .dock, #picker-sheet, .fxpanel .fhex, .fxpanel .fx-mini, [role=dialog], .owner-note");
     const all = () => { for (const be of document.querySelectorAll(".be")) be._dismiss?.(); };
     document.addEventListener("click", (ev) => { if (!skip(ev.target) && !ev.target.closest(".be")) all(); }, true);
     document.addEventListener("click", (ev) => { if (!skip(ev.target) && ev.target.closest(".be")) all(); });
@@ -2312,10 +2396,46 @@
   function boardEditor(c) {
     const root = h("div", { class: "be" });
     const st = BSTATE[c.id] ||= freshState(c, true);
-    beDismissInit();
+    beDismissInit(); beKeysInit();
     // 編輯器的等級：資料的等級＋現在有棋子的等級（人口跟著棋子走，可能換到 5～9 任何一等）
     const edLv = () => [...new Set([...levelsOf(c), st.main, ...Object.keys(st.data).map(Number).filter((L) => champsOnly(st.data[L]).length)])].sort((a, b) => a - b);
+    const mqWide = matchMedia("(min-width: 1000px)"), wide = () => mqWide.matches;   // 桌機（棋盤旁邊有一欄）／手機（單欄）
+    // ---- 復原／重做（見 beKeysInit 的說明）
+    const bh = () => (BHIST[c.id] ||= { stack: [], idx: -1 });
+    const snapOf = () => JSON.stringify({ data: st.data, two: st.two, flex: st.flex, flexOwned: !!st.flexOwned, main: st.main });
+    const unitSig = (u) => [u.key || u.plant, u.star, (u.items || []).join("+"), u.pos?.join(","), u.mark ? 1 : 0, u.rider ? 1 : 0].join("|");
+    function histPush() {
+      const H = bh(), k = snapOf();
+      if (H.idx >= 0 && H.stack[H.idx] === k) return;
+      H.stack = H.stack.slice(0, H.idx + 1); H.stack.push(k);
+      if (H.stack.length > 100) H.stack.shift();
+      H.idx = H.stack.length - 1;
+    }
+    function histGo(d) {
+      const H = bh(), to = H.idx + d;
+      if (to < 0 || to >= H.stack.length) return;
+      const cur = JSON.parse(snapOf()), nxt = JSON.parse(H.stack[to]);
+      H.idx = to;
+      // 看哪個人口變了就切到那個人口；選取變動的那隻（被移除的棋子回來就選牠）
+      const lvs = [...new Set([...Object.keys(cur.data), ...Object.keys(nxt.data)])].map(Number);
+      const diff = lvs.filter((lv) => JSON.stringify(cur.data[lv] || []) !== JSON.stringify(nxt.data[lv] || []));
+      st.data = nxt.data; st.two = nxt.two; st.flex = nxt.flex; st.flexOwned = nxt.flexOwned; st.main = nxt.main;
+      // 人口會跟著棋子數搬（relevel）：復原／重做後，看變動的人口裡「現在有棋子」的那張；沒有就留在原本那張，再不行回主圖
+      const filled = diff.filter((lv) => champsOnly(nxt.data[lv] || []).length);
+      if (filled.length && !filled.includes(st.lv)) st.lv = filled[0];
+      else if (!filled.length && !champsOnly(nxt.data[st.lv] || []).length && st.lv !== st.main) st.lv = st.main;
+      if (!st.data[st.lv]) st.lv = st.main;
+      const had = new Set((cur.data[st.lv] || []).map(unitSig));
+      st.sel = (st.data[st.lv] || []).find((u) => !isPlant(u) && !had.has(unitSig(u))) || null;
+      st.side = null; st.pend = null; st.flexForm = null;
+      st.dirty = true; st.msg = d < 0 ? "已復原上一步。要保留請按「儲存棋盤」。" : "已重做。要保留請按「儲存棋盤」。";
+      draw();
+    }
+    root._undo = () => histGo(-1); root._redo = () => histGo(1);
+    beLast = root;
     const draw = () => {
+      histPush();
+      const dkSc = dkList ? dkList.scrollTop : 0;   // 常駐挑選區是同一個元素、重畫時搬回來，捲動位置要自己記
       root.textContent = "";
       st.data[st.lv] = withPlants(st.data[st.lv]);  // 神木人數變了，植物跟著增減
       const units = st.data[st.lv];
@@ -2334,7 +2454,9 @@
       if (others.length) side.append(h("div", { class: "fx-edit" }, h("p", { class: "fx-h" }, "調整其他人口的棋盤"),
         h("p", { class: "xs muted", style: "margin:0" }, "旁邊的「升等要補」是用這幾張算的，改完會跟著變。"),
         h("div", { class: "row" }, others.map((lv) => h("button", { type: "button", class: "chip", "aria-pressed": st.lv === lv ? "true" : "false", onclick: () => { st.lv = lv; st.sel = null; draw(); } }, lvLabel(lv))))));
-      root.append(h("div", { class: "bwrap has-side be-wrap" }, main, side));
+      const wrap = h("div", { class: "bwrap has-side be-wrap" }, main, side);
+      root.append(wrap);
+      if (wide()) wrap.append(dock);   // 桌機：在棋盤旁邊（右欄最上面）；手機：在下面放在棋盤和選取面板之後（見下面）
       const put = (...xs) => main.append(...xs.filter(Boolean));
       put(st.lv === M ? h("p", { class: "be-lv" }, h("b", null, "主圖："), lvLabel(M))
         : h("div", { class: "be-lv other" }, h("b", null, `正在調整 ${lvLabel(st.lv)} 的棋盤`), h("button", { type: "button", class: "btn ghost", onclick: () => { st.lv = M; st.sel = null; draw(); } }, `← 回主圖（${lvLabel(M)}）`)));
@@ -2355,25 +2477,35 @@
         for (let col = 0; col < 7; col++) {
           const u = at(r, col);
           const cd = u && ecs.includes(u);
-          const cell = h("div", { class: "hex" + (u ? " has" : "") + (isPlant(u) ? " is-plant" : "") + (cd ? " cand" : "") + (u && st.sel === u ? " sel" : ""), role: "gridcell", tabindex: "0", "data-r": r, "data-c": col,
+          const cell = h("div", { class: "hex" + (u ? " has" : "") + (isPlant(u) ? " is-plant" : "") + (cd ? " cand" : "") + (u && st.sel === u ? " sel" : "") + (!u && st.pend && st.pend[0] === r && st.pend[1] === col ? " pend" : ""), role: "gridcell", tabindex: "0", "data-r": r, "data-c": col,
             "aria-label": `${"ABCD"[r]}${col + 1}${u ? "：" + (isPlant(u) ? PLANT[u.plant] : champName(u.key)) + " " + u.star + " 星" + (rOn && u.mark ? "（首領標記）" : "") + (u.rider ? "（騎乘者）" : "") : "：空格"}` },
             u ? hexInner({ ...u, rider: u.rider && spryOn(units) && isSpry(u.key) }, rOn && isRift(u.key)) : h("span", { class: "hexlbl" }, `${"ABCD"[r]}${col + 1}`));
           cell.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); tapCell(r, col); } });
           if (u) dragable(cell, u); else cell.addEventListener("click", () => tapCell(r, col));
           // 站主 2026-11-08：「我在版面上右鍵點那隻角色就可以把他移出盤面」（手機長按也會觸發）；神木植物張數自動算，不能移出
-          if (u && !isPlant(u)) cell.addEventListener("contextmenu", (ev) => { ev.preventDefault(); st.noTap = Date.now(); removeUnit(u); });
+          // 站主 2026-11-11：右鍵（手機長按）點棋子下面的裝備小圖＝只移出那一件；點棋子本身＝移出棋子。長按放開後不要接著當成點擊（st.noTap，tapCell 會擋）
+          if (u && !isPlant(u)) cell.addEventListener("contextmenu", (ev) => {
+            ev.preventDefault(); st.noTap = Date.now();
+            const ic = ev.target.closest?.(".its > *"), i = ic ? [...ic.parentNode.children].indexOf(ic) : -1;
+            if (i >= 0 && u.items?.[i]) { const it = u.items.splice(i, 1)[0]; changed(`已拿掉${champName(u.key)}的${itemName(it)}。`); } else removeUnit(u);
+          });
           row.append(cell);
         }
         grid.append(row);
       }
-      put(h("div", { class: "tablewrap" }, grid), h("p", { class: "xs muted" }, "上方為前排。點棋子選取；點別格＝自動按完成、照那格做（點空格＝放新棋子，點別隻＝選那隻）。按住棋子拖到別格＝移動或交換。按住裝備小圖拖到別隻棋子＝把裝備給牠（滿三件就交換）。右鍵點棋子＝移出棋盤。"));
+      put(h("div", { class: "tablewrap" }, grid), h("p", { class: "xs muted" }, "上方為前排。點棋子選取；點別格＝自動按完成、照那格做（點空格＝放新棋子，點別隻＝選那隻）。按住棋子拖到別格＝移動或交換。按住裝備小圖拖到別隻棋子＝把裝備給牠（滿三件就交換）。右鍵（手機長按）點棋子＝移出棋盤，點棋子下面的裝備小圖＝只移出那一件。" + (wide() ? "右邊的「棋子／裝備」可以點或按住拖到棋盤上：點棋子＝放到選好的空格（沒有就放第一個空格）、拖到別隻棋子上＝取代牠（留下位置、星級、裝備）；點裝備＝給選取的棋子、拖到棋子上＝給那隻。" : "")));
       put(st.sel ? selPanel(st.sel) : h("div", { class: "card small" }, "還沒選棋子。點棋盤上的棋子可以改星級和裝備。"));
+      if (!wide()) put(dock);
       put(h("div", { class: "row" },
-        h("button", { class: "btn", type: "button", onclick: () => pickChamp(null) }, "＋ 加棋子"),
+        h("button", { class: "btn", type: "button", onclick: () => { if (wide()) { st.pend = null; DK.tab = "champ"; renderDock(); draw(); dock.scrollIntoView({ block: "nearest" }); } else pickChamp(null); } }, "＋ 加棋子"),
+        h("button", { class: "btn ghost be-undo", type: "button", title: "復原（Ctrl+Z）", "aria-label": "復原上一步", disabled: !(bh().idx > 0), onclick: () => histGo(-1) }, "↶ 復原"),
+        h("button", { class: "btn ghost be-redo", type: "button", title: "重做（Ctrl+Shift+Z）", "aria-label": "重做", disabled: !(bh().idx < bh().stack.length - 1), onclick: () => histGo(1) }, "↷ 重做"),
         h("button", { class: "btn", type: "button", onclick: saveBoard }, st.dirty ? "儲存棋盤" : "已是最新"),
-        h("button", { class: "btn ghost", type: "button", onclick: () => { Object.assign(st, freshState(c, true)); st.msg = "已取消未儲存的變更。"; draw(); } }, "取消變更"),
+        h("button", { class: "btn ghost", type: "button", onclick: () => { Object.assign(st, freshState(c, true)); BHIST[c.id] = null; st.msg = "已取消未儲存的變更。"; draw(); } }, "取消變更"),
         O.boards[c.id] ? h("button", { class: "btn ghost", type: "button", onclick: resetBoard }, "恢復資料預設") : null),
         h("p", { class: "xs muted", role: "status" }, st.msg));
+      dockNote();
+      if (dkList) dkList.scrollTop = dkSc;
     };
     const changed = (m) => { const r = relevel(); st.dirty = true; st.msg = [m, r].filter(Boolean).join(" ") || "有未儲存的變更。"; draw(); };
     // 站主 2026-11-08：「這是84陣容，所以應該只放8人口的版面…你要能隨著我修改而實時改動人口，旁邊的可以替換也要變」
@@ -2542,9 +2674,18 @@
     function tapCell(r, col) {
       if (Date.now() - (st.noTap || 0) < 700) return;  // 長按移出後手指放開，不要接著開「放新棋子」
       const units = st.data[st.lv], u = units.find((x) => x.pos && x.pos[0] === r && x.pos[1] === col);
-      if (u) { st.sel = st.sel === u ? null : u; st.side = null; draw(); return; }
+      if (u) { st.sel = st.sel === u ? null : u; st.side = null; st.pend = null; draw(); return; }
       // 站主 2026-11-10：「選定一個棋子之後，我按其他的格子妳不要讓棋子跳過去，要直接幫我按完成然後執行下一個動作，我按空白的格子就是要加棋子」
       // → 有選取時點空格＝先按完成、再在那格放新棋子；要換位置用拖的
+      // 站主 2026-11-11：桌機有常駐的「棋子／裝備」挑選區 → 點空格＝選取那格、挑選區切到棋子分頁（點英雄就放到這格）；手機維持跳出挑選視窗
+      if (wide()) {
+        st.sel = null; st.side = null;
+        st.pend = st.pend && st.pend[0] === r && st.pend[1] === col ? null : [r, col];
+        if (st.pend && DK.tab !== "champ") { DK.tab = "champ"; renderDock(); }
+        draw();
+        if (st.pend) dock.scrollIntoView({ block: "nearest" });
+        return;
+      }
       if (st.sel || st.side) { st.sel = null; st.side = null; draw(); }
       pickChamp([r, col]);
     }
@@ -2662,16 +2803,148 @@
       });
     }
     function pickItem(u, after = null) {
-      const g = D.gamedata, mk = (arr) => arr.map((x) => ({ key: x.key, name: itemName(x.key), ico: icon("item", x.key, "sm") }));
-      const groups = [
-        { label: "一般成裝", items: mk(g.items.filter((x) => (x.kind || "completed") === "completed")) },
-        { label: "光明", items: mk((g.extraItems || []).filter((x) => x.kind === "radiant")) },
-        { label: "神器", items: mk([...g.items.filter((x) => x.kind === "artifact"), ...(g.extraItems || []).filter((x) => x.kind === "artifact")]) },
-        { label: "徽章", items: mk(g.emblems || []) },
-        { label: "其他", items: mk((g.extraItems || []).filter((x) => x.kind === "special")) },
-      ].filter((x) => x.items.length);
-      picker(`${champName(u.key)}的裝備`, groups, (key) => { if ((u.items || []).length >= 3) return; (u.items ||= []).push(key); after?.(); changed(`已給${champName(u.key)}${itemName(key)}。`); });
+      picker(`${champName(u.key)}的裝備`, itemGroups(), (key) => { if ((u.items || []).length >= 3) return; (u.items ||= []).push(key); after?.(); changed(`已給${champName(u.key)}${itemName(key)}。`); });
     }
+    // ---------- 常駐的「棋子／裝備」挑選區（站主 2026-11-11：「規劃器那邊幫我把你這區棋子跟裝備加進去很好用」；跟戰鬥模擬器右邊那欄一樣的用法） ----------
+    // 桌機：在棋盤旁邊（右欄最上面）；手機：在棋盤和選取面板下面。點＝放／給；桌機可以按住卡片拖到棋盤上（手機的手指拖曳要捲動清單，所以手機只能點）。
+    // 分類表和戰鬥模擬器 site/sim/ui/item-cats.js 同一張（見上面 ITEM_CATS 的註解）。
+    const DK = (st.dk ||= { tab: "champ", q: "", cost: "all", trait: "", kind: 0, iq: "", cat: "all" });
+    const dock = h("div", { class: "card dock dock-side", "aria-label": "棋子／裝備挑選區" });
+    const dkNote = h("p", { class: "xs muted dk-note", role: "status", style: "margin:0" });
+    let dkList = null;
+    function dockNote() {
+      const sel = st.sel && !isPlant(st.sel) ? st.sel : null;
+      dkNote.textContent = DK.tab === "champ"
+        ? (st.pend ? `點棋子＝放到 ${"ABCD"[st.pend[0]]}${st.pend[1] + 1}；或拖到棋盤上` : "點棋子＝放到第一個空格；按住拖到空格＝放那格，拖到別隻身上＝取代牠。新棋子預設 2 星。")
+        : (sel ? `點裝備＝給${champName(sel.key)}（${(sel.items || []).length}/3）；或按住拖到別隻棋子上` : "先點棋盤上的棋子再點裝備；或按住裝備拖到棋子上（滿三件會換掉那件）。");
+    }
+    const firstEmpty = () => { const us = st.data[st.lv]; for (let r = 0; r < 4; r++) for (let c2 = 0; c2 < 7; c2++) if (!us.some((x) => x.pos && x.pos[0] === r && x.pos[1] === c2)) return [r, c2]; return null; };
+    // 放英雄：空格＝新增（預設 2 星）；有棋子的格子＝取代牠，保留位置、星級和裝備（跟戰鬥模擬器一樣，只換英雄）；神木植物的格子不能取代
+    function dockPutChamp(key, cell) {
+      const us = st.data[st.lv];
+      const occ = cell && us.find((x) => x.pos && x.pos[0] === cell[0] && x.pos[1] === cell[1]);
+      if (occ) {
+        if (isPlant(occ)) { ownerNotice("神木植物的格子不能取代，放到別格。"); draw(); return; }
+        if (occ.key === key) { draw(); return; }
+        const old = champName(occ.key);
+        occ.key = key; delete occ.mark; delete occ.rider; delete occ.starMix; st.sel = occ; st.pend = null;
+        changed(`${old}換成${champName(key)}（留下位置、${occ.star} 星和裝備）。`); return;
+      }
+      const pos = cell || firstEmpty();
+      if (!pos) { ownerNotice("棋盤已經滿了，先移出一隻再放。"); draw(); return; }
+      const u = { key, star: 2, items: [], pos: [...pos] };
+      us.push(u); st.sel = u; st.pend = null; st.side = null;
+      changed(`已放${champName(key)}（2 星）到 ${"ABCD"[pos[0]]}${pos[1] + 1}。`);
+    }
+    // 給裝備：不到三件＝加上去；滿三件＝換掉 idx 那件（沒對準就換最後一件），跟 moveItem 一致
+    function dockGiveItem(key, u, idx = -1) {
+      if (!u || isPlant(u)) { ownerNotice("裝備只能給棋子。"); draw(); return; }
+      u.items ||= [];
+      if (u.items.length < 3) { u.items.push(key); st.sel = u; changed(`已給${champName(u.key)}${itemName(key)}。`); return; }
+      const j = idx >= 0 && idx < u.items.length ? idx : u.items.length - 1, old = u.items[j];
+      u.items[j] = key; st.sel = u; changed(`${champName(u.key)}已經三件，${itemName(old)}換成${itemName(key)}。`);
+    }
+    function dockTap(kind, key) {
+      if (kind === "champ") {
+        const cell = st.pend && !st.data[st.lv].some((x) => x.pos && x.pos[0] === st.pend[0] && x.pos[1] === st.pend[1]) ? st.pend : null;
+        dockPutChamp(key, cell); return;
+      }
+      const u = st.sel && !isPlant(st.sel) ? st.sel : null;
+      if (!u) { ownerNotice("先點棋盤上的一隻棋子，再點裝備。"); return; }
+      if ((u.items || []).length >= 3) { ownerNotice(`${champName(u.key)}已經三件了。先拿掉一件（右鍵點裝備小圖），或把裝備拖到棋子上換掉一件。`); return; }
+      dockGiveItem(key, u);
+    }
+    function renderDock() {
+      dock.textContent = ""; dkList = null;
+      const tab = (id, label) => h("button", { type: "button", role: "tab", "aria-selected": String(DK.tab === id), onclick: () => { DK.tab = id; renderDock(); dockNote(); } }, label);
+      dock.append(h("div", { class: "tabs", role: "tablist" }, tab("champ", "棋子"), tab("item", "裝備")));
+      const list = h("div", { class: "dk-list" });
+      const search = h("input", { type: "search", placeholder: "搜尋名稱", "aria-label": DK.tab === "champ" ? "搜尋棋子" : "搜尋裝備", value: DK.tab === "champ" ? DK.q : DK.iq });
+      const chipBtn = (label, on, fn) => h("button", { class: "chip", type: "button", "aria-pressed": on ? "true" : "false", onclick: fn }, label);
+      const card = (kind, key, name, ico) => h("button", { class: "dk-card " + kind, type: "button", "data-kind": kind, "data-key": key, title: name }, ico, h("span", null, name));
+      const hd = (t) => h("h4", { class: "pgh" }, t);
+      if (DK.tab === "champ") {
+        const costs = [["all", "全部"], ...[1, 2, 3, 4, 5].map((n) => [n, `${n} 費`]), ["other", "其他"]];
+        const traitKeys = [...new Set(D.gamedata.champions.flatMap((x) => x.traits || []))].sort((a, b) => traitName(a).localeCompare(traitName(b), "zh-Hant"));
+        const sel = h("select", { "aria-label": "羈絆篩選" }, h("option", { value: "" }, "全部羈絆"), traitKeys.map((k) => h("option", { value: k, selected: k === DK.trait }, traitName(k))));
+        sel.addEventListener("change", () => { DK.trait = sel.value; fill(); });
+        const fill = () => {
+          list.textContent = "";
+          const xs = D.gamedata.champions.filter((x) => (!DK.q || champName(x.key).toLowerCase().includes(DK.q) || x.key.toLowerCase().includes(DK.q) || (x.en || "").toLowerCase().includes(DK.q))
+            && (!DK.trait || (x.traits || []).includes(DK.trait)));
+          let any = false;
+          for (const n of [1, 2, 3, 4, 5, "other"]) {
+            if (DK.cost !== "all" && DK.cost !== n) continue;
+            const g = xs.filter((x) => (n === "other" ? !(x.cost >= 1 && x.cost <= 5) : x.cost === n));
+            if (!g.length) continue; any = true;
+            list.append(hd(n === "other" ? "其他" : `${n} 費`), ...g.map((x) => card("champ", x.key, champName(x.key), icon("champion", x.key, "sm"))));
+          }
+          if (!any) list.append(h("p", { class: "small muted", style: "grid-column:1/-1" }, "找不到。"));
+        };
+        search.addEventListener("input", () => { DK.q = search.value.trim().toLowerCase(); fill(); });
+        dock.append(h("div", { class: "dk-filters" }, search, sel), h("div", { class: "row pcats", role: "group", "aria-label": "費用" }, costs.map(([v, l]) => chipBtn(l, DK.cost === v, () => { DK.cost = v; renderDock(); }))), dkNote, list);
+        fill();
+      } else {
+        const groups = itemGroups(); if (DK.kind >= groups.length) DK.kind = 0;
+        const grp = groups[DK.kind];
+        const fill = () => {
+          list.textContent = "";
+          const mk = (x) => card("item", x.key, x.name, x.ico);
+          const term = DK.iq;
+          const match = (x) => !term || x.name.toLowerCase().includes(term) || x.key.toLowerCase().includes(term);
+          const items = grp.items.filter(match);
+          const nodes = grp.cats ? catView(items, DK.cat, mk) : items.map(mk);
+          list.append(...nodes);
+          if (!nodes.length) list.append(h("p", { class: "small muted", style: "grid-column:1/-1" }, "找不到。"));
+        };
+        search.addEventListener("input", () => { DK.iq = search.value.trim().toLowerCase(); fill(); });
+        dock.append(h("div", { class: "dk-filters" }, search),
+          h("div", { class: "row pcats", role: "group", "aria-label": "裝備種類" }, groups.map((g, i) => chipBtn(g.label, DK.kind === i, () => { DK.kind = i; DK.cat = "all"; renderDock(); }))),
+          grp.cats ? catChips(grp.items, DK.cat, (id) => { DK.cat = id; renderDock(); }) : null, dkNote, list);
+        fill();
+      }
+      dkList = list;
+      dockNote();
+    }
+    // 點（手機也可以）：放／給；按住拖（滑鼠）：放到那格或給那隻。拖曳結束後瀏覽器還會補一個 click，用 DK.sup 擋掉。
+    dock.addEventListener("click", (ev) => { const k = ev.target.closest?.(".dk-card"); if (!k || DK.sup) return; dockTap(k.dataset.kind, k.dataset.key); });
+    dock.addEventListener("dragstart", (ev) => ev.preventDefault());
+    dock.addEventListener("pointerdown", (ev) => {
+      if (ev.pointerType === "touch" || ev.button > 0) return;
+      const k = ev.target.closest?.(".dk-card"); if (!k) return;
+      const kind = k.dataset.kind, key = k.dataset.key, sx = ev.clientX, sy = ev.clientY;
+      let drag = false, ghost = null;
+      const hexAt = (x, y) => { const t = document.elementFromPoint(x, y)?.closest(".be .board.edit .hex"); return t && root.contains(t) ? t : null; };
+      const clearDrop = () => root.querySelectorAll(".hex.drop").forEach((x) => x.classList.remove("drop"));
+      const mv = (e) => {
+        if (!drag && Math.hypot(e.clientX - sx, e.clientY - sy) > 8) { drag = true; ghost = h("span", { class: "dk-ghost" }, kind === "champ" ? icon("champion", key, "sm") : icon("item", key, "sm")); document.body.append(ghost); }
+        if (!drag) return;
+        e.preventDefault();
+        ghost.style.left = e.clientX - 20 + "px"; ghost.style.top = e.clientY - 20 + "px";
+        clearDrop();
+        const t = hexAt(e.clientX, e.clientY);
+        if (t && (kind === "champ" ? !t.classList.contains("is-plant") : t.classList.contains("has") && !t.classList.contains("is-plant"))) t.classList.add("drop");
+      };
+      const done = (e) => {
+        window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", done); window.removeEventListener("pointercancel", done);
+        if (ghost) { ghost.remove(); ghost = null; }
+        clearDrop();
+        if (!drag) return;
+        DK.sup = true; setTimeout(() => { DK.sup = false; }, 0);
+        if (e.type === "pointercancel") return;
+        const el = document.elementFromPoint(e.clientX, e.clientY), t = hexAt(e.clientX, e.clientY);
+        if (!t) return;   // 拖到棋盤外：什麼都不做
+        const r = +t.dataset.r, c2 = +t.dataset.c;
+        if (kind === "champ") { dockPutChamp(key, [r, c2]); return; }
+        const to = unitAt(t), ic = el?.closest(".its > *");
+        if (!to || isPlant(to)) { ownerNotice("裝備要拖到有棋子的格子。"); return; }
+        dockGiveItem(key, to, ic ? [...ic.parentNode.children].indexOf(ic) : -1);
+      };
+      window.addEventListener("pointermove", mv, { passive: false }); window.addEventListener("pointerup", done); window.addEventListener("pointercancel", done);
+    });
+    renderDock();
+    if (mqWide.addEventListener) mqWide.addEventListener("change", () => { if (root.isConnected) draw(); });  // 視窗寬度跨過 1000px：挑選區在旁邊／在下面換位置
+
     async function saveBoard() {
       if (!st.dirty) return;
       const strip = (lv) => { const us = withPlants(st.data[lv]), on = riftOn(us), so = spryOn(us);
@@ -2687,11 +2960,11 @@
     }
     async function resetBoard() {
       st.msg = "恢復中…"; draw();
-      try { await O.db.doc("boards/" + c.id).delete(); delete O.boards[c.id]; const base = { ...c, boards: c.boardsBase || c.boards }; Object.assign(st, freshState(base, false)); st.msg = "已恢復成資料預設的棋盤。"; }
+      try { await O.db.doc("boards/" + c.id).delete(); delete O.boards[c.id]; const base = { ...c, boards: c.boardsBase || c.boards }; Object.assign(st, freshState(base, false)); BHIST[c.id] = null; st.msg = "已恢復成資料預設的棋盤。"; }
       catch (err) { st.msg = "恢復失敗：" + (err?.message || "請再試一次"); }
       draw();
     }
-    root._dismiss = () => { if (st.sel || st.side) { st.sel = null; st.side = null; draw(); } };
+    root._dismiss = () => { if (st.sel || st.side || st.pend) { st.sel = null; st.side = null; st.pend = null; draw(); } };
     draw();
     return root;
   }

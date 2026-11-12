@@ -787,7 +787,28 @@ button.fx-mini:hover, button.fx-mini.sel { border-color: var(--accent); backgrou
 /* 站主編輯器：一張主圖＋旁邊一欄，其他人口從旁邊點進來改 */
 .bwrap > .be-main { grid-area: main; min-width: 0; display: grid; gap: var(--s2); align-content: start; }
 .be-wrap.has-side { grid-template-areas: "main" "side"; }
-@media (min-width: 1000px) { .be-wrap.has-side { grid-template-areas: "main side"; } }
+@media (min-width: 1000px) { .be-wrap.has-side { grid-template-areas: "main dock" "main side"; grid-template-rows: auto 1fr; } .be-wrap > .fxpanel { align-self: start; } }
+/* 站主編輯器：常駐的「棋子／裝備」挑選區（2026-11-11）。桌機在右欄最上面，手機在棋盤下面（單欄）。分類按鈕和 app.js 的 ITEM_CATS 同一張表（戰鬥模擬器 sim/ui/item-cats.js 同步） */
+.dock { display: grid; gap: var(--s2); align-content: start; min-width: 0; padding: var(--s3); }
+.be-wrap > .dock-side { grid-area: dock; }
+.be .dock .tabs { margin-bottom: 0; }
+.dock .tabs button { min-height: 34px; padding: 4px 14px; }
+.dock .dk-filters { display: flex; gap: var(--s2); flex-wrap: wrap; }
+.dock .dk-filters input[type="search"] { flex: 1 1 8rem; min-width: 0; font: inherit; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--text); }
+.dock .dk-filters select { flex: 1 1 7rem; min-width: 0; }
+.dock .pcats { gap: 4px; }
+.dock .chip, .pcats .chip { min-height: 30px; padding: 2px 10px; font-size: var(--fs-xs); }
+.pcats { margin: 0; }
+.dk-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); gap: 6px; max-height: min(60vh, 26rem); overflow-y: auto; align-content: start; padding-right: 2px; overscroll-behavior: contain; }
+.dk-card { display: grid; justify-items: center; gap: 2px; padding: 4px 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 11px; line-height: 1.2; cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.dk-card:hover, .dk-card:focus-visible { border-color: var(--accent); }
+.dk-card img { -webkit-user-drag: none; pointer-events: none; }
+.dk-card span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pgh { grid-column: 1 / -1; margin: 6px 0 0; font-size: var(--fs-s); font-weight: 800; }
+.pgh:first-child { margin-top: 0; }
+.dk-ghost { position: fixed; z-index: 71; pointer-events: none; filter: drop-shadow(0 2px 6px rgba(0,0,0,.6)); }
+.dk-ghost .ico { width: 40px; }
+.be .hex.pend { outline: 3px dashed var(--accent); outline-offset: 1px; }
 .be-lv { margin: 0; font-size: var(--fs-sm); }
 .be-lv.other { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--accent) 12%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--line)); }
 .fx-edit { display: grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
@@ -1149,3 +1170,6 @@ button.bcard { font: inherit; color: inherit; text-align: left; cursor: pointer;
 .btn.xs { padding: .15rem .55rem; min-height: 30px; font-size: .8rem; }
 .tc-namef { display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; }
 .tc-namef .tc-name-in { flex: 1 1 8rem; min-width: 0; padding: .3rem .45rem; }
+/* 編輯器復原／重做按鈕 */
+.be .btn:disabled { opacity: .4; cursor: default; }
+.be .be-undo, .be .be-redo { min-width: 5.2em; }

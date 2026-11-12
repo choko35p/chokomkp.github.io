@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>戰鬥模擬｜巧克力MKP的戰棋研究室</title>
+<meta name="description" content="聯盟戰棋 Set 18 戰鬥模擬器：擺好雙方陣容，直接模擬一場戰鬥。">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<meta name="theme-color" content="#DC6B4F">
+<link rel="canonical" href="https://chokomkp.com/sim/">
+<link rel="stylesheet" href="../style.css">
+<style>
+/* 戰鬥模擬頁：沿用 ../style.css 的變數（--coral、--surface-2、--c1..--c5、深色模式），只加本頁需要的版面。 */
+.sim-page main { padding-bottom: var(--s6); }
+.sim-intro { padding: var(--s4) 0 var(--s2); }
+.sim-intro h2 { margin-bottom: var(--s2); }
+.notice.info { background: var(--surface-2); border-color: var(--line); margin: 0; }
+.notice.info::before { content: ""; }
+#notice { margin: var(--s2) 0 var(--s3); }
+#notice ul { margin: var(--s1) 0 var(--s2); padding-left: 1.2rem; }
+.notice.warn.small { padding: 4px 10px; margin: 4px 0; }
+.sim-page .btn.primary { padding-inline: 24px; }
+.sim-page .btn.ghost.danger { color: var(--bad, #c43e43); border-color: currentColor; }
+.sim-page .btn.flash, .rm-unit.flash { animation: sim-flash .5s 3; }
+@keyframes sim-flash { 50% { background: var(--warn-bg); } }
+
+/* 版面：手機單欄（棋盤→操作→選取→雙方設定→選棋子），桌機棋盤在左、選棋子在右 */
+.sim-grid { display: grid; gap: var(--s4); grid-template-columns: minmax(0, 1fr); align-items: start; }
+.sim-main { min-width: 0; display: grid; gap: var(--s3); }
+@media (min-width: 62rem) {
+  .sim-grid { grid-template-columns: minmax(0, 44rem) minmax(20rem, 1fr); }
+  .sim-picker { position: sticky; top: 3.5rem; max-height: calc(100vh - 4.5rem); overflow: auto; }
+}
+.sim-foot { margin-top: var(--s4); }
+
+/* ---- 棋盤：所有尺寸由 --hex（一格的寬度）推出 ---- */
+.sim-boardwrap { container-type: inline-size; width: 100%; max-width: 44rem; margin: 0 auto; }
+.sim-board {
+  --hex: calc(min(100vw - 2rem, 44rem) / 7.5);
+  --hh: calc(var(--hex) * 1.1547);
+  position: relative; width: calc(var(--hex) * 7.5); height: calc(var(--hex) * 7.2169);
+  margin: 0 auto; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+}
+@supports (width: 1cqw) { .sim-board { --hex: calc(min(100cqw, 44rem) / 7.5); } }
+.sim-cells, .sim-tokens { position: absolute; inset: 0; }
+.sim-tokens { pointer-events: none; }
+.sim-cell, .sim-token {
+  position: absolute; left: 0; top: 0; width: var(--hex); height: var(--hh);
+  transform: translate(calc(var(--hex) * var(--x)), calc(var(--hex) * var(--y)));
+}
+.sim-cell { clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); background: var(--line); cursor: pointer; }
+.sim-cell::before { content: ""; position: absolute; inset: 2px; clip-path: inherit; background: var(--cream); }
+.sim-cell.e::before { background: var(--surface-2); }
+.sim-cell.hot { background: var(--accent); }
+.sim-cell.hot::before { background: color-mix(in srgb, var(--accent) 22%, var(--cream)); }
+.sim-cell:focus-visible { outline: none; }
+.sim-sidelabels span { position: absolute; left: 0; font-size: var(--fs-xs); font-weight: 800; color: var(--muted); opacity: .8; pointer-events: none; z-index: 2; }
+.sim-sidelabels .e { top: 0; } .sim-sidelabels .p { bottom: 0; }
+
+.sim-token { pointer-events: auto; touch-action: none; cursor: grab; display: grid; place-items: center; z-index: 3; outline: none; }
+.sim-board.readonly .sim-token { cursor: default; }
+.sim-token.ghosted { opacity: .35; }
+.sim-token .tk-ring { width: 76%; aspect-ratio: 1; border-radius: 50%; border: 3px solid var(--cost, var(--c1)); overflow: hidden; background: var(--surface); box-shadow: 0 1px 4px rgba(0,0,0,.35); }
+.sim-token.e .tk-ring { box-shadow: 0 1px 4px rgba(0,0,0,.35), 0 0 0 2px color-mix(in srgb, #c43e43 70%, transparent); }
+.sim-token .tk-img, .sim-ghost .tk-img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+.sim-token.sel .tk-ring { box-shadow: 0 0 0 3px var(--focus), 0 0 0 5px color-mix(in srgb, var(--focus) 35%, transparent); }
+.sim-token:focus-visible .tk-ring { box-shadow: 0 0 0 3px var(--focus); }
+.tk-stars { position: absolute; top: 2%; left: 0; right: 0; text-align: center; font-size: calc(var(--hex) * .24); line-height: 1; color: #ffc83d; text-shadow: 0 1px 2px #000, 0 0 3px #000; letter-spacing: -.05em; pointer-events: none; }
+.tk-items { position: absolute; bottom: 4%; left: 0; right: 0; display: flex; justify-content: center; gap: 1px; pointer-events: none; }
+.tk-item { width: calc(var(--hex) * .26); height: calc(var(--hex) * .26); border-radius: 3px; border: 1px solid rgba(0,0,0,.6); background: var(--surface); object-fit: cover; font-size: calc(var(--hex) * .12); }
+.noicon { display: grid; place-items: center; text-align: center; background: hsl(var(--hue, 20) 45% 42%); color: #fff; font-weight: 800; font-size: calc(var(--hex, 3rem) * .2); line-height: 1.05; overflow: hidden; word-break: break-all; padding: 1px; }
+.sim-ghost { position: fixed; left: 0; top: 0; width: 3.4rem; height: 3.4rem; border-radius: 50%; overflow: hidden; z-index: 1000; pointer-events: none; opacity: .9; border: 3px solid var(--accent); background: var(--surface); box-shadow: 0 4px 14px rgba(0,0,0,.4); }
+.sim-ghost .noicon { --hex: 3rem; }
+body.sim-dragging { cursor: grabbing; user-select: none; -webkit-user-select: none; }
+.sim-hint { margin: 0; min-height: 1.5em; }
+.sim-hint .btn { margin-left: var(--s2); }
+
+/* ---- 操作列 ---- */
+.sim-actions { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+.sim-actions .btn { padding: 8px 14px; }
+.sim-seed { display: inline-flex; align-items: center; gap: 6px; }
+.sim-seed input { width: 8.5rem; }
+.sim-page input, .sim-page select, .sim-page textarea { font: inherit; font-size: var(--fs-s); color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; min-height: 40px; max-width: 100%; }
+.sim-playback:empty { display: none; }
+.sim-playback { padding: var(--s3) var(--s4); border: 1px solid var(--line); border-radius: var(--r); background: var(--surface-2); }
+.sim-playback p { margin: 0; }
+
+/* ---- 選取的棋子 / 雙方設定 ---- */
+.sim-sheet, .sim-side, .sim-picker { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); padding: var(--s3); }
+.sim-sheet p { margin: 0; }
+.sh-head { display: flex; align-items: center; gap: var(--s2); margin-bottom: var(--s2); }
+.sh-head .btn { margin-left: auto; }
+.sh-img { width: 2.6rem; height: 2.6rem; border-radius: 50%; object-fit: cover; flex: none; --hex: 3rem; }
+.sh-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin-top: var(--s2); }
+.sh-label { min-width: 3rem; font-weight: 700; font-size: var(--fs-s); }
+.sh-slots { display: flex; gap: var(--s2); }
+.slot { width: 2.75rem; height: 2.75rem; border: 1px dashed var(--line); border-radius: 8px; display: grid; place-items: center; font-size: var(--fs-xs); color: var(--muted); position: relative; background: var(--surface-2); padding: 0; font-family: inherit; }
+.slot.full { border-style: solid; border-color: var(--accent); cursor: pointer; overflow: hidden; }
+.slot-img { width: 100%; height: 100%; object-fit: cover; --hex: 3rem; }
+.slot .x { position: absolute; right: 0; top: 0; background: rgba(0,0,0,.65); color: #fff; font-size: .8rem; line-height: 1; padding: 1px 4px; border-bottom-left-radius: 6px; }
+.chip.sm { min-height: 36px; padding: 2px 10px; }
+.sim-sides { display: grid; gap: var(--s3); }
+@media (min-width: 40rem) { .sim-sides { grid-template-columns: 1fr 1fr; } }
+.sd-head { display: flex; align-items: baseline; gap: var(--s2); margin-bottom: var(--s2); }
+.sd-tools { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+.sd-stage { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.sd-params { margin-top: var(--s2); display: grid; gap: var(--s1); }
+.sd-param { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
+.sd-param input { width: 5.5rem; }
+
+/* ---- 選棋子 ---- */
+.pk-traits h3 { font-size: var(--fs-m); margin-bottom: var(--s1); }
+.pk-trow { display: flex; gap: var(--s2); align-items: flex-start; margin-bottom: var(--s2); }
+.pk-trow > b { flex: none; width: 2.6rem; font-size: var(--fs-s); }
+.pk-trow .tchips { flex: 1; }
+.tchip { display: inline-flex; align-items: center; gap: 3px; }
+.tchip-ico { width: 16px; height: 16px; }
+.tchip small { color: var(--muted); }
+.sim-picker .tabs { margin: var(--s3) 0 var(--s2); }
+.pk-filters { display: flex; flex-wrap: wrap; gap: var(--s2); margin-bottom: var(--s2); }
+.pk-search { flex: 1 1 9rem; min-width: 0; }
+.sim-picker .chips { gap: 6px; margin-bottom: var(--s2); }
+.pk-h { margin: var(--s3) 0 var(--s1); font-size: var(--fs-s); padding-left: 8px; border-left: 4px solid var(--cost, var(--line)); }
+.pk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.4rem, 1fr)); gap: 6px; }
+.pk-card { display: grid; justify-items: center; gap: 2px; padding: 4px 2px; border: 2px solid var(--cost, var(--line)); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: var(--fs-xs); line-height: 1.2; cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+.pk-card.item { border-color: var(--line); }
+.pk-card.picked { background: var(--cream); outline: 3px solid var(--focus); }
+.pk-img { width: 3rem; height: 3rem; border-radius: 8px; object-fit: cover; --hex: 3rem; pointer-events: none; }
+.pk-name { max-width: 100%; text-align: center; overflow-wrap: anywhere; }
+.pk-grid.items { grid-template-columns: repeat(auto-fill, minmax(4.8rem, 1fr)); }
+
+/* ---- 對話框、提示 ---- */
+.sim-dlg { width: min(34rem, calc(100vw - 1.5rem)); max-height: calc(100vh - 2rem); overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); padding: var(--s4); }
+.sim-dlg::backdrop { background: rgba(0,0,0,.5); }
+.sim-dlg h2 { font-size: var(--fs-l); }
+.sim-dlg section { margin-top: var(--s3); padding-top: var(--s3); border-top: 1px solid var(--line); }
+.sim-dlg section:first-of-type { border-top: 0; padding-top: 0; }
+.sim-dlg textarea { width: 100%; }
+.imp-row { display: flex; flex-wrap: wrap; gap: var(--s3); }
+.imp-row label { display: grid; gap: 2px; min-width: 0; }
+.imp-row label:first-child { flex: 1 1 14rem; } .imp-row select { width: 100%; }
+.imp-pick { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; margin: var(--s2) 0; }
+.imp-sides { display: inline-flex; gap: var(--s3); }
+.imp-act { margin-top: var(--s2); display: flex; gap: var(--s2); } .imp-act.end { justify-content: flex-end; margin-top: var(--s3); }
+.sim-toast { position: fixed; left: 50%; bottom: 1.2rem; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 8px 16px; border-radius: 999px; font-size: var(--fs-s); z-index: 1100; max-width: calc(100vw - 2rem); text-align: center; }
+.copy-fallback { position: fixed; left: -999px; }
+
+/* ---- 戰鬥播放（C3）：播放層蓋在棋盤上，編輯用的棋子暫時隱藏 ---- */
+.sim-board.playing .sim-tokens { visibility: hidden; }
+.pb-layer, .pb-tokens { position: absolute; inset: 0; pointer-events: none; }
+.pb-layer { z-index: 4; }
+.pb-canvas { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 6; }
+.pb-layer .sim-token { transform: translate(0, 0); will-change: transform; cursor: pointer; z-index: 3; transition: opacity .25s; }
+.pb-layer .sim-token .tk-stars { top: 13%; font-size: calc(var(--hex) * .2); }
+.pb-layer .sim-token.unspawned { visibility: hidden; opacity: 0; }
+.pb-layer .sim-token.ghost { opacity: .4; }
+.pb-layer .sim-token.dead { opacity: 0; visibility: hidden; filter: grayscale(1); transition: opacity .5s ease-out, visibility 0s .5s; z-index: 1; }
+.pb-layer .sim-token.cc .tk-ring { filter: saturate(.5) brightness(.85); }
+.pb-layer .sim-token.inv .tk-ring { box-shadow: 0 0 0 3px #ffe9a8, 0 0 10px 2px #ffe9a8; }
+.pb-layer .sim-token.casting .tk-ring { animation: pb-cast .45s ease-in-out infinite alternate; }
+.pb-layer .sim-token.pb-focus .tk-ring { box-shadow: 0 0 0 3px var(--focus), 0 0 0 6px color-mix(in srgb, var(--focus) 35%, transparent); }
+.pb-layer .sim-token.pb-pop { animation: pb-pop .5s ease-out; }
+@keyframes pb-cast { from { box-shadow: 0 0 0 2px #fff, 0 0 4px 1px #8fd3ff; } to { box-shadow: 0 0 0 3px #fff, 0 0 14px 5px #8fd3ff; } }
+@keyframes pb-pop { from { opacity: 0; scale: .3; } to { opacity: 1; scale: 1; } }
+.pb-bars { position: absolute; top: 0; left: 10%; right: 10%; display: grid; gap: 1px; pointer-events: none; }
+.pb-hpbar, .pb-mnbar { position: relative; overflow: hidden; background: rgba(0,0,0,.6); border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.55); }
+.pb-hpbar { height: calc(var(--hex) * .095); }
+.pb-mnbar { height: calc(var(--hex) * .05); }
+.pb-hpbar i, .pb-mnbar i { position: absolute; inset: 0; transform-origin: left center; transform: scaleX(1); }
+.pb-sh { background: #f4f4f4; }
+.pb-hp { background: #3fcf6b; }
+.pb-hp.low { background: #e9a23b; }
+.pb-token.e .pb-hp { background: #e5575b; }
+.pb-token.e .pb-hp.low { background: #e5575b; }
+.pb-mn { background: #3d8bfd; }
+.pb-badges { position: absolute; left: 0; right: 0; bottom: 24%; display: flex; justify-content: center; gap: 1px; pointer-events: none; }
+.pb-badge { font-size: calc(var(--hex) * .17); line-height: 1; padding: 1px 2px; border-radius: 3px; background: #6a3fb0; color: #fff; font-weight: 800; text-shadow: none; box-shadow: 0 0 0 1px rgba(0,0,0,.5); }
+.pb-badge.s-stealth, .pb-badge.s-untargetable, .pb-badge.s-banished { background: #3b4a5a; }
+.pb-badge.s-taunt { background: #c4533a; }
+.pb-badge.s-invulnerable { background: #b8932c; }
+.pb-badge.s-burn { background: #d9622b; } .pb-badge.s-chill { background: #2a8bb8; }
+.pb-banner { position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 8; text-align: center; padding: .5rem 1.8rem; border-radius: 14px; color: #fff; background: rgba(20,20,30,.82); box-shadow: 0 4px 24px rgba(0,0,0,.5); pointer-events: none; animation: pb-banner .4s ease-out; }
+.pb-banner[hidden], .pb-ot[hidden] { display: none; }
+.pb-banner b { display: block; font-size: calc(var(--hex, 3rem) * .9); line-height: 1.15; letter-spacing: .12em; }
+.pb-banner small { font-size: var(--fs-s); opacity: .85; }
+.pb-banner.win b { color: #ffd45e; } .pb-banner.lose b { color: #ff7b7b; } .pb-banner.draw b { color: #d5dae0; }
+@keyframes pb-banner { from { opacity: 0; transform: translate(-50%, -50%) scale(.7); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+.pb-ot { position: absolute; left: 50%; top: 4px; transform: translateX(-50%); z-index: 8; padding: 2px 14px; border-radius: 999px; background: #b4232a; color: #fff; font-weight: 800; font-size: var(--fs-s); pointer-events: none; }
+
+/* 播放控制列 */
+.sim-playback { display: grid; gap: var(--s2); }
+.pb-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
+.pb-speeds { display: inline-flex; gap: 4px; margin-left: auto; }
+.pb-speed[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pb-row-s { flex-wrap: nowrap; }
+.pb-scrub { flex: 1; min-width: 0; padding: 0; min-height: 32px; accent-color: var(--accent); background: transparent; border: 0; }
+.pb-time { flex: none; font-variant-numeric: tabular-nums; font-size: var(--fs-s); min-width: 8.5rem; text-align: right; }
+.pb-toggle { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 4px 14px 4px 8px; border: 2px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--text); font: inherit; font-weight: 800; cursor: pointer; }
+.pb-toggle .pb-sw { width: 34px; height: 20px; border-radius: 999px; background: var(--line); position: relative; transition: background .15s; flex: none; }
+.pb-toggle .pb-sw::after { content: ""; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.4); transition: transform .15s; }
+.pb-toggle.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+.pb-toggle.on .pb-sw { background: var(--accent); }
+.pb-toggle.on .pb-sw::after { transform: translateX(14px); }
+.pb-toggle small { font-weight: 700; color: var(--muted); }
+.pb-hint { flex: 1 1 14rem; }
+
+/* ---- 無自己圖示的單位（召喚物／形態／植物）：借用召喚者圖示、調暗、加小徽章 ---- */
+.tk-img.derived, .pk-img.derived, .mt-img.derived, .sh-img.derived { filter: grayscale(.45) brightness(.72); }
+.tk-badge { position: absolute; right: 8%; top: 8%; z-index: 2; min-width: 1.15em; padding: 0 .25em; border-radius: 999px; background: #3b4a5a; color: #fff; font-size: calc(var(--hex, 3rem) * .19); font-weight: 800; line-height: 1.25; text-align: center; box-shadow: 0 0 0 1px rgba(255,255,255,.7); pointer-events: none; }
+.pk-ico { position: relative; display: block; --hex: 3rem; }
+.pk-ico .tk-badge { right: -4px; top: -4px; font-size: .62rem; }
+
+/* ---- 傷害統計 ---- */
+.sim-meters { padding: var(--s3) var(--s4); border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+.sim-meters[hidden], .sim-multi[hidden] { display: none; }
+.mt-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2); }
+.mt-head h3, .ml-head h3 { font-size: var(--fs-m); margin: 0; }
+.mt-tabs { margin: 0; }
+.mt-legend { display: flex; flex-wrap: wrap; gap: var(--s3); margin: var(--s2) 0; color: var(--muted); }
+.mt-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.mt-sw { width: .8em; height: .8em; border-radius: 2px; display: inline-block; }
+.mt-sw.p, .mt-seg.p { background: #ff9f43; } .mt-sw.m, .mt-seg.m { background: #5aaef0; } .mt-sw.t, .mt-seg.t { background: #f4f4f4; box-shadow: inset 0 0 0 1px #8b94a0; }
+.mt-sw.h, .mt-seg.h { background: #3fcf6b; } .mt-sw.s, .mt-seg.s { background: #c9d1d9; box-shadow: inset 0 0 0 1px #8b94a0; } .mt-seg.k { background: #c4533a; }
+.mt-sides { display: grid; gap: var(--s3); }
+@media (min-width: 62rem) { .mt-sides { grid-template-columns: 1fr 1fr; } }
+.mt-side h4 { margin: 0 0 var(--s1); font-size: var(--fs-s); padding-left: 8px; border-left: 4px solid #3d8bfd; }
+.mt-side.enemy h4 { border-left-color: #e5575b; }
+.mt-side h4 small { font-weight: 400; }
+.mt-list { display: grid; gap: 6px; }
+.mt-row { display: grid; grid-template-columns: 2rem minmax(0, 1fr); gap: 8px; align-items: start; }
+.mt-row.sub { margin-left: 1.4rem; opacity: .92; }
+.mt-row.dead .mt-name { color: var(--muted); }
+.mt-ico { --hex: 2.4rem; width: 2rem; height: 2rem; border-radius: 50%; overflow: hidden; background: var(--surface-2); display: block; }
+.mt-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mt-line { display: flex; align-items: baseline; gap: 6px; font-size: var(--fs-s); }
+.mt-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mt-died { color: var(--muted); }
+.mt-val { margin-left: auto; font-variant-numeric: tabular-nums; }
+.mt-bar { display: flex; height: .55rem; margin: 2px 0; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.mt-seg { height: 100%; flex: none; }
+.mt-sub { line-height: 1.35; overflow-wrap: anywhere; }
+.mt-note { margin: var(--s2) 0 0; }
+
+/* ---- 模擬 100 場 ---- */
+.sim-multi { padding: var(--s3) var(--s4); border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); display: grid; gap: var(--s2); }
+.ml-prog { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+.ml-prog progress { flex: 1 1 10rem; height: 14px; accent-color: var(--accent); }
+.ml-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
+.ml-bar { display: flex; height: 1.7rem; border-radius: 6px; overflow: hidden; background: var(--surface-2); }
+.ml-seg { display: grid; place-items: center; color: #fff; font-size: var(--fs-xs); font-weight: 800; min-width: 0; }
+.ml-seg.w { background: #2f9e5b; } .ml-seg.d { background: #7d8794; } .ml-seg.l { background: #d04a4f; }
+.ml-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s2); }
+.ml-stat { display: grid; gap: 0; padding: 6px 10px; border-radius: 8px; background: var(--surface-2); border-left: 4px solid #7d8794; }
+.ml-stat.w { border-left-color: #2f9e5b; } .ml-stat.l { border-left-color: #d04a4f; }
+.ml-stat b { font-size: var(--fs-l); line-height: 1.2; }
+.ml-table { border-collapse: collapse; width: 100%; max-width: 28rem; }
+.ml-table th, .ml-table td { text-align: left; padding: 3px 8px; border-top: 1px solid var(--line); font-weight: 400; }
+.ml-table thead th { font-weight: 700; border-top: 0; } .ml-table tbody th { font-weight: 700; }
+
+/* ---- 棋子選擇：桌機直接展開；手機（<768px）為底部抽屜 ---- */
+.only-phone { display: none; }
+.pk-sheet-head, .pk-backdrop { display: none; }
+.sim-main > * { scroll-margin-top: .5rem; }
+.sim-boardwrap { scroll-margin-top: 4.5rem; }
+@media (max-width: 767px) {
+  .only-phone { display: inline-flex; }
+  .sim-picker { padding: var(--s2) var(--s3); }
+  .pk-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000; max-height: 72vh; overflow: auto; overscroll-behavior: contain; background: var(--surface); border: 1px solid var(--line); border-radius: 16px 16px 0 0; padding: var(--s3); box-shadow: 0 -8px 28px rgba(0,0,0,.28); transform: translateY(105%); visibility: hidden; transition: transform .22s ease-out, visibility 0s .22s; }
+  .sim-picker.open .pk-sheet { transform: none; visibility: visible; transition: transform .22s ease-out; }
+  .pk-sheet-head { display: flex; align-items: center; justify-content: space-between; position: sticky; top: calc(-1 * var(--s3)); z-index: 1; margin: calc(-1 * var(--s3)) calc(-1 * var(--s3)) var(--s2); padding: var(--s2) var(--s3); background: var(--surface); border-bottom: 1px solid var(--line); }
+  .pk-sheet .tabs { margin-top: 0; }
+  .sim-picker.open .pk-backdrop { display: block; position: fixed; inset: 0; z-index: 999; background: rgba(0,0,0,.4); }
+  body.pk-open { overflow: hidden; }
+}
+
+/* ---- 傷害實驗室（L3） ---- */
+.sim-tabs { margin: var(--s3) 0 0; }
+.sim-lab[hidden] { display: none; }
+.sim-lab { display: grid; gap: var(--s3); }
+body.lab-mode .sim-actions, body.lab-mode #playback, body.lab-mode #meters, body.lab-mode #multi, body.lab-mode #side-enemy, body.lab-mode .sim-intro { display: none; }
+body.lab-mode .sim-sides { grid-template-columns: 1fr; }
+.sim-lab h2 { margin: 0; }
+.sim-lab p { margin: 0; }
+.lab-sec { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); padding: var(--s3); display: grid; gap: var(--s2); min-width: 0; }
+.lab-sec h3 { font-size: var(--fs-m); margin: 0; }
+.lab-sec h4 { margin: 0; font-size: var(--fs-m); }
+.lab-field { display: grid; gap: 2px; min-width: 0; } .lab-field.grow { flex: 1 1 14rem; } .lab-field select { max-width: 100%; }
+.lab-ico { width: 1.9rem; height: 1.9rem; border-radius: 6px; object-fit: cover; flex: none; --hex: 2.3rem; }
+.lab-ico.round { border-radius: 50%; }
+.lab-carrier { padding-right: 12px; }
+.lab-itemchip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 4px; min-height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; font-size: var(--fs-xs); cursor: pointer; text-align: left; }
+.lab-itemchip[aria-pressed="true"] { border: 2px solid var(--accent); background: var(--cream); font-weight: 700; padding: 2px 9px 2px 3px; }
+.lab-grid { display: flex; flex-wrap: wrap; gap: 6px; max-height: 17rem; overflow: auto; padding: 2px; }
+.lab-chooser { display: grid; gap: var(--s2); border-top: 1px dashed var(--line); padding-top: var(--s2); }
+.lab-find input { width: 100%; }
+.lab-modes { margin: 0; }
+.lab-check { display: flex; gap: var(--s2); align-items: flex-start; }
+.lab-check input { min-height: 0; width: 1.2rem; height: 1.2rem; margin-top: 2px; accent-color: var(--accent); flex: none; }
+.lab-parts { display: grid; grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr)); gap: 6px; }
+.lab-part { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.lab-part.on { border-color: var(--accent); background: var(--cream); }
+.lab-pname { font-size: var(--fs-xs); flex: 1 1 3rem; min-width: 0; }
+.lab-step { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.lab-step .btn { min-width: 2.2rem; padding: 2px 8px; }
+.lab-set { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); padding: 4px 0; border-top: 1px solid var(--line); }
+.lab-actions { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+.lab-help { flex: 1 1 14rem; }
+.lab-progress:empty { display: none; }
+.lab-progress { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); padding: var(--s2) var(--s3); border: 1px solid var(--line); border-radius: var(--r); background: var(--surface-2); }
+.lab-progress progress { flex: 1 1 12rem; height: 14px; accent-color: var(--accent); }
+.lab-result { display: grid; gap: var(--s2); }
+.lab-reshead { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
+.lab-tag { display: inline-block; font-size: var(--fs-xs); font-weight: 700; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); line-height: 1.5; }
+.lab-tag.gray { color: var(--muted); border-style: dashed; background: transparent; }
+.lab-tag.warn { background: var(--warn-bg); border-color: var(--warn, #c98a00); }
+.lab-tag.pre { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); border-color: var(--accent); }
+.lab-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.lab-row { display: grid; grid-template-columns: 2rem minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.lab-row.gray { background: var(--surface-2); }
+.lab-row.gray .lab-val, .lab-row.gray .lab-diff { color: var(--muted); }
+.lab-rank { font-weight: 800; font-size: var(--fs-m); text-align: center; color: var(--muted); }
+.lab-body { display: grid; gap: 4px; min-width: 0; }
+.lab-ritems { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.lab-ritem { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-s); font-weight: 700; }
+.lab-tags { display: flex; flex-wrap: wrap; gap: 4px; } .lab-tags:empty { display: none; }
+.lab-nums { text-align: right; display: grid; gap: 1px; justify-items: end; }
+.lab-val { font-size: var(--fs-m); font-variant-numeric: tabular-nums; }
+.lab-diff { font-size: var(--fs-s); font-variant-numeric: tabular-nums; color: var(--muted); }
+.lab-diff.up { color: #2a8a4f; font-weight: 700; } .lab-diff.down { color: #c43e43; font-weight: 700; }
+.lab-parthead { margin-top: var(--s3); }
+.lab-rows.partial .lab-row { border-style: dashed; }
+.sim-token.lab-carrier-mark .tk-ring { box-shadow: 0 0 0 3px #ffc83d, 0 0 0 5px color-mix(in srgb, #ffc83d 40%, transparent); }
+@media (max-width: 40rem) {
+  .lab-row { grid-template-columns: 1.4rem minmax(0, 1fr); }
+  .lab-nums { grid-column: 2; text-align: left; justify-items: start; grid-template-columns: auto 1fr; align-items: baseline; gap: 2px 10px; }
+  .lab-ci { grid-column: 1 / -1; }
+}
+
+/* ---- 羈絆設定（棋盤下方） ---- */
+.sim-tparams:empty { display: none; }
+.sim-tparams { display: grid; gap: var(--s2); }
+.tp-side { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); padding: var(--s2) var(--s3); display: grid; gap: var(--s2); }
+.tp-side h3 { margin: 0; font-size: var(--fs-s); padding-left: 8px; border-left: 4px solid #3d8bfd; }
+.tp-side[data-side="1"] h3 { border-left-color: #e5575b; }
+.tp-row { display: grid; gap: 4px; }
+.tp-label { font-size: var(--fs-s); }
+.tp-chips { gap: 6px; }
+.tp-desc { margin: 0; }
+.tp-row select { max-width: 100%; }
+body.lab-mode .tp-side[data-side="1"] { display: none; }
+.sim-dlg[data-only0] .imp-pick { display: none; }
+
+/* ---- 唯讀的敵方（傷害實驗室：木樁／網站陣容） ---- */
+.sim-board.enemy-locked .sim-cell.e { background: color-mix(in srgb, var(--muted) 45%, var(--line)); cursor: default; }
+.sim-board.enemy-locked .sim-cell.e::before { background: repeating-linear-gradient(135deg, var(--surface-2) 0 6px, color-mix(in srgb, var(--surface-2) 80%, var(--muted)) 6px 12px); }
+.sim-board.enemy-locked .sim-sidelabels .e { opacity: 1; color: var(--text); background: var(--surface); padding: 0 6px; border-radius: 4px; border: 1px solid var(--line); }
+.sim-token.locked { cursor: default; pointer-events: none; }
+.sim-token.dummy .tk-ring { background: #b98c5a; border-color: #7a5530; display: grid; place-items: center; }
+.tk-dummy { color: #fff; font-weight: 800; font-size: calc(var(--hex) * .26); text-shadow: 0 1px 2px rgba(0,0,0,.6); letter-spacing: .05em; }
+.lab-cats { margin: 0; }
+.sim-board.enemy-locked .sim-sidelabels .e { max-width: 62%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .7rem; }
+/* 唯讀敵方的標籤放到棋盤上方，不要蓋住第一排的木樁 */
+.sim-board.enemy-locked { margin-top: 1.9em; overflow: visible; }
+.sim-board.enemy-locked .sim-sidelabels .e { top: -1.7em; max-width: 100%; font-size: .8rem; }
+
+/* ---- 擺棋盤操作：裝備小圖的觸控範圍、待放的格子 ---- */
+.tk-itemw { position: relative; display: block; width: calc(var(--hex) * .26); height: calc(var(--hex) * .26); flex: none; }
+.tk-itemw > .tk-item { width: 100%; height: 100%; display: block; }
+.sim-board:not(.readonly) .sim-token:not(.locked) .tk-itemw { pointer-events: auto; }
+.sim-board:not(.readonly) .sim-token:not(.locked) .tk-itemw::before { content: ""; position: absolute; inset: -7px -3px; }   /* 看起來一樣大，觸控範圍約 18x26px */
+.sim-token.locked, .sim-token.locked * { pointer-events: none; }
+.tk-itemw.ghosted { opacity: .3; }
+.sim-cell.pending { background: var(--accent); }
+.sim-cell.pending::before { background: color-mix(in srgb, var(--accent) 30%, var(--cream)); }
+.lab-grid .lab-cath { flex: 0 0 100%; margin: var(--s2) 0 0; }
+.pk-cats { margin-top: 2px; }
+/* 選取面板：拉克絲羈絆形態列、推薦出裝 */
+.sh-form .chips { flex: 1 1 auto; }
+.sh-recs { margin-top: var(--s3); border-top: 1px dashed var(--line); padding-top: var(--s2); display: grid; gap: 4px; }
+.sh-rech { margin: 0; font-size: var(--fs-s); }
+.sh-reclist { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 6px; }
+.sh-rec { display: flex; align-items: center; gap: 8px; text-align: left; padding: 6px 8px; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--card, #fff); cursor: pointer; font: inherit; color: inherit; }
+.sh-rec:hover, .sh-rec:focus-visible { border-color: var(--accent, #a0392b); background: var(--accent-soft, #fdf1e3); }
+.sh-recicons { display: flex; gap: 2px; flex: 0 0 auto; }
+.sh-recimg { width: 28px; height: 28px; border-radius: 6px; object-fit: cover; }
+.sh-rectxt { display: grid; gap: 1px; min-width: 0; }
+.sh-recnames { font-size: var(--fs-s); line-height: 1.25; }
+.sh-recnote { margin: 0; color: var(--accent, #a0392b); }
+.hist-bar { display: flex; gap: 6px; margin: 4px 0; }
+.hist-bar .btn { min-height: 36px; }
+.hist-bar .btn:disabled { opacity: .4; cursor: default; }
+/* 拉克絲形態的徽章＝那個羈絆的圖示 */
+.tk-badge.tk-trait { display: grid; place-items: center; width: 1.9em; height: 1.9em; min-width: 0; padding: 2px; pointer-events: auto; }
+.tk-badge.tk-trait img { width: 100%; height: 100%; object-fit: contain; filter: brightness(1.6); }
+.pk-ico .tk-badge.tk-trait { width: 1.9em; height: 1.9em; }
+/* ---- 從截圖辨識（匯入視窗） ---- */
+.sim-dlg.wide { width: min(46rem, calc(100vw - 1.5rem)); }
+.vp-drop { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); padding: var(--s2); border: 2px dashed var(--line); border-radius: 10px; }
+.vp.over .vp-drop { border-color: var(--accent, #a0392b); background: var(--accent-soft, #fdf1e3); }
+.vp-file { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.vp-pick { cursor: pointer; display: inline-flex; align-items: center; min-height: 44px; position: relative; }
+.vp-pick:focus-within { outline: 2px solid var(--accent, #a0392b); outline-offset: 2px; }
+.vp-progress { display: flex; align-items: center; gap: 6px; margin-top: var(--s2); }
+.vp-progress progress { width: 8rem; }
+.vp-boardwrap { max-width: 30rem; margin: var(--s2) auto; }
+.vp .sim-token { cursor: pointer; }
+.vp .sim-token .vc-conf { position: absolute; left: 50%; bottom: -2%; transform: translateX(-50%); z-index: 3; font-size: calc(var(--hex) * .2); line-height: 1.2; padding: 0 .3em; border-radius: 6px; background: rgba(0,0,0,.7); color: #fff; pointer-events: none; }
+.vp .sim-token.vc-low .vc-conf { background: #f2c200; color: #000; font-weight: 800; }
+.vp .sim-token.vc-low .tk-ring { box-shadow: 0 0 0 3px #f2c200; border-radius: 50%; }
+.vc-lowtxt { color: #8a6500; font-weight: 700; }
+.vp-edit { display: grid; gap: var(--s2); margin-top: var(--s2); }
+.vp-items { display: grid; gap: 4px; }
+.vp-item { display: grid; gap: 2px; }
+.vp-itemcur { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.vp-itemcur .slot-img { width: 1.8rem; height: 1.8rem; border-radius: 6px; }
+.vp-bench { margin-top: var(--s3); }
+.vp-bench h4 { margin: 0 0 4px; font-size: var(--fs-s); }
+.vp-benchrow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 4px 0; border-top: 1px solid var(--line); }
+.vp-apply { margin-top: var(--s3); display: grid; gap: var(--s2); }
+.vp-apply .btn { min-height: 44px; }
+.vp-progress[hidden], .vp-result:empty { display: none; }
+/* 「？」棋子：還沒選英雄（認不出來）；不會放上棋盤 */
+.vp .sim-token.vc-unknown .tk-ring { border: 3px dashed #f2c200; background: rgba(242,194,0,.25); }
+.vp .sim-token.vc-unknown .tk-img { opacity: .18; filter: grayscale(1); }
+.vp .sim-token .vc-q { position: absolute; left: 0; right: 0; top: 22%; z-index: 3; text-align: center; font-size: calc(var(--hex) * .5); font-weight: 900; color: #b78500; text-shadow: 0 0 3px #fff; pointer-events: none; }
+.vc-qbig { display: grid; place-items: center; width: 2.6rem; height: 2.6rem; border-radius: 50%; border: 3px dashed #f2c200; font-weight: 900; font-size: 1.4rem; color: #b78500; flex: none; }
+.vp-plants { margin-top: var(--s3); }
+.vp-plants h4 { margin: 0 0 2px; font-size: var(--fs-s); }
+.vp-plants ul { margin: 2px 0 0; padding-left: 1.2rem; }
+
+</style>
+</head>
+<body class="sim-page">
+<header class="top" id="top">
+  <div class="wrap">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"><img src="../assets/brand/choko-c-lab-c5.svg" alt="" width="48" height="48"></div>
+      <div>
+        <h1>巧克力MKP的戰棋研究室</h1>
+        <div class="sub">戰鬥模擬器</div>
+      </div>
+    </div>
+    <nav class="channels" aria-label="頻道">
+      <a class="out" href="https://www.youtube.com/@choko35-yt" rel="noopener">YouTube</a>
+      <a class="out" href="https://www.threads.com/@chokomkp" rel="noopener">Threads</a>
+    </nav>
+  </div>
+</header>
+<nav class="nav" aria-label="頁面區塊">
+  <ul>
+    <li><a href="../">回到攻略首頁</a></li>
+    <li><a href="../#comps">陣容攻略</a></li>
+    <li><a href="./" aria-current="page">戰鬥模擬</a></li>
+  </ul>
+</nav>
+
+<main>
+  <div class="wrap">
+    <p id="loading" class="muted" style="padding:24px 0">資料載入中…</p>
+    <div id="app" hidden>
+      <div class="tabs sim-tabs" role="tablist" aria-label="模擬器功能">
+        <button type="button" role="tab" id="tab-sim" aria-selected="true">戰鬥模擬</button>
+        <button type="button" role="tab" id="tab-lab" aria-selected="false" tabindex="-1" aria-controls="lab">傷害實驗室</button>
+      </div>
+      <section class="sim-intro">
+        <h2>戰鬥模擬器</h2>
+        <p>把雙方陣容擺上棋盤，按「開始戰鬥」看看這場會怎麼打。陣容會存在網址裡，複製連結就能分享。</p>
+        <p class="notice info small">本版本尚未模擬：強化符文、藥水、護符。這些效果不會出現在戰鬥結果裡。</p>
+      </section>
+      <div id="notice" class="notice warn" role="status" hidden></div>
+
+      <div class="sim-grid">
+        <div class="sim-main">
+          <div class="sim-boardwrap"><div id="board"></div></div>
+          <p id="hint" class="sim-hint small muted" aria-live="polite"></p>
+          <div id="tparams" class="sim-tparams" aria-label="羈絆設定"></div>
+          <div id="lab" class="sim-lab" hidden></div>
+          <div class="sim-actions">
+            <button type="button" class="btn primary" id="btn-start">開始戰鬥</button>
+            <button type="button" class="btn ghost only-phone" id="btn-add">＋ 棋子</button>
+            <button type="button" class="btn ghost" id="btn-multi">模擬 100 場</button>
+            <button type="button" class="btn ghost" id="btn-swap">雙方交換</button>
+            <button type="button" class="btn ghost" id="btn-link">複製分享連結</button>
+            <button type="button" class="btn ghost" id="btn-meta">複製 MetaTFT 連結</button>
+            <label class="sim-seed"><span class="small">亂數種子</span><input id="seed" type="number" min="0" max="4294967295" inputmode="numeric"></label>
+            <button type="button" class="btn ghost" id="btn-seed">換一組亂數</button>
+          </div>
+          <div id="playback" class="sim-playback" aria-live="polite"></div>
+          <div id="meters" class="sim-meters" hidden></div>
+          <div id="multi" class="sim-multi" aria-live="polite" hidden></div>
+          <div id="sheet" class="sim-sheet" aria-label="選取的棋子"></div>
+          <div class="sim-sides">
+            <div id="side-enemy" class="sim-side enemy"></div>
+            <div id="side-player" class="sim-side player"></div>
+          </div>
+        </div>
+        <aside id="picker" class="sim-picker" aria-label="棋子與裝備"></aside>
+      </div>
+      <p class="muted small sim-foot">模擬結果為近似值，索敵同距離時為隨機。<span id="data-note"></span></p>
+    </div>
+  </div>
+</main>
+<div id="toast" class="sim-toast" role="status" aria-live="polite" hidden></div>
+<script type="module" src="ui/main.js"></script>
+</body>
+</html>

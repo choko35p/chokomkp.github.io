@@ -680,15 +680,17 @@
   }
 
   // 站主 2026-11-04：賭一費 5 等就要有盤面、賭二費 6 等、賭三費 7 等
-  const rerollTitle = (c) => `${c.rerollLevel} 等盤面（賭${"一二三"[(c.rerollCost || 1) - 1]}費：${c.rerollLevel} 等就要有這個盤面）`;
+  const rerollTitle = (c, M = c.ownerMain || c.rerollLevel) => `${M} 等盤面（賭${"一二三"[(c.rerollCost || 1) - 1]}費：${M} 等就要有這個盤面）`;
   // 站主 2026-11-06：「這是五等，所以應該是678」→ 主圖 5／6 等時，中間每一等的棋盤也算進來（升等要補一等一等列）
-  const levelsOf = (c) => [...new Set([c.rerollLevel, ...[6, 7].filter((lv) => c.rerollLevel && lv > c.rerollLevel && c.boards?.["lv" + lv]?.status === "ok"),
+  const levelsOf = (c) => [...new Set([c.ownerMain, c.rerollLevel, ...[6, 7].filter((lv) => c.rerollLevel && lv > c.rerollLevel && c.boards?.["lv" + lv]?.status === "ok"),
     c.variantKind && c.boards?.lv7?.status === "ok" && c.rerollLevel !== 7 ? 7 : null, 8, 9])].filter(Boolean).sort((a, b) => a - b);
   /* ---------- 攻略頁棋盤：只放一張主圖，升等要補的、可以替換的放旁邊（站主 2026-11-04，參考 TFT Academy 的 Flex Units） ---------- */
   // 主圖人口：一費 5、二費 6、三費 7、四費 8（站主指定）；五費主C 放 9；沒有那張棋盤就退回 8／9
   const COST_LV = { 1: 5, 2: 6, 3: 7, 4: 8, 5: 9 };
   const boardOk = (c, lv) => c.boards?.["lv" + lv]?.status === "ok";
+  // 站主 2026-11-13：主圖人口跟著站主放的棋子走（例：賭二費 6 等的主圖拿掉一隻＝5 人口），建置時放在 ownerMain
   function mainLevel(c) {
+    if (c.ownerMain && boardOk(c, c.ownerMain)) return c.ownerMain;
     if (c.rerollLevel && boardOk(c, c.rerollLevel)) return c.rerollLevel;
     const want = COST_LV[CH[c.carrier]?.cost];
     if (want && boardOk(c, want)) return want;
@@ -843,7 +845,7 @@
     return box;
   }
   function boardTitle(c, M) {
-    if (c.rerollLevel && M === c.rerollLevel) return rerollTitle(c);
+    if (c.rerollLevel && M === (c.ownerMain || c.rerollLevel)) return rerollTitle(c, M);
     return `${M} 人口站位圖`;
   }
   /* 站主給的公式（站主 2026-11-06：三張盤面「研究這套，把他排在a，很強」）：同一套陣容的幾種盤面，主頁和公式頁的棋盤上方都可以切換 */
@@ -2316,24 +2318,28 @@
   }
   function freshState(c, useSaved) {
     const sv = useSaved ? O.boards[c.id] : null;
-    const pick = (lv) => (sv?.["lv" + lv]?.units ? clone(sv["lv" + lv].units).map((u) => (u.plant ? { ...u, key: "plant:" + u.plant, items: [] } : u)) : (c.boards?.["lv" + lv]?.units ? clone(c.boards["lv" + lv].units).map((u) => ({ ...u, items: u.items || [], pos: Array.isArray(u.pos) ? u.pos : null })) : []));
+    // 站主存過的：沒存的等級才用資料的棋盤；資料裡「站主的棋盤」是建置時套上去的（可能換過人口），站主存的那份已經有了，不重複拿
+    const dataB = (lv) => { const b = c.boards?.["lv" + lv]; return b?.units && !(sv && b.source === "owner") ? b : null; };
+    const pick = (lv) => (sv?.["lv" + lv]?.units ? clone(sv["lv" + lv].units).map((u) => (u.plant ? { ...u, key: "plant:" + u.plant, items: [] } : u)) : (dataB(lv) ? clone(dataB(lv).units).map((u) => ({ ...u, items: u.items || [], pos: Array.isArray(u.pos) ? u.pos : null })) : []));
     const d8 = withPlants(autoPlace(pick(8), c, null));
     const data = { 8: d8, 9: withPlants(autoPlace(pick(9), c, d8)) };
     if (c.rerollLevel) data[c.rerollLevel] = withPlants(autoPlace(pick(c.rerollLevel), c, d8));
     for (const lv of levelsOf(c)) if (!data[lv]) data[lv] = withPlants(autoPlace(pick(lv), c, d8));
     // 站主 2026-11-08：人口跟著棋子走 → 存過或資料裡有的其他人口（例：拿到剩 7 隻的 8-4 盤＝7 人口）也要載入
-    for (const lv of [5, 6, 7, 8, 9]) if (!data[lv] && (sv ? sv["lv" + lv]?.units?.length : c.boards?.["lv" + lv]?.units?.length)) data[lv] = withPlants(autoPlace(pick(lv), c, d8));
+    for (const lv of [5, 6, 7, 8, 9]) if (!data[lv] && (sv?.["lv" + lv]?.units?.length || dataB(lv)?.units?.length)) data[lv] = withPlants(autoPlace(pick(lv), c, d8));
     // 站主存的棋盤人口和等級對不上（例：存在 8 人口、其實只有 7 隻）→ 跟建置（owner_content.apply_boards）一樣，當作實際人口那一等（那一等沒存過才搬）
     let moved = null;
+    // 主圖等級：站主存過的（sv.main）；舊的存檔沒有 main，用資料的主圖等級（不看建置換過的 ownerMain），打開編輯器時再整條一起移（boardEditor 的 relevel）
+    const ml = sv ? (sv.main || mainLevel({ ...c, ownerMain: null, boards: c.boardsBase || c.boards })) : mainLevel(c);  // boardsBase＝套站主棋盤之前的資料
     if (sv) for (const L of [9, 8, 7, 6, 5]) {
       const us = sv["lv" + L]?.units;
-      if (!us?.length || [L].includes(c.rerollLevel)) continue;
+      if (!us?.length || [ml, c.rerollLevel].includes(L)) continue;
       const P = champsOnly(us).reduce((n, u) => n + (CH[u.key]?.slots || 1), 0);
-      if (P !== L && P >= 5 && P <= 9 && P !== c.rerollLevel && !sv["lv" + P]?.units?.length) { data[P] = data[L]; data[L] = []; moved ||= `之前存在 ${L} 人口的棋盤場上只有 ${P} 人口，改成 ${P} 人口的棋盤。按「儲存棋盤」就會存成這樣。`; }
+      if (P !== L && P >= 5 && P <= 9 && P !== c.rerollLevel && !sv["lv" + P]?.units?.length) { data[P] = data[L]; data[L] = []; moved ||= `之前存在 ${L} 人口的棋盤場上是 ${P} 人口，改成 ${P} 人口的棋盤。按「儲存棋盤」就會存成這樣。`; }
     }
     const two = (lv) => !!((sv?.["lv" + lv]) || c.boards?.["lv" + lv] || {}).twoMarks;
-    const ml = mainLevel(c);
     const main = ml && (champsOnly(data[ml]).length || levelsOf(c).includes(ml)) ? ml : Object.keys(data).map(Number).sort((a, b) => a - b).find((lv) => champsOnly(data[lv]).length) || 8;
+    data[main] ||= [];
     // 旁邊「可以替換」：站主存過就用站主的，沒有就用資料算的（站主一改就整份變成站主的）
     const flex = clone(sv?.flex || c.flex || {});
     for (const xs of Object.values(flex)) for (const x of xs || []) x.items ||= {};
@@ -2398,7 +2404,8 @@
     const st = BSTATE[c.id] ||= freshState(c, true);
     beDismissInit(); beKeysInit();
     // 編輯器的等級：資料的等級＋現在有棋子的等級（人口跟著棋子走，可能換到 5～9 任何一等）
-    const edLv = () => [...new Set([...levelsOf(c), st.main, ...Object.keys(st.data).map(Number).filter((L) => champsOnly(st.data[L]).length)])].sort((a, b) => a - b);
+    // 站主 2026-11-13：「5人口的話就有要有升等要補，6、7、8等」→ 主圖以上每一等都列（升等要補、調整其他人口）
+    const edLv = () => [...new Set([...levelsOf(c), st.main, ...[5, 6, 7, 8, 9].filter((L) => L > st.main), ...Object.keys(st.data).map(Number).filter((L) => champsOnly(st.data[L]).length)])].filter((L) => L >= 5 && L <= 9).sort((a, b) => a - b);
     const mqWide = matchMedia("(min-width: 1000px)"), wide = () => mqWide.matches;   // 桌機（棋盤旁邊有一欄）／手機（單欄）
     // ---- 復原／重做（見 beKeysInit 的說明）
     const bh = () => (BHIST[c.id] ||= { stack: [], idx: -1 });
@@ -2420,6 +2427,7 @@
       const lvs = [...new Set([...Object.keys(cur.data), ...Object.keys(nxt.data)])].map(Number);
       const diff = lvs.filter((lv) => JSON.stringify(cur.data[lv] || []) !== JSON.stringify(nxt.data[lv] || []));
       st.data = nxt.data; st.two = nxt.two; st.flex = nxt.flex; st.flexOwned = nxt.flexOwned; st.main = nxt.main;
+      if (nxt.main !== cur.main) st.lv = st.main;  // 主圖人口變了（整條一起移）：回到主圖
       // 人口會跟著棋子數搬（relevel）：復原／重做後，看變動的人口裡「現在有棋子」的那張；沒有就留在原本那張，再不行回主圖
       const filled = diff.filter((lv) => champsOnly(nxt.data[lv] || []).length);
       if (filled.length && !filled.includes(st.lv)) st.lv = filled[0];
@@ -2441,11 +2449,11 @@
       const units = st.data[st.lv];
       const pop = champsOnly(units).reduce((n, u) => n + (CH[u.key]?.slots || 1), 0);
       // 站主 2026-11-04：只放一張主圖的站位圖，其他人口放旁邊一區（升等要補、可以替換），要改其他人口從旁邊那區點進來
-      const lvLabel = (lv) => (lv === c.rerollLevel ? `${lv} 等（賭${"一二三"[(c.rerollCost || 1) - 1]}費）` : `${lv} 人口`);
+      const lvLabel = (lv) => (c.rerollLevel && lv === st.main ? `${lv} 等（賭${"一二三"[(c.rerollCost || 1) - 1]}費）` : `${lv} 人口`);
       const M = st.main;
       const main = h("div", { class: "be-main" });
       const live = Object.fromEntries(edLv().filter((lv) => champsOnly(st.data[lv]).length).map((lv) => ["lv" + lv, { status: "ok", units: st.data[lv] }]));
-      const ed = { flex: st.flex, flexLevels: edLv().filter((lv) => lv >= M), stepLevels: edLv().filter((lv) => lv > M),
+      const ed = { flex: st.flex, flexLevels: edLv().filter((lv) => lv === M || (lv > M && (champsOnly(st.data[lv]).length || levelsOf(c).includes(lv)))), stepLevels: edLv().filter((lv) => lv > M),
         sel: st.side, select: (k) => { st.side = k; st.flexForm = null; draw(); }, selPanel: sideSelPanel, addStep: pickStep, swapStep: pickSwap,
         delFlex: (lv, i) => { ownFlex(); st.flex["lv" + lv].splice(i, 1); st.side = null; changed("已刪除這組替換。"); },
         flexForm: st.flexForm, openFlexForm: (lv) => { st.flexForm = { lv, out: [], in: [] }; st.side = null; draw(); }, flexFormBox };
@@ -2509,11 +2517,11 @@
     };
     const changed = (m) => { const r = relevel(); st.dirty = true; st.msg = [m, r].filter(Boolean).join(" ") || "有未儲存的變更。"; draw(); };
     // 站主 2026-11-08：「這是84陣容，所以應該只放8人口的版面…你要能隨著我修改而實時改動人口，旁邊的可以替換也要變」
-    // 一張棋盤的人口變了、而且那個人口還沒有棋盤 → 整張換到那個人口（主圖、旁邊的「可以替換」、首領標記設定一起搬）。
-    // 那個人口已經有棋盤（例：主圖 8 人口、正在改 9 人口那張）就不搬，照舊顯示「人口 8／9」。賭牌等級不動。建置時（owner_content.apply_boards）同一條規則。
+    // 站主 2026-11-13：「6人口的編輯器變成五人口的時候你沒有跟著變阿，不只是9變8…」→ 這條規則每一等都適用，賭牌等級（主圖）也一樣：
+    //   主圖 6 等拿掉一隻＝主圖變 5 等；其他人口的棋盤不動（站主選「只有主圖變 5 等」），旁邊升等要補多出 6 等讓站主填（edLv 主圖以上每一等都列）。
     function relevel(from = st.lv) {
       const to = popOf(st.data[from]);
-      if (!from || to === from || to < 5 || to > 9 || champsOnly(st.data[to]).length || [from, to].includes(c.rerollLevel)) return null;
+      if (!from || to === from || to < 5 || to > 9 || champsOnly(st.data[to]).length) return null;
       if (from !== st.main && to <= st.main) return null;  // 其他人口那張（例：9 人口）拿到比主圖還少時不搬，等加回來
       st.data[to] = st.data[from]; st.data[from] = [];
       st.two[to] = !!st.two[from]; st.two[from] = false;
@@ -2952,7 +2960,7 @@
           ...(on && u.mark && isRift(u.key) ? { mark: true } : {}), ...(so && u.rider && isSpry(u.key) ? { rider: true } : {}) })), twoMarks: on && !!st.two[lv] }; };
       const flex = st.flexOwned ? Object.fromEntries(Object.entries(st.flex).map(([k, xs]) => [k, (xs || []).slice(0, 8).map((x) => ({ out: x.out.slice(0, 3), in: x.in.slice(0, 3),
         items: Object.fromEntries(x.in.slice(0, 3).map((k2) => [k2, ((x.items || {})[k2] || []).slice(0, 3)])) }))])) : null;
-      const doc = { compId: c.id, ...Object.fromEntries([...new Set([...edLv(), ...Object.keys(st.data).map(Number)])].map((lv) => ["lv" + lv, strip(lv)])), ...(flex ? { flex } : {}), at: new Date().toISOString() };
+      const doc = { compId: c.id, main: st.main, ...Object.fromEntries([...new Set([...edLv(), ...Object.keys(st.data).map(Number)])].map((lv) => ["lv" + lv, strip(lv)])), ...(flex ? { flex } : {}), at: new Date().toISOString() };
       st.msg = "儲存中…"; draw();
       try { await O.db.doc("boards/" + c.id).set(doc); O.boards[c.id] = doc; st.dirty = false; st.msg = "已儲存。下次更新時會套到正式站。"; }
       catch (err) { st.msg = "儲存失敗：" + (err?.message || "請再試一次") + "。變更還在，可以再按一次儲存。"; }

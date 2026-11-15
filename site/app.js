@@ -26,6 +26,19 @@
   };
   const slug = (id) => "c-" + String(id).replace(/[^A-Za-z0-9]+/g, "-");
 
+  /* ---------- 賽季切換（站主 2026-11-16：「弄一個可以切換成s19的按鈕，點了之後t度表等所有的東西包括小百科都要變成s19」）
+     同一份程式，?s=19 讀 data/s19/ 的資料；切換時整頁重載。沒帶參數＝現行賽季（SEASON_DEFAULT，S19 正式上線那天改）。 ---------- */
+  const SEASON_DEFAULT = 18;
+  const SEASON = (() => {
+    const q = new URLSearchParams(location.search).get("s");
+    if (q === "19" || q === "18") return +q;
+    if (/^#c-s19-/.test(location.hash)) return 19;  // S19 陣容連結沒帶參數
+    return SEASON_DEFAULT;
+  })();
+  const S19 = SEASON === 19;
+  const dataUrl = (p) => (S19 ? "data/s19/" : "data/") + p;
+  const seasonHref = (s) => { const u = new URL(location.href); if (s === SEASON_DEFAULT) u.searchParams.delete("s"); else u.searchParams.set("s", String(s)); u.hash = ""; return u.pathname + u.search; };
+
   let D, CH, IT, TR, XI = {}, EM = {}, ICONS = new Set();
   const S = { comp: new Set(), item: new Set(), champ: new Set(), cond: new Set() };
   const AD = new Set(["InfinityEdge", "Deathblade", "GiantSlayer", "LastWhisper", "Bloodthirster", "SteraksGage", "EdgeOfNight"]);
@@ -57,7 +70,11 @@
     const fb = h("span", { class: "fb" }, name.replace(/(轉職|徽章)$/, "").slice(0, 2));
     const base = `icons/${isChamp ? "champions" : "items"}/${isChamp ? key : (IT[key]?.icon || key)}`;
     const path = ICONS.has(base + ".webp") ? base + ".webp" : base + ".png";
-    if (ICONS.has(path)) {
+    const sp = isChamp && S19 ? D.sprite19 : null, si = sp?.map?.[key];
+    if (si != null) {  // S19 頭像：一張精靈圖（預覽站一個版本最多 512 個檔）
+      const c = si % sp.cols, r = Math.floor(si / sp.cols);
+      box.append(h("span", { class: "spr", "aria-hidden": "true", style: `background-image:url(${sp.src});background-size:${sp.cols * 100}% ${sp.rows * 100}%;background-position:${sp.cols > 1 ? (c / (sp.cols - 1)) * 100 : 0}% ${sp.rows > 1 ? (r / (sp.rows - 1)) * 100 : 0}%` }));
+    } else if (!S19 && ICONS.has(path) || S19 && !isChamp && ICONS.has(path)) {
       const img = h("img", { src: path, alt: "", loading: "lazy", decoding: "async", width: 48, height: 48 });
       img.addEventListener("error", () => { img.remove(); box.append(fb); });
       box.append(img);
@@ -79,7 +96,7 @@
   function adaptLayout() {
     const ul = document.querySelector(".nav ul");
     if (ul) ul.replaceChildren(...[["#tierlist", "nav.tier", "T 度表"], ["#updates-sec", "nav.updates", "本次更新"],
-      ["#version", "nav.version", "版本主軸"], ["#picker", "nav.picker", "隨手速查"], ["#comps", "nav.comps", "陣容攻略"], ["sim/", "nav.sim", "戰鬥模擬"]].map(([href, k, t]) => h("li", null, h("a", { href, "data-tx": k }, t))));  // 戰鬥模擬器 2026-11-11
+      ["#version", "nav.version", "版本主軸"], ["#picker", "nav.picker", "隨手速查"], ["#comps", "nav.comps", "陣容攻略"], ["sim/", "nav.sim", "戰鬥模擬"]].filter(([href]) => !S19 || href === "#tierlist" || href === "#comps").map(([href, k, t]) => h("li", null, h("a", { href, "data-tx": k }, t))));  // 戰鬥模擬器 2026-11-11
     const up = $("#updates-sec"), tl = $("#tierlist");
     if (up && !$("#updates-fold")) {
       up.classList.add("slim");
@@ -109,7 +126,8 @@
   // 站主 2026-11-04：最上面的時間太佔版面 → 只留「上次更新：多久前」，細節和網站新功能都收起來
   function renderTop() {
     const p = D.patch, t = D.times;
-    $("#patch").textContent = `${p.patch} 版本｜S${p.set}「${p.setName}」`;
+    $("#patch").textContent = p.label || `${p.patch} 版本｜S${p.set}「${p.setName}」`;
+    seasonUi();
     const meta = $("#meta"); meta.textContent = "";
     const when = t.publishedAt;
     meta.append(
@@ -120,7 +138,7 @@
             D.inference ? `（${D.inference.basePatch} 的對局；${D.inference.patch} 的資料還在累積）` : ""),
           h("p", null, h("b", null, "下一個版本："), `${p.nextPatch}：${p.nextPatchDate}`))),
       D.siteChanges?.length ? h("details", { class: "mini" }, h("summary", null, ui("meta.news", "網站新功能與改動")),
-        h("div", { class: "in small" }, h("ul", { class: "list" }, D.siteChanges.map((x) => h("li", null, h("span", { class: "xs muted" }, x.date.slice(5).replace("-", "/") + "　"), tx(`version:sitechange.${x.id}`, x.text)))))) : null);
+        h("div", { class: "in small" }, h("ul", { class: "list" }, D.siteChanges.map((x) => h("li", null, h("span", { class: "xs muted" }, x.date.slice(5).replace("-", "/") + "　"), tx(`version:sitechange.${x.id}`, x.text)))))) : "");
     $("#yt").href = D.brand.youtube; $("#th").href = D.brand.threads;
     $("#yt2").href = D.brand.youtube; $("#th2").href = D.brand.threads;
     // 頁尾的帳號文字跟著連結走（站主 2026-11-05：Threads 帳號是 @chokomkp）
@@ -134,6 +152,23 @@
       a.dataset.deco = "1"; a.classList.add("chbtn"); a.target = "_blank"; a.rel = "noopener";
       a.textContent = "";
       a.append(h("span", { class: "chg", "aria-hidden": "true" }, glyph), h("span", { class: "chl" }, h("b", null, label), h("small", null, sub)));
+    }
+  }
+
+  // 兩段式切換鈕：放在頁首版本文字旁邊；S19 時導覽列下面多一條「PBE 前預測」說明
+  function seasonUi() {
+    if ($("#ssw")) return;
+    const mk = (s, label, sub) => h("a", { class: "ssw-b" + (SEASON === s ? " on" : ""), href: seasonHref(s), "aria-current": SEASON === s ? "true" : "false",
+      onclick: () => track("season", s) }, h("b", null, label), h("small", null, sub));
+    const sw = h("div", { id: "ssw", class: "ssw", role: "group", "aria-label": "切換賽季" }, mk(18, "S18", "現行"), mk(19, "S19", "預測"));
+    $(".top .brand")?.after(sw);
+    if (S19) {
+      document.documentElement.classList.add("s19");
+      const n = D.seasonNote || {};
+      $(".nav")?.after(h("div", { class: "s19-banner", role: "note" }, h("div", { class: "wrap" },
+        h("b", null, n.title || "S19 PBE 前預測"), " ", h("span", null, n.text || "陣容與評級為攻略網預測，名稱暫譯，數值 PBE 後補。"))));
+      const f = document.querySelector(".foot p");
+      if (f && n.foot) f.replaceChildren(h("b", null, "巧克力MKP的戰棋研究室"), "｜", n.foot);
     }
   }
 
@@ -442,6 +477,7 @@
             c.patchImpact?.tierFrom && D.inference && c.tierSource !== "owner" ? h("span", { class: "was", title: `推測前是 ${c.patchImpact.tierFrom} 級` }, "原" + c.patchImpact.tierFrom) : null,
             c.custom ? h("span", { class: "tag todo" }, "待補資料") : null),
           r.ceil ? h("span", { class: "tc-sub" }, c.watch ? h("b", { class: "tag watch" }, "研究中") : null, lvPill("下限", r.floor), lvPill("上限", r.ceil), c.watch ? h("span", { class: "tag few" }, `樣本少：${c.watch.n} 場`) : c.freq != null ? h("span", { class: "tc-freq" }, `頻率 ${pct(c.freq)}`) : null)
+            : c.pred ? h("span", { class: "tc-sub" }, h("b", { class: "tag pred" }, "預測"), c.pred.srcTier ? h("span", { class: "tc-freq" }, `${c.pred.src} ${c.pred.srcTier}`) : null)
             : h("span", { class: "tc-sub" }, c.custom ? "待補資料" : "研究中"),
           showReq ? h("span", { class: "tc-req", title: req }, "需要：", req) : null)),
       vs.length ? h("div", { class: "tc-br" }, h("span", { class: "tc-brh" }, "分支"), vs.sort(cellSort).map((v) => {
@@ -478,7 +514,8 @@
     const shown = pool.filter((c) => (O.tmode || !c.hidden) && !isChip(c));
     if (D.inference) root.append(h("div", { class: "tb-infer small" }, h("b", { class: "tag infer" }, "推測"), " ",
       ui("tier.infer", `${D.inference.patch} 剛上線，先用 ${D.inference.basePatch} 的高手資料加上 ${D.inference.patch} 改動推測：↑ 變強、↓ 變弱，「原B」是推測前的評級。改版 ${D.inference.hours} 小時後、對局夠多就改用 ${D.inference.patch} 的資料。`)));
-    root.append(h("p", { class: "tb-legend small" }, h("b", null, ui("tier.legendHead", "下限與上限：")), ui("tier.legend", "逆風選下限高的，順風選上限高的。"),
+    if (S19) root.append(h("p", { class: "tb-legend small" }, h("b", null, "評級怎麼來："), D.tierNote || "攻略網預測陣容，再由本站審查；卡片右下是來源站自己的評級。"));
+    else root.append(h("p", { class: "tb-legend small" }, h("b", null, ui("tier.legendHead", "下限與上限：")), ui("tier.legend", "逆風選下限高的，順風選上限高的。"),
       h("span", { class: "lv-scale", "aria-label": "分五級，由好到差" }, ["很高", "高", "中", "低", "很低"].map(lvTag))));
     // 站主 2026-11-06：數據很好但樣本很少的陣容，在 T 度表最下面另開一列「研究中」（站主調 T 表時不顯示）
     const watch = O.tmode ? [] : D.comps.filter((c) => c.watch && !ids.has(c.id) && !c.hidden).map((c) => (c.lane ? c : { ...c, lane: c.conditional ? "conditional" : "normal" }));
@@ -1094,7 +1131,7 @@
       riders.length ? h("p", { class: "small" }, h("b", null, "騎乘者："), riders.join("、"), "（騎上毛茸茸大夥伴）") : null,
       plants ? h("p", { class: "small" }, h("b", null, "神木植物："), plants) : null,
       // 戰鬥模擬器（2026-11-11）：把這個站位帶進模擬器
-      c?.id && c.boards?.["lv" + level] === b ? h("p", { class: "small" }, h("a", { class: "sim-link", href: `sim/#a=comp:${encodeURIComponent(c.id)}:lv${level}` }, "⚔️ 用戰鬥模擬器打打看")) : null);
+      c?.id && !S19 && c.boards?.["lv" + level] === b ? h("p", { class: "small" }, h("a", { class: "sim-link", href: `sim/#a=comp:${encodeURIComponent(c.id)}:lv${level}` }, "⚔️ 用戰鬥模擬器打打看")) : null);
     if (hasPos) {
       const grid = h("div", { class: "board", role: "grid", "aria-label": `${level} 人口站位圖，四排七格` });
       for (let r = 0; r < 4; r++) {
@@ -1183,6 +1220,12 @@
       area.append(h("div", { class: "tabs hero-tabs", role: "tablist", "aria-label": "持裝英雄（劍＝輸出、盾＝坦）" }, cTabs.map(tabOf),
         cTabs.length && tTabs.length ? h("span", { class: "htab-sep", "aria-hidden": "true" }) : null, tTabs.map(tabOf)));
       // 站主 2026-11-04：裝備的解釋（評價怎麼看、每欄只亮一件）刪掉
+      if (hero.simple) {  // S19 預測：只有攻略網的推薦裝，沒有場數
+        area.append(h("p", { class: "small muted" }, `${champName(hero.key)}（${hero.role}）的推薦裝（${hero.src || "攻略網"}，PBE 前預測）：`),
+          h("div", { class: "irecs" }, h("div", { class: "irec first" }, h("div", { class: "irec-h" }, h("b", null, "推薦")),
+            h("div", { class: "irec-i" }, hero.bis.map((k) => h("span", { class: "irec-it" }, icon("item", k, "sm"), h("span", { class: "xs" }, itemName(k))))))));
+        return;
+      }
       if (hero.itemsOnly) {
         area.append(h("p", { class: "notice small" }, hero.generic ? `${champName(hero.key)}（${hero.role}）在高手對局裡幾乎不拿裝，先列所有${/坦/.test(hero.role) ? "坦" : "輸出"}最常拿的裝備：`
           : `${champName(hero.key)}（${hero.role}）三件套紀錄不夠，先列最常拿的裝備：`),
@@ -1244,7 +1287,7 @@
     return [h("div", { class: "review" }, h("p", { class: "review-tag" }, h("b", null, "⚠ 新手可能用不到"), "（只有預覽看得到）", h("br"), why, h("br"), h("span", { class: "xs" }, "要刪或要留，跟我說一聲。")), ...kids)];
   }
   const ITEMS_P = {};
-  const loadItems = (cid) => (ITEMS_P[cid] ||= fetch(`data/items/${cid}.json`).then((r) => (r.ok ? r.json() : null)).catch(() => null));
+  const loadItems = (cid) => (ITEMS_P[cid] ||= fetch(dataUrl(`items/${cid}.json`)).then((r) => (r.ok ? r.json() : null)).catch(() => null));
   /* 選裝備看搭配：選一件、兩件或三件，列出跟其他裝備的組合、頻率和成績（像 MetaTFT 探索功能的裝備篩選） */
   const FSTATE = {};
   function finder(hero, data, label) {
@@ -1307,7 +1350,7 @@
   }
   /* 近期有分的對戰紀錄：高手打進前四的單場，最多 20 場，有時間軸的優先；點過去 MetaTFT 看完整運營（data/cases.json；站主 11/6 開到正式站） */
   let CASES = null, CASES_P = null;
-  const loadCases = () => (CASES_P ||= fetch("data/cases.json").then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => (CASES = d)));
+  const loadCases = () => (CASES_P ||= fetch(dataUrl("cases.json")).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => (CASES = d)));
   /* 加分（站主 2026-11-04：「我說的明明就是這裡要有圖案」）：每一項一張卡，大圖示＋英雄頭像，數字分開排 */
   // 站主 2026-11-06：「你有用的你要在詳情頁那邊給我版面，沒用的就不要列出來」→ 加分裡的轉職每個都有版面（b.branch），
   // 點卡片就在加分下面打開那個轉職的棋盤（站位、裝備、可切人口），也可以點進完整頁面看升等放什麼
@@ -1403,7 +1446,7 @@
   // 站主 2026-11-04：「影片優先於時間軸」→ 實戰對局最上面先放高手影片，再放 MetaTFT 單場（有重播、有時間軸的在前）
   /* 實況影片（站主 2026-11-04：「把影片找出來然後在這邊附上能找到的每一場的連結」）：MetaTFT 影片庫逐場，data/vods.json */
   let VODS_P = null;
-  const loadVods = () => (VODS_P ||= fetch("data/vods.json").then((r) => (r.ok ? r.json() : null)).catch(() => null));
+  const loadVods = () => (VODS_P ||= fetch(dataUrl("vods.json")).then((r) => (r.ok ? r.json() : null)).catch(() => null));
   const RAR_V = { "銀": "r-s", "金": "r-g", "稜鏡": "r-p" };
   function vodBox(c, d) {
     const xs = d?.vods?.[c.vodKey || c.id] || [];
@@ -1489,6 +1532,15 @@
           : `${m.version ? m.version + " " : ""}高手實戰 ${m.games} 場${m.players ? `（${m.players} 位）` : ""}`,
         watch ? "；樣本少，還在研究，參考就好" : m.games < (m.source === "metatft" || m.source === "own-rating" ? 30 : 10) ? "；場數少，參考就好" : "", "。均名越小越好。"));
   }
+  // S19 預測陣容：評級理由、來源、還沒有的資料
+  function predBox(c) {
+    const p = c.pred;
+    return h("div", { class: "small stack" },
+      p.reason ? h("p", null, h("b", null, `${c.tier} 級：`), p.reason) : null,
+      h("p", { class: "muted" }, "棋盤、裝備來自 ", p.url ? h("a", { href: p.url, target: "_blank", rel: "noopener" }, p.srcName || p.src) : (p.srcName || p.src),
+        `（原名「${p.srcComp}」${p.srcTier ? `，評 ${p.srcTier}` : ""}）。評級是本站審查後的結果。`),
+      h("p", { class: "muted" }, D.seasonNote?.detail || "增幅、均名、實戰對局等 PBE 開了、有對局之後再補。"));
+  }
   const compById = (id) => D.comps.find((x) => x.id === id) || (O.on ? (O.custom.find((x) => x.id === id) && customToComp(O.custom.find((x) => x.id === id))) : null);
   function renderDetail(id) {
     const c = compById(id);
@@ -1504,7 +1556,9 @@
         h("div", { class: "dhero-icons" }, keys.map((k, i) => icon("champion", k, i ? "sm" : ""))),
         h("div", { class: "dhero-txt" },
           h("h2", null, c.name),
-          c.status === "ready" ? h("div", { class: "tc-sub dhero-sub" }, r.ceil ? [lvPill("下限", r.floor), lvPill("上限", r.ceil)] : null, c.freq != null ? h("span", { class: "tc-freq" }, `頻率 ${pct(c.freq)}`) : null,
+          c.pred ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag pred" }, "預測"), c.lane === "conditional" ? h("span", { class: "tag cond" }, "") : null, c.lane === "highroll" ? h("span", { class: "tag" }, "九等五費") : null,
+            c.pred.srcTier ? h("span", { class: "small muted" }, `${c.pred.src} 評 ${c.pred.srcTier}`) : null)
+          : c.status === "ready" ? h("div", { class: "tc-sub dhero-sub" }, r.ceil ? [lvPill("下限", r.floor), lvPill("上限", r.ceil)] : null, c.freq != null ? h("span", { class: "tc-freq" }, `頻率 ${pct(c.freq)}`) : null,
             c.conditional || c.lane === "conditional" ? h("span", { class: "tag cond" }, "") : null, c.lane === "highroll" ? h("span", { class: "tag" }, "九等五費") : null,
             D.inference && c.patchImpact?.tierFrom ? h("span", { class: "was" }, `推測（原 ${c.patchImpact.tierFrom}）`) : null)
             : c.variantKind === "trait" ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag watch" }, "轉職分支"), h("span", { class: "small muted" }, `${c.statsMeta?.games || 0} 場高手對局整理，只放站位、裝備和升等，不評級`))
@@ -1535,6 +1589,7 @@
       c.patchImpact.tierFrom ? `；評級 ${c.patchImpact.tierFrom} → ${c.tier}` : ""));
     // 站主 2026-11-04：一句話選陣在「不順時轉哪套」上面；拿掉主C／副C／主坦那幾行（前排替換留著）
     const parts = [
+      ...(c.pred ? [["S19 預測說明", "說明", predBox(c)]] : []),
       ["加分（拿到會更強）", "加分", bonusBox(c)],
       ["一句話選陣", "一句話選陣", c.oneLiner ? h("p", null, tx(`comp:${c.id}:oneLiner`, c.oneLiner)) : null],
       ["不順時轉哪套", "轉哪套", switchBox(c)],
@@ -1567,7 +1622,7 @@
         // 站主 2026-11-07：「目錄裡面裝備很常用到，看可不可以把她弄得明顯或是特別一點」→ 裝備那顆放主C第一件推薦裝的小圖、用主色框起來
         const key = short === "裝備";
         const ic = c.itemsFrom ? compById(c.itemsFrom) || c : c;
-        const it = key ? (ic.items?.top?.[0]?.key || (ic.itemModel || []).find((x) => x.role === "主C")?.builds?.[0]?.items?.[0]) : null;  // 主C持有率最高的那件（三件組合是照字母排，第一件不一定最重要）
+        const it = key ? (ic.items?.top?.[0]?.key || (ic.itemModel || []).find((x) => x.role === "主C")?.builds?.[0]?.items?.[0] || (ic.itemModel || [])[0]?.bis?.[0]) : null;  // 主C持有率最高的那件（三件組合是照字母排，第一件不一定最重要）
         return h("button", { type: "button", class: "tocb" + (key ? " tocb-key" : ""), "data-sec": "sec-" + i, onclick: () => { track("toc", short); document.getElementById("sec-" + i)?.scrollIntoView({ behavior: "smooth", block: "start" }); } },
           key && it ? icon("item", it, "xs") : null, short);
       }));
@@ -1617,8 +1672,8 @@
   }
   /* ---------- 小百科（站主 2026-11-05：「弄個小百科，裡面有所有的裝備跟增幅，放在索引最後面，
      裝備滑鼠移上去要能顯示是甚麼散件合的，也可以直接用散件搜索」） ---------- */
-  const WK = { d: null, p: null, tab: "items", sel: [], q: "", aq: "", tier: "all", open: null };
-  const loadWiki = () => (WK.p ||= fetch("data/wiki.json").then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => (WK.d = d)));
+  const WK = { d: null, p: null, tab: S19 ? "units" : "items", sel: [], q: "", aq: "", tier: "all", open: null, uq: "", uopen: null, topen: null };
+  const loadWiki = () => (WK.p ||= fetch(dataUrl("wiki.json")).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => (WK.d = d)));
   const wkName = (k) => { const c = (D.gamedata.components || []).find((x) => x.key === k); return c ? (c.zh || c.en) : itemName(k); };
   const AUG_TIERS = [["all", "全部"], ["1", "銀色"], ["2", "金色"], ["3", "稜鏡"], ["0", "特性與其他"]];
   const TIER_LB = { 1: "銀色", 2: "金色", 3: "稜鏡" };
@@ -1730,6 +1785,69 @@
     box.append(chips, q, listBox);
     return box;
   }
+  /* 棋子／羈絆（站主 2026-11-16：「小百科要再新增羈絆跟特性等等的說明還有所有的棋子的血量攻擊力等細節」） */
+  const KIND_LB = { origin: "起源", class: "職業", unique: "獨特" };
+  const trName = (k) => { const t = (WK.d?.traits || []).find((x) => x.key === k); return t ? t.zh : traitName(k); };
+  const starVals = (xs) => (xs?.length ? xs.map((v) => (Math.round(v * 10) / 10).toString()).join(" / ") : null);
+  function wkUnitDetail(u) {
+    const later = "PBE 後補";
+    const row = (l, v) => h("div", { class: "wk-st" }, h("span", { class: "wk-stl" }, l), h("b", null, v ?? later));
+    return h("div", { class: "wk-detail wk-udetail", role: "region", "aria-label": u.zh },
+      h("div", { class: "wk-dh" }, icon("champion", u.key, "md"), h("div", null,
+        h("b", null, u.zh), u.nameStatus === "temp" ? h("span", { class: "tag unv" }, "暫譯") : null,
+        h("p", { class: "small muted" }, `${u.cost} 費`, u.role ? `・${u.role}` : "", u.dmg ? `・${u.dmg}傷害` : ""),
+        h("p", { class: "wk-utr" }, (u.traits || []).map((t) => h("button", { type: "button", class: "chip", onclick: () => { WK.tab = "traits"; WK.topen = t; drawWiki(); } }, trName(t)))))),
+      h("div", { class: "wk-stats" },
+        row("生命（1/2/3 星）", starVals(u.hp)), row("物攻（1/2/3 星）", starVals(u.ad)), row("攻速", u.as != null ? String(u.as) : null),
+        row("護甲", u.armor != null ? String(u.armor) : null), row("魔抗", u.mr != null ? String(u.mr) : null),
+        row("射程", u.range != null ? `${u.range} 格` : null), row("法力（起始／上限）", u.mana?.length === 2 ? `${u.mana[0]} / ${u.mana[1]}` : null)),
+      u.ability?.name || u.ability?.desc ? h("div", { class: "wk-abil" }, h("p", null, h("b", null, "技能："), u.ability.name || ""), h("p", { class: "small wk-pre" }, u.ability.desc || "")) : null);
+  }
+  function wkUnits() {
+    const d = WK.d, box = h("div", { class: "wk-units" });
+    const q = h("input", { type: "search", class: "wk-q", placeholder: "搜尋棋子或羈絆名稱", "aria-label": "搜尋棋子", value: WK.uq });
+    const list = h("div");
+    const draw = () => {
+      list.textContent = "";
+      const term = WK.uq;
+      const xs = (d.units || []).filter((u) => !term || u.zh.includes(term) || (u.en || "").toLowerCase().includes(term.toLowerCase()) || (u.traits || []).some((t) => trName(t).includes(term)));
+      const costs = [...new Set(xs.map((u) => u.cost))].sort((a, b) => a - b);
+      for (const cost of costs) {
+        const us = xs.filter((u) => u.cost === cost);
+        const open = us.find((u) => u.key === WK.uopen);
+        list.append(h("div", { class: "wk-group" }, h("h3", null, `${cost} 費`, h("span", { class: "wk-n" }, String(us.length))),
+          h("div", { class: "wk-grid wk-ugrid" }, us.map((u) => h("button", { type: "button", class: "wk-it" + (WK.uopen === u.key ? " on" : ""), "aria-expanded": WK.uopen === u.key ? "true" : "false",
+            onclick: () => { WK.uopen = WK.uopen === u.key ? null : u.key; track("wiki_unit", u.key); draw(); } },
+            icon("champion", u.key, "sm"), h("span", { class: "nm" }, u.zh)))),
+          open ? wkUnitDetail(open) : null));
+      }
+      if (!xs.length) list.append(h("p", { class: "empty small" }, "找不到符合的棋子。"));
+      const el = WK.uopen && list.querySelector(".wk-udetail");
+      if (el && WK.scrollTo) { WK.scrollTo = false; requestAnimationFrame(() => el.scrollIntoView({ block: "nearest" })); }
+    };
+    q.addEventListener("input", () => { WK.uq = q.value.trim(); draw(); });
+    draw();
+    box.append(d.units?.some((u) => u.hp?.length) ? h("p", { class: "small muted" }, d.starNote || "") : h("p", { class: "notice small" }, d.statsNote || "血量、物攻等基礎數值 PBE 開了才會公布，到時候補上。"), q, list);
+    return box;
+  }
+  function wkTraits() {
+    const d = WK.d, box = h("div", { class: "wk-traits" });
+    for (const kind of ["origin", "class", "unique"]) {
+      const ts = (d.traits || []).filter((t) => (t.kind || "origin") === kind);
+      if (!ts.length) continue;
+      box.append(h("div", { class: "wk-group" }, h("h3", null, KIND_LB[kind], h("span", { class: "wk-n" }, String(ts.length))),
+        h("div", { class: "wk-tlist" }, ts.map((t) => h("div", { class: "wk-tr" + (WK.topen === t.key ? " on" : ""), id: "wk-t-" + t.key.replace(/[^A-Za-z0-9-]/g, "") },
+          h("div", { class: "wk-trh" }, h("b", null, t.zh), t.nameStatus === "temp" ? h("span", { class: "tag unv" }, "暫譯") : null,
+            t.en && t.en !== t.zh ? h("span", { class: "xs muted" }, t.en) : null,
+            h("span", { class: "wk-bps" }, (t.breakpoints || []).map((n) => h("span", { class: "wk-bp" }, String(n))))),
+          t.desc ? h("p", { class: "small wk-pre" }, t.desc) : null,
+          t.levels?.length ? h("ul", { class: "wk-lv small" }, t.levels.filter((l) => l.text).map((l) => h("li", null, l.n != null ? h("b", { class: "wk-bp" }, String(l.n)) : null, h("span", { class: "wk-pre" }, l.text)))) : null,
+          h("div", { class: "wk-mem" }, (t.units || []).map((k) => h("button", { type: "button", class: "wk-memb", title: champName(k), "aria-label": champName(k),
+            onclick: () => { WK.tab = "units"; WK.uopen = k; WK.uq = ""; WK.scrollTo = true; drawWiki(); } }, icon("champion", k, "xs")))))))));
+    }
+    if (WK.topen) requestAnimationFrame(() => { document.getElementById("wk-t-" + WK.topen.replace(/[^A-Za-z0-9-]/g, ""))?.scrollIntoView({ block: "nearest" }); WK.topen = null; });
+    return box;
+  }
   // 站主 2026-11-09：「小百科裡面幫我放甚麼時候更新新版本，要用台灣時間來算」
   // 官方時間表是美西日期；台服在美西更新日的隔天（台灣時間）上線。現在／下一版用台灣今天的日期判斷，不用等重建網站。
   function wkSchedule(sc) {
@@ -1753,18 +1871,20 @@
     const sec = $("#wiki-sec"); if (!sec) return;
     const body = sec.querySelector(".wk-body"); body.textContent = "";
     if (!WK.d) { body.append(h("p", { class: "small muted" }, WK.p ? "載入中…" : "小百科資料讀不到。")); return; }
-    const tabs = [["items", `裝備 ${WK.d.groups.reduce((n, g) => n + g.items.length, 0)}`], ["augs", `增幅 ${WK.d.augments.length}`]];
+    const tabs = [WK.d.units?.length ? ["units", `棋子 ${WK.d.units.length}`] : null, WK.d.traits?.length ? ["traits", `羈絆 ${WK.d.traits.length}`] : null,
+      ["items", `裝備 ${WK.d.groups.reduce((n, g) => n + g.items.length, 0)}`], WK.d.augments?.length ? ["augs", `增幅 ${WK.d.augments.length}`] : null].filter(Boolean);
+    if (!tabs.some(([k]) => k === WK.tab)) WK.tab = tabs[0][0];
     if (WK.d.schedule?.patches?.length) body.append(wkSchedule(WK.d.schedule));
     body.append(h("div", { class: "tabs wk-tabs", role: "tablist", "aria-label": "小百科分類" }, tabs.map(([k, l]) => h("button", { type: "button", role: "tab", "aria-selected": WK.tab === k ? "true" : "false",
       onclick: () => { WK.tab = k; track("wiki_tab", k); drawWiki(); } }, l))),
-      h("div", { role: "tabpanel" }, WK.tab === "items" ? wkItems() : wkAugs()),
-      h("p", { class: "xs muted wk-src" }, `資料來源：${WK.d.source}。「首選組合」「高手實況推薦」是本站的陣容資料。`));
+      h("div", { role: "tabpanel" }, WK.tab === "items" ? wkItems() : WK.tab === "units" ? wkUnits() : WK.tab === "traits" ? wkTraits() : wkAugs()),
+      h("p", { class: "xs muted wk-src" }, `資料來源：${WK.tab === "units" || WK.tab === "traits" ? (WK.d.codexSource || WK.d.source) : WK.d.source}。${S19 ? "" : "「首選組合」「高手實況推薦」是本站的陣容資料。"}`));
   }
   function renderWiki() {
     let sec = $("#wiki-sec");
     if (!sec) {
       sec = h("section", { class: "block", id: "wiki-sec" }, h("h2", null, "小百科"),
-        h("p", { class: "rlead" }, "這版所有的裝備和增幅。裝備滑上去（手機點一下）就能看是哪兩件散件合的，也可以直接選散件，找它能合出什麼。"),
+        h("p", { class: "rlead" }, S19 ? "S19 所有的棋子（技能、數值）、羈絆說明和裝備。名稱是暫譯，PBE 開了以後照官方繁中更新。" : "這版所有的棋子（血量、物攻、技能）、羈絆說明、裝備和增幅。裝備滑上去（手機點一下）就能看是哪兩件散件合的，也可以直接選散件，找它能合出什麼。"),
         h("div", { class: "wk-body" }));
       $("#home")?.append(sec);
       const ul = document.querySelector(".nav ul");
@@ -1779,7 +1899,7 @@
      找高手rp然後分析有分的以最近的排序分好陣容跟選的海克斯，跟實戰對局那樣附上鏈接」）
      data/rp.json（lab/pro_rp.py）：本版、大師以上、打進前四的實況錄影，最近的在前；上面的按鈕依陣容篩。 ---------- */
   const RP = { p: null, d: null, comp: "all", n: 20 };
-  const loadRp = () => (RP.p ||= fetch("data/rp.json").then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => (RP.d = d)));
+  const loadRp = () => (RP.p ||= fetch(dataUrl("rp.json")).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => (RP.d = d)));
   // 海克斯圖示（小百科同一張精靈圖），20px
   const rpAugIcon = (i, sp) => { const S = 20, c = i % sp.cols, r = Math.floor(i / sp.cols);
     return h("span", { class: "rp-ai", "aria-hidden": "true", style: `background-image:url(${sp.src});background-size:${sp.cols * S}px ${sp.rows * S}px;background-position:-${c * S}px -${r * S}px` }); };
@@ -1979,6 +2099,7 @@
       if (!D.preview || !window.claude?.use) return;
       const user = await window.claude.use("user");
       if (!user?.isOwner?.()) return;
+      if (S19) { ownerNotice("S19 是 PBE 前的預測資料，站主編輯器先不開（PBE 後整批重做）。要改什麼直接跟 Claude 說。"); return; }
       const db = await window.claude.use("db");
       if (!db) return;
       O.db = db;
@@ -2981,7 +3102,7 @@
   async function boot() {
     const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 10000);
     try {
-      const [d, m] = await Promise.all([fetch("data/site-data.json", { signal: ctl.signal }).then((r) => r.json()),
+      const [d, m] = await Promise.all([fetch(dataUrl("site-data.json"), { signal: ctl.signal }).then((r) => r.json()),
         fetch("icons/manifest.json", { signal: ctl.signal }).then((r) => (r.ok ? r.json() : { files: [] })).catch(() => ({ files: [] }))]);
       D = d; ICONS = new Set(m.files || []);
     } catch {
@@ -2997,7 +3118,12 @@
     TR = Object.fromEntries(D.gamedata.traits.map((t) => [t.key, t]));
     $("#loading").remove();
     adaptLayout();
-    renderTop(); renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderPicker(); renderRoute(); renderCompList(); renderResearch(); renderRp(); renderWiki(); applyDataTx();
+    if (S19) {  // S19 預測版：沒有高手資料，本次更新、版本主軸、隨手速查、定陣路線、高手 RP 都不放
+      for (const id of ["#updates-sec", "#version", "#picker"]) $(id)?.remove();
+      renderTop(); renderTiers(); renderCompList(); renderResearch(); renderWiki(); applyDataTx();
+    } else {
+      renderTop(); renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderPicker(); renderRoute(); renderCompList(); renderResearch(); renderRp(); renderWiki(); applyDataTx();
+    }
     document.querySelectorAll("a.out").forEach((a) => a.addEventListener("click", () => track("out", a.dataset.ch)));
     addEventListener("hashchange", route); route();
     startAnalytics();

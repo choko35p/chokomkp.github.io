@@ -1173,3 +1173,48 @@ button.bcard { font: inherit; color: inherit; text-align: left; cursor: pointer;
 /* 編輯器復原／重做按鈕 */
 .be .btn:disabled { opacity: .4; cursor: default; }
 .be .be-undo, .be .be-redo { min-width: 5.2em; }
+
+/* ---------- 賽季切換（2026-11-16：S18／S19 切換鈕、S19 預測說明、小百科棋子與羈絆） ---------- */
+.ssw { display: inline-flex; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface-2); flex: 0 0 auto; }
+.ssw-b { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 4.6rem; min-height: 44px; padding: 4px 12px; text-decoration: none; color: var(--text); line-height: 1.15; }
+.ssw-b + .ssw-b { border-left: 1px solid var(--line); }
+.ssw-b b { font-size: var(--fs-m); font-weight: 800; }
+.ssw-b small { font-size: .75rem; color: var(--muted); }
+.ssw-b.on { background: var(--coral); color: #fff; }
+.ssw-b.on small { color: #fff; opacity: .9; }
+.ssw-b:not(.on):hover { background: var(--surface); }
+.ssw-b:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+@media (max-width: 640px) { .top .wrap > .ssw { order: 3; width: 100%; } .top .wrap > .ssw .ssw-b { flex: 1 1 0; flex-direction: row; gap: 6px; } }
+.s19-banner { background: var(--warn-bg); border-bottom: 1px solid var(--warn-line); font-size: var(--fs-s); }
+.s19-banner .wrap { padding-top: 8px; padding-bottom: 8px; line-height: 1.5; }
+.s19-banner b { color: var(--accent); }
+.tag.pred { border-color: var(--warn-line); background: var(--warn-bg); }
+/* 小百科：棋子 */
+.wk-ugrid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.wk-udetail .wk-dh { align-items: flex-start; }
+.wk-utr { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
+.wk-utr .chip { min-height: 32px; padding: 2px 10px; }
+.wk-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 6px var(--s3); margin: var(--s3) 0; }
+.wk-st { display: flex; flex-direction: column; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.wk-stl { font-size: .75rem; color: var(--muted); }
+.wk-st b { font-variant-numeric: tabular-nums; font-size: .95rem; white-space: nowrap; }
+.wk-abil p { margin: 4px 0; }
+.wk-pre { white-space: pre-line; overflow-wrap: anywhere; }
+/* 小百科：羈絆 */
+.wk-tlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--s3); }
+.wk-tr { border: 1px solid var(--line); border-radius: var(--r); padding: var(--s3); background: var(--surface); min-width: 0; }
+.wk-tr.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.wk-trh { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.wk-trh > b { font-size: var(--fs-m); }
+.wk-bps { display: inline-flex; gap: 4px; margin-left: auto; }
+.wk-bp { display: inline-flex; align-items: center; justify-content: center; min-width: 1.6rem; height: 1.6rem; padding: 0 4px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); font-size: .8rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.wk-tr p { margin: 6px 0; }
+.wk-lv { list-style: none; margin: 6px 0; padding: 0; display: grid; gap: 4px; }
+.wk-lv li { display: flex; gap: 8px; align-items: flex-start; }
+.wk-mem { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.wk-memb { padding: 0; border: 0; background: none; cursor: pointer; border-radius: 8px; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+.wk-memb:focus-visible { outline: 3px solid var(--focus); }
+@media (max-width: 640px) { .wk-tlist { grid-template-columns: minmax(0, 1fr); } .wk-ugrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .wk-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ico .spr { position: absolute; inset: 0; background-repeat: no-repeat; }
+.ico.c7 { border-color: #b98cf0; }
+.s19 #detail { margin-top: var(--s3); }

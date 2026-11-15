@@ -1194,6 +1194,9 @@ button.bcard { font: inherit; color: inherit; text-align: left; cursor: pointer;
 .wk-udetail .wk-dh { align-items: flex-start; }
 .wk-utr { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
 .wk-utr .chip { min-height: 32px; padding: 2px 10px; }
+.wk-utr .chip:has(.tr-ico) { padding-left: 6px; }
+.tr-ico { display: inline-block; flex: none; vertical-align: middle; background-color: #2b2118; background-repeat: no-repeat; border-radius: 5px; }  /* 精靈圖是白色線條透明底，要放在深色底上才看得到 */
+
 .wk-stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 6px var(--s3); margin: var(--s3) 0; }
 .wk-st { display: flex; flex-direction: column; padding: 6px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
 .wk-stl { font-size: .75rem; color: var(--muted); }

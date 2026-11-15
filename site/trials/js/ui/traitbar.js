@@ -51,12 +51,32 @@ export function playerTraits(api) {
 // 買／上場這隻會讓哪些羈絆升階（回傳 key 集合）。已在場上同 key 不算（同 key 只算一次）。
 export function upgradeTraits(api, unitKey) {
   const { state, DATA } = api;
+  if (!api.countTraits) return new Set();
   const board = boardUnits(state);
   if (board.some(u => u.key === unitKey)) return new Set();
   const opts = { augments: state.augments || [] };
   const before = Object.fromEntries(countTraits(board, DATA, opts).map(t => [t.key, t.tier]));
   const after = countTraits([...board, { key: unitKey, star: 1, items: [] }], DATA, opts);
   return new Set(after.filter(t => t.tier > (before[t.key] || 0)).map(t => t.key));
+}
+
+// ---------- 羈絆圖示（SPEC 2.6）：唯一入口 ----------
+// DATA.traits.sprite = {src, cols, size, index}。data.js 還沒把 sprite 帶進來時，用 setTraitSprite 補（layout.mount 會從 data/traits.json 讀）。
+let fallbackSprite = null;
+export function setTraitSprite(sp) { fallbackSprite = sp || null; }
+export function traitIcon(DATA, key, size = 18) {
+  const sp = DATA.traits.sprite || fallbackSprite;
+  const n = el('span', { class: 'tt-ticon', 'data-trait': key, 'aria-hidden': 'true' });
+  n.style.setProperty('--ti', size + 'px');
+  const idx = sp && sp.index ? sp.index[key] : null;
+  if (idx == null) { n.classList.add('tt-ticon-txt'); n.textContent = traitZh(DATA, key).slice(0, 1); return n; }
+  const cols = sp.cols || 8;
+  const max = Math.max(sp.count || 0, ...Object.values(sp.index).map(v => v + 1));
+  const rows = Math.ceil(max / cols);
+  n.style.backgroundImage = `url("${sp.src}")`;
+  n.style.backgroundSize = `${cols * 100}% ${rows * 100}%`;
+  n.style.backgroundPosition = `${cols > 1 ? (idx % cols) * 100 / (cols - 1) : 0}% ${rows > 1 ? Math.floor(idx / cols) * 100 / (rows - 1) : 0}%`;
+  return n;
 }
 
 // 羈絆文字標籤列。商店卡／棋子面板共用：traitTags(unitKey, api, {clickable, max})。買了會升階的加「↑」。
@@ -70,70 +90,80 @@ export function traitTags(unitKey, api, { clickable = false, max = 3 } = {}) {
     const t = el(clickable ? 'button' : 'span', {
       class: 'tt-tag' + (up ? ' tt-up' : ''), 'data-kind': kindOf(DATA, k), 'data-trait': k,
       type: clickable ? 'button' : null, 'aria-label': label + (up ? '，買了會升階' : ''),
-    }, label, up ? el('span', { class: 'tt-up-arrow', 'aria-hidden': 'true' }, '↑') : null);
+    }, traitIcon(DATA, k, 16), label, up ? el('span', { class: 'tt-up-arrow', 'aria-hidden': 'true' }, '↑') : null);
     if (clickable) t.addEventListener('click', (e) => { e.stopPropagation(); showTraitPanel(k, api); });
     wrap.append(t);
   }
   return wrap;
 }
 
-// ---------- 羈絆卡 ----------
-function statusOf(t, DATA) {
-  const star = isStars(DATA, t.key); const unit = star ? '星' : '隻';
-  const maxTier = (t.breakpoints || []).length;
-  if (t.active && (t.next == null || t.tier >= maxTier)) return { main: '滿階', sub: '', cls: 'tt-active tt-max' };
-  if (t.active) return { main: '啟動', sub: t.need != null ? `再 ${t.need} ${unit}升階` : '', cls: 'tt-active' };
-  return { main: `差 ${t.need ?? (t.next - t.count)} ${unit}`, sub: '', cls: '' };
+// ---------- 羈絆列一列（SPEC 2.5） ----------
+export function tierClass(t) {
+  const n = (t.breakpoints || []).length, tier = t.tier || 0;
+  if (!tier) return 'off';
+  if (tier >= n) return n >= 4 ? 'prism' : 'gold';
+  if (n >= 4 && tier === n - 1) return 'gold';
+  if (tier === 1) return 'bronze';
+  return 'silver';
+}
+
+export function traitHex(DATA, t, size) {
+  return el('span', { class: 'tt-hex', 'data-tier': tierClass(t), 'aria-hidden': 'true' }, traitIcon(DATA, t.key, size));
+}
+
+function statusText(t, DATA) {
+  const unit = isStars(DATA, t.key) ? '星' : '隻';
+  const bps = t.breakpoints || [];
+  if (t.active && (t.next == null || t.tier >= bps.length)) return '已到最高階';
+  if (t.active) return `啟動中，再 ${t.need ?? (t.next - t.count)} ${unit}升階`;
+  return `差 ${t.need ?? (t.next - t.count)} ${unit}啟動`;
 }
 
 export function traitCard(t, api, { side = 'player', list } = {}) {
-  const { DATA } = api; const star = isStars(DATA, t.key);
-  const st = statusOf(t, DATA);
+  const { DATA } = api;
   const bps = t.breakpoints || [];
-  const target = t.active && t.next == null ? bps[bps.length - 1] : (t.next ?? bps[bps.length - 1]);
-  const countText = star ? `${t.count} 星/${target}` : `${t.count}/${target}`;
-  const ticks = el('span', { class: 'tt-tick', 'aria-hidden': 'true' });
-  bps.forEach((b, i) => {
-    if (i) ticks.append(el('s', {}, '▸'));
-    ticks.append(el('i', { class: (t.count >= b ? 'tt-on ' : '') + (t.tier === i + 1 ? 'tt-cur' : '') }, b));
-  });
   const name = traitZh(DATA, t.key);
+  const bp = el('span', { class: 'tt-tbp' });
+  if (t.active) bps.forEach((b, i) => {
+    if (i) bp.append(el('s', {}, '›'));
+    bp.append(el('i', { class: (t.tier === i + 1 ? 'tt-cur' : '') + (t.count >= b ? ' tt-on' : '') }, b));
+  });
+  else bp.append(el('i', { class: 'tt-cur' }, `${t.count} / ${bps[0] ?? t.next ?? '?'}`));
   const btn = el('button', {
-    type: 'button', class: 'tt-trait ' + st.cls, 'data-trait': t.key, 'data-kind': kindOf(DATA, t.key),
-    'aria-label': `${name}，${countText.replace('/', '，下一階 ')}，${st.main}${st.sub ? '，' + st.sub : ''}`,
-    title: `${name}：${st.main}${st.sub ? '（' + st.sub + '）' : ''}`,
-  },
-    el('span', { class: 'tt-tname' }, el('b', {}, name), el('span', { class: 'tt-tcount' }, countText)),
-    ticks,
-    el('span', { class: 'tt-tstat' }, st.main, st.sub ? el('small', {}, st.sub) : null));
+    type: 'button', class: 'tt-trow' + (t.active ? ' tt-active' : ' tt-inactive'), 'data-trait': t.key, 'data-kind': kindOf(DATA, t.key),
+    'data-tt-tip': 'trait:' + t.key, 'data-tt-noclear': '',
+    'aria-label': `${name}，${t.count}${isStars(DATA, t.key) ? ' 星' : ' 隻'}，${statusText(t, DATA)}`,
+  }, traitHex(DATA, t, 18), el('span', { class: 'tt-tcnt tt-num' }, t.count),
+    el('span', { class: 'tt-tinfo' }, el('b', {}, name), bp));
   btn.addEventListener('click', () => showTraitPanel(t.key, api, { side, traits: list }));
   return btn;
 }
 
 // ---------- 對外：renderTraits ----------
-// el：我的羈絆容器（桌機右欄／手機橫條）。敵方羈絆：el 內若有 [data-tt-enemy]（或 el.__ttEnemy）就畫在那，否則請另外呼叫 renderEnemyTraits。
 export function renderTraits(root, traitsPlayer, traitsEnemy, api) {
   ensureStyle(); bindHover(api);
   const list = (traitsPlayer || []).filter(t => t.count >= 1);
   const ul = el('ul', { class: 'tt-trait-list tt-hscroll', 'aria-label': '我的羈絆' });
-  if (!list.length) ul.append(el('li', { class: 'tt-traitbar-empty' }, '還沒有羈絆。把棋子放上場就會出現。'));
+  if (!list.length) ul.append(el('li', { class: 'tt-traitbar-empty' }, '放棋子上場，羈絆就會出現在這裡'));
   for (const t of list) ul.append(el('li', {}, traitCard(t, api, { list: traitsPlayer })));
-  const scroll = root.querySelector?.('.tt-trait-list')?.scrollLeft || 0;
+  const prev = root.querySelector?.('.tt-trait-list');
+  const sx = prev?.scrollLeft || 0, sy = prev?.scrollTop || root.scrollTop || 0;
   root.replaceChildren(ul);
-  ul.scrollLeft = scroll;
-  const eroot = root.querySelector?.('[data-tt-enemy]') || root.__ttEnemy || document.querySelector('[data-tt-enemy]');
+  ul.scrollLeft = sx; root.scrollTop = sy;
+  const eroot = document.querySelector('[data-tt-enemy]');
   if (eroot && traitsEnemy) renderEnemyTraits(eroot, traitsEnemy, api);
 }
 
 export function renderEnemyTraits(root, traitsEnemy, api) {
   ensureStyle(); bindHover(api);
-  const { DATA } = api; const wrap = el('div', { class: 'tt-enemy-traits', 'aria-label': '敵方羈絆' });
+  const { DATA } = api; const wrap = el('span', { class: 'tt-enemy-traits', 'aria-label': '敵方羈絆' });
   const list = (traitsEnemy || []).filter(t => t.count >= 1);
   for (const t of list) {
     const star = isStars(DATA, t.key);
     const b = el('button', { type: 'button', class: 'tt-etrait' + (t.active ? ' tt-active' : ''), 'data-trait': t.key, 'data-kind': kindOf(DATA, t.key),
+      'data-tt-tip': 'trait:' + t.key, 'data-tt-noclear': '',
       'aria-label': `敵方 ${traitZh(DATA, t.key)} ${t.count}${star ? ' 星' : ' 隻'}${t.active ? '，啟動' : '，未啟動'}` },
-      traitZh(DATA, t.key), el('b', {}, t.count), t.active ? el('span', {}, '啟動') : null);
+      traitHex(DATA, t, 14), el('b', { class: 'tt-num' }, t.count));
     b.addEventListener('click', () => showTraitPanel(t.key, api, { side: 'enemy', traits: traitsEnemy }));
     wrap.append(b);
   }
@@ -143,7 +173,7 @@ export function renderEnemyTraits(root, traitsEnemy, api) {
 
 // 戰鬥中 trait 事件讓該羈絆卡閃一下（battle.js 可呼叫）
 export function flashTrait(key, side = 'player') {
-  document.querySelectorAll(`.tt-trait[data-trait="${key}"],.tt-etrait[data-trait="${key}"]`).forEach(n => {
+  document.querySelectorAll(`.tt-trow[data-trait="${key}"],.tt-etrait[data-trait="${key}"]`).forEach(n => {
     n.classList.remove('tt-flash'); void n.offsetWidth; n.classList.add('tt-flash');
     setTimeout(() => n.classList.remove('tt-flash'), 1300);
   });
@@ -157,7 +187,7 @@ export function highlightTrait(key, on) {
 }
 export function highlightUnit(unitKey, on) {
   const ts = new Set(curApi?.DATA.units.byKey[unitKey]?.traits || []);
-  document.querySelectorAll('.tt-trait[data-trait]').forEach(n => n.classList.toggle('tt-hl', !!on && ts.has(n.dataset.trait)));
+  document.querySelectorAll('.tt-trow[data-trait]').forEach(n => n.classList.toggle('tt-hl', !!on && ts.has(n.dataset.trait)));
 }
 let bound = false, curApi = null;
 function bindHover(api) {
@@ -165,7 +195,7 @@ function bindHover(api) {
   if (new URLSearchParams(location.search).has('seed')) window.__ttApi = api;
   if (bound) return; bound = true;
   let lp = null;
-  const traitEl = (e) => e.target.closest?.('.tt-trait[data-trait],.tt-etrait[data-trait]');
+  const traitEl = (e) => e.target.closest?.('.tt-trow[data-trait],.tt-etrait[data-trait]');
   const unitEl = (e) => e.target.closest?.('[data-tt-unit]');
   document.addEventListener('pointerover', (e) => {
     if (e.pointerType === 'touch') return;

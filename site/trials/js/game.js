@@ -2,6 +2,7 @@
 import { hashSeed, makeRng } from './rng.js';
 import * as S from './shop.js';
 import { enemyForRound, setCountTraits } from './enemies.js';
+import * as U from './unlocks.js';
 
 let B = { simulate: null, buildTeam: null, countTraits: null };
 try { const m = await import('./engine.js'); B.simulate = m.simulate; } catch (e) { /* 引擎還沒有 */ }
@@ -9,7 +10,7 @@ try { const m = await import('./stats.js'); B.buildTeam = m.buildTeam; B.countTr
 // 測試／機器人可換掉引擎與戰前計算
 export function setBackend(b) {
   B = { ...B, ...b };
-  if (b.countTraits) setCountTraits(b.countTraits);
+  if (b.countTraits) { setCountTraits(b.countTraits); U.setCounter(b.countTraits); }
 }
 
 // 規則表缺欄位時的預設（正式值在 rules.json）
@@ -31,6 +32,16 @@ function sc(DATA) {
 const clone = x => JSON.parse(JSON.stringify(x));
 const ok = (extra = {}) => ({ ok: true, ...extra });
 const no = reason => ({ ok: false, reason });
+
+// ---------- 解鎖（SPEC_UI2 第 7 章）----------
+// 檢查有沒有新解鎖：寫入 state.unlocks／unlockQueue，並在 events 加 {type:'unlock', key}
+function runUnlocks(state, DATA, events) {
+  const keys = U.checkUnlocks(state, DATA);
+  if (!keys.length) return;
+  if (!state.unlockQueue) state.unlockQueue = [];
+  for (const k of keys) { state.unlockQueue.push(k); if (events) events.push({ type: 'unlock', key: k }); }
+}
+const availKey = (state, DATA, k) => S.available(state, DATA, k);
 
 // ---------- 規則加成（增幅／羈絆） ----------
 function augEffects(state, DATA) {
@@ -97,7 +108,7 @@ function giveCompleted(state, DATA, events, key) {
 function poolPick(state, DATA, cost, rng) {
   // 該費用還有張數的棋子，照剩餘張數的比例抽；該費用沒有就往低費找
   for (let c = cost; c >= 1; c--) {
-    const keys = DATA.units.list.filter(u => u.cost === c && (state.pool[u.key] || 0) > 0).map(u => u.key).sort();
+    const keys = DATA.units.list.filter(u => u.cost === c && (state.pool[u.key] || 0) > 0 && availKey(state, DATA, u.key)).map(u => u.key).sort();
     if (!keys.length) continue;
     let sum = 0;
     for (const k of keys) sum += state.pool[k];
@@ -123,8 +134,8 @@ function pickEconUnit(state, DATA, spec, src) {
   const rng = rewardRng(state);
   const max = spec.maxCost || 1;
   const trait = spec.source === 'collabOnBoard' && src && src.indexOf('trait:') === 0 ? src.slice(6) : null;
-  let keys = DATA.units.list.filter(u => u.cost <= max && u.cost !== 7 && (state.pool[u.key] || 0) > 0 && (!trait || (u.traits || []).includes(trait))).map(u => u.key).sort();
-  if (!keys.length) keys = DATA.units.list.filter(u => u.cost <= max && u.cost !== 7 && (state.pool[u.key] || 0) > 0).map(u => u.key).sort();
+  let keys = DATA.units.list.filter(u => u.cost <= max && u.cost !== 7 && (state.pool[u.key] || 0) > 0 && availKey(state, DATA, u.key) && (!trait || (u.traits || []).includes(trait))).map(u => u.key).sort();
+  if (!keys.length) keys = DATA.units.list.filter(u => u.cost <= max && u.cost !== 7 && (state.pool[u.key] || 0) > 0 && availKey(state, DATA, u.key)).map(u => u.key).sort();
   if (!keys.length) return null;
   const k = rng.pick(keys);
   state.pool[k] -= 1;
@@ -216,7 +227,9 @@ function beginRound(state, DATA, events, retry = false) {
     state.pendingQueue = queue;
   }
   state.freeRerolls = (state.freeRerolls || 0) + ruleSum(state, DATA, 'freeRerollPerRound');
-  S.rollShop(state, DATA);
+  U.feedUnlocks(state, DATA, { kind: 'roundStart' });
+  runUnlocks(state, DATA, events);   // 抽商店之前：開局禮、頭目獎勵帶來的解鎖，這次商店就保證出現
+  S.rollShop(state, DATA, { roundStart: true });
   state.battle = null;
   nextPending(state);
   events.push({ type: 'roundStart', round: state.round, retry });
@@ -231,6 +244,7 @@ export function newGame(seed, DATA) {
     shop: [null, null, null, null, null], pool: S.newPool(DATA), rngShop: makeRng(hashSeed(seed, 'shop')).state(),
     augments: [], pendingChoices: null, pendingQueue: [], persist: {}, history: [], attempt: 0, uidNext: 1,
     freeRerolls: 0, rewardN: 0, counters: {}, battle: null,
+    unlocks: {}, unlockQueue: [], unlockAcc: {}, stats: { rerolls: 0, loseStreak: 0 },
   };
   beginRound(state, DATA, []);
   return state;
@@ -248,6 +262,10 @@ export function deserialize(json, DATA) {
   if (s.phase === 'battle' || s.phase === 'result') s.phase = 'plan';
   if (!s.pendingQueue) s.pendingQueue = [];
   if (!s.counters) s.counters = {};
+  if (!s.unlocks) s.unlocks = {};
+  if (!s.unlockQueue) s.unlockQueue = [];
+  if (!s.unlockAcc) s.unlockAcc = {};
+  if (!s.stats) s.stats = { rerolls: 0, loseStreak: 0 };
   return s;
 }
 
@@ -274,20 +292,29 @@ export function actBuy(state, slot, DATA) {
   if (!r.ok) return r;
   const events = [{ type: 'buy', slot, uid: r.uid }];
   for (const m of r.merged) events.push({ type: 'merge', key: m.key, star: m.star });
+  runUnlocks(state, DATA, events);
   return ok({ events, uid: r.uid });
 }
 export function actSell(state, uid, DATA) {
   const g = needPlan(state); if (g) return g;
   const r = S.sell(state, uid, DATA);
-  return r.ok ? ok({ gold: r.gold, events: [{ type: 'sell', uid, gold: r.gold }] }) : r;
+  if (!r.ok) return r;
+  const events = [{ type: 'sell', uid, gold: r.gold }];
+  runUnlocks(state, DATA, events);
+  return ok({ gold: r.gold, events });
 }
 export function actReroll(state, DATA) {
   const g = needPlan(state); if (g) return g;
   if (state.freeRerolls > 0) state.freeRerolls--;
   else if (state.gold >= R(DATA).rerollCost) state.gold -= R(DATA).rerollCost;
   else return no('金錢不夠');
+  if (!state.stats) state.stats = { rerolls: 0, loseStreak: 0 };
+  state.stats.rerolls++;
+  U.feedUnlocks(state, DATA, { kind: 'reroll' });
+  const events = [{ type: 'reroll' }];
+  runUnlocks(state, DATA, events);   // 先檢查再抽：這次重抽就讓剛解鎖的棋子出現
   S.rollShop(state, DATA);
-  return ok({ events: [{ type: 'reroll' }] });
+  return ok({ events });
 }
 export function actBuyXp(state, DATA) {
   const g = needPlan(state); if (g) return g;
@@ -298,6 +325,7 @@ export function actBuyXp(state, DATA) {
   state.gold -= cost;
   const events = [{ type: 'xp', xp: r.xpPerBuy }];
   addXp(state, DATA, r.xpPerBuy, events);
+  runUnlocks(state, DATA, events);
   return ok({ events });
 }
 export function actMove(state, uid, to, DATA) {
@@ -319,6 +347,7 @@ export function actMove(state, uid, to, DATA) {
       if (other) { other.pos = u.pos; state.board.push(other); }
       state.bench[to.idx] = u; u.pos = null;
     } else { state.bench[f.idx] = other || null; state.bench[to.idx] = u; }
+    runUnlocks(state, DATA, events);
     return ok({ events });
   }
   if (to.zone !== 'board' || !to.pos) return no('目標不對');
@@ -336,6 +365,7 @@ export function actMove(state, uid, to, DATA) {
     if (other) other.pos = u.pos.slice();
     u.pos = [r, c];
   }
+  runUnlocks(state, DATA, events);
   return ok({ events });
 }
 export function actEquip(state, itemIdx, uid, DATA) {
@@ -349,6 +379,7 @@ export function actEquip(state, itemIdx, uid, DATA) {
   state.itemBench.splice(itemIdx, 1);
   const events = [{ type: 'equip', uid, item }];
   if (r.r === 'combined') events.push({ type: 'itemCombine', uid, result: r.result });
+  runUnlocks(state, DATA, events);
   return ok({ events });
 }
 
@@ -378,6 +409,7 @@ export function actPickAugment(state, idx, DATA) {
   const events = [{ type: 'augment', key }];
   applyOnPick(state, DATA, DATA.augments.byKey[key].onPick, events);
   nextPending(state);
+  runUnlocks(state, DATA, events);
   return ok({ events });
 }
 
@@ -401,6 +433,7 @@ export function actPickReward(state, idx, DATA, maybeData) {
         if (o.kind === 'completed') giveCompleted(state, DATA, events, o.choices[sub]);
         else giveUnitKey(state, DATA, o.choices[sub], events);
         nextPending(state);
+        runUnlocks(state, DATA, events);
         return ok({ events });
       }
       setPending(state, { type: 'rewardPick', from: o.kind, options: o.choices.map(k => ({ key: k })) });
@@ -409,6 +442,7 @@ export function actPickReward(state, idx, DATA, maybeData) {
   } else if (p.from === 'completed') giveCompleted(state, DATA, events, o.key);
   else giveUnitKey(state, DATA, o.key, events);
   nextPending(state);
+  runUnlocks(state, DATA, events);
   return ok({ events });
 }
 
@@ -436,7 +470,14 @@ export function actStartBattle(state, DATA) {
     if (!B.simulate) return no('沒有戰鬥引擎');
     result = B.simulate({ seed: hashSeed(state.seed, 'combat', state.round, state.attempt), teams: [pTeam, eTeam], persist: clone(state.persist), opts: { record: true, round: state.round } });
   }
-  state.battle = { result, enemy, round: state.round, attempt: state.attempt, deferred: pTeam.deferred || [] };
+  // 開戰當下的場上與羈絆（解鎖條件的累計要用；機制關閉就不算）
+  let snap = null;
+  if (U.enabled(DATA)) {
+    let traits = [];
+    try { if (B.countTraits && pUnits.length) traits = B.countTraits(pUnits.map(u => ({ key: u.key, star: u.star, items: u.items })), DATA, { augments: state.augments.slice() }); } catch (e) { traits = []; }
+    snap = { board: pUnits, traits };
+  }
+  state.battle = { result, enemy, round: state.round, attempt: state.attempt, deferred: pTeam.deferred || [], snap };
   state.phase = 'battle';
   return ok({ result, enemy, playerTeam: pTeam, enemyTeam: eTeam });
 }
@@ -471,7 +512,8 @@ export function actFinishBattle(state, DATA) {
   state.score += roundScore;
 
   // 勝負
-  if (win) state.streak += 1; else { state.streak = 0; state.lives -= 1; }
+  if (!state.stats) state.stats = { rerolls: 0, loseStreak: 0 };
+  if (win) { state.streak += 1; state.stats.loseStreak = 0; } else { state.streak = 0; state.stats.loseStreak += 1; state.lives -= 1; }
   state.history.push({ round, win, score: roundScore, seconds: result.seconds || 0, enemyName: enemy.name });
   if (sm.persist) state.persist = { ...state.persist, ...sm.persist };   // 合併：引擎只回它有動的鍵也不會洗掉其他累計值
 
@@ -490,6 +532,11 @@ export function actFinishBattle(state, DATA) {
   // 收入（利息以發錢前的金錢算）
   const gold0 = state.gold;
   const add = (type, label, gold) => { if (gold) { state.gold += gold; gains.push({ type, label, gold }); } };
+  if (U.enabled(DATA)) {   // 解鎖累計：發錢前的金幣、這回合的利息、開戰快照
+    const snap = state.battle.snap || { board: [], traits: [] };
+    U.feedUnlocks(state, DATA, { kind: 'battleEnd', result, win, board: snap.board, traits: snap.traits, goldBefore: gold0,
+      interest: Math.min(interestCap(state, DATA), Math.floor(gold0 / r.income.interestPer)) });
+  }
   if (advance) add('base', '基礎收入', r.income.base); // 重打模式輸了：不發基礎收入，只發利息
   const interest = Math.min(interestCap(state, DATA), Math.floor(gold0 / r.income.interestPer));
   add('interest', '利息', interest);
@@ -575,6 +622,7 @@ export function actFinishBattle(state, DATA) {
     if (reached > claimed) { state.counters[ck] = reached; gainOne(src, e.gain, reached - claimed); }
   }
   if (advance) { addXp(state, DATA, r.xpPerRound, events); gains.push({ type: 'xp', label: '回合經驗', xp: r.xpPerRound }); }
+  runUnlocks(state, DATA, events);
 
   if (cleared) {
     const bonus = state.lives * S_.end.perLife + state.gold * S_.end.perGold + S_.end.clear;

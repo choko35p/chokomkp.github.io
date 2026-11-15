@@ -1,0 +1,614 @@
+{
+ "version": "s19-preview-1",
+ "rule": {
+  "guarantee": "nextShop",
+  "slot": "right"
+ },
+ "units": [
+  {
+   "key": "Kobuko",
+   "cond": {
+    "type": "ownUnit",
+    "unit": "Ziggs",
+    "star": 2,
+    "items": 1
+   },
+   "text": "擁有一隻 2 星、裝備 1 件裝備的希格斯。",
+   "local": "",
+   "guess": false
+  },
+  {
+   "key": "Ashe",
+   "cond": {
+    "type": "itemsOn",
+    "n": 2,
+    "traitAny": [
+     "BeachPop"
+    ]
+   },
+   "text": "擁有一隻裝備 2 件裝備的海灘流行英雄。",
+   "local": "",
+   "guess": true
+  },
+  {
+   "key": "Lulu",
+   "cond": {
+    "type": "battleSum",
+    "stat": "casts",
+    "min": 10,
+    "who": {
+     "trait": "Hyperpop"
+    },
+    "traitActive": "Hyperpop"
+   },
+   "text": "在超流行羈絆啟動的情況下，讓你的超流行英雄合計施放技能 10 次。",
+   "local": "",
+   "guess": true
+  },
+  {
+   "key": "Samira",
+   "cond": {
+    "type": "itemsOn",
+    "n": 2,
+    "traitAny": [
+     "Classical",
+     "Renegade",
+     "Trickshot"
+    ]
+   },
+   "text": "將 2 件裝備裝在一隻古典樂、叛逆者或詭射英雄身上。",
+   "local": "",
+   "guess": true
+  },
+  {
+   "key": "Seraphine",
+   "cond": {
+    "type": "rerolls",
+    "min": 4,
+    "beforeRound": 7
+   },
+   "text": "在第 2 階段選秀（輪抽）之前重抽商店 4 次。",
+   "local": "這個模式沒有選秀；改成「第 6 回合結束前重抽 4 次」。",
+   "guess": true
+  },
+  {
+   "key": "Tristana",
+   "cond": {
+    "type": "battleSum",
+    "stat": "kills",
+    "min": 5,
+    "who": "team",
+    "traitActive": "Hyperpop"
+   },
+   "text": "在超流行羈絆啟動的情況下，累計擊殺 5 次。",
+   "local": "",
+   "guess": true
+  },
+  {
+   "key": "Evelynn",
+   "cond": {
+    "type": "traitUnits",
+    "anyOf": [
+     {
+      "trait": "KDA",
+      "n": 3
+     },
+     {
+      "trait": "Renegade",
+      "n": 3
+     }
+    ]
+   },
+   "text": "擁有 3 隻 K/DA 或叛逆者英雄。",
+   "local": "兩個羈絆各自算，不合計。",
+   "guess": true
+  },
+  {
+   "key": "Tibbers",
+   "cond": {
+    "type": "ownUnit",
+    "unit": "Annie",
+    "star": 2,
+    "items": 1
+   },
+   "text": "擁有一隻 2 星、裝備 1 件裝備的安妮。",
+   "local": "",
+   "guess": false
+  },
+  {
+   "key": "Alistar",
+   "cond": {
+    "type": "all",
+    "of": [
+     {
+      "type": "level",
+      "min": 7
+     },
+     {
+      "type": "itemsOn",
+      "n": 1,
+      "item": "ChainVest",
+      "roleAny": [
+       "Caster",
+       "Marksman"
+      ]
+     }
+    ]
+   },
+   "text": "玩家等級 7。裝備一件鎖子甲給一隻法師（施法者）或射手。",
+   "local": "鎖子甲散件掛在身上才算（合成成品後不算）。",
+   "guess": false
+  },
+  {
+   "key": "Alune",
+   "cond": {
+    "type": "all",
+    "of": [
+     {
+      "type": "level",
+      "min": 7
+     },
+     {
+      "type": "traitUnits",
+      "unique": true,
+      "anyOf": [
+       {
+        "trait": "Heartsteel",
+        "n": 4
+       },
+       {
+        "trait": "Prodigy",
+        "n": 4
+       }
+      ]
+     }
+    ]
+   },
+   "text": "玩家等級 7。擁有 4 隻不同的心鋼之聲或不世之才英雄。",
+   "local": "",
+   "guess": true
+  },
+  {
+   "key": "Jinx",
+   "cond": {
+    "type": "all",
+    "of": [
+     {
+      "type": "level",
+      "min": 7
+     },
+     {
+      "type": "itemsOn",
+      "n": 3,
+      "traitAny": [
+       "IonicSpark",
+       "Hitmaker"
+      ]
+     }
+    ]
+   },
+   "text": "玩家等級 7。將 3 件裝備裝在一隻離子火花或金曲推手英雄身上。",
+   "local": "",
+   "guess": true
+  },
+  {
+   "key": "Kayle",
+   "cond": {
+    "type": "all",
+    "of": [
+     {
+      "type": "level",
+      "min": 7
+     },
+     {
+      "type": "traitUnits",
+      "unique": true,
+      "anyOf": [
+       {
+        "trait": "Pentakill",
+        "n": 4
+       },
+       {
+        "trait": "Swiftstriker",
+        "n": 4
+       }
+      ]
+     }
+    ]
+   },
+   "text": "玩家等級 7。擁有 4 隻不同的殺五社或疾襲英雄。",
+   "local": "",
+   "guess": true
+  },
+  {
+   "key": "Thresh",
+   "cond": {
+    "type": "battleSum",
+    "stat": "charmSec",
+    "min": 350,
+    "who": "team"
+   },
+   "text": "讓敵人被古典樂累計著迷 350 秒。",
+   "local": "所有讓敵人著迷的效果都算。",
+   "guess": true
+  },
+  {
+   "key": "Vayne",
+   "cond": {
+    "type": "all",
+    "of": [
+     {
+      "type": "level",
+      "min": 7
+     },
+     {
+      "type": "fights",
+      "min": 3,
+      "traitActive": "Rock"
+     }
+    ]
+   },
+   "text": "玩家等級 7。以搖滾羈絆啟動的陣容打 3 場戰鬥。",
+   "local": "",
+   "guess": true
+  },
+  {
+   "key": "Wukong",
+   "cond": {
+    "type": "battleSum",
+    "stat": "damage",
+    "min": 25000,
+    "who": "team",
+    "withUnit": "Xayah"
+   },
+   "text": "場上有剎雅時，你的友軍累計造成 25000 傷害。",
+   "local": "",
+   "guess": false
+  },
+  {
+   "key": "Yasuo",
+   "cond": {
+    "type": "all",
+    "of": [
+     {
+      "type": "level",
+      "min": 7
+     },
+     {
+      "type": "traitStars",
+      "traits": [
+       "TrueDamage",
+       "Slayer"
+      ],
+      "n": 7
+     }
+    ]
+   },
+   "text": "玩家等級 7。累計 7 個 True Damage 與殺戮者英雄的星級。",
+   "local": "算場上、同名不去重。",
+   "guess": true
+  },
+  {
+   "key": "Zac",
+   "cond": {
+    "type": "all",
+    "of": [
+     {
+      "type": "level",
+      "min": 7
+     },
+     {
+      "type": "traitUnits",
+      "unique": true,
+      "anyOf": [
+       {
+        "trait": "BeachPop",
+        "n": 5
+       },
+       {
+        "trait": "Juggernaut",
+        "n": 5
+       }
+      ]
+     }
+    ]
+   },
+   "text": "玩家等級 7。擁有 5 隻不同的海灘流行或重裝戰士英雄。",
+   "local": "",
+   "guess": true
+  },
+  {
+   "key": "AkaliKDA",
+   "cond": {
+    "type": "all",
+    "of": [
+     {
+      "type": "traitStars",
+      "traits": [
+       "KDA"
+      ],
+      "unique": true,
+      "n": 8
+     },
+     {
+      "type": "not",
+      "unlocked": "AkaliTrueDamage"
+     }
+    ]
+   },
+   "text": "在沒有解鎖 True Damage 阿卡莉的前提下，累計 12 個不同 K/DA 英雄的星級。",
+   "local": "官方要 12 星，本頁 30 回合比較短，改成 8 星。",
+   "guess": true
+  },
+  {
+   "key": "AkaliTrueDamage",
+   "cond": {
+    "type": "all",
+    "of": [
+     {
+      "type": "battleSum",
+      "stat": "trueDamage",
+      "min": 375,
+      "per": 10,
+      "who": {
+       "trait": "TrueDamage"
+      },
+      "traitActive": "TrueDamage"
+     },
+     {
+      "type": "not",
+      "unlocked": "AkaliKDA"
+     }
+    ]
+   },
+   "text": "在沒有解鎖 K/DA 阿卡莉的前提下，取得 375 點 True Damage 閃耀值。",
+   "local": "本頁沒有「閃耀值」；改成 True Damage 成員每造成 10 點真實傷害算 1 點。",
+   "guess": true
+  },
+  {
+   "key": "Aphelios",
+   "cond": {
+    "type": "any",
+    "of": [
+     {
+      "type": "ownUnit",
+      "unit": "Alune",
+      "star": 2,
+      "zone": "board"
+     },
+     {
+      "type": "ownUnit",
+      "unit": "Yone",
+      "star": 2,
+      "zone": "board"
+     }
+    ]
+   },
+   "text": "場上擺有 2 星的亞盧妮或犽凝。",
+   "local": "",
+   "guess": false
+  },
+  {
+   "key": "Gwen",
+   "cond": {
+    "type": "battleSum",
+    "stat": "casts",
+    "min": 150,
+    "who": {
+     "trait": "IonicSpark"
+    },
+    "traitActive": "IonicSpark"
+   },
+   "text": "離子火花的粉絲鼓舞 250 次。",
+   "local": "官方要粉絲鼓舞 250 次，本頁沒有這個計數，改成離子火花成員施放技能 150 次。",
+   "guess": true
+  },
+  {
+   "key": "Janna",
+   "cond": {
+    "type": "income",
+    "kind": "interest",
+    "min": 20,
+    "withUnit": "Xayah"
+   },
+   "text": "場上有剎雅時，累計獲得 20 點利息。",
+   "local": "",
+   "guess": false
+  },
+  {
+   "key": "LeeSin",
+   "cond": {
+    "type": "fights",
+    "min": 5,
+    "withUnit": "Xayah",
+    "win": true
+   },
+   "text": "場上有剎雅時，對玩家造成 40 點傷害。",
+   "local": "這個模式不會對玩家造成傷害；暫定「場上有剎雅時贏 5 場」。",
+   "guess": true
+  },
+  {
+   "key": "Mordekaiser",
+   "cond": {
+    "type": "traitStars",
+    "traits": [
+     "Pentakill"
+    ],
+    "unique": true,
+    "n": 6
+   },
+   "text": "累計 10 個不同殺五社英雄的星級。",
+   "local": "官方要 10 星，本頁改成 6 星。",
+   "guess": true
+  },
+  {
+   "key": "Pyke",
+   "cond": {
+    "type": "all",
+    "of": [
+     {
+      "type": "level",
+      "min": 7
+     },
+     {
+      "type": "goldAtBattleEnd",
+      "min": 85
+     }
+    ]
+   },
+   "text": "玩家等級 7。戰鬥結束時持有 85 金幣以上。",
+   "local": "",
+   "guess": false
+  },
+  {
+   "key": "Taliyah",
+   "cond": {
+    "type": "fights",
+    "min": 1,
+    "traitActive": "BeachPop",
+    "costsOnBoard": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ]
+   },
+   "text": "每種費用各有一隻英雄開局站在海灘流行格子上。",
+   "local": "本頁的海灘流行沒有格子；暫定「海灘流行啟動，且開戰時場上 1～5 費各有一隻」。",
+   "guess": true
+  },
+  {
+   "key": "Teemo",
+   "cond": {
+    "type": "persist",
+    "key": "heat",
+    "min": 200
+   },
+   "text": "累計 900 點超流行熱度。",
+   "local": "官方要 900 熱度，本頁改成 200。",
+   "guess": true
+  },
+  {
+   "key": "Vladimir",
+   "cond": {
+    "type": "all",
+    "of": [
+     {
+      "type": "level",
+      "min": 8
+     },
+     {
+      "type": "formation",
+      "rows": [
+       0,
+       1
+      ],
+      "exactly": 1,
+      "minBoard": 2
+     }
+    ]
+   },
+   "text": "玩家等級 8。戰場最前面兩排只放 1 隻英雄。",
+   "local": "至少要有 2 隻在場上才算（避免只放一隻就過）。",
+   "guess": false
+  },
+  {
+   "key": "BaronNashor",
+   "cond": {
+    "type": "all",
+    "of": [
+     {
+      "type": "persist",
+      "key": "instrument",
+      "min": 5
+     },
+     {
+      "type": "battleSum",
+      "stat": "damage",
+      "min": 65000,
+      "who": {
+       "unit": "Malzahar"
+      }
+     }
+    ]
+   },
+   "text": "集齊該樂團所有成員，並用你最強的馬爾札哈造成所需傷害。",
+   "local": "傷害是所有馬爾札哈合計。",
+   "guess": true
+  },
+  {
+   "key": "Rakan",
+   "cond": {
+    "type": "all",
+    "of": [
+     {
+      "type": "level",
+      "min": 8
+     },
+     {
+      "type": "any",
+      "of": [
+       {
+        "type": "streak",
+        "kind": "win",
+        "min": 5
+       },
+       {
+        "type": "streak",
+        "kind": "lose",
+        "min": 2
+       }
+      ]
+     }
+    ]
+   },
+   "text": "在等級 8 以上，連續贏或連續輸達到所需場數。",
+   "local": "官方場數沒公布；暫定連勝 5 或連敗 2（這個模式只有 3 條命，連敗不可能多）。",
+   "guess": true
+  },
+  {
+   "key": "Smeech",
+   "cond": {
+    "type": "all",
+    "of": [
+     {
+      "type": "level",
+      "min": 9
+     },
+     {
+      "type": "activeTraits",
+      "min": 7,
+      "kinds": [
+       "origin",
+       "class"
+      ]
+     }
+    ]
+   },
+   "text": "玩家等級 9。擁有 8 個以上啟動中的非獨有羈絆。",
+   "local": "官方要 8 個，本頁改成 7 個。",
+   "guess": false
+  },
+  {
+   "key": "Sona",
+   "cond": {
+    "type": "all",
+    "of": [
+     {
+      "type": "level",
+      "min": 10
+     },
+     {
+      "type": "persist",
+      "key": "inspire",
+      "min": 15
+     }
+    ]
+   },
+   "text": "玩家等級 10。聯名合作英雄累計獲得 15 次靈感。",
+   "local": "",
+   "guess": true
+  }
+ ]
+}

@@ -1,10 +1,14 @@
 // 進入點：載入資料 → 讀存檔或開新局 → 掛載介面。SPEC 1.9、4.12。
 import { loadData } from './data.js';
 import * as audio from './audio.js';
+import * as U from './unlocks.js';
+import { hotkeys } from './ui/hotkeys.js';
 import { mount, askModal } from './ui/layout.js';
 
 const q = new URLSearchParams(location.search);
 const SAVE_KEY = 'trials19.save';
+// 網址帶 ?seed= 是測試用：不讀、不寫、不清玩家原本的存檔
+const seeded = q.has('seed');
 
 const REASONS = {
   gold: '金錢不夠', 'not enough gold': '金錢不夠', noGold: '金錢不夠',
@@ -29,11 +33,11 @@ async function boot() {
   if (sParam && sParam !== '19') { showFatal('目前只有 S19 版。', true); return; }
 
   const DATA = await loadData('./data/');
-  // 整合：拿掉 ?fake=1 的假遊戲（/ttfix/ 不上線），一律用真的 game／stats／enemies
+  // 一律用真的 game／stats／enemies
   const game = await import('./game.js');
   const stats = await import('./stats.js');
   const enemies = await import('./enemies.js');
-  const fake = false;
+  const fake = false;   // 保留給存檔判斷，永遠是 false
 
   const rnd = () => { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0]; };
   const newState = (seed) => game.newGame(seed, DATA);
@@ -42,8 +46,8 @@ async function boot() {
   let state = null;
   // 存檔外面包一層資料版本號：版本不同（例如 PBE 換了資料）就不接，直接開新局
   const dataVer = String(DATA.units.version || '0');
-  const clearSave = () => { try { localStorage.removeItem(SAVE_KEY); } catch (_) { /* 無痕模式 */ } };
-  const saved = (() => {
+  const clearSave = () => { if (seeded) return; try { localStorage.removeItem(SAVE_KEY); } catch (_) { /* 無痕模式 */ } };
+  const saved = seeded ? null : (() => {
     try {
       const raw = localStorage.getItem(SAVE_KEY); if (!raw) return null;
       const env = JSON.parse(raw);
@@ -78,6 +82,23 @@ async function boot() {
       api.emit('restart'); api.emit('change');
     },
   };
+  // 解鎖機制（SPEC_UI2 第 7 章）。enabled＝unlocks.json 有列棋子；關閉時 UI 不顯示入口
+  api.hotkeys = hotkeys;
+  api.unlocks = {
+    enabled: DATA.unlocks.list.length > 0,
+    // 全部要解鎖的棋子，照 unlocks.json 順序：{key, zh, cost, text, local, guess, cond, unlocked, round, progress}
+    list: () => DATA.unlocks.list.map(u => {
+      const d = DATA.units.byKey[u.key] || {};
+      const got = state.unlocks && state.unlocks[u.key];
+      return { key: u.key, zh: d.zh || u.key, cost: d.cost, traits: d.traits || [], text: u.text, local: u.local || '', guess: !!u.guess, cond: u.cond,
+        unlocked: !!got, round: got ? got.round : null, progress: U.progress(state, DATA, u.key) };
+    }),
+    progress: (key) => U.progress(state, DATA, key),
+    isUnlocked: (key) => U.isUnlocked(state, DATA, key),
+    count: () => ({ done: DATA.unlocks.list.filter(u => state.unlocks && state.unlocks[u.key]).length, total: DATA.unlocks.list.length }),
+    // 這隻現在是不是排在「下一次商店保證出現」的隊伍裡
+    pending: () => (state.unlockQueue || []).slice(),
+  };
   // 這場啟動過的羈絆（最高階）給結算畫面用
   let best = {};
   const track = () => { if (!api.countTraits) return; try { for (const t of api.countTraits(state.board.filter(Boolean), DATA, { augments: state.augments || [] })) if (t.tier > (best[t.key] || 0)) best[t.key] = t.tier; } catch (_) { /* 略過 */ } };
@@ -111,6 +132,11 @@ async function boot() {
     for (const m of r.merged || []) if (!evs.some(e => e.type === 'merge' && e.key === m.key && e.star === m.star)) evs.push({ type: 'merge', key: m.key, star: m.star });
     let played = false;
     for (const ev of evs) {
+      if (ev.type === 'unlock') {   // 解鎖：toast＋音效（延一下，不蓋掉這個動作本身的音效）
+        const def = DATA.units.byKey[ev.key];
+        api.toast('解鎖：' + (def ? def.zh : ev.key) + '！下一次商店一定會出現');
+        setTimeout(() => api.sfx('unlock'), 180);
+      }
       api.emit(ev.type, ev);
       if (ev.type === 'merge') { api.sfx(ev.star >= 3 ? 'star3' : 'star2'); played = true; }
       else if (ev.type === 'levelup') { api.sfx('levelup'); played = true; }
@@ -120,7 +146,7 @@ async function boot() {
     if (before) { const after = tiers(); if (after && Object.keys(after).some(k => after[k] > (before[k] || 0))) setTimeout(() => api.sfx('trait'), 120); }
     // 佈陣、選增幅、選獎勵都存；打完（沒命或通關）就清掉，重整後不能接著玩
     if (state.phase === 'over' || r.gameOver || r.cleared) clearSave();
-    else if (!fake && (state.phase === 'plan' || state.phase === 'augment' || state.phase === 'reward')) {
+    else if (!seeded && !fake && (state.phase === 'plan' || state.phase === 'augment' || state.phase === 'reward')) {
       try { localStorage.setItem(SAVE_KEY, JSON.stringify({ dv: dataVer, save: game.serialize(state) })); } catch (_) { /* 滿了就算了 */ }
     }
     track();

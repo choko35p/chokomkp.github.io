@@ -1,14 +1,14 @@
-// 版面骨架與整體流程：建 DOM、分派 render、點選／拖曳／快捷鍵、佈陣⇄戰鬥切換。SPEC 1.9、5.1–5.4。
+// 版面骨架與整體流程：建 DOM、分派 render、佈陣⇄戰鬥切換。SPEC_UI2 第 2、3 章。
+// 輸入（點選／拖曳／右鍵／快捷鍵）全部交給 input.js 的 bindInput（包 C）；這裡不處理任何輸入。
 // 掛載點（給 U2／U3）：
 //   [data-tt-mount=traits]  → traitbar.renderTraits(el, 我方羈絆, 敵方羈絆, api)（敵方羈絆畫在 [data-tt-enemy]）
 //   .tt-board               → board.renderBoard；戰鬥時 el.__field 交給 battle.playBattle
 //   面板：panels.showUnitPanel／showTraitPanel／showAugmentChoice／showReward／showResult／showGameOver／showHelp／showCodex
 import { renderBoard, renderBench, renderItems, el, zhOf, costOf, itemZh } from './board.js';
-import { renderShop } from './shopbar.js';
-import { enableDnd } from './dnd.js';
+import { renderShop, renderHud } from './shopbar.js';
 import { sfx, setMuted, isMuted } from '../audio.js';
 
-let traitbar = null, panels = null, battle = null;
+let traitbar = null, panels = null, battle = null, inputMod = null;
 const FRONT_COLS = [3, 2, 4, 1, 5, 0, 6];
 
 const $ = (r, s) => r.querySelector(s);
@@ -40,14 +40,19 @@ export function askModal(title, text, buttons) {
 
 // ---------- 掛載 ----------
 export async function mount(root, api) {
-  [traitbar, panels, battle] = await Promise.all([
+  [traitbar, panels, battle, inputMod] = await Promise.all([
     import('./traitbar.js').catch(() => null),
     import('./panels.js').catch(() => null),
     import('./battle.js').catch(() => null),
+    import('./input.js').catch(() => null),
   ]);
   const { DATA } = api;
   const ui = api.ui;
-  ui.mode = 'plan'; ui.sel = null; ui.speed = ui.speed || 2; ui.sellArm = null; ui.hoverUid = null;
+  ui.mode = 'plan'; ui.sel = null; ui.speed = ui.speed || 2; ui.sellArm = null; ui.hoverUid = null; ui.dragUnit = null;
+  // data.js 還沒把 traits.json 的 sprite 帶進 DATA 時，自己讀一次補上（SPEC 2.6）
+  if (!DATA.traits.sprite && traitbar && traitbar.setTraitSprite) {
+    try { const r = await fetch('./data/traits.json'); if (r.ok) { const j = await r.json(); if (j.sprite) traitbar.setTraitSprite(j.sprite); } } catch (_) { /* 沒圖示就退回文字 */ }
+  }
 
   root.replaceChildren();
   const app = el('div', 'tt-shell', { 'data-phase': 'plan' });
@@ -55,42 +60,58 @@ export async function mount(root, api) {
     <header class="tt-top"><div class="tt-top-in">
       <a class="tt-link" href="../?s=19" aria-label="回攻略站">← <span class="tt-hide-s">回攻略站</span></a>
       <h1>滴答克的試煉 <small>S19</small></h1>
+      <button class="tt-ibtn tt-unlockbtn" type="button" data-act="unlocks" hidden></button>
+      <button class="tt-ibtn tt-hide-m" type="button" data-act="hotkeys">快捷鍵</button>
       <button class="tt-ibtn" type="button" data-act="help" aria-label="說明">說明</button>
       <button class="tt-ibtn" type="button" data-act="mute" aria-pressed="false"></button>
-    </div>
-    <p class="tt-note">非官方重製｜名稱是暫譯，數值為推測，PBE 後更新</p></header>
+    </div></header>
     <main class="tt-app">
-      <section class="tt-side" aria-label="狀態"></section>
-      <div class="tt-center">
+      <div class="tt-stage">
+        <div class="tt-roundbar" aria-label="回合"></div>
         <div class="tt-enemybar"></div>
+        <div class="tt-augs" aria-label="增幅"></div>
+        <div class="tt-xitems" aria-label="裝備欄"></div>
+        <div class="tt-traits" data-tt-mount="traits"></div>
+        <button class="tt-codexbtn" type="button" data-act="codex" data-tt-noclear>圖鑑</button>
         <div class="tt-board" aria-label="棋盤"></div>
+        <div class="tt-bench" aria-label="板凳"></div>
+        <div class="tt-hud"></div>
+        <div class="tt-xshop" data-tt-drop-zone></div>
+        <button class="tt-go" type="button" data-act="go" data-tt-noclear><span>戰鬥</span><kbd class="tt-hk" aria-hidden="true"></kbd></button>
         <div class="tt-battlebar">
           <div class="tt-speed" role="group" aria-label="戰鬥速度"></div>
           <div class="tt-rank" aria-label="即時傷害排行"></div>
         </div>
-        <div class="tt-bench" aria-label="板凳"></div>
-        <div class="tt-itemrow"><div class="tt-xitems" aria-label="裝備欄"></div>
-          <button class="tt-sell" type="button" data-tt-drop="sell" data-tt-tap="sell"></button></div>
-        <div class="tt-selbar" aria-live="polite"></div>
-        <div class="tt-xshop"></div>
+        <div data-tt-mount="unitpanel" class="tt-unitpanel"></div>
+        <div class="tt-toast" role="status" aria-live="polite"></div>
       </div>
-      <aside class="tt-right"><div class="tt-traits" data-tt-mount="traits"></div>
-        <button class="tt-xbtn tt-codexbtn" type="button" data-act="codex">羈絆圖鑑</button></aside>
     </main>
-    <footer class="tt-foot" id="tt-foot"><p>非官方重製・名稱是暫譯，PBE 開了以後照官方繁中更新・S19 數值為推測｜本站與 Riot Games 無關；遊戲名稱與素材屬於其權利人。</p></footer>
-    <div class="tt-toast" role="status" aria-live="polite"></div>`;
+    <footer class="tt-foot" id="tt-foot"><p>非官方重製・名稱是暫譯・S19 數值為推測｜本站與 Riot Games 無關；遊戲名稱、素材與音效屬於其權利人。</p></footer>`;
   root.append(app);
 
   const R = {
-    side: $(app, '.tt-side'), enemy: $(app, '.tt-enemybar'), board: $(app, '.tt-board'), bench: $(app, '.tt-bench'),
-    items: $(app, '.tt-xitems'), sell: $(app, '.tt-sell'), selbar: $(app, '.tt-selbar'), shop: $(app, '.tt-xshop'),
-    traits: $(app, '[data-tt-mount=traits]'), toast: $(app, '.tt-toast'), speed: $(app, '.tt-speed'), rank: $(app, '.tt-rank'),
-    mute: $(app, '[data-act=mute]'),
+    stage: $(app, '.tt-stage'), enemy: $(app, '.tt-enemybar'), board: $(app, '.tt-board'), bench: $(app, '.tt-bench'),
+    items: $(app, '.tt-xitems'), shop: $(app, '.tt-xshop'), hud: $(app, '.tt-hud'), roundbar: $(app, '.tt-roundbar'), augs: $(app, '.tt-augs'),
+    traits: $(app, '[data-tt-mount=traits]'), unitpanel: $(app, '[data-tt-mount=unitpanel]'), toast: $(app, '.tt-toast'),
+    speed: $(app, '.tt-speed'), rank: $(app, '.tt-rank'), mute: $(app, '[data-act=mute]'), go: $(app, '.tt-go'),
+    unlockBtn: $(app, '.tt-unlockbtn'),
   };
+  // 站台列的「戰鬥」鍵：戰鬥階段整個收起；快捷鍵提示由 renderShop 填
 
+  // 手機抽屜最高不能蓋到板凳（SPEC：抽屜不蓋棋盤與板凳）
+  const fitDrawer = () => {
+    try {
+      const b = R.bench.getBoundingClientRect();
+      const room = window.innerHeight - b.bottom - 4;
+      R.unitpanel.style.setProperty('--tt-drawer-max', Math.max(150, room) + 'px');
+    } catch (_) { /* 略過 */ }
+  };
+  window.addEventListener('resize', fitDrawer);
   // ---- toast ----
   let toastT = null;
-  api.toast = (msg) => { R.toast.textContent = msg; R.toast.classList.add('tt-xon'); clearTimeout(toastT); toastT = setTimeout(() => R.toast.classList.remove('tt-xon'), 2000); };
+  // 提示放在棋盤下緣（板凳上方），不蓋金幣、連勝和商店卡；桌機位置由 CSS 管
+  const placeToast = () => { try { R.toast.style.setProperty('--tt-ty', (R.board.offsetTop + R.board.offsetHeight - 6) + 'px'); } catch (_) { /* 略過 */ } };
+  api.toast = (msg) => { placeToast(); R.toast.textContent = msg; R.toast.classList.add('tt-xon'); clearTimeout(toastT); toastT = setTimeout(() => R.toast.classList.remove('tt-xon'), 2200); };
 
   // ---- 小工具 ----
   const stateUnits = () => [...api.state.board.filter(Boolean), ...api.state.bench.filter(Boolean)];
@@ -99,6 +120,7 @@ export async function mount(root, api) {
     : d.k === 'bench' ? api.state.bench[d.i] : null;
   const popUsed = () => api.state.board.reduce((n, u) => n + (DATA.units.byKey[u.key]?.slots || 1), 0);
   const popMax = () => (api.teamLimit ? api.teamLimit() : api.state.level);
+  api.popUsed = popUsed; api.popMax = popMax;
   const sellPrice = (u) => {
     const c = costOf(DATA, u.key), m = DATA.rules.sellPrice || { star2Mult: 3, star3Mult: 9, minus: 1 };
     if (c >= 7) return DATA.rules.sevenCost?.sellPrice ?? 7;
@@ -109,112 +131,86 @@ export async function mount(root, api) {
   const modalOpen = () => !!document.querySelector('.tt-fbmodal, [role=dialog], dialog[open], .tt-modal, .tt-panel-back');
   const setSel = (s) => { ui.sel = s; ui.sellArm = null; render(); };
 
-  // ---- 狀態列 ----
-  function renderStatus() {
-    const s = api.state, r = DATA.rules;
-    const interest = Math.min(Math.floor(s.gold / (r.income?.interestPer || 10)), r.income?.interestCap ?? 5);
-    const need = r.xpToNext?.[String(s.level)];
-    const maxLives = r.start?.lives || 3;
-    const stat = (cls, label, val, extra, tag = 'span') => {
-      const n = el(tag, 'tt-xstat ' + cls, tag === 'button' ? { type: 'button' } : {}, el('span', '', {}, label), el('b', 'tt-num', {}, val), extra || null);
-      return n;
-    };
-    const lives = el('span', 'tt-xstat tt-lives', { 'aria-label': `命 ${s.lives}/${maxLives}` }, el('span', '', {}, '命'), el('b', '', { 'aria-hidden': 'true' }, '♥'.repeat(Math.max(0, s.lives)) + '♡'.repeat(Math.max(0, maxLives - s.lives))));
-    const lv = stat('tt-lv', '等級', s.level, el('small', '', {}, need ? `　經驗 ${s.xp}/${need}` : '　滿級'), 'button');
-    lv.setAttribute('aria-label', `等級 ${s.level}，點開看商店機率表`);
-    lv.addEventListener('click', () => toggleOdds());
-    const aug = el('span', 'tt-xstat tt-aug', { 'aria-label': '增幅' });
-    (s.augments || []).forEach((k) => {
-      const a = DATA.augments.byKey[k];
-      const ab = el('button', 't' + (a?.tier || 1), { type: 'button', title: (a?.zh || k) + (a?.desc ? '：' + a.desc : ''), 'aria-label': '增幅：' + (a?.zh || k) + '，點一下看說明' }, '◆');
-      ab.addEventListener('click', () => { if (panels && panels.showAugmentInfo) panels.showAugmentInfo(api, k); else api.toast((a?.zh || k) + (a?.desc ? '：' + a.desc : '')); });
-      aug.append(ab);
-    });
-    const rounds = r.rounds?.length || 30;
-    const nodes = [
-      stat('tt-round', '回合', `${s.round}/${rounds}`), lives, lv,
-      stat('tt-pop', '人口', `${popUsed()}/${popMax()}`),
-      stat('tt-gold', '金錢', s.gold, el('small', '', {}, `　利息 +${interest}`)),
-      stat('tt-score', '分數', (s.score || 0).toLocaleString('en-US')),
-      stat('tt-streak', '連勝', s.streak || 0),
-    ];
-    if ((s.augments || []).length) nodes.push(aug);
-    const pop = $(R.side, '.tt-oddspop');
-    R.side.replaceChildren(...nodes);
-    if (pop) R.side.append(pop);
+  // ---- 站台列：解鎖鍵 ----
+  function renderUnlockBtn() {
+    const U = api.unlocks;
+    if (!U || U.enabled === false) { R.unlockBtn.hidden = true; return; }
+    let list = []; try { list = U.list() || []; } catch (_) { /* 還沒接上 */ }
+    if (!list.length) { R.unlockBtn.hidden = true; return; }
+    const done = list.filter(x => { try { return U.isUnlocked(x.key ?? x); } catch (_) { return false; } }).length;
+    R.unlockBtn.hidden = false;
+    R.unlockBtn.replaceChildren(`解鎖 ${done}/${list.length}`, ...(ui.unlockNew ? [el('i', 'tt-dot', { 'aria-label': '有新解鎖' })] : []));
   }
+  if (api.on) api.on('unlock', () => { ui.unlockNew = true; renderUnlockBtn(); R.unlockBtn.classList.remove('tt-flash'); void R.unlockBtn.offsetWidth; R.unlockBtn.classList.add('tt-flash'); });
+
+  // ---- 回合列 ----
+  function renderRoundbar() {
+    const s = api.state, rounds = DATA.rules.rounds?.length || 30, maxLives = DATA.rules.start?.lives || 3;
+    const bosses = (DATA.rules.rounds || []).filter(r => r.type === 'boss').map(r => r.n);
+    const prev = bosses.filter(n => n < s.round).pop() || 0;
+    const next = bosses.find(n => n >= s.round) || rounds;
+    const dots = el('span', 'tt-rdots', { 'aria-hidden': 'true' });
+    for (let n = prev + 1; n <= next; n++) {
+      const boss = bosses.includes(n);
+      dots.append(el('i', 'tt-rd' + (n < s.round ? ' tt-past' : n === s.round ? ' tt-now' : '') + (boss ? ' tt-boss' : ''), {}, boss ? '☠' : ''));
+    }
+    const hearts = el('span', 'tt-hearts', { 'aria-label': `命 ${s.lives}/${maxLives}`, role: 'img' });
+    for (let i = 0; i < maxLives; i++) hearts.append(el('img', '', { src: i < s.lives ? 'img/ui/heart.webp' : 'img/ui/heart_gray.webp', alt: '', draggable: 'false' }));
+    R.roundbar.replaceChildren(el('b', 'tt-rtxt', {}, `回合 `, el('span', 'tt-num', {}, `${s.round}/${rounds}`)), dots, hearts,
+      el('span', 'tt-score tt-num', { 'aria-label': '分數 ' + (s.score || 0), 'data-tt-tip': 'text:分數' }, (s.score || 0).toLocaleString('en-US')));
+  }
+
+  // ---- 增幅 ----
+  function renderAugs() {
+    const nodes = (api.state.augments || []).slice(0, 3).map((k) => {
+      const a = DATA.augments.byKey[k];
+      const b = el('button', 'tt-aug t' + (a?.tier || 1), { type: 'button', 'data-tt-tip': 'aug:' + k, 'data-tt-noclear': '', 'aria-label': '增幅：' + (a?.zh || k) + '，點一下看說明' }, el('i', '', { 'aria-hidden': 'true' }));
+      if (a && a.sp != null) {
+        const i = b.firstChild;
+        i.style.backgroundImage = 'url("../icons/aug-sprite.webp")'; i.style.backgroundSize = '2000% 1300%';
+        i.style.backgroundPosition = `${(a.sp % 20) * 100 / 19}% ${Math.floor(a.sp / 20) * 100 / 12}%`;
+      }
+      b.addEventListener('click', () => { if (panels && panels.showAugmentInfo) panels.showAugmentInfo(api, k); else api.toast((a?.zh || k) + (a?.desc ? '：' + a.desc : '')); });
+      return b;
+    });
+    R.augs.replaceChildren(...nodes);
+  }
+
   function toggleOdds() {
-    const ex = $(R.side, '.tt-oddspop');
+    const ex = $(R.stage, '.tt-oddspop');
     if (ex) { ex.remove(); return; }
     const t = el('table', '', { 'aria-label': '商店機率表' });
     t.append(el('tr', '', {}, el('th', '', {}, '等級'), ...[1, 2, 3, 4, 5].map(c => el('th', 'tt-cost' + c, {}, c + '費'))));
     for (let l = 1; l <= (DATA.rules.maxLevel || 10); l++) {
       const row = DATA.rules.shopOdds[String(l)]; if (!row) continue;
-      const tr = el('tr', l === api.state.level ? 'tt-xcur' : '', {}, el('td', '', {}, l), ...row.map(p => el('td', '', {}, p ? p + '%' : '—')));
-      t.append(tr);
+      t.append(el('tr', l === api.state.level ? 'tt-xcur' : '', {}, el('td', '', {}, l), ...row.map(p => el('td', '', {}, p ? p + '%' : '—'))));
     }
-    const pop = el('div', 'tt-oddspop', { role: 'region', 'aria-label': '商店機率' }, t, el('div', '', {}, '（推測數值，PBE 後更新）'));
-    R.side.append(pop);
+    const pop = el('div', 'tt-oddspop', { role: 'region', 'aria-label': '商店機率' }, t, el('div', 'tt-oddsnote', {}, '（推測數值，PBE 後更新）'));
+    R.stage.append(pop);
     const close = (e) => { if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener('pointerdown', close, true); } };
     setTimeout(() => document.addEventListener('pointerdown', close, true), 0);
   }
 
   // ---- 敵方列 ----
   function renderEnemyBar(enemy) {
-    const n = [el('span', 'tt-ename', {}, '本回合對手：' + (enemy?.name || '—'))];
+    const n = [el('span', 'tt-ename', {}, el('small', '', {}, '對手'), enemy?.name || '—')];
     if (enemy?.boss) n.push(el('span', 'tt-bossbadge', {}, '頭目'));
-    const mount = el('span', '', { 'data-tt-enemy': '' });
+    const mount = el('span', 'tt-emount', { 'data-tt-enemy': '' });
     n.push(mount);
     R.enemy.replaceChildren(...n);
     return mount;
   }
 
   // ---- 羈絆列 ----
+  let lastTe = [];
   function renderTraitsMount(enemy) {
     const s = api.state;
     const tp = api.countTraits ? api.countTraits(s.board.filter(Boolean), DATA, { augments: s.augments || [] }) : [];
     let te = enemy?.traitsPreview;
     if ((!te || !te.length) && enemy && api.countTraits) te = api.countTraits(enemy.units.map(u => ({ key: u.key, star: u.star, items: u.items || [] })), DATA, { augments: [] });
+    lastTe = te || [];
     if (traitbar && traitbar.renderTraits) { traitbar.renderTraits(R.traits, tp, te || [], api); return; }
-    // 備用（U2 的 traitbar 不在時）
-    const li = tp.filter(t => t.count >= 1).map(t => el('span', 'tt-selchip', {}, `${t.zh} ${t.count}/${t.next ?? '滿'}${t.active ? ' 啟動' : ''}`));
-    R.traits.replaceChildren(...li);
-  }
-
-  // ---- 選取列（說明＋賣出＋合成表） ----
-  function renderSelbar() {
-    const s = ui.sel, sellEl = R.sell;
-    const nodes = [];
-    sellEl.className = 'tt-sell'; sellEl.disabled = false;
-    sellEl.textContent = '賣出區';
-    sellEl.setAttribute('aria-label', '賣出區：把棋子拖到這裡，或先選棋子再按這裡');
-    if (s && s.kind === 'unit') {
-      const u = unitByUid(s.uid);
-      if (!u) { ui.sel = null; return renderSelbar(); }
-      const price = sellPrice(u);
-      const risky = u.star >= 3 || costOf(DATA, u.key) >= 7;
-      if (ui.sellArm === u.uid) { sellEl.classList.add('tt-ready', 'tt-armed'); sellEl.textContent = '再按一次確認賣出'; }
-      else { sellEl.classList.add('tt-ready'); sellEl.textContent = `賣出 +${price}金` + (risky ? '（要確認）' : ''); }
-      sellEl.setAttribute('aria-label', `賣出 ${zhOf(DATA, u.key)}，得 ${price} 金`);
-      const info = el('span', 'tt-xchip', {}, `${zhOf(DATA, u.key)} ${u.star}★`);
-      const det = el('button', '', { type: 'button' }, '詳情'); det.addEventListener('click', () => openUnit(u));
-      nodes.push(info, det, el('span', 'tt-muted', {}, '點空格或另一隻棋子＝移動／交換；再點同一隻＝取消'));
-    } else if (s && s.kind === 'item') {
-      const k = api.state.itemBench[s.idx];
-      if (!k) { ui.sel = null; return renderSelbar(); }
-      nodes.push(el('span', 'tt-xchip', {}, itemZh(DATA, k)), el('span', 'tt-muted', {}, '點棋子裝上去；兩個散件會自動合成。'));
-      const isComp = !!DATA.items.compByKey?.[k];
-      if (isComp) {
-        const seen = new Set();
-        for (const it of DATA.items.list || Object.values(DATA.items.byKey)) {
-          if (!it.recipe || !it.recipe.includes(k)) continue;
-          const other = it.recipe[0] === k ? it.recipe[1] : it.recipe[0];
-          if (seen.has(other)) continue; seen.add(other);
-          nodes.push(el('span', 'tt-xchip', {}, `＋${itemZh(DATA, other)}＝${it.zh}`));
-        }
-      } else { const d = DATA.items.byKey[k]?.desc; if (d) nodes.push(el('span', 'tt-xchip', {}, d)); }
-    }
-    R.selbar.replaceChildren(...nodes);
+    R.traits.replaceChildren(...tp.filter(t => t.count >= 1).map(t => el('span', 'tt-selchip', {}, `${t.zh} ${t.count}/${t.next ?? '滿'}${t.active ? ' 啟動' : ''}`)));
   }
 
   function openUnit(u) {
@@ -222,20 +218,45 @@ export async function mount(root, api) {
     else askModal(zhOf(DATA, u.key) + ' ' + u.star + '★', '（棋子面板尚未接上）', [{ label: '關閉' }]);
   }
 
+  // ---- 拖曳中：商店整塊變成賣出區（SPEC 4.2）。dragUnit 由 C 的 onDragStart 設；沒設時從 .tt-drag-src 自己抓 ----
+  function syncDrag() {
+    let uid = ui.dragUnit;
+    const src = app.querySelector('.tt-drag-src[data-tt-uid]');
+    if (src) uid = Number(src.dataset.ttUid); else if (!app.querySelector('.tt-drag-src')) uid = null;
+    const u = uid != null ? unitByUid(uid) : null;
+    const want = u ? `賣出　+${sellPrice(u)} 金` : '';
+    if ((R.shop.dataset.sell || '') === want) return;   // 沒變就不動 DOM（避免 MutationObserver 自己觸發自己）
+    if (u) { R.shop.setAttribute('data-tt-drop', 'sell'); R.shop.dataset.sell = want; R.shop.classList.add('tt-sellmode'); }
+    else { R.shop.removeAttribute('data-tt-drop'); delete R.shop.dataset.sell; R.shop.classList.remove('tt-sellmode'); }
+  }
+  new MutationObserver(syncDrag).observe(app, { subtree: true, attributes: true, attributeFilter: ['class'], childList: true });
+
+  // ---- 選取是否還有效 ----
+  function validateSel() {
+    const s = ui.sel; if (!s) return;
+    if (s.kind === 'unit' && !unitByUid(s.uid)) ui.sel = null;
+    else if (s.kind === 'item' && !api.state.itemBench[s.idx]) ui.sel = null;
+    else if (s.kind === 'enemy' && !(curEnemy && curEnemy.units.some(u => u.key === s.key))) ui.sel = null;
+  }
+
   // ---- 主要 render ----
   let curEnemy = null;
   function render() {
-    renderStatus();
+    curEnemy = api.enemy();
+    validateSel();
+    renderRoundbar(); renderAugs(); renderUnlockBtn();
+    renderHud(R.hud, api);
     if (ui.mode === 'battle') return;
     const s = api.state;
-    curEnemy = api.enemy();
     renderEnemyBar(curEnemy);
     renderTraitsMount(curEnemy);
     renderBoard(R.board, api, { mode: 'plan', enemy: curEnemy });
     renderBench(R.bench, api);
     renderItems(R.items, api);
-    renderSelbar();
     renderShop(R.shop, api);
+    syncDrag();
+    fitDrawer();
+    if (panels && panels.renderUnitSide) panels.renderUnitSide(R.unitpanel, api);
     app.dataset.phase = 'plan';
     if ((s.phase === 'augment' || s.phase === 'reward') && s.pendingChoices) openChoice(s);
     else { ui.choiceOpen = null; maybeBossIntro(s); }
@@ -249,6 +270,7 @@ export async function mount(root, api) {
     if (panels && panels.showBossIntro) setTimeout(() => { if (ui.mode === 'plan') panels.showBossIntro(api, curEnemy.boss, () => {}); }, 0);
   }
   api.on('change', render);
+  if (api.hotkeys && api.hotkeys.onChange) api.hotkeys.onChange(() => render());
 
   // ---- 增幅／獎勵 ----
   function openChoice(s) {
@@ -268,7 +290,7 @@ export async function mount(root, api) {
     document.body.append(back);
   }
 
-  // ---- 動作 ----
+  // ---- 動作（給 input.js 用的 h） ----
   const toBoardDefault = (u) => {
     const front = ['Tank', 'Fighter'].includes(DATA.units.byKey[u.key]?.roleClass);
     const rows = front ? [0, 1, 2, 3] : [3, 2, 1, 0];
@@ -276,124 +298,52 @@ export async function mount(root, api) {
     for (const r of rows) for (const c of FRONT_COLS) if (!used.has(r + ',' + c)) return { zone: 'board', pos: [r, c] };
     return null;
   };
-  function doMove(u, d) {
-    const to = d.k === 'board' ? { zone: 'board', pos: [d.r, d.c] } : { zone: 'bench', idx: d.i };
-    return api.act('move', u.uid, to);
-  }
-  function doSell(u) {
+  // 賣出：3★ 與 7 費先問一次（拖到商店、E 鍵、面板賣出鍵共用）
+  async function doSell(u) {
     const needConfirm = u.star >= 3 || costOf(DATA, u.key) >= 7;
-    if (needConfirm && ui.sellArm !== u.uid) { ui.sellArm = u.uid; ui.sel = { kind: 'unit', uid: u.uid }; api.toast('這隻比較貴，再按一次才會賣'); render(); setTimeout(() => { if (ui.sellArm === u.uid) { ui.sellArm = null; render(); } }, 3000); return; }
+    if (needConfirm) {
+      const v = await askModal('確定賣掉？', `${zhOf(DATA, u.key)} ${u.star}★，可得 ${sellPrice(u)} 金。`, [{ label: '賣掉', primary: true, value: 'sell' }, { label: '取消', value: 'no' }]);
+      if (v !== 'sell') { render(); return; }
+      if (!unitByUid(u.uid)) return;
+    }
     ui.sel = null; ui.sellArm = null;
     api.act('sell', u.uid);
   }
-  const bounce = () => { sfx('error'); render(); };
-
-  function onTap(desc) {
-    if (ui.mode !== 'plan' || modalOpen()) return;
-    const d = parse(desc); if (!d) return;
-    if (d.k === 'shop') { api.act('buy', d.i); return; }
-    if (d.k === 'enemy') { if (panels && panels.showUnitPanel) panels.showUnitPanel(d.key, api); return; }
-    if (d.k === 'item') {
-      if (ui.sel && ui.sel.kind === 'item' && ui.sel.idx === d.i) return setSel(null);
-      return setSel({ kind: 'item', idx: d.i });
-    }
-    if (d.k === 'sell') {
-      if (ui.sel && ui.sel.kind === 'unit') { const u = unitByUid(ui.sel.uid); if (u) doSell(u); }
-      else api.toast('先點一隻棋子，或直接拖到這裡賣');
-      return;
-    }
-    const u = unitAt(d);
-    const sel = ui.sel;
-    if (sel && sel.kind === 'item') {
-      if (u) { ui.sel = null; api.act('equip', sel.idx, u.uid); } else setSel(null);
-      return;
-    }
-    if (sel && sel.kind === 'unit') {
-      if (u && u.uid === sel.uid) return setSel(null);
-      const me = unitByUid(sel.uid);
-      ui.sel = null;
-      if (me) doMove(me, d); else render();
-      return;
-    }
-    if (u) { setSel({ kind: 'unit', uid: u.uid }); }
+  // 沒有 input.js 時的最小退回：只保留「點商店卡＝買」，其他操作都沒有（不保留舊的點擊換位）
+  function fallbackInput() {
+    app.addEventListener('click', (e) => {
+      const c = e.target.closest('[data-tt-tap^="shop:"]'); if (!c || ui.mode !== 'plan' || modalOpen()) return;
+      api.act('buy', Number(c.dataset.ttTap.split(':')[1]));
+    });
   }
-
-  function onDrop(from, to) {
-    if (ui.mode !== 'plan') return;
-    const f = parse(from), t = parse(to);
-    ui.sel = null; ui.sellArm = null;
-    if (!t) return bounce();
-    if (f.k === 'shop') { if (t.k === 'bench' || t.k === 'board') api.act('buy', f.i); else bounce(); return; }
-    if (f.k === 'item') {
-      const u = (t.k === 'board' || t.k === 'bench') ? unitAt(t) : null;
-      if (u) api.act('equip', f.i, u.uid); else bounce();
-      return;
-    }
-    const u = unitAt(f); if (!u) return bounce();
-    if (t.k === 'sell') { doSell(u); return; }
-    if (t.k === 'board' || t.k === 'bench') { api.act('move', u.uid, t.k === 'board' ? { zone: 'board', pos: [t.r, t.c] } : { zone: 'bench', idx: t.i }); return; }
-    bounce();
-  }
-  enableDnd(app, { onTap, onDrop, onDragStart: () => { ui.dragging = true; }, onDragEnd: () => { ui.dragging = false; } });
-  // 右鍵／雙擊棋子開面板（桌機）
-  app.addEventListener('contextmenu', (e) => {
-    const t = e.target.closest('[data-tt-uid]'); if (!t) return;
-    e.preventDefault(); const u = unitByUid(Number(t.dataset.ttUid)); if (u) openUnit(u);
-  });
-  app.addEventListener('dblclick', (e) => {
-    const t = e.target.closest('[data-tt-uid]'); if (!t) return;
-    const u = unitByUid(Number(t.dataset.ttUid)); if (u) openUnit(u);
-  });
-  // 懸停：記下滑鼠下的棋子（E／W 用）
+  const h = { unitByUid, unitAt, sellPrice, doSell, go: () => go(), cycleSpeed: () => cycleSpeed(), skipBattle: () => skipBattle(), toBoardDefault, modalOpen, setSel };
+  if (inputMod && inputMod.bindInput) inputMod.bindInput({ app, api, R, render, h });
+  else fallbackInput();
+  // 懸停：記下滑鼠下的棋子（快捷鍵用；input.js 有自己的也不衝突）
   app.addEventListener('pointerover', (e) => { const t = e.target.closest?.('[data-tt-uid]'); ui.hoverUid = t ? Number(t.dataset.ttUid) : null; });
   app.addEventListener('pointerleave', () => { ui.hoverUid = null; });
 
   // ---- 頁首按鈕 ----
-  const syncMute = () => { const m = isMuted(); R.mute.textContent = m ? '🔇' : '🔊'; R.mute.setAttribute('aria-pressed', String(m)); R.mute.setAttribute('aria-label', m ? '音效：關（點一下開啟）' : '音效：開（點一下關閉）'); };
+  const syncMute = () => { const m = isMuted(); R.mute.textContent = m ? '音效：關' : '音效：開'; R.mute.setAttribute('aria-pressed', String(m)); R.mute.setAttribute('aria-label', m ? '音效：關（點一下開啟）' : '音效：開（點一下關閉）'); };
   syncMute();
+  const call = (fn, label) => { if (panels && panels[fn]) panels[fn](api); else api.toast(label + '還沒接上'); };
   app.addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]'); if (!b) return;
     const a = b.dataset.act;
     if (a === 'mute') { setMuted(!isMuted()); syncMute(); }
     else if (a === 'help') showHelp();
-    else if (a === 'codex') { if (panels && panels.showCodex) panels.showCodex(api); else api.toast('圖鑑還沒接上'); }
+    else if (a === 'codex') call('showCodex', '圖鑑');
+    else if (a === 'unlocks') { ui.unlockNew = false; renderUnlockBtn(); call('showUnlocks', '解鎖說明'); }
+    else if (a === 'hotkeys') call('showHotkeys', '快捷鍵設定');
+    else if (a === 'odds') toggleOdds();
+    else if (a === 'go') go();
   });
   function showHelp() {
-    if (panels && panels.showHelp) panels.showHelp({ onRestart: () => api.act('restart') });
-    else askModal('說明', '30 回合、6 隻頭目、3 條命、沒有計時。非官方重製，數值為推測。快捷鍵：D 刷新、F 買經驗、E 賣出、W 上場／下板凳、1–5 買商店、Space 開戰。', [{ label: '知道了', primary: true }]);
+    if (panels && panels.showHelp) panels.showHelp({ onRestart: () => api.act('restart'), api });
+    else askModal('說明', '30 回合、6 隻頭目、3 條命、沒有計時。非官方重製，數值為推測。把棋子拖到商店可以賣掉，拖到格子可以移動或交換。', [{ label: '知道了', primary: true }]);
   }
   api.showHelp = showHelp;
   if (!new URLSearchParams(location.search).has('seed')) { if (panels && panels.maybeShowHelpFirst) panels.maybeShowHelpFirst(); else try { if (!localStorage.getItem('trials19.helpSeen')) { localStorage.setItem('trials19.helpSeen', '1'); showHelp(); } } catch (_) { /* 無痕模式 */ } }
-
-  // ---- 快捷鍵 ----
-  document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey || e.altKey) return;
-    const tg = e.target;
-    if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.tagName === 'SELECT' || tg.isContentEditable)) return;
-    if (e.key === 'Escape') {
-      if (modalOpen()) return;   // 面板自己處理
-      if (ui.sel) { setSel(null); }
-      const p = $(R.side, '.tt-oddspop'); if (p) p.remove();
-      return;
-    }
-    if (modalOpen()) return;
-    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-    if (ui.mode === 'battle') {
-      if (k === ' ') { e.preventDefault(); cycleSpeed(); }
-      return;
-    }
-    const target = () => unitByUid(ui.hoverUid) || (ui.sel && ui.sel.kind === 'unit' ? unitByUid(ui.sel.uid) : null);
-    if (k === 'd') api.act('reroll');
-    else if (k === 'f') api.act('buyXp');
-    else if (k === 'e') { const u = target(); if (u) doSell(u); else api.toast('先把滑鼠停在棋子上，或先選一隻'); }
-    else if (k === 'w') {
-      const u = target(); if (!u) { api.toast('先把滑鼠停在棋子上，或先選一隻'); return; }
-      if (u.pos) { const i = api.state.bench.indexOf(null); if (i < 0) { api.toast('板凳滿了'); sfx('error'); } else { ui.sel = null; api.act('move', u.uid, { zone: 'bench', idx: i }); } }
-      else { const to = toBoardDefault(u); if (!to) { api.toast('場上沒有空格了'); sfx('error'); } else { ui.sel = null; api.act('move', u.uid, to); } }
-    }
-    else if (k >= '1' && k <= '5') api.act('buy', Number(k) - 1);
-    else if (k === ' ') { e.preventDefault(); go(); }
-  });
 
   // ---- 戰鬥 ----
   let busy = false, abortCtl = null;
@@ -444,10 +394,13 @@ export async function mount(root, api) {
     busy = true; ui.mode = 'battle'; ui.sel = null; ui.sellArm = null;
     app.dataset.phase = 'battle';
     renderEnemyBar(r.enemy || curEnemy);
+    if (traitbar && traitbar.renderEnemyTraits) { traitbar.renderEnemyTraits($(R.enemy, '[data-tt-enemy]'), lastTe, api); }
     renderBoard(R.board, api, { mode: 'battle' });
+    fitDrawer();
+    if (panels && panels.renderUnitSide) panels.renderUnitSide(R.unitpanel, api);
+    syncDrag();
     R.rank.replaceChildren();
-    renderSpeed(); renderStatus();
-    window.scrollTo({ top: 0 });
+    renderSpeed(); renderHud(R.hud, api); renderRoundbar();
     abortCtl = new AbortController();
     const onEvent = trackRank(r.result);
     const opts = {
@@ -486,7 +439,7 @@ export async function mount(root, api) {
       if (panels && panels.showGameOver) panels.showGameOver(api, info);
       else askModal(data.cleared ? '通關！' : '遊戲結束', `總分 ${api.state.score}，到第 ${api.state.round} 回合`, [{ label: '再玩一次', primary: true }]).then(() => api.restart());
       // 最高分（SPEC 4.10）：面板先讀舊紀錄，再寫新的
-      try {
+      if (!new URLSearchParams(location.search).has('seed')) try {   // ?seed= 測試局不寫最高分
         const old = JSON.parse(localStorage.getItem('trials19.best') || 'null');
         if (!old || info.score > old.score) localStorage.setItem('trials19.best', JSON.stringify({ score: info.score, round: info.round, date: new Date().toISOString().slice(0, 10) }));
       } catch (_) { /* 無痕模式 */ }

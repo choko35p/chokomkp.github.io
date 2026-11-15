@@ -1,5 +1,6 @@
 // shop.js — 卡池、商店、買賣、合星、裝備欄（純邏輯；不碰 window/document/fetch）
 import { makeRng } from './rng.js';
+import { isUnlocked } from './unlocks.js';
 
 const cache = new WeakMap();
 function idx(DATA) {
@@ -42,6 +43,9 @@ export function returnToPool(state, key, n) {
   if (state.pool[key] !== undefined) state.pool[key] += n;
 }
 
+// 沒解鎖的棋子不進商店（沒列在 unlocks.json 的一開始就可抽）
+export function available(state, DATA, key) { return isUnlocked(state, DATA, key); }
+
 function oddsFor(state, DATA) {
   const t = DATA.rules.shopOdds;
   let lv = state.level;
@@ -54,7 +58,7 @@ function drawCard(state, rng, odds, DATA) {
   const w = [];
   for (let c = 1; c <= 5; c++) {
     let rem = 0;
-    for (const k of byCost[c] || []) rem += state.pool[k] || 0;
+    for (const k of byCost[c] || []) if (available(state, DATA, k)) rem += state.pool[k] || 0;
     w.push(rem > 0 ? odds[c - 1] : 0);
   }
   let total = 0;
@@ -68,7 +72,7 @@ function drawCard(state, rng, odds, DATA) {
     r -= w[i];
     cost = i + 1;
   }
-  const keys = byCost[cost];
+  const keys = (byCost[cost] || []).filter(k => available(state, DATA, k));
   let sum = 0;
   for (const k of keys) sum += state.pool[k] || 0;
   let r2 = rng.next() * sum;
@@ -89,12 +93,28 @@ export function returnShop(state) {
   state.shop = [null, null, null, null, null];
 }
 
-export function rollShop(state, DATA) {
+// opts.roundStart：回合開始那次抽店（guarantee:'nextRound' 時只有這次才放解鎖保證格）
+export function rollShop(state, DATA, opts = {}) {
   returnShop(state);
   const rng = makeRng.fromState(state.rngShop);
   const odds = oddsFor(state, DATA);
-  const out = [];
-  for (let i = 0; i < 5; i++) out.push(drawCard(state, rng, odds, DATA));
+  const out = [null, null, null, null, null];
+  const fixed = [false, false, false, false, false];
+  // 解鎖保證：下一次商店最右格出現剛解鎖的棋子（不消耗亂數）
+  const queue = state.unlockQueue || [];
+  const mode = (DATA.unlocks && DATA.unlocks.rule && DATA.unlocks.rule.guarantee) || 'nextShop';
+  if (queue.length && (mode !== 'nextRound' || opts.roundStart)) {
+    const q = queue.filter(k => costOf(DATA, k) === 7 || (state.pool[k] || 0) > 0);   // 池裡沒牌的移除，不卡住
+    const take = q.slice(0, 5);
+    take.forEach((k, i) => {
+      const c = costOf(DATA, k);
+      out[4 - i] = { key: k, cost: c, fresh: true };
+      fixed[4 - i] = true;
+      if (c !== 7) state.pool[k]--;
+    });
+    state.unlockQueue = q.filter(k => !take.includes(k));
+  }
+  for (let i = 0; i < 5; i++) if (!fixed[i]) out[i] = drawCard(state, rng, odds, DATA);
   state.rngShop = rng.state();
   state.shop = out;
   return out;

@@ -1,14 +1,29 @@
-// 滴答克的試煉：WebAudio 合成音效（SPEC 5.7）。不使用任何外部音效檔。
-// 第一次使用者互動後才建立 AudioContext；總音量 0.25；靜音記在 localStorage['trials19.mute']。
+// 滴答克的試煉：音效（SPEC_UI2 第 6 章）。
+// 有 sfx/index.json 就載入官方取樣音檔；沒有（或載入失敗）就用 WebAudio 合成音。
+// 第一次使用者互動後才建立 AudioContext；音量記在 localStorage['trials19.vol']（預設 0.5）；靜音 ['trials19.mute']。
 const MUTE_KEY = 'trials19.mute';
-const MASTER = 0.25;
+const VOL_KEY = 'trials19.vol';
+const SYNTH_MULT = 0.5;      // 合成音＝音量值 × 0.5（維持原本 0.25 的大小）
+const SFX_BASE = new URL('../sfx/', import.meta.url).href;
 
-let ctx = null, master = null, noiseBuf = null;
+let ctx = null, master = null, sampleBus = null, noiseBuf = null;
 let muted = false;
+let volume = 0.5;
+const samples = {};        // 檔名（不含副檔名）-> AudioBuffer
+let loadStarted = false, warned = false;
 let unlocked = false;   // 有過使用者互動才建立 AudioContext
 const last = {};   // 節流用，以 ctx.currentTime 計
 
 try { muted = localStorage.getItem(MUTE_KEY) === '1'; } catch (e) { muted = false; }
+try {
+  const v = localStorage.getItem(VOL_KEY);
+  if (v !== null && v !== '' && Number.isFinite(Number(v))) volume = Math.min(1, Math.max(0, Number(v)));
+} catch (e) { volume = 0.5; }
+
+const applyGain = () => {
+  if (master) master.gain.value = muted ? 0 : volume * SYNTH_MULT;
+  if (sampleBus) sampleBus.gain.value = muted ? 0 : volume;
+};
 
 function ensure() {
   if (!unlocked) return null;
@@ -17,8 +32,10 @@ function ensure() {
   if (!AC) return null;
   ctx = new AC();
   master = ctx.createGain();
-  master.gain.value = muted ? 0 : MASTER;
   master.connect(ctx.destination);
+  sampleBus = ctx.createGain();
+  sampleBus.connect(ctx.destination);
+  applyGain();
   const n = Math.floor(ctx.sampleRate * 0.2);
   noiseBuf = ctx.createBuffer(1, n, ctx.sampleRate);
   const d = noiseBuf.getChannelData(0);
@@ -32,6 +49,7 @@ if (typeof window !== 'undefined') {
   const unlock = () => {
     unlocked = true;
     ensure();
+    loadSamples();
     window.removeEventListener('pointerdown', unlock, true);
     window.removeEventListener('keydown', unlock, true);
   };
@@ -100,9 +118,60 @@ const D = {
   boss: (t) => { tone('sawtooth', 82, 82, t, 0.6, 0.7, { type: 'lowpass', f: 600 }); tone('sawtooth', 98, 98, t, 0.6, 0.7, { type: 'lowpass', f: 600 }); },
   pick: (t) => seq('sine', [[988, .08], [1319, .08]], t, 0.8),
   coin: (t) => seq('sine', [[1568, .04], [2093, .06]], t, 0.7),
+  pickup: (t) => tone('sine', 300, 380, t, 0.05, 0.6),
+  select: (t) => tone('sine', 520, 520, t, 0.03, 0.4),
+  unlock: (t) => { const e = seq('triangle', [[784, .08], [988, .08], [1319, .08]], t, 0.8); tone('sine', 1976, 1976, e, 0.25, 0.6); },
 };
 
-const THROTTLE = { hit: 0.06, cast: 0.12 };   // 秒
+// 程式音效名 -> 官方音檔檔名（不含副檔名）。檔在 sfx/，列在 sfx/index.json 才會用
+export const FILE = {
+  buy: 'buy', sell: 'sell', reroll: 'reroll', xp: 'buyxp', levelup: 'levelup', star2: 'star2', star3: 'star3',
+  pickup: 'pickup', place: 'drop', start: 'battle_start', win: 'win', lose: 'lose', pick: 'augment', coin: 'gold',
+};
+
+const THROTTLE = { hit: 0.06, cast: 0.12, coin: 0.08 };   // 秒
+
+function warnOnce(msg) {
+  if (warned) return;
+  warned = true;
+  try { console.warn('[trials audio] ' + msg); } catch (e) { /* 沒有 console */ }
+}
+
+// 載入官方音檔：抓 sfx/index.json → 逐檔 fetch＋decode。任何一步失敗就略過，遊戲照常（用合成音）。
+// deps 給測試用：{ctx, fetch, base, canOgg}。沒有 AudioContext（或沒有 fetch）就什麼都不做、不發請求。
+export async function loadSamples(deps = {}) {
+  const c = deps.ctx || ctx;
+  const f = deps.fetch || (typeof fetch === 'function' ? fetch : null);
+  if (!c || !f) return false;
+  if (!deps.ctx) { if (loadStarted) return false; loadStarted = true; }
+  const base = deps.base || SFX_BASE;
+  let index;
+  try {
+    const r = await f(base + 'index.json');
+    if (!r || !r.ok) return false;                 // 沒有 index.json ＝ 全部用合成音，不發任何音檔請求
+    index = await r.json();
+  } catch (e) { return false; }
+  const names = Array.isArray(index && index.names) ? index.names : [];
+  let exts = Array.isArray(index && index.ext) && index.ext.length ? index.ext : ['ogg'];
+  let canOgg = deps.canOgg;
+  if (canOgg === undefined) {
+    try { canOgg = !!(typeof Audio !== 'undefined' && new Audio().canPlayType('audio/ogg; codecs=vorbis')); } catch (e) { canOgg = false; }
+  }
+  exts = (canOgg ? ['ogg', 'mp3'] : ['mp3']).filter(x => exts.includes(x));   // 解不了 ogg（iPhone／舊 Safari）就只抓 mp3
+  const stems = [...new Set(names.filter(n => typeof n === 'string' && n).map(n => FILE[n] || n))];
+  await Promise.all(stems.map(async (stem) => {
+    for (const ext of exts) {
+      try {
+        const r = await f(base + stem + '.' + ext);
+        if (!r || !r.ok) continue;
+        const buf = await c.decodeAudioData(await r.arrayBuffer());
+        if (buf) { samples[stem] = buf; return; }
+      } catch (e) { /* 換下一種格式 */ }
+    }
+    warnOnce('音檔載入失敗，改用合成音：' + stem);
+  }));
+  return true;
+}
 
 export function sfx(name) {
   const fn = D[name];
@@ -115,14 +184,34 @@ export function sfx(name) {
     if (last[name] !== undefined && now - last[name] < gap) return;
     last[name] = now;
   }
-  try { fn(now + 0.005); } catch (e) { /* 音效失敗不影響遊戲 */ }
+  try {
+    const buf = FILE[name] ? samples[FILE[name]] : null;
+    if (buf) {   // 官方取樣音
+      const s = ctx.createBufferSource();
+      s.buffer = buf;
+      s.connect(sampleBus);
+      s.start(now);
+      return;
+    }
+    fn(now + 0.005);   // 沒有音檔：合成音
+  } catch (e) { /* 音效失敗不影響遊戲 */ }
 }
+
+export function setVolume(v) {
+  const n = Number(v);
+  volume = Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : volume;
+  try { localStorage.setItem(VOL_KEY, String(volume)); } catch (e) { /* 無痕模式 */ }
+  applyGain();
+}
+export function getVolume() { return volume; }
 
 export function setMuted(b) {
   muted = !!b;
   try { localStorage.setItem(MUTE_KEY, muted ? '1' : '0'); } catch (e) { /* 無痕模式 */ }
-  if (master) master.gain.value = muted ? 0 : MASTER;
+  applyGain();
 }
 
 export function isMuted() { return muted; }
 export const SFX_NAMES = Object.keys(D);
+
+export function hasSample(stem) { return !!samples[stem]; }

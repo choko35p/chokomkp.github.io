@@ -52,6 +52,11 @@
     const i = IT[k] || XI[k]; return i ? (i.zh || i.en) : k;
   };
   const traitName = (k) => { const t = TR[k]; return t ? (t.zh || t.en) : k; };
+  /* 羈絆小圖示精靈圖（小百科用；站主 2026-11-16：「羈絆要有小圖示」）。index 內嵌，不多一次請求；key 對不上就不畫圖、只留文字。
+     S18＝32px 格、S19＝64px 格，都是 8 欄；來源 research/data/traits_sprite_s18.webp、research/data/s19/traits_sprite_s19.webp（tools/build_*.py 複製進 icons/） */
+  const TRSP = {"18":{"src":"icons/traits_s18.webp","cols":8,"rows":5,"index":{"Riftbeast":0,"Blossom":1,"Elderwood":2,"Sprykin":3,"Inferno":4,"Coven":5,"Blackthorn":6,"Fae":7,"Solar":8,"Lunar":9,"Primal":10,"Rival":11,"FloraFatalis":12,"Spellweaver":13,"Juggernaut":14,"Vanguard":15,"Ravager":16,"Defender":17,"Brawler":18,"Adaptor":19,"Hunter":20,"Invoker":21,"Executioner":22,"Rapidfire":23,"Summoner":24,"OldGrowth":25,"Monolith":26,"Greenfather":27,"EmeraldAspect":28,"Avatar":29,"Caustic":30,"Thornmaiden":31,"Attuned":32,"BountySeeker":33,"ApexPredator":34}},"19":{"src":"icons/s19/traits.webp","cols":8,"rows":7,"index":{"IonicSpark":0,"KDA":1,"BeachPop":2,"Classical":3,"Heartsteel":4,"Rock":5,"Pentakill":6,"TrueDamage":7,"Hyperpop":8,"ILLBEATS":9,"GuFeng":10,"Jazz":11,"RAndB":12,"EDM":13,"Frontman":14,"Juggernaut":15,"Slayer":16,"Swiftstriker":17,"Choreographer":18,"Bodyguard":19,"Arcanist":20,"Encore":21,"Prodigy":22,"Renegade":23,"Collab":24,"Trickshot":25,"Hitmaker":26,"Manager":27,"8Bit":28,"OneMonsterBand":29,"Composer":30,"Synthwave":31,"Goth":32,"RecordMogul":33,"Emo":34,"Tango":35,"MelodicHeart":36,"HypeMan":37,"Indie":38,"BoyBand":39,"BeatMaster":40,"Freestyle":41,"Producer":42,"Disco":43,"Country":44,"Windblessed":45,"Mariachi":46,"RisingStar":47,"Superstar":48}}};
+  const traitIco = (key, px = 20) => { const sp = TRSP[SEASON], i = sp?.index[key]; if (i == null) return null; const c = i % sp.cols, r = Math.floor(i / sp.cols);
+    return h("span", { class: "tr-ico", "aria-hidden": "true", style: `width:${px}px;height:${px}px;background-image:url(${sp.src});background-size:${sp.cols * px}px ${sp.rows * px}px;background-position:-${c * px}px -${r * px}px` }); };
   const unverifiedMark = (status) => (status && status !== "verified" ? h("span", { class: "tag unv", title: "名稱尚未與遊戲內核對" }, "名稱未核對") : null);
 
   // 輸出／坦的小圖（劍／盾），用在裝備分頁的角標
@@ -1859,7 +1864,7 @@
       h("div", { class: "wk-dh" }, icon("champion", u.key, "md"), h("div", null,
         h("b", null, u.zh), u.nameStatus === "temp" ? h("span", { class: "tag unv" }, "暫譯") : null,
         h("p", { class: "small muted" }, `${u.cost} 費`, u.role ? `・${u.role}` : "", u.dmg ? `・${u.dmg}傷害` : ""),
-        h("p", { class: "wk-utr" }, (u.traits || []).map((t) => h("button", { type: "button", class: "chip", onclick: () => { WK.tab = "traits"; WK.topen = t; drawWiki(); } }, trName(t)))))),
+        h("p", { class: "wk-utr" }, (u.traits || []).map((t) => h("button", { type: "button", class: "chip", onclick: () => { WK.tab = "traits"; WK.topen = t; drawWiki(); } }, traitIco(t), trName(t)))))),
       h("div", { class: "wk-stats" },
         row("生命（1/2/3 星）", starVals(u.hp)), row("物攻（1/2/3 星）", starVals(u.ad)), row("攻速", u.as != null ? String(u.as) : null),
         row("護甲", u.armor != null ? String(u.armor) : null), row("魔抗", u.mr != null ? String(u.mr) : null),
@@ -1900,7 +1905,7 @@
       if (!ts.length) continue;
       box.append(h("div", { class: "wk-group" }, h("h3", null, KIND_LB[kind], h("span", { class: "wk-n" }, String(ts.length))),
         h("div", { class: "wk-tlist" }, ts.map((t) => h("div", { class: "wk-tr" + (WK.topen === t.key ? " on" : ""), id: "wk-t-" + t.key.replace(/[^A-Za-z0-9-]/g, "") },
-          h("div", { class: "wk-trh" }, h("b", null, t.zh), t.nameStatus === "temp" ? h("span", { class: "tag unv" }, "暫譯") : null,
+          h("div", { class: "wk-trh" }, traitIco(t.key), h("b", null, t.zh), t.nameStatus === "temp" ? h("span", { class: "tag unv" }, "暫譯") : null,
             t.en && t.en !== t.zh ? h("span", { class: "xs muted" }, t.en) : null,
             h("span", { class: "wk-bps" }, (t.breakpoints || []).map((n) => h("span", { class: "wk-bp" }, String(n))))),
           t.desc ? h("p", { class: "small wk-pre" }, t.desc) : null,

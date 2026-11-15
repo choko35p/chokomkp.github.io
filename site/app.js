@@ -96,7 +96,7 @@
   function adaptLayout() {
     const ul = document.querySelector(".nav ul");
     if (ul) ul.replaceChildren(...[["#tierlist", "nav.tier", "T 度表"], ["#updates-sec", "nav.updates", "本次更新"],
-      ["#version", "nav.version", "版本主軸"], ["#picker", "nav.picker", "隨手速查"], ["#comps", "nav.comps", "陣容攻略"], ["sim/", "nav.sim", "戰鬥模擬"]].filter(([href]) => !S19 || href === "#tierlist" || href === "#comps").map(([href, k, t]) => h("li", null, h("a", { href, "data-tx": k }, t))));  // 戰鬥模擬器 2026-11-11
+      ["#version", "nav.version", "版本主軸"], ["#picker", "nav.picker", "隨手速查"], ["#comps", "nav.comps", "陣容攻略"], ["#quiz", "nav.quiz", "新手認卡"], ["sim/", "nav.sim", "戰鬥模擬"]].filter(([href]) => !S19 || href === "#tierlist" || href === "#comps" || href === "#quiz").map(([href, k, t]) => h("li", null, h("a", { href, "data-tx": k }, t))));  // 戰鬥模擬器 2026-11-11
     const up = $("#updates-sec"), tl = $("#tierlist");
     if (up && !$("#updates-fold")) {
       up.classList.add("slim");
@@ -1039,6 +1039,67 @@
   const ELDER = "Elderwood", SPRY = "Sprykin";
   const PLANT = { stonebark: "石皮樹", lifebloom: "生命花", protector: "深林保護者" };
   const isPlant = (u) => !!u?.plant;
+  /* ---------- 遊戲內「戰術規劃」分享碼（站主 2026-11-16：「每個陣容都要能匯出分享碼像是0241f4234363eb41040042143d3ec401TFTSet18」）
+     格式：02＋10 格×3 位 16 進位棋子代碼（空格 000）＋TFTSet18。代碼表在 data/wiki.json 的 planner（官方 team_planner_code）。 ---------- */
+  const PL = { p: null, d: null };
+  const loadPlanner = () => (PL.p ||= loadWiki().then((w) => { PL.done = true; return (PL.d = w?.planner || null); }));  // 代碼表在 wiki.json（預覽站檔案數上限）
+  function plannerCode(units) {
+    const codes = PL.d?.codes || {};
+    const us = champsOnly(units).filter((u) => codes[u.key]);
+    // 規劃器最多 10 格：超過時先留有帶裝的、再由高費補滿；代碼裡照費用由低到高排
+    const keep = [...us].sort((a, b) => (b.items?.length ? 1 : 0) - (a.items?.length ? 1 : 0) || (CH[b.key]?.cost || 0) - (CH[a.key]?.cost || 0)).slice(0, 10);
+    const list = keep.sort((a, b) => (CH[a.key]?.cost || 9) - (CH[b.key]?.cost || 9) || codes[a.key] - codes[b.key]).map((u) => codes[u.key]);
+    if (!list.length) return null;
+    const missing = champsOnly(units).filter((u) => !codes[u.key]).map((u) => champName(u.key));
+    if (us.length > 10) missing.push(`另外 ${us.length - 10} 隻候選（規劃器只放得下 10 隻）`);
+    return { code: "02" + [...list, ...Array(10 - list.length).fill(0)].map((n) => n.toString(16).padStart(3, "0")).join("") + PL.d.set, missing };
+  }
+  async function copyText(text, el) {
+    try {
+      if (!navigator.clipboard) throw 0;
+      await Promise.race([navigator.clipboard.writeText(text), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 1500))]);
+      return true;
+    } catch {
+      try {
+        const ta = h("textarea", { readonly: true, style: "position:fixed;left:-9999px;top:0;opacity:0" }); ta.value = text; document.body.append(ta);
+        ta.select(); ta.setSelectionRange(0, text.length); const ok = document.execCommand("copy"); ta.remove();
+        if (el && !el.hidden) { const r = document.createRange(); r.selectNodeContents(el); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+        return ok;
+      } catch { return false; }
+    }
+  }
+  function plannerRow(units, label, more = []) {
+    const row = h("div", { class: "tp-row" });
+    const draw = () => {
+      row.textContent = "";
+      if (!PL.d) { row.append(h("p", { class: "xs muted" }, S19 ? "S19 的分享碼要等 PBE 開了、官方公布棋子代碼才有。" : PL.done ? "分享碼讀不到，重新整理再試一次。" : "分享碼載入中…")); return; }
+      const r = plannerCode(units);
+      if (!r) return;
+      const codeEl = h("code", { class: "tp-code", title: "遊戲內「戰術規劃」的分享碼" }, r.code);
+      const msg = h("span", { class: "xs tp-msg", role: "status" });
+      const btn = h("button", { type: "button", class: "btn tp-copy", onclick: async () => {
+        track("planner", label || "board");
+        const ok = await copyText(r.code, codeEl);
+        msg.textContent = ok ? "已複製！到遊戲的「戰術規劃」按匯入貼上。" : "瀏覽器不讓複製，請長按／選取上面的代碼複製。";
+      } }, "📋 複製分享碼");
+      // 主圖之外，更高人口的棋盤也給分享碼（匯入規劃器多半要完整陣容）
+      const extra = more.map(([lv, us]) => [lv, plannerCode(us)]).filter(([, x]) => x && x.code !== r.code);
+      codeEl.addEventListener("click", () => btn.click()); codeEl.style.cursor = "pointer";
+      row.append(h("div", { class: "tp-line" }, btn, codeEl), msg,
+        extra.length ? h("div", { class: "tp-more" }, h("span", { class: "xs muted" }, "其他人口："), extra.map(([lv, x]) => {
+          const ce = h("code", { class: "tp-code sm", hidden: true }, x.code);
+          return h("button", { type: "button", class: "chip tp-lv", title: x.code, onclick: async () => {
+            track("planner", `${label}:lv${lv}`);
+            const ok = await copyText(x.code, ce);
+            msg.textContent = ok ? `已複製 ${lv} 等的分享碼！到遊戲的「戰術規劃」按匯入貼上。` : `瀏覽器不讓複製，${lv} 等的代碼：${x.code}`;
+          } }, `📋 ${lv} 等`, ce);
+        })) : "",
+        r.missing.length ? h("p", { class: "xs muted" }, `規劃器沒有的單位不放：${r.missing.join("、")}`) : "");
+    };
+    draw();
+    if (!PL.d) loadPlanner().then(draw);
+    return row;
+  }
   const champsOnly = (units) => (units || []).filter((u) => !isPlant(u));
   const traitN = (units, t) => {
     let n = 0;
@@ -1131,7 +1192,9 @@
       riders.length ? h("p", { class: "small" }, h("b", null, "騎乘者："), riders.join("、"), "（騎上毛茸茸大夥伴）") : null,
       plants ? h("p", { class: "small" }, h("b", null, "神木植物："), plants) : null,
       // 戰鬥模擬器（2026-11-11）：把這個站位帶進模擬器
-      c?.id && !S19 && c.boards?.["lv" + level] === b ? h("p", { class: "small" }, h("a", { class: "sim-link", href: `sim/#a=comp:${encodeURIComponent(c.id)}:lv${level}` }, "⚔️ 用戰鬥模擬器打打看")) : null);
+      c?.id && !S19 && c.boards?.["lv" + level] === b ? h("p", { class: "small" }, h("a", { class: "sim-link", href: `sim/#a=comp:${encodeURIComponent(c.id)}:lv${level}` }, "⚔️ 用戰鬥模擬器打打看")) : null,
+      plannerRow(cs, c?.id ? `${c.id}:lv${level}` : "board",
+        c && c.boards?.["lv" + level] === b ? [5, 6, 7, 8, 9, 10].filter((lv) => lv > level && boardOk(c, lv)).map((lv) => [lv, c.boards["lv" + lv].units]) : []));
     if (hasPos) {
       const grid = h("div", { class: "board", role: "grid", "aria-label": `${level} 人口站位圖，四排七格` });
       for (let r = 0; r < 4; r++) {
@@ -1992,14 +2055,154 @@
     const secs = [...document.querySelectorAll(".nav a[href^='#']")].map((a) => document.getElementById(a.getAttribute("href").slice(1))).filter(Boolean);
     spy(secs, (id) => document.querySelectorAll(".nav a").forEach((a) => a.setAttribute("aria-current", a.getAttribute("href") === "#" + id ? "true" : "false")));
   }
+
+  /* ---------- 新手認卡（站主 2026-11-16：「雲頂大數據 新手認卡 弄個像是這樣的功能，但是要有s19」；
+     題型照站主選的：看頭像選費用、看頭像選羈絆、看羈絆選成員）。跟著 S18／S19 切換，資料用小百科的 units／traits ---------- */
+  const QZ = { mode: "mix", n: 10, i: 0, score: 0, streak: 0, best: 0, q: null, answered: false, pick: new Set(), started: 0, mute: false };
+  const QZ_MODES = [["mix", "混合"], ["cost", "看頭像猜費用"], ["trait", "看頭像猜羈絆"], ["member", "看羈絆找成員"]];
+  const qzKey = () => `choko.quiz.s${SEASON}.${QZ.mode}`;
+  const shuffle = (xs) => { const a = [...xs]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const pickOne = (xs) => xs[Math.floor(Math.random() * xs.length)];
+  let QZ_AC = null;
+  function qzSound(ok) {  // 自己合成的提示音（不用別人的音效檔）
+    if (QZ.mute) return;
+    try {
+      QZ_AC ||= new (window.AudioContext || window.webkitAudioContext)();
+      const t = QZ_AC.currentTime, notes = ok ? [660, 880] : [220, 165];
+      notes.forEach((f, i) => {
+        const o = QZ_AC.createOscillator(), g = QZ_AC.createGain();
+        o.type = ok ? "triangle" : "square"; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t + i * 0.09); g.gain.exponentialRampToValueAtTime(ok ? 0.18 : 0.08, t + i * 0.09 + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.09 + 0.16);
+        o.connect(g).connect(QZ_AC.destination); o.start(t + i * 0.09); o.stop(t + i * 0.09 + 0.18);
+      });
+    } catch {}
+  }
+  function qzPool() {
+    const w = WK.d || {};
+    const units = (w.units || []).filter((u) => CH[u.key] && (u.traits || []).length);
+    const traits = (w.traits || []).filter((t) => (t.units || []).filter((k) => CH[k]).length >= 2);
+    return { units, traits };
+  }
+  function qzMake() {
+    const all = qzPool(), used = QZ.used ||= new Set();
+    const fresh = (xs, k) => { const f = xs.filter((x) => !used.has(k(x))); return f.length ? f : xs; };
+    const units = fresh(all.units, (u) => u.key), traits = fresh(all.traits, (t) => t.key);
+    const type = QZ.mode === "mix" ? pickOne(["cost", "trait", "member"]) : QZ.mode;
+    if (type === "cost") {
+      const u = pickOne(units);
+      used.add(u.key);
+      return { type, unit: u, options: [...new Set(all.units.map((x) => x.cost))].sort((a, b) => a - b).map((c) => ({ id: String(c), label: `${c} 費` })), answer: new Set([String(u.cost)]) };
+    }
+    if (type === "trait") {
+      const u = pickOne(units.filter((x) => (x.traits || []).length));
+      const right = pickOne(u.traits); used.add(u.key);
+      const others = shuffle((WK.d.traits || []).filter((t) => !u.traits.includes(t.key) && t.kind !== "unique")).slice(0, 3);
+      const opts = shuffle([right, ...others.map((t) => t.key)]);
+      return { type, unit: u, options: opts.map((k) => ({ id: k, label: trName(k) })), answer: new Set([right]) };
+    }
+    const t = pickOne(traits); used.add(t.key);
+    const mem = t.units.filter((k) => CH[k]);
+    const k = Math.min(mem.length, 2 + Math.floor(Math.random() * 3));
+    const right = shuffle(mem).slice(0, k);
+    const wrong = shuffle(all.units.map((u) => u.key).filter((x) => !mem.includes(x))).slice(0, 8 - k);
+    return { type: "member", trait: t, options: shuffle([...right, ...wrong]).map((x) => ({ id: x, label: champName(x) })), answer: new Set(right) };
+  }
+  function qzAnswer(id) {
+    if (QZ.answered) return;
+    const q = QZ.q;
+    if (q.type === "member") { QZ.pick.has(id) ? QZ.pick.delete(id) : QZ.pick.add(id); drawQuiz(); return; }
+    QZ.pick = new Set([id]); qzCheck();
+  }
+  function qzCheck() {
+    const q = QZ.q, ok = q.answer.size === QZ.pick.size && [...q.answer].every((x) => QZ.pick.has(x));
+    QZ.answered = true; QZ.ok = ok;
+    if (ok) { QZ.score++; QZ.streak++; } else QZ.streak = 0;
+    qzSound(ok); track("quiz", q.type + (ok ? "_ok" : "_ng"));
+    drawQuiz();
+  }
+  function qzNext() {
+    QZ.i++;
+    if (QZ.i >= QZ.n) {
+      QZ.done = true; QZ.secs = Math.round((Date.now() - QZ.started) / 1000);
+      const prev = +(store.get(qzKey()) || 0);
+      QZ.newBest = QZ.score > prev; if (QZ.newBest) store.set(qzKey(), String(QZ.score));
+      QZ.best = Math.max(prev, QZ.score);
+    } else { QZ.q = qzMake(); QZ.answered = false; QZ.pick = new Set(); }
+    drawQuiz();
+  }
+  function qzStart(mode) {
+    if (mode) QZ.mode = mode;
+    Object.assign(QZ, { used: new Set(), i: 0, score: 0, streak: 0, done: false, answered: false, pick: new Set(), started: Date.now(), best: +(store.get(qzKey()) || 0) });
+    QZ.q = qzMake(); drawQuiz();
+  }
+  function drawQuiz() {
+    const v = $("#quizv"); if (!v) return;
+    const body = v.querySelector(".qz-body"); body.textContent = "";
+    if (!WK.d) { body.append(h("p", { class: "small muted" }, QZ.loaded ? "資料讀不到，重新整理再試一次。" : "載入中…")); return; }
+    const modes = h("div", { class: "tabs qz-modes", role: "tablist", "aria-label": "題型" }, QZ_MODES.map(([k, l]) => h("button", { type: "button", role: "tab", "aria-selected": QZ.mode === k ? "true" : "false", onclick: () => { track("quiz_mode", k); qzStart(k); } }, l)));
+    const bar = h("div", { class: "qz-bar" },
+      h("span", null, h("b", null, `第 ${Math.min(QZ.i + 1, QZ.n)} / ${QZ.n} 題`)), h("span", null, `答對 ${QZ.score}`), h("span", null, `連對 ${QZ.streak}`), h("span", { class: "muted" }, `最佳 ${QZ.best} / ${QZ.n}`),
+      h("button", { type: "button", class: "btn ghost qz-mute", "aria-pressed": QZ.mute ? "true" : "false", onclick: () => { QZ.mute = !QZ.mute; drawQuiz(); } }, QZ.mute ? "🔇 音效關" : "🔊 音效開"));
+    body.append(modes, bar);
+    if (QZ.done) {
+      body.append(h("div", { class: "qz-card qz-end" },
+        h("p", { class: "qz-big" }, `${QZ.score} / ${QZ.n}`), h("p", null, `花了 ${QZ.secs} 秒`, QZ.newBest ? h("b", { class: "tag up" }, "新紀錄！") : null),
+        h("button", { type: "button", class: "btn qz-go", onclick: () => qzStart() }, "再來一輪")));
+      return;
+    }
+    const q = QZ.q;
+    const head = q.type === "member"
+      ? h("div", { class: "qz-prompt" }, h("p", { class: "qz-ask" }, "哪些棋子有這個羈絆？（可複選）"), h("p", { class: "qz-trait" }, h("b", null, trName(q.trait.key)), q.trait.nameStatus === "temp" ? h("span", { class: "tag unv" }, "暫譯") : null,
+          h("span", { class: "wk-bps" }, (q.trait.breakpoints || []).map((n) => h("span", { class: "wk-bp" }, String(n))))), h("p", { class: "xs muted" }, `正確答案有 ${q.answer.size} 隻`))
+      : h("div", { class: "qz-prompt" }, h("p", { class: "qz-ask" }, q.type === "cost" ? "這隻是幾費？" : "這隻有哪個羈絆？"),
+          h("div", { class: "qz-face" + (q.type === "cost" && !QZ.answered ? " hide-cost" : "") }, icon("champion", q.unit.key, "xl")),
+          QZ.answered ? h("p", { class: "qz-name" }, h("b", null, q.unit.zh), `｜${q.unit.cost} 費｜`, q.unit.traits.map(trName).join("、")) : h("p", { class: "qz-name muted" }, "（答完才會顯示名字）"));
+    const opts = h("div", { class: "qz-opts" + (q.type === "member" ? " qz-grid" : "") }, q.options.map((o, i) => {
+      const chosen = QZ.pick.has(o.id), right = q.answer.has(o.id);
+      const cls = "qz-opt" + (chosen ? " on" : "") + (QZ.answered ? (right ? " right" : chosen ? " wrong" : " dim") : "");
+      return h("button", { type: "button", class: cls, "aria-pressed": chosen ? "true" : "false", disabled: QZ.answered, onclick: () => qzAnswer(o.id) },
+        q.type === "member" ? [icon("champion", o.id, "md"), h("span", { class: "qz-on" }, o.label)] : [h("kbd", null, q.type === "cost" ? o.id : String(i + 1)), h("span", null, o.label)]);
+    }));
+    const foot = h("div", { class: "qz-foot" },
+      QZ.answered ? h("p", { class: "qz-res " + (QZ.ok ? "ok" : "ng"), role: "status" }, QZ.ok ? "答對了！" : "答錯了，綠色的是正確答案。") : null,
+      q.type === "member" && !QZ.answered ? h("button", { type: "button", class: "btn qz-go", disabled: !QZ.pick.size, onclick: qzCheck }, "確定") : null,
+      QZ.answered ? h("button", { type: "button", class: "btn qz-go", onclick: qzNext }, QZ.i + 1 >= QZ.n ? "看結果" : "下一題 →") : null);
+    body.append(h("div", { class: "qz-card" }, head, opts, foot));
+  }
+  function renderQuiz() {
+    let v = $("#quizv");
+    if (!v) {
+      v = h("article", { id: "quizv", class: "detail block" },
+        h("a", { class: "back btn ghost", href: "#tierlist" }, "← 回首頁"),
+        h("h2", null, `新手認卡${S19 ? "（S19 預測）" : `（S${SEASON}）`}`),
+        h("p", { class: "rlead" }, S19 ? "S19 的棋子費用、羈絆一次記起來。名稱是暫譯，PBE 開了以後照官方繁中更新。鍵盤可以按 1～7 選答案、Enter 下一題。" : "這季的棋子費用、羈絆一次記起來。鍵盤可以按 1～7 選答案、Enter 下一題。"),
+        h("div", { class: "qz-body" }));
+      $("#detail").after(v);
+      addEventListener("keydown", (e) => {
+        if (v.hidden || e.ctrlKey || e.metaKey || e.altKey || e.target.closest?.("input, textarea") || !QZ.q) return;
+        if (e.key === "Enter") { if (QZ.done) qzStart(); else if (QZ.answered) qzNext(); else if (QZ.q.type === "member" && QZ.pick.size) qzCheck(); else return; e.preventDefault(); return; }
+        if (QZ.answered || QZ.q.type === "member") return;
+        const o = QZ.q.type === "cost" ? QZ.q.options.find((x) => x.id === e.key) : QZ.q.options[+e.key - 1];  // 費用題：按幾就是幾費
+        if (o) { qzAnswer(o.id); e.preventDefault(); }
+      });
+    }
+    v.hidden = false;
+    track("quiz", "open");
+    drawQuiz();
+    loadWiki().then(() => { QZ.loaded = true; if (!QZ.q && WK.d) qzStart(); else drawQuiz(); });
+  }
+
   function route() {
     // 站主 2026-11-10「就是一樣的」：被併掉的陣容舊網址（例：#c-xayah）轉到併入的那套
     const al = Object.entries(D.aliases || {}).find(([from]) => slug(from) === location.hash.slice(1));
     if (al) { history.replaceState(null, "", "#" + slug(al[1])); }
     const hsh = location.hash.slice(1);
     const c = D.comps.find((x) => slug(x.id) === hsh) || (O.on ? O.custom.map(customToComp).find((x) => slug(x.id) === hsh) : null);
-    const fromDetail = !$("#detail").hidden;
-    $("#home").hidden = !!c; $("#detail").hidden = !c;
+    const fromDetail = !$("#detail").hidden || !!$("#quizv")?.isConnected && !$("#quizv").hidden;
+    const quiz = hsh === "quiz";
+    $("#home").hidden = !!c || quiz; $("#detail").hidden = !c;
+    if ($("#quizv")) $("#quizv").hidden = !quiz;
+    if (quiz) { floatBack(false); renderQuiz(); window.scrollTo(0, 0); return; }
     if (!c) {
       floatBack(false); homeSpy(); navH();
       // 站主 2026-11-07：在陣容詳細頁點最上面的「T 度表」會先跳出去、要再按一次才到 → 首頁顯示出來後直接捲到那一區

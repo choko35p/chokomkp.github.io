@@ -1218,3 +1218,42 @@ button.bcard { font: inherit; color: inherit; text-align: left; cursor: pointer;
 .ico .spr { position: absolute; inset: 0; background-repeat: no-repeat; }
 .ico.c7 { border-color: #b98cf0; }
 .s19 #detail { margin-top: var(--s3); }
+/* 戰術規劃分享碼（2026-11-16） */
+.tp-row { display: grid; gap: 4px; }
+.tp-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.tp-copy { min-height: 44px; font-weight: 700; }
+.tp-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .8rem; padding: 6px 8px; border: 1px dashed var(--line); border-radius: 8px; background: var(--surface-2); overflow-wrap: anywhere; user-select: all; max-width: 100%; }
+.tp-msg { color: var(--ok-line); min-height: 1em; }
+.tp-more { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.tp-lv { min-height: 40px; }
+/* 新手認卡（2026-11-16） */
+#quizv .qz-body { display: grid; gap: var(--s3); max-width: 46rem; }
+.qz-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: var(--fs-s); }
+.qz-mute { margin-left: auto; min-height: 36px; }
+.qz-card { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); padding: var(--s4); display: grid; gap: var(--s3); }
+.qz-prompt { display: grid; justify-items: center; gap: 8px; text-align: center; }
+.qz-ask { font-size: var(--fs-l); font-weight: 800; margin: 0; }
+.qz-face .ico.xl, .ico.xl { width: 7rem; border-width: 3px; border-radius: 14px; }
+.qz-face.hide-cost .ico { border-color: var(--line) !important; }
+.qz-face.hide-cost .ico .cost { display: none; }
+.qz-name { margin: 0; }
+.qz-trait { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; font-size: var(--fs-l); margin: 0; }
+.qz-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 8px; }
+.qz-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.qz-opt { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 8px 10px; border: 2px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; transition: transform .08s ease, border-color .12s ease; }
+.qz-grid .qz-opt { flex-direction: column; padding: 8px 4px; }
+.qz-opt:hover:not([disabled]) { border-color: var(--accent); transform: translateY(-1px); }
+.qz-opt.on { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); }
+.qz-opt.right { border-color: var(--ok-line); background: var(--ok-bg); }
+.qz-opt.wrong { border-color: #c0392b; background: color-mix(in srgb, #c0392b 12%, var(--surface)); }
+.qz-opt.dim { opacity: .55; }
+.qz-opt[disabled] { cursor: default; }
+.qz-opt kbd { font-size: .75rem; padding: 1px 6px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); }
+.qz-on { font-size: var(--fs-s); text-align: center; }
+.qz-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.qz-res { margin: 0; font-weight: 800; }
+.qz-res.ok { color: var(--ok-line); } .qz-res.ng { color: #c0392b; }
+.qz-go { min-height: 48px; padding: 0 22px; font-weight: 800; margin-left: auto; }
+.qz-end { justify-items: center; text-align: center; }
+.qz-big { font-size: 3rem; font-weight: 900; margin: 0; }
+@media (max-width: 640px) { .qz-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .qz-opts:not(.qz-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

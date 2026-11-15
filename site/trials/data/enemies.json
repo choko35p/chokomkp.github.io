@@ -1,0 +1,4012 @@
+{
+ "version": "s19-prepbe-1",
+ "comps": [
+  {
+   "id": "s19_true_damage_special_casout_375",
+   "name": "阿卡莉兌現",
+   "carrier": "AkaliTrueDamage",
+   "lv": 9,
+   "units": [
+    {
+     "key": "KSante",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "Evenshroud",
+      "GargoyleStoneplate"
+     ],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 1
+    },
+    {
+     "key": "AkaliTrueDamage",
+     "star": 2,
+     "items": [
+      "HandOfJustice",
+      "JeweledGauntlet",
+      "ArchangelsStaff"
+     ],
+     "pos": [
+      1,
+      1
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Galio",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Aphelios",
+     "star": 2,
+     "items": [
+      "RedBuff",
+      "GuinsoosRageblade",
+      "HextechGunblade"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Kayn",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Kennen",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Bard",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Yasuo",
+     "star": 2,
+     "items": [
+      "EdgeOfNight",
+      "Bloodthirster",
+      "Quicksilver"
+     ],
+     "pos": [
+      1,
+      5
+     ],
+     "prio": 8
+    },
+    {
+     "key": "NunuWillump",
+     "star": 2,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      1,
+      3
+     ],
+     "prio": 9
+    }
+   ]
+  },
+  {
+   "id": "s19_how_to_locked_smeech",
+   "name": "斯米奇爵士",
+   "carrier": "Smeech",
+   "lv": 9,
+   "units": [
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "ProtectorsVow",
+      "GargoyleStoneplate"
+     ],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Smeech",
+     "star": 2,
+     "items": [
+      "Bloodthirster",
+      "TitansResolve",
+      "SteraksGage"
+     ],
+     "pos": [
+      1,
+      2
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Galio",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Aphelios",
+     "star": 2,
+     "items": [
+      "GuinsoosRageblade",
+      "HextechGunblade",
+      "Deathblade"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Kayn",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Lillia",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Sett",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Lucian",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 8
+    },
+    {
+     "key": "MissFortune",
+     "star": 2,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 9
+    }
+   ]
+  },
+  {
+   "id": "s19_edm_jax_reroll",
+   "name": "電音賈克斯",
+   "carrier": "Jax",
+   "lv": 7,
+   "units": [
+    {
+     "key": "KSante",
+     "star": 2,
+     "items": [
+      "GargoyleStoneplate",
+      "WarmogsArmor",
+      "SunfireCape"
+     ],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Jax",
+     "star": 3,
+     "items": [
+      "GuinsoosRageblade",
+      "EdgeOfNight",
+      "ArchangelsStaff"
+     ],
+     "pos": [
+      1,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Lillia",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Bard",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Galio",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Vi",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 7
+    }
+   ]
+  },
+  {
+   "id": "s19_full_jazz_b4l_alistar",
+   "name": "聯名亞歷斯塔",
+   "carrier": "Alistar",
+   "lv": 9,
+   "units": [
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [
+      "BrambleVest",
+      "WarmogsArmor",
+      "GargoyleStoneplate"
+     ],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Alistar",
+     "star": 2,
+     "items": [
+      "JeweledGauntlet",
+      "ArchangelsStaff",
+      "WarmogsArmor"
+     ],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Galio",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Yuumi",
+     "star": 2,
+     "items": [
+      "BlueBuff",
+      "HextechGunblade",
+      "JeweledGauntlet"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Sett",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Gragas",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Illaoi",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Lucian",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      4
+     ],
+     "prio": 8
+    },
+    {
+     "key": "MissFortune",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 9
+    }
+   ]
+  },
+  {
+   "id": "s19_classic_vladimir",
+   "name": "弗拉迪米爾燼",
+   "carrier": "Vladimir",
+   "lv": 9,
+   "units": [
+    {
+     "key": "Zac",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "ProtectorsVow",
+      "AdaptiveHelm"
+     ],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Vladimir",
+     "star": 2,
+     "items": [
+      "ArchangelsStaff",
+      "RabadonsDeathcap",
+      "JeweledGauntlet"
+     ],
+     "pos": [
+      1,
+      2
+     ],
+     "prio": 2
+    },
+    {
+     "key": "NunuWillump",
+     "star": 2,
+     "items": [
+      "VoidStaff",
+      "Morellonomicon"
+     ],
+     "pos": [
+      2,
+      0
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Jhin",
+     "star": 2,
+     "items": [
+      "LastWhisper",
+      "GiantSlayer",
+      "Deathblade"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Taric",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Zoe",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      4
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Lucian",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Galio",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 8
+    },
+    {
+     "key": "MissFortune",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 9
+    }
+   ]
+  },
+  {
+   "id": "s19_very_much_cards_mix",
+   "name": "逆命詭射",
+   "carrier": "TwistedFate",
+   "lv": 9,
+   "units": [
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "ProtectorsVow",
+      "GargoyleStoneplate"
+     ],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 1
+    },
+    {
+     "key": "TwistedFate",
+     "star": 2,
+     "items": [
+      "GuinsoosRageblade",
+      "HextechGunblade",
+      "ArchangelsStaff"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "NunuWillump",
+     "star": 2,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      2,
+      0
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Vi",
+     "star": 2,
+     "items": [
+      "Bloodthirster",
+      "SteraksGage",
+      "TitansResolve"
+     ],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Illaoi",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Jax",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Braum",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Draven",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 8
+    },
+    {
+     "key": "KaiSa",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 9
+    }
+   ]
+  },
+  {
+   "id": "s19_legendary_gu_feng",
+   "name": "古風李星",
+   "carrier": "LeeSin",
+   "lv": 9,
+   "units": [
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "ProtectorsVow",
+      "GargoyleStoneplate"
+     ],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 1
+    },
+    {
+     "key": "LeeSin",
+     "star": 2,
+     "items": [
+      "Bloodthirster",
+      "SteraksGage",
+      "TitansResolve"
+     ],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Wukong",
+     "star": 2,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Janna",
+     "star": 2,
+     "items": [
+      "GuinsoosRageblade",
+      "SpearOfShojin",
+      "GuinsoosRageblade"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Tibbers",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Alune",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Shyvana",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 7
+    },
+    {
+     "key": "AkaliKDA",
+     "star": 2,
+     "items": [],
+     "pos": [
+      1,
+      3
+     ],
+     "prio": 8
+    },
+    {
+     "key": "Gwen",
+     "star": 2,
+     "items": [
+      "EdgeOfNight",
+      "Morellonomicon",
+      "VoidStaff"
+     ],
+     "pos": [
+      1,
+      1
+     ],
+     "prio": 9
+    }
+   ]
+  },
+  {
+   "id": "s19_legndary_zeri_flex",
+   "name": "婕莉菲艾",
+   "carrier": "Zeri",
+   "lv": 9,
+   "units": [
+    {
+     "key": "Rell",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "ProtectorsVow",
+      "GargoyleStoneplate"
+     ],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Zeri",
+     "star": 2,
+     "items": [
+      "GuinsoosRageblade",
+      "HextechGunblade",
+      "GiantSlayer"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Vi",
+     "star": 2,
+     "items": [
+      "Bloodthirster",
+      "SteraksGage",
+      "TitansResolve"
+     ],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Gragas",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Jax",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Evelynn",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 7
+    },
+    {
+     "key": "NunuWillump",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 8
+    },
+    {
+     "key": "Pyke",
+     "star": 2,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 9
+    }
+   ]
+  },
+  {
+   "id": "s19_legendary_nidalee_flex",
+   "name": "奈德麗斯米奇",
+   "carrier": "Nidalee",
+   "lv": 9,
+   "units": [
+    {
+     "key": "Garen",
+     "star": 2,
+     "items": [
+      "GargoyleStoneplate",
+      "ProtectorsVow",
+      "AdaptiveHelm"
+     ],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Nidalee",
+     "star": 2,
+     "items": [
+      "GuinsoosRageblade",
+      "HextechGunblade",
+      "ArchangelsStaff"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "DrMundo",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "WarmogsArmor",
+      "SpiritVisage"
+     ],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Smeech",
+     "star": 2,
+     "items": [
+      "Bloodthirster",
+      "SteraksGage",
+      "TitansResolve"
+     ],
+     "pos": [
+      1,
+      3
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Lillia",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Lucian",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Yone",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 8
+    },
+    {
+     "key": "MissFortune",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 9
+    }
+   ]
+  },
+  {
+   "id": "s19_monkey_kong",
+   "name": "悟空剎雅",
+   "carrier": "Xayah",
+   "lv": 8,
+   "units": [
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "GargoyleStoneplate",
+      "ProtectorsVow"
+     ],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Xayah",
+     "star": 2,
+     "items": [
+      "GuinsoosRageblade",
+      "KrakensFury",
+      "Deathblade"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "KSante",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Wukong",
+     "star": 2,
+     "items": [
+      "Bloodthirster",
+      "TitansResolve",
+      "SteraksGage"
+     ],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Neeko",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Lucian",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      4
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Janna",
+     "star": 2,
+     "items": [
+      "Morellonomicon",
+      "SpearOfShojin"
+     ],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 7
+    },
+    {
+     "key": "LeeSin",
+     "star": 2,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 8
+    }
+   ]
+  },
+  {
+   "id": "s19_legendary_max_flex_cap",
+   "name": "塔莉雅好運姐",
+   "carrier": "Taliyah",
+   "lv": 9,
+   "units": [
+    {
+     "key": "Zac",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "GargoyleStoneplate",
+      "ProtectorsVow"
+     ],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Taliyah",
+     "star": 1,
+     "items": [
+      "SpearOfShojin",
+      "JeweledGauntlet",
+      "ArchangelsStaff"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Rell",
+     "star": 2,
+     "items": [
+      "SunfireCape",
+      "Evenshroud"
+     ],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 3
+    },
+    {
+     "key": "MissFortune",
+     "star": 2,
+     "items": [
+      "GuinsoosRageblade",
+      "Deathblade",
+      "GiantSlayer"
+     ],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Taric",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Lucian",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Galio",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 7
+    },
+    {
+     "key": "NunuWillump",
+     "star": 2,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      2,
+      0
+     ],
+     "prio": 8
+    },
+    {
+     "key": "Vi",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 9
+    }
+   ]
+  },
+  {
+   "id": "s19_kda_flex_duo",
+   "name": "阿璃K/DA",
+   "carrier": "Ahri",
+   "lv": 8,
+   "units": [
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "ProtectorsVow",
+      "GargoyleStoneplate"
+     ],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Ahri",
+     "star": 2,
+     "items": [
+      "SpearOfShojin",
+      "JeweledGauntlet",
+      "HextechGunblade"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Zac",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 3
+    },
+    {
+     "key": "AkaliKDA",
+     "star": 2,
+     "items": [
+      "HandOfJustice",
+      "EdgeOfNight",
+      "RedBuff"
+     ],
+     "pos": [
+      1,
+      0
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Lillia",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Taric",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Syndra",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 7
+    },
+    {
+     "key": "DrMundo",
+     "star": 2,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 8
+    }
+   ]
+  },
+  {
+   "id": "s19_classic_jhin",
+   "name": "古典燼",
+   "carrier": "Jhin",
+   "lv": 8,
+   "units": [
+    {
+     "key": "Thresh",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "GargoyleStoneplate",
+      "ProtectorsVow"
+     ],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Jhin",
+     "star": 2,
+     "items": [
+      "LastWhisper",
+      "Deathblade",
+      "GiantSlayer"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "KSante",
+     "star": 2,
+     "items": [],
+     "pos": [
+      1,
+      4
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Yuumi",
+     "star": 2,
+     "items": [
+      "BlueBuff",
+      "HextechGunblade",
+      "RabadonsDeathcap"
+     ],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Illaoi",
+     "star": 2,
+     "items": [],
+     "pos": [
+      1,
+      1
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Nasus",
+     "star": 2,
+     "items": [],
+     "pos": [
+      1,
+      0
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Swain",
+     "star": 2,
+     "items": [],
+     "pos": [
+      1,
+      5
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Vladimir",
+     "star": 2,
+     "items": [
+      "VoidStaff",
+      "Morellonomicon"
+     ],
+     "pos": [
+      1,
+      2
+     ],
+     "prio": 8
+    }
+   ]
+  },
+  {
+   "id": "s19_jjinx",
+   "name": "主唱吉茵珂絲",
+   "carrier": "Jinx",
+   "lv": 9,
+   "units": [
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [
+      "Evenshroud",
+      "WarmogsArmor",
+      "GargoyleStoneplate"
+     ],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Jinx",
+     "star": 2,
+     "items": [
+      "GuinsoosRageblade",
+      "Deathblade",
+      "GiantSlayer"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Galio",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Shyvana",
+     "star": 2,
+     "items": [
+      "Bloodthirster",
+      "TitansResolve",
+      "SteraksGage"
+     ],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Elise",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Lillia",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Lucian",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 7
+    },
+    {
+     "key": "DrMundo",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 8
+    },
+    {
+     "key": "NunuWillump",
+     "star": 2,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      2,
+      1
+     ],
+     "prio": 9
+    }
+   ]
+  },
+  {
+   "id": "s19_full_ionic_spark",
+   "name": "離子希瓦娜",
+   "carrier": "Shyvana",
+   "lv": 9,
+   "units": [
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "GargoyleStoneplate",
+      "ProtectorsVow"
+     ],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Shyvana",
+     "star": 2,
+     "items": [
+      "Bloodthirster",
+      "TitansResolve",
+      "SteraksGage"
+     ],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Tibbers",
+     "star": 2,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Aurora",
+     "star": 2,
+     "items": [
+      "SpearOfShojin",
+      "Morellonomicon",
+      "VoidStaff"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Elise",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Annie",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Gragas",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Jinx",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 8
+    },
+    {
+     "key": "Gwen",
+     "star": 2,
+     "items": [
+      "HandOfJustice",
+      "RabadonsDeathcap",
+      "ArchangelsStaff"
+     ],
+     "pos": [
+      1,
+      1
+     ],
+     "prio": 9
+    }
+   ]
+  },
+  {
+   "id": "s19_tempo_arcanist",
+   "name": "奧術梅爾",
+   "carrier": "Mel",
+   "lv": 9,
+   "units": [
+    {
+     "key": "Swain",
+     "star": 2,
+     "items": [
+      "GargoyleStoneplate",
+      "WarmogsArmor",
+      "IonicSpark"
+     ],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Mel",
+     "star": 2,
+     "items": [
+      "AdaptiveHelm",
+      "JeweledGauntlet",
+      "BlueBuff"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Rell",
+     "star": 2,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Vladimir",
+     "star": 2,
+     "items": [
+      "HandOfJustice",
+      "StrikersFlail",
+      "JeweledGauntlet"
+     ],
+     "pos": [
+      1,
+      2
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Taric",
+     "star": 2,
+     "items": [],
+     "pos": [
+      1,
+      5
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Ziggs",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Zoe",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Annie",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 8
+    },
+    {
+     "key": "Renekton",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 9
+    }
+   ]
+  },
+  {
+   "id": "s19_too_fast_kayle",
+   "name": "殺五社凱爾",
+   "carrier": "Kayle",
+   "lv": 8,
+   "units": [
+    {
+     "key": "Yorick",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "GargoyleStoneplate",
+      "ProtectorsVow"
+     ],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Kayle",
+     "star": 2,
+     "items": [
+      "GuinsoosRageblade",
+      "HextechGunblade",
+      "RedBuff"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Mordekaiser",
+     "star": 2,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Garen",
+     "star": 2,
+     "items": [
+      "Bloodthirster",
+      "SteraksGage"
+     ],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Olaf",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Ziggs",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Karthus",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Viego",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 8
+    }
+   ]
+  },
+  {
+   "id": "s19_beach_graves",
+   "name": "海灘葛雷夫",
+   "carrier": "Graves",
+   "lv": 9,
+   "units": [
+    {
+     "key": "Zac",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "ProtectorsVow",
+      "GargoyleStoneplate"
+     ],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Graves",
+     "star": 2,
+     "items": [
+      "EdgeOfNight",
+      "Bloodthirster",
+      "TitansResolve"
+     ],
+     "pos": [
+      1,
+      1
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Taric",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Ahri",
+     "star": 2,
+     "items": [
+      "BlueBuff",
+      "HextechGunblade",
+      "JeweledGauntlet"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Lucian",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      4
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Evelynn",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Syndra",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Taliyah",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 8
+    },
+    {
+     "key": "Smeech",
+     "star": 2,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      1,
+      3
+     ],
+     "prio": 9
+    }
+   ]
+  },
+  {
+   "id": "s19_league_of_draaaaven",
+   "name": "達瑞文凱莎",
+   "carrier": "Draven",
+   "lv": 6,
+   "units": [
+    {
+     "key": "Braum",
+     "star": 3,
+     "items": [
+      "WarmogsArmor",
+      "GargoyleStoneplate",
+      "ProtectorsVow"
+     ],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Draven",
+     "star": 3,
+     "items": [
+      "SpearOfShojin",
+      "InfinityEdge",
+      "Deathblade"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Illaoi",
+     "star": 3,
+     "items": [],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 3
+    },
+    {
+     "key": "KaiSa",
+     "star": 3,
+     "items": [
+      "SpearOfShojin",
+      "LastWhisper",
+      "HextechGunblade"
+     ],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Sett",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Gragas",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 6
+    }
+   ]
+  },
+  {
+   "id": "s19_not_solo_evelynn",
+   "name": "凱莎伊芙琳",
+   "carrier": "KaiSa",
+   "lv": 8,
+   "units": [
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 1
+    },
+    {
+     "key": "KaiSa",
+     "star": 3,
+     "items": [
+      "SpearOfShojin",
+      "LastWhisper",
+      "InfinityEdge"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Lillia",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Evelynn",
+     "star": 3,
+     "items": [
+      "HandOfJustice",
+      "RabadonsDeathcap",
+      "JeweledGauntlet"
+     ],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Illaoi",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Samira",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Draven",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 7
+    },
+    {
+     "key": "NunuWillump",
+     "star": 2,
+     "items": [],
+     "pos": [
+      2,
+      0
+     ],
+     "prio": 8
+    }
+   ]
+  },
+  {
+   "id": "s19_full_potencial_reroll_kda",
+   "name": "K/DA妮可",
+   "carrier": "Neeko",
+   "lv": 8,
+   "units": [
+    {
+     "key": "Lillia",
+     "star": 3,
+     "items": [
+      "GargoyleStoneplate",
+      "WarmogsArmor",
+      "ProtectorsVow"
+     ],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Neeko",
+     "star": 3,
+     "items": [
+      "SpearOfShojin",
+      "RabadonsDeathcap",
+      "JeweledGauntlet"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Gragas",
+     "star": 3,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Evelynn",
+     "star": 3,
+     "items": [],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Ezreal",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Malzahar",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 7
+    },
+    {
+     "key": "AkaliKDA",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 8
+    }
+   ]
+  },
+  {
+   "id": "s19_emo_seraphine",
+   "name": "瑟菈紛三星",
+   "carrier": "Seraphine",
+   "lv": 8,
+   "units": [
+    {
+     "key": "Amumu",
+     "star": 3,
+     "items": [
+      "WarmogsArmor",
+      "BrambleVest",
+      "DragonsClaw"
+     ],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Seraphine",
+     "star": 3,
+     "items": [
+      "SpearOfShojin",
+      "JeweledGauntlet",
+      "ArchangelsStaff"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Gragas",
+     "star": 3,
+     "items": [
+      "IonicSpark",
+      "ProtectorsVow"
+     ],
+     "pos": [
+      1,
+      4
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Lillia",
+     "star": 2,
+     "items": [],
+     "pos": [
+      1,
+      1
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Sett",
+     "star": 2,
+     "items": [],
+     "pos": [
+      1,
+      0
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Illaoi",
+     "star": 3,
+     "items": [],
+     "pos": [
+      1,
+      3
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Braum",
+     "star": 3,
+     "items": [],
+     "pos": [
+      1,
+      2
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [],
+     "pos": [
+      1,
+      5
+     ],
+     "prio": 8
+    }
+   ]
+  },
+  {
+   "id": "s19_kayle_locke_duo_carry",
+   "name": "洛克凱爾",
+   "carrier": "Locke",
+   "lv": 8,
+   "units": [
+    {
+     "key": "Thresh",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "GargoyleStoneplate",
+      "ProtectorsVow"
+     ],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Locke",
+     "star": 2,
+     "items": [
+      "HandOfJustice",
+      "JeweledGauntlet",
+      "EdgeOfNight"
+     ],
+     "pos": [
+      1,
+      1
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Yorick",
+     "star": 2,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Kayle",
+     "star": 2,
+     "items": [
+      "GuinsoosRageblade",
+      "ArchangelsStaff",
+      "HextechGunblade"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Olaf",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Ziggs",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Swain",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Vladimir",
+     "star": 2,
+     "items": [
+      "VoidStaff",
+      "Morellonomicon"
+     ],
+     "pos": [
+      1,
+      3
+     ],
+     "prio": 8
+    }
+   ]
+  },
+  {
+   "id": "s19_heartsteel_yone",
+   "name": "七心鋼犽凝",
+   "carrier": "Yone",
+   "lv": 9,
+   "units": [
+    {
+     "key": "KSante",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "Evenshroud",
+      "SunfireCape"
+     ],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Yone",
+     "star": 2,
+     "items": [
+      "HandOfJustice",
+      "EdgeOfNight",
+      "Quicksilver"
+     ],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Alune",
+     "star": 2,
+     "items": [
+      "SpearOfShojin",
+      "VoidStaff",
+      "ArchangelsStaff"
+     ],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Kayn",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Neeko",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Sett",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Ezreal",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      4
+     ],
+     "prio": 8
+    },
+    {
+     "key": "Aphelios",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 9
+    }
+   ]
+  },
+  {
+   "id": "s19_tempo_bard",
+   "name": "爵士巴德",
+   "carrier": "Bard",
+   "lv": 8,
+   "units": [
+    {
+     "key": "Braum",
+     "star": 3,
+     "items": [
+      "WarmogsArmor",
+      "IonicSpark",
+      "GargoyleStoneplate"
+     ],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Bard",
+     "star": 3,
+     "items": [
+      "SpearOfShojin",
+      "ArchangelsStaff",
+      "GuinsoosRageblade"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Galio",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Sett",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Taric",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Ashe",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Illaoi",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Zac",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 8
+    }
+   ]
+  },
+  {
+   "id": "s19_the_blood_hunter_briar",
+   "name": "離子布蕾爾",
+   "carrier": "Briar",
+   "lv": 8,
+   "units": [
+    {
+     "key": "Tibbers",
+     "star": 3,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Briar",
+     "star": 3,
+     "items": [
+      "Bloodthirster",
+      "TitansResolve",
+      "SteraksGage"
+     ],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Shyvana",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Jinx",
+     "star": 2,
+     "items": [
+      "LastWhisper",
+      "HextechGunblade",
+      "GuinsoosRageblade"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Elise",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Yunara",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Annie",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 7
+    },
+    {
+     "key": "KSante",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 8
+    }
+   ]
+  },
+  {
+   "id": "s19_full_rock_music_idol",
+   "name": "七搖滾洛克",
+   "carrier": "Locke",
+   "lv": 9,
+   "units": [
+    {
+     "key": "Yorick",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "GargoyleStoneplate",
+      "ProtectorsVow"
+     ],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Locke",
+     "star": 2,
+     "items": [
+      "HandOfJustice",
+      "JeweledGauntlet",
+      "EdgeOfNight"
+     ],
+     "pos": [
+      1,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Swain",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Vayne",
+     "star": 2,
+     "items": [
+      "GiantSlayer",
+      "GuinsoosRageblade",
+      "HextechGunblade"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Gnar",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Olaf",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Ziggs",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Camille",
+     "star": 2,
+     "items": [],
+     "pos": [
+      1,
+      2
+     ],
+     "prio": 8
+    },
+    {
+     "key": "Pyke",
+     "star": 2,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 9
+    }
+   ]
+  },
+  {
+   "id": "s19_ziggs",
+   "name": "超流行希格斯",
+   "carrier": "Ziggs",
+   "lv": 8,
+   "units": [
+    {
+     "key": "Kobuko",
+     "star": 3,
+     "items": [
+      "WarmogsArmor",
+      "GargoyleStoneplate",
+      "GargoyleStoneplate"
+     ],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Ziggs",
+     "star": 3,
+     "items": [
+      "AdaptiveHelm",
+      "JeweledGauntlet",
+      "ArchangelsStaff"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Swain",
+     "star": 2,
+     "items": [],
+     "pos": [
+      2,
+      5
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Tristana",
+     "star": 3,
+     "items": [
+      "GuinsoosRageblade",
+      "GiantSlayer",
+      "LastWhisper"
+     ],
+     "pos": [
+      3,
+      4
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Camille",
+     "star": 2,
+     "items": [],
+     "pos": [
+      2,
+      3
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Lulu",
+     "star": 3,
+     "items": [
+      "VoidStaff",
+      "Morellonomicon"
+     ],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Locke",
+     "star": 2,
+     "items": [],
+     "pos": [
+      2,
+      1
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Teemo",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 8
+    }
+   ]
+  },
+  {
+   "id": "s19_do_it_malzahar",
+   "name": "馬爾札哈巴龍",
+   "carrier": "Malzahar",
+   "lv": 8,
+   "units": [
+    {
+     "key": "Ekko",
+     "star": 3,
+     "items": [
+      "WarmogsArmor",
+      "SunfireCape",
+      "GargoyleStoneplate"
+     ],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Malzahar",
+     "star": 3,
+     "items": [
+      "SpearOfShojin",
+      "ArchangelsStaff",
+      "JeweledGauntlet"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Braum",
+     "star": 3,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 3
+    },
+    {
+     "key": "BaronNashor",
+     "star": 2,
+     "items": [],
+     "pos": [
+      1,
+      1
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Kennen",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Sett",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Illaoi",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 8
+    }
+   ]
+  },
+  {
+   "id": "s19_hyper_pop_roll",
+   "name": "柔依塔里克",
+   "carrier": "Zoe",
+   "lv": 8,
+   "units": [
+    {
+     "key": "Taric",
+     "star": 3,
+     "items": [
+      "WarmogsArmor",
+      "Crownguard",
+      "GargoyleStoneplate"
+     ],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Zoe",
+     "star": 3,
+     "items": [
+      "SpearOfShojin",
+      "JeweledGauntlet",
+      "ArchangelsStaff"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Zac",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Syndra",
+     "star": 2,
+     "items": [
+      "VoidStaff",
+      "Morellonomicon"
+     ],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Elise",
+     "star": 3,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Yunara",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Annie",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Ashe",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      4
+     ],
+     "prio": 8
+    }
+   ]
+  },
+  {
+   "id": "s19_your_strongest_kayn",
+   "name": "心鋼慨影",
+   "carrier": "Kayn",
+   "lv": 8,
+   "units": [
+    {
+     "key": "Sett",
+     "star": 3,
+     "items": [
+      "WarmogsArmor",
+      "Evenshroud",
+      "SunfireCape"
+     ],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Kayn",
+     "star": 3,
+     "items": [
+      "HandOfJustice",
+      "SteraksGage",
+      "Deathblade"
+     ],
+     "pos": [
+      1,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Yone",
+     "star": 2,
+     "items": [
+      "HandOfJustice",
+      "InfinityEdge",
+      "EdgeOfNight"
+     ],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Lillia",
+     "star": 3,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Gragas",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Illaoi",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Braum",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 8
+    }
+   ]
+  },
+  {
+   "id": "s19_kda_genius_lux_reroll",
+   "name": "不世拉克絲",
+   "carrier": "Lux",
+   "lv": 8,
+   "units": [
+    {
+     "key": "Ekko",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Lux",
+     "star": 3,
+     "items": [
+      "JeweledGauntlet",
+      "RabadonsDeathcap",
+      "ArchangelsStaff"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Tibbers",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Malzahar",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Elise",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Lillia",
+     "star": 3,
+     "items": [],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Neeko",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      4
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Gragas",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 8
+    }
+   ]
+  },
+  {
+   "id": "s19_pentakill_reroll",
+   "name": "殺五社吶兒",
+   "carrier": "Gnar",
+   "lv": 7,
+   "units": [
+    {
+     "key": "Yorick",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Gnar",
+     "star": 3,
+     "items": [
+      "HandOfJustice",
+      "Quicksilver",
+      "Deathblade"
+     ],
+     "pos": [
+      1,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Swain",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Olaf",
+     "star": 3,
+     "items": [
+      "Bloodthirster",
+      "TitansResolve",
+      "SteraksGage"
+     ],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Camille",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Karthus",
+     "star": 3,
+     "items": [],
+     "pos": [
+      1,
+      2
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Viego",
+     "star": 2,
+     "items": [],
+     "pos": [
+      1,
+      4
+     ],
+     "prio": 7
+    }
+   ]
+  },
+  {
+   "id": "s19_kh_vayne",
+   "name": "汎犽凝",
+   "carrier": "Vayne",
+   "lv": 7,
+   "units": [
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [
+      "WarmogsArmor",
+      "GargoyleStoneplate",
+      "Evenshroud"
+     ],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Vayne",
+     "star": 2,
+     "items": [
+      "GuinsoosRageblade",
+      "HextechGunblade",
+      "InfinityEdge"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Lillia",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Yone",
+     "star": 2,
+     "items": [
+      "HandOfJustice",
+      "EdgeOfNight",
+      "Quicksilver"
+     ],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Kayn",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 5
+    },
+    {
+     "key": "KaiSa",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Alune",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 7
+    }
+   ]
+  },
+  {
+   "id": "s19_jazz_and_friends",
+   "name": "法洛士路西恩",
+   "carrier": "Varus",
+   "lv": 7,
+   "units": [
+    {
+     "key": "Illaoi",
+     "star": 3,
+     "items": [
+      "GargoyleStoneplate",
+      "WarmogsArmor",
+      "ProtectorsVow"
+     ],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Varus",
+     "star": 3,
+     "items": [
+      "BlueBuff",
+      "HextechGunblade",
+      "LastWhisper"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Gragas",
+     "star": 3,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Lucian",
+     "star": 3,
+     "items": [
+      "GuinsoosRageblade",
+      "Deathblade",
+      "GiantSlayer"
+     ],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Sett",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Braum",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Galio",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 7
+    }
+   ]
+  },
+  {
+   "id": "s19_your_strongest_ezreal",
+   "name": "心鋼伊澤瑞爾",
+   "carrier": "Ezreal",
+   "lv": 6,
+   "units": [
+    {
+     "key": "Sett",
+     "star": 3,
+     "items": [
+      "Evenshroud",
+      "WarmogsArmor",
+      "SunfireCape"
+     ],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Ezreal",
+     "star": 3,
+     "items": [
+      "BlueBuff",
+      "Deathblade",
+      "InfinityEdge"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "KSante",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Lillia",
+     "star": 3,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Lucian",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Galio",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 6
+    }
+   ]
+  },
+  {
+   "id": "s19_ashcrocodile_reroll",
+   "name": "雷尼克頓艾希",
+   "carrier": "Renekton",
+   "lv": 7,
+   "units": [
+    {
+     "key": "Zac",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Renekton",
+     "star": 3,
+     "items": [
+      "Bloodthirster",
+      "TitansResolve",
+      "EdgeOfNight"
+     ],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Taric",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Ashe",
+     "star": 3,
+     "items": [
+      "GuinsoosRageblade",
+      "LastWhisper",
+      "RedBuff"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Sett",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Bard",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      2
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Galio",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 7
+    }
+   ]
+  },
+  {
+   "id": "s19_viego_flex_with_friends",
+   "name": "維爾戈星朵拉",
+   "carrier": "Viego",
+   "lv": 9,
+   "units": [
+    {
+     "key": "Braum",
+     "star": 3,
+     "items": [
+      "Evenshroud",
+      "SunfireCape",
+      "WarmogsArmor"
+     ],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Viego",
+     "star": 3,
+     "items": [
+      "Bloodthirster",
+      "SteraksGage",
+      "TitansResolve"
+     ],
+     "pos": [
+      0,
+      1
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Zac",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      3
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Syndra",
+     "star": 3,
+     "items": [
+      "SpearOfShojin",
+      "RabadonsDeathcap",
+      "JeweledGauntlet"
+     ],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Kayn",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Illaoi",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Renekton",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Yorick",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      5
+     ],
+     "prio": 8
+    },
+    {
+     "key": "Mordekaiser",
+     "star": 2,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 9
+    }
+   ]
+  },
+  {
+   "id": "s19_mr_katarina_reroll",
+   "name": "卡特蓮娜索娜",
+   "carrier": "Katarina",
+   "lv": 9,
+   "units": [
+    {
+     "key": "Nasus",
+     "star": 3,
+     "items": [
+      "GargoyleStoneplate",
+      "WarmogsArmor",
+      "SunfireCape"
+     ],
+     "pos": [
+      0,
+      2
+     ],
+     "prio": 1
+    },
+    {
+     "key": "Katarina",
+     "star": 3,
+     "items": [
+      "HandOfJustice",
+      "JeweledGauntlet",
+      "EdgeOfNight"
+     ],
+     "pos": [
+      1,
+      1
+     ],
+     "prio": 2
+    },
+    {
+     "key": "Leona",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      4
+     ],
+     "prio": 3
+    },
+    {
+     "key": "Camille",
+     "star": 3,
+     "items": [
+      "Bloodthirster",
+      "Quicksilver",
+      "InfinityEdge"
+     ],
+     "pos": [
+      1,
+      3
+     ],
+     "prio": 4
+    },
+    {
+     "key": "Gnar",
+     "star": 2,
+     "items": [],
+     "pos": [
+      1,
+      6
+     ],
+     "prio": 5
+    },
+    {
+     "key": "Lillia",
+     "star": 3,
+     "items": [
+      "ThiefsGloves"
+     ],
+     "pos": [
+      0,
+      0
+     ],
+     "prio": 6
+    },
+    {
+     "key": "Shyvana",
+     "star": 2,
+     "items": [],
+     "pos": [
+      0,
+      6
+     ],
+     "prio": 7
+    },
+    {
+     "key": "Yuumi",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      6
+     ],
+     "prio": 8
+    },
+    {
+     "key": "Sona",
+     "star": 2,
+     "items": [],
+     "pos": [
+      3,
+      0
+     ],
+     "prio": 9
+    }
+   ]
+  }
+ ]
+}

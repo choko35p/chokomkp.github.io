@@ -1,0 +1,4743 @@
+{
+ "version": "s19-prepbe-1",
+ "traits": [
+  {
+   "key": "IonicSpark",
+   "zh": "離子火花",
+   "kind": "origin",
+   "breakpoints": [
+    3,
+    5,
+    7,
+    10
+   ],
+   "desc": "粉絲每 4 秒會送一次禮物，幫隊友回血。離子火花成員本身也多拿生命。\n5 階起，禮物還會讓收禮的人攻速 +25%，維持 4 秒。\n7 階起，每打 2 回合多拿 3 金。10 階全隊傷害增幅 +50%（粉絲衝上舞台）。",
+   "levelsText": [
+    "成員生命 +100；禮物回復 2% 生命。",
+    "成員生命 +250；禮物回復 4% 生命，收禮的人攻速 +25%（推測）。",
+    "成員生命 +550；每 2 回合多拿 3 金（推測）。",
+    "成員生命 +900，禮物回復 6% 生命，全隊傷害增幅 +50%（推測）。"
+   ],
+   "members": [
+    "Elise",
+    "Yunara",
+    "Annie",
+    "Lux",
+    "Briar",
+    "Tibbers",
+    "Jinx",
+    "Shyvana",
+    "Aurora",
+    "Gwen"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "hp": 100
+      }
+     },
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "heal",
+         "to": {
+          "lowestHp": 1,
+          "side": "ally"
+         },
+         "value": {
+          "tgtMaxHp": 0.02
+         }
+        }
+       ],
+       "src": "trait:IonicSpark",
+       "text": "粉絲送禮物",
+       "n": 4
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "hp": 250
+      }
+     },
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "heal",
+         "to": {
+          "lowestHp": 1,
+          "side": "ally"
+         },
+         "value": {
+          "tgtMaxHp": 0.04
+         }
+        },
+        {
+         "op": "buff",
+         "to": "prev",
+         "stat": "asPct",
+         "value": 0.25,
+         "dur": 4
+        }
+       ],
+       "src": "trait:IonicSpark",
+       "text": "粉絲送禮物",
+       "n": 4
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "hp": 550
+      }
+     },
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "heal",
+         "to": {
+          "lowestHp": 1,
+          "side": "ally"
+         },
+         "value": {
+          "tgtMaxHp": 0.04
+         }
+        },
+        {
+         "op": "buff",
+         "to": "prev",
+         "stat": "asPct",
+         "value": 0.25,
+         "dur": 4
+        }
+       ],
+       "src": "trait:IonicSpark",
+       "text": "粉絲送禮物",
+       "n": 4
+      }
+     },
+     {
+      "type": "econ",
+      "when": "everyNRounds",
+      "n": 2,
+      "gain": {
+       "gold": 3
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "hp": 900
+      }
+     },
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "heal",
+         "to": {
+          "lowestHp": 1,
+          "side": "ally"
+         },
+         "value": {
+          "tgtMaxHp": 0.06
+         }
+        },
+        {
+         "op": "buff",
+         "to": "prev",
+         "stat": "asPct",
+         "value": 0.25,
+         "dur": 4
+        }
+       ],
+       "src": "trait:IonicSpark",
+       "text": "粉絲送禮物",
+       "n": 4
+      }
+     },
+     {
+      "type": "econ",
+      "when": "everyNRounds",
+      "n": 2,
+      "gain": {
+       "gold": 3
+      }
+     },
+     {
+      "type": "stat",
+      "who": "team",
+      "stats": {
+       "dmgAmp": 0.5
+      },
+      "guess": true
+     }
+    ]
+   ],
+   "simplified": "禮物改成每 4 秒送給全隊血最少的友軍（官方是送給一名離子火花成員）。官方只寫了 3 階回 2% 生命，其他都是推測：5 階以上回 4%、10 階回 6%、禮物 +25% 攻速、7 階每 2 回合 3 金、10 階成員 +900 生命和全隊傷害增幅 +50%。官方說的「7% 的卡片」和消耗品沒有做。",
+   "guess": true,
+   "counter": null
+  },
+  {
+   "key": "KDA",
+   "zh": "K/DA",
+   "kind": "origin",
+   "countMode": "stars",
+   "breakpoints": [
+    3,
+    5,
+    7,
+    10,
+    13,
+    15,
+    21
+   ],
+   "desc": "這個羈絆算的是 K/DA 英雄的「總星數」，不是人數，所以 2 星的阿璃算 2 個。\n開場和第 8 秒各放一次新歌，之前解鎖的歌會一起放。\n這個羈絆是累加的：每一階都包含前面所有效果。總星數到 10 之後，前面效果 ×1.5。到 21：成員生命和攻擊 +50%。",
+   "levelsText": [
+    "POP/STARS：最大魔力降低10%。",
+    "DRUM GO DUM：12%生命護盾。",
+    "VILLAIN：60%攻擊速度，在8秒內衰減。",
+    "I'LL SHOW YOU：所有先前效果提高（數值未公布）。",
+    "WATCH ME：暈眩所有敵人1.25秒。",
+    "FIRESTARTER：敵人在8秒內受到相當於其16%最大生命的魔法傷害。",
+    "GIRLS GIRLS GIRLS：K/DA 成員升為4星。"
+   ],
+   "members": [
+    "Neeko",
+    "Lillia",
+    "Gragas",
+    "Evelynn",
+    "KaiSa",
+    "Ahri",
+    "Leona",
+    "AkaliKDA"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "manaMaxPct": -0.1
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "manaMaxPct": -0.1
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "shield",
+         "to": "self",
+         "value": {
+          "selfMaxHp": 0.12
+         },
+         "dur": 4
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 0
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "shield",
+         "to": "self",
+         "value": {
+          "selfMaxHp": 0.12
+         },
+         "dur": 4
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 8
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "manaMaxPct": -0.1
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "shield",
+         "to": "self",
+         "value": {
+          "selfMaxHp": 0.12
+         },
+         "dur": 4
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.6,
+         "dur": 8,
+         "decay": true
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 0
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "shield",
+         "to": "self",
+         "value": {
+          "selfMaxHp": 0.12
+         },
+         "dur": 4
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.6,
+         "dur": 8,
+         "decay": true
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 8
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "manaMaxPct": -0.15
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "shield",
+         "to": "self",
+         "value": {
+          "selfMaxHp": 0.18
+         },
+         "dur": 4
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.9,
+         "dur": 8,
+         "decay": true
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 0
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "shield",
+         "to": "self",
+         "value": {
+          "selfMaxHp": 0.18
+         },
+         "dur": 4
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.9,
+         "dur": 8,
+         "decay": true
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 8
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "manaMaxPct": -0.15
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "shield",
+         "to": "self",
+         "value": {
+          "selfMaxHp": 0.18
+         },
+         "dur": 4
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.9,
+         "dur": 8,
+         "decay": true
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 0
+      }
+     },
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "stun",
+         "to": "allEnemies",
+         "dur": 1.25
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 0
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "shield",
+         "to": "self",
+         "value": {
+          "selfMaxHp": 0.18
+         },
+         "dur": 4
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.9,
+         "dur": 8,
+         "decay": true
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 8
+      }
+     },
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "stun",
+         "to": "allEnemies",
+         "dur": 1.25
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 8
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "manaMaxPct": -0.15
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "shield",
+         "to": "self",
+         "value": {
+          "selfMaxHp": 0.18
+         },
+         "dur": 4
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.9,
+         "dur": 8,
+         "decay": true
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 0
+      }
+     },
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "stun",
+         "to": "allEnemies",
+         "dur": 1.25
+        },
+        {
+         "op": "dot",
+         "to": "allEnemies",
+         "type": "magic",
+         "value": {
+          "tgtMaxHp": 0.16
+         },
+         "dur": 8,
+         "tick": 1
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 0
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "shield",
+         "to": "self",
+         "value": {
+          "selfMaxHp": 0.18
+         },
+         "dur": 4
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.9,
+         "dur": 8,
+         "decay": true
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 8
+      }
+     },
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "stun",
+         "to": "allEnemies",
+         "dur": 1.25
+        },
+        {
+         "op": "dot",
+         "to": "allEnemies",
+         "type": "magic",
+         "value": {
+          "tgtMaxHp": 0.16
+         },
+         "dur": 8,
+         "tick": 1
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 8
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "manaMaxPct": -0.15
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "shield",
+         "to": "self",
+         "value": {
+          "selfMaxHp": 0.18
+         },
+         "dur": 4
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.9,
+         "dur": 8,
+         "decay": true
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 0
+      }
+     },
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "stun",
+         "to": "allEnemies",
+         "dur": 1.25
+        },
+        {
+         "op": "dot",
+         "to": "allEnemies",
+         "type": "magic",
+         "value": {
+          "tgtMaxHp": 0.16
+         },
+         "dur": 8,
+         "tick": 1
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 0
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "shield",
+         "to": "self",
+         "value": {
+          "selfMaxHp": 0.18
+         },
+         "dur": 4
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.9,
+         "dur": 8,
+         "decay": true
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 8
+      }
+     },
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "stun",
+         "to": "allEnemies",
+         "dur": 1.25
+        },
+        {
+         "op": "dot",
+         "to": "allEnemies",
+         "type": "magic",
+         "value": {
+          "tgtMaxHp": 0.16
+         },
+         "dur": 8,
+         "tick": 1
+        }
+       ],
+       "src": "trait:KDA",
+       "text": "新歌！",
+       "at": 8
+      }
+     },
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "hpPct": 0.5,
+       "adPct": 0.5
+      }
+     }
+    ]
+   ],
+   "simplified": "10 以上「前面效果提高」官方沒公布倍率，這裡抓 ×1.5（推測）。21 的「升為 4 星」改成成員生命、攻擊 +50%。",
+   "guess": true,
+   "counter": null
+  },
+  {
+   "key": "BeachPop",
+   "zh": "海灘流行",
+   "kind": "origin",
+   "breakpoints": [
+    3,
+    5,
+    7
+   ],
+   "desc": "海灘流行成員攻速變快，每 3 秒回 2% 生命，同時回魔力。\n成員身邊的友軍每 3 秒也會回 2% 生命。",
+   "levelsText": [
+    "攻速 +15%、每 3 秒回 5 魔力（推測）",
+    "攻速 +30%、每 3 秒回 10 魔力（推測）",
+    "攻速 +50%、每 3 秒回 15 魔力（推測）"
+   ],
+   "members": [
+    "Taric",
+    "Zoe",
+    "Ashe",
+    "Renekton",
+    "Syndra",
+    "Zac",
+    "Graves",
+    "Taliyah"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "asPct": 0.15
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "heal",
+         "to": "self",
+         "value": {
+          "selfMaxHp": 0.02
+         }
+        },
+        {
+         "op": "mana",
+         "to": "self",
+         "value": 5
+        },
+        {
+         "op": "heal",
+         "to": {
+          "adjacent": "ally"
+         },
+         "value": {
+          "tgtMaxHp": 0.02
+         }
+        }
+       ],
+       "src": "trait:BeachPop",
+       "text": "海灘派對",
+       "n": 3
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "asPct": 0.3
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "heal",
+         "to": "self",
+         "value": {
+          "selfMaxHp": 0.02
+         }
+        },
+        {
+         "op": "mana",
+         "to": "self",
+         "value": 10
+        },
+        {
+         "op": "heal",
+         "to": {
+          "adjacent": "ally"
+         },
+         "value": {
+          "tgtMaxHp": 0.02
+         }
+        }
+       ],
+       "src": "trait:BeachPop",
+       "text": "海灘派對",
+       "n": 3
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "asPct": 0.5
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "heal",
+         "to": "self",
+         "value": {
+          "selfMaxHp": 0.02
+         }
+        },
+        {
+         "op": "mana",
+         "to": "self",
+         "value": 15
+        },
+        {
+         "op": "heal",
+         "to": {
+          "adjacent": "ally"
+         },
+         "value": {
+          "tgtMaxHp": 0.02
+         }
+        }
+       ],
+       "src": "trait:BeachPop",
+       "text": "海灘派對",
+       "n": 3
+      }
+     }
+    ]
+   ],
+   "simplified": "不做可放置樂器：改成成員身邊的友軍自動吃到治療（每 3 秒，看當下相鄰，不是開場相鄰）。攻速與回魔數字是推測。同時貼著好幾位成員的友軍會重複回血，治療會比官方固定的 2% 多。",
+   "guess": true,
+   "counter": null
+  },
+  {
+   "key": "Classical",
+   "zh": "古典樂",
+   "kind": "origin",
+   "breakpoints": [
+    2,
+    4,
+    6
+   ],
+   "desc": "古典樂成員傷害增幅，每 6 秒再多 1%。\n他們的技能傷害會讓敵人著迷 6 秒，著迷的敵人打人少 10%。\n4 階：著迷的敵人死掉，生命最低的古典樂成員回 10% 血。\n6 階：著迷的敵人死掉有 15% 機率，戰後那隻變成你板凳上的 1 星棋子。",
+   "levelsText": [
+    "傷害增幅 8%；著迷的敵人造成的傷害降低10%。",
+    "傷害增幅 15%；著迷的敵人死亡時會拋出玫瑰，使一名古典樂英雄回復10%生命。",
+    "傷害增幅 25%；著迷的敵人死亡時有15%機率加入你的板凳。"
+   ],
+   "members": [
+    "Katarina",
+    "Samira",
+    "RenataGlasc",
+    "Nasus",
+    "Jhin",
+    "Thresh",
+    "Vladimir"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "dmgAmp": 0.08
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "dmgAmp",
+         "value": 0.01,
+         "stackKey": "classicalRamp",
+         "maxStacks": 8
+        }
+       ],
+       "src": "trait:Classical",
+       "text": "曲風進入狀態",
+       "n": 6
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "dmgAmp": 0.15
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "dmgAmp",
+         "value": 0.01,
+         "stackKey": "classicalRamp",
+         "maxStacks": 8
+        }
+       ],
+       "src": "trait:Classical",
+       "text": "曲風進入狀態",
+       "n": 6
+      }
+     },
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "enemyDeath",
+       "ops": [
+        {
+         "op": "if",
+         "cond": {
+          "tgtStatus": "charm"
+         },
+         "then": [
+          {
+           "op": "heal",
+           "to": {
+            "lowestHp": 1,
+            "side": "ally"
+           },
+           "value": {
+            "tgtMaxHp": 0.1
+           }
+          }
+         ]
+        }
+       ],
+       "src": "trait:Classical",
+       "text": "玫瑰！"
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "dmgAmp": 0.25
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "dmgAmp",
+         "value": 0.01,
+         "stackKey": "classicalRamp",
+         "maxStacks": 8
+        }
+       ],
+       "src": "trait:Classical",
+       "text": "曲風進入狀態",
+       "n": 6
+      }
+     },
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "enemyDeath",
+       "ops": [
+        {
+         "op": "if",
+         "cond": {
+          "tgtStatus": "charm"
+         },
+         "then": [
+          {
+           "op": "heal",
+           "to": {
+            "lowestHp": 1,
+            "side": "ally"
+           },
+           "value": {
+            "tgtMaxHp": 0.1
+           }
+          }
+         ]
+        }
+       ],
+       "src": "trait:Classical",
+       "text": "玫瑰！"
+      }
+     },
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "enemyDeath",
+       "ops": [
+        {
+         "op": "if",
+         "cond": {
+          "tgtStatus": "charm"
+         },
+         "then": [
+          {
+           "op": "econ",
+           "kind": "unit",
+           "value": "killedUnit",
+           "chance": 0.15
+          }
+         ]
+        }
+       ],
+       "src": "trait:Classical",
+       "text": "著迷的敵人加入板凳"
+      }
+     }
+    ]
+   ],
+   "simplified": "官方是「敵人每被著迷 6 秒，增幅 +1%」，這裡簡化成每 6 秒 +1%。玫瑰回血給全隊血最少的友軍（官方是一名古典樂成員）。6 階抓到的棋子戰後以 1 星放到板凳，板凳滿了換成金幣。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Heartsteel",
+   "zh": "心鋼之聲",
+   "kind": "origin",
+   "breakpoints": [
+    1,
+    3,
+    5,
+    7
+   ],
+   "desc": "場上每多一位心鋼之聲成員，全隊就多拿一種加成：\n賽特 +75 生命、慨影 +7% 攻擊、伊澤瑞爾 +10% 攻速、卡桑帝 +8 護甲和魔抗、亞盧妮 +7 法強、犽凝 +5% 暴擊、亞菲利歐 +6% 傷害增幅。\n3 階選 1 位最愛、5 階選 2 位，技能變強（這裡自動選裝備最多的）。7 階心鋼之聲成員自己多拿 150% 的加成。",
+   "levelsText": [
+    "心鋼之聲成員為你的隊伍提供加成。",
+    "選擇你的最愛成員，強化其技能。",
+    "選擇第2位最愛成員。",
+    "心鋼之聲英雄額外獲得150%的心鋼之聲啟動加成。"
+   ],
+   "members": [
+    "Kayn",
+    "Sett",
+    "Ezreal",
+    "KSante",
+    "Alune",
+    "Yone",
+    "Aphelios"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "statPerMember",
+      "who": "team",
+      "table": {
+       "Sett": {
+        "hp": 75
+       },
+       "Kayn": {
+        "adPct": 0.07
+       },
+       "Ezreal": {
+        "asPct": 0.1
+       },
+       "KSante": {
+        "armor": 8,
+        "mr": 8
+       },
+       "Alune": {
+        "ap": 7
+       },
+       "Yone": {
+        "crit": 0.05
+       },
+       "Aphelios": {
+        "dmgAmp": 0.06
+       }
+      },
+      "guess": true
+     }
+    ],
+    [
+     {
+      "type": "statPerMember",
+      "who": "team",
+      "table": {
+       "Sett": {
+        "hp": 75
+       },
+       "Kayn": {
+        "adPct": 0.07
+       },
+       "Ezreal": {
+        "asPct": 0.1
+       },
+       "KSante": {
+        "armor": 8,
+        "mr": 8
+       },
+       "Alune": {
+        "ap": 7
+       },
+       "Yone": {
+        "crit": 0.05
+       },
+       "Aphelios": {
+        "dmgAmp": 0.06
+       }
+      },
+      "guess": true
+     },
+     {
+      "type": "special",
+      "id": "favorite",
+      "n": 1
+     }
+    ],
+    [
+     {
+      "type": "statPerMember",
+      "who": "team",
+      "table": {
+       "Sett": {
+        "hp": 75
+       },
+       "Kayn": {
+        "adPct": 0.07
+       },
+       "Ezreal": {
+        "asPct": 0.1
+       },
+       "KSante": {
+        "armor": 8,
+        "mr": 8
+       },
+       "Alune": {
+        "ap": 7
+       },
+       "Yone": {
+        "crit": 0.05
+       },
+       "Aphelios": {
+        "dmgAmp": 0.06
+       }
+      },
+      "guess": true
+     },
+     {
+      "type": "special",
+      "id": "favorite",
+      "n": 2
+     }
+    ],
+    [
+     {
+      "type": "statPerMember",
+      "who": "team",
+      "table": {
+       "Sett": {
+        "hp": 75
+       },
+       "Kayn": {
+        "adPct": 0.07
+       },
+       "Ezreal": {
+        "asPct": 0.1
+       },
+       "KSante": {
+        "armor": 8,
+        "mr": 8
+       },
+       "Alune": {
+        "ap": 7
+       },
+       "Yone": {
+        "crit": 0.05
+       },
+       "Aphelios": {
+        "dmgAmp": 0.06
+       }
+      },
+      "memberMult": 1.5,
+      "guess": true
+     },
+     {
+      "type": "special",
+      "id": "favorite",
+      "n": 2
+     }
+    ]
+   ],
+   "simplified": "官方只公布各成員的數字，沒說對應哪個屬性，這裡的對應是推測（賽特生命、慨影攻擊、伊澤瑞爾攻速、卡桑帝雙抗、亞盧妮法強、犽凝暴擊、亞菲利歐傷害增幅）。最愛成員由系統自動挑裝備最多的，不用自己選，技能強化 +25% 技能增幅。7 階『多拿 150%』＝成員額外拿 1.5 倍。 官方還有「紋章 3%」和「索娜 5% 治療與護盾」，這裡沒做。",
+   "guess": true,
+   "counter": null
+  },
+  {
+   "key": "Rock",
+   "zh": "搖滾",
+   "kind": "origin",
+   "breakpoints": [
+    3,
+    4,
+    5,
+    7
+   ],
+   "desc": "3 階：召喚一隻地獄偶像站前排（這個版本固定 1200 生命、60 攻擊，不會隨搖滾成員的星級變肉）。\n4 階：搖滾成員全能吸血 8%。\n5 階：搖滾成員放技能時，射出一道光束打穿整排敵人，傷害固定 150。\n7 階：每 3 秒 2 道閃電劈隨機敵人，每道傷害固定 150。",
+   "levelsText": [
+    "召喚地獄偶像。",
+    "治療搖滾英雄造成傷害的8%。",
+    "施放技能時，發射一道巨大的光束，穿過最多數量的敵人。",
+    "存活期間每3秒，有2道閃電擊中附近敵人，並重複搖滾英雄造成傷害的20%作為魔法傷害。"
+   ],
+   "members": [
+    "Olaf",
+    "Varus",
+    "Camille",
+    "Swain",
+    "Vayne",
+    "Locke",
+    "Pyke"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "summon",
+         "to": "self",
+         "unit": {
+          "zh": "地獄偶像",
+          "hp": 1200,
+          "ad": 60,
+          "as": 0.7,
+          "armor": 60,
+          "mr": 60,
+          "range": 1
+         },
+         "at": "front"
+        }
+       ],
+       "src": "trait:Rock",
+       "text": "地獄偶像登場"
+      }
+     }
+    ],
+    [
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "summon",
+         "to": "self",
+         "unit": {
+          "zh": "地獄偶像",
+          "hp": 1200,
+          "ad": 60,
+          "as": 0.7,
+          "armor": 60,
+          "mr": 60,
+          "range": 1
+         },
+         "at": "front"
+        }
+       ],
+       "src": "trait:Rock",
+       "text": "地獄偶像登場"
+      }
+     },
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "omnivamp": 0.08
+      }
+     }
+    ],
+    [
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "summon",
+         "to": "self",
+         "unit": {
+          "zh": "地獄偶像",
+          "hp": 1200,
+          "ad": 60,
+          "as": 0.7,
+          "armor": 60,
+          "mr": 60,
+          "range": 1
+         },
+         "at": "front"
+        }
+       ],
+       "src": "trait:Rock",
+       "text": "地獄偶像登場"
+      }
+     },
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "omnivamp": 0.08
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "cast",
+       "ops": [
+        {
+         "op": "damage",
+         "to": {
+          "line": "current",
+          "len": "board"
+         },
+         "type": "magic",
+         "value": {
+          "flat": 150
+         }
+        }
+       ],
+       "src": "trait:Rock",
+       "text": "巨大光束"
+      }
+     }
+    ],
+    [
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "summon",
+         "to": "self",
+         "unit": {
+          "zh": "地獄偶像",
+          "hp": 1200,
+          "ad": 60,
+          "as": 0.7,
+          "armor": 60,
+          "mr": 60,
+          "range": 1
+         },
+         "at": "front"
+        }
+       ],
+       "src": "trait:Rock",
+       "text": "地獄偶像登場"
+      }
+     },
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "omnivamp": 0.08
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "cast",
+       "ops": [
+        {
+         "op": "damage",
+         "to": {
+          "line": "current",
+          "len": "board"
+         },
+         "type": "magic",
+         "value": {
+          "flat": 150
+         }
+        }
+       ],
+       "src": "trait:Rock",
+       "text": "巨大光束"
+      }
+     },
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "repeat",
+         "times": 2,
+         "ops": [
+          {
+           "op": "damage",
+           "to": {
+            "random": 1
+           },
+           "type": "magic",
+           "value": {
+            "flat": 150
+           }
+          }
+         ]
+        }
+       ],
+       "src": "trait:Rock",
+       "text": "雙閃電",
+       "n": 3
+      }
+     }
+    ]
+   ],
+   "simplified": "地獄偶像官方會看搖滾成員的平均星級和回合數變肉，這裡固定 1200 生命、60 攻擊（推測）。光束官方是「120＋回合×10」、閃電官方是搖滾成員傷害的 20%，這裡都固定 150。光束打的是目標那一整條直線，不是官方的「穿過最多敵人」路線。",
+   "guess": true,
+   "counter": null
+  },
+  {
+   "key": "Pentakill",
+   "zh": "殺五社",
+   "kind": "origin",
+   "breakpoints": [
+    3,
+    5,
+    7
+   ],
+   "desc": "殺五社成員攻擊與法強變高。\n最先掉到 10% 血以下的 2／4／4 個敵人會被直接處決，原地變成我方的食屍鬼。\n7 階第一隻改成三倍強的鋼鐵少女。",
+   "levelsText": [
+    "15%攻擊力與法術強度，2名敵人",
+    "30%攻擊力與法術強度，4名敵人",
+    "35%攻擊力與法術強度，4名敵人。第一名死亡的敵人會改為召喚鋼鐵少女。"
+   ],
+   "members": [
+    "Gnar",
+    "Olaf",
+    "Karthus",
+    "Viego",
+    "Kayle",
+    "Yorick",
+    "Mordekaiser"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "adPct": 0.15,
+       "ap": 15.0
+      }
+     },
+     {
+      "type": "special",
+      "id": "executeSummon",
+      "count": 2,
+      "ghoul": {
+       "hp": 650,
+       "ad": 65
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "adPct": 0.3,
+       "ap": 30.0
+      }
+     },
+     {
+      "type": "special",
+      "id": "executeSummon",
+      "count": 4,
+      "ghoul": {
+       "hp": 650,
+       "ad": 65
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "adPct": 0.35,
+       "ap": 35.0
+      }
+     },
+     {
+      "type": "special",
+      "id": "executeSummon",
+      "count": 4,
+      "ghoul": {
+       "hp": 650,
+       "ad": 65
+      },
+      "firstBig": true,
+      "bigMult": 3,
+      "bigName": "鋼鐵少女"
+     }
+    ]
+   ],
+   "simplified": "食屍鬼官方數值看回合，這裡固定生命 650、攻擊 65（推測）；鋼鐵少女＝食屍鬼 ×3 數值。法強加成以 +15／30／35 點計算。7 階 POGO 不做。",
+   "guess": true,
+   "counter": null
+  },
+  {
+   "key": "TrueDamage",
+   "zh": "True Damage",
+   "kind": "origin",
+   "breakpoints": [
+    3,
+    5
+   ],
+   "desc": "只做 A 面（贏的那面）：True Damage 成員造成的傷害會額外附帶真實傷害，贏了回合多拿金幣。\nB 面（輸的那面）和閃耀值兌換沒有重製。",
+   "levelsText": [
+    "額外 15% 真實傷害（推測），贏 +1 金",
+    "額外 30% 真實傷害，贏 +2 金"
+   ],
+   "members": [
+    "Kennen",
+    "Qiyana",
+    "Senna",
+    "Ekko",
+    "Yasuo",
+    "AkaliTrueDamage"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "trueDmgPct": 0.15
+      }
+     },
+     {
+      "type": "econ",
+      "when": "win",
+      "gain": {
+       "gold": 1
+      },
+      "guess": true
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "trueDmgPct": 0.3
+      }
+     },
+     {
+      "type": "econ",
+      "when": "win",
+      "gain": {
+       "gold": 2
+      },
+      "guess": true
+     }
+    ]
+   ],
+   "simplified": "B 面與閃耀值兌換沒有重製。成員造成的傷害（普攻和技能都算）會額外附帶 15%／30% 的真實傷害；3 階的 15% 是推測，5 階的 30% 是官方數字。贏回合 +1／+2 金是簡化版的閃耀值獎勵（推測）。",
+   "guess": true,
+   "counter": null
+  },
+  {
+   "key": "Hyperpop",
+   "zh": "超流行",
+   "kind": "origin",
+   "breakpoints": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "desc": "超流行成員多拿生命和攻速。\n每場戰鬥結束會累積熱度，羈絆階數越高，累積越快，每次擊殺還再加熱度。\n熱度每累積 25，就拿 4 金。",
+   "levelsText": [
+    "100，10%",
+    "200，15%，2倍熱度",
+    "300，20%，3倍熱度",
+    "500，30%，3.75倍熱度"
+   ],
+   "members": [
+    "Ziggs",
+    "Kobuko",
+    "Tristana",
+    "Lulu",
+    "Teemo"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "hp": 100,
+       "asPct": 0.1
+      }
+     },
+     {
+      "type": "econ",
+      "when": "roundEnd",
+      "gain": {
+       "heat": 4
+      },
+      "guess": true
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "kill",
+       "ops": [
+        {
+         "op": "econ",
+         "kind": "heat",
+         "value": 1
+        }
+       ],
+       "src": "trait:Hyperpop",
+       "text": "擊殺加熱度"
+      }
+     },
+     {
+      "type": "counterReward",
+      "persistKey": "heat",
+      "thresholds": [
+       25,
+       50,
+       75,
+       100,
+       125,
+       150,
+       175,
+       200,
+       225,
+       250,
+       275,
+       300,
+       325,
+       350,
+       375,
+       400,
+       425,
+       450,
+       475,
+       500
+      ],
+      "gain": {
+       "gold": 4
+      },
+      "guess": true
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "hp": 200,
+       "asPct": 0.15
+      }
+     },
+     {
+      "type": "econ",
+      "when": "roundEnd",
+      "gain": {
+       "heat": 8
+      },
+      "guess": true
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "kill",
+       "ops": [
+        {
+         "op": "econ",
+         "kind": "heat",
+         "value": 2
+        }
+       ],
+       "src": "trait:Hyperpop",
+       "text": "擊殺加熱度"
+      }
+     },
+     {
+      "type": "counterReward",
+      "persistKey": "heat",
+      "thresholds": [
+       25,
+       50,
+       75,
+       100,
+       125,
+       150,
+       175,
+       200,
+       225,
+       250,
+       275,
+       300,
+       325,
+       350,
+       375,
+       400,
+       425,
+       450,
+       475,
+       500
+      ],
+      "gain": {
+       "gold": 4
+      },
+      "guess": true
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "hp": 300,
+       "asPct": 0.2
+      }
+     },
+     {
+      "type": "econ",
+      "when": "roundEnd",
+      "gain": {
+       "heat": 12
+      },
+      "guess": true
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "kill",
+       "ops": [
+        {
+         "op": "econ",
+         "kind": "heat",
+         "value": 3
+        }
+       ],
+       "src": "trait:Hyperpop",
+       "text": "擊殺加熱度"
+      }
+     },
+     {
+      "type": "counterReward",
+      "persistKey": "heat",
+      "thresholds": [
+       25,
+       50,
+       75,
+       100,
+       125,
+       150,
+       175,
+       200,
+       225,
+       250,
+       275,
+       300,
+       325,
+       350,
+       375,
+       400,
+       425,
+       450,
+       475,
+       500
+      ],
+      "gain": {
+       "gold": 4
+      },
+      "guess": true
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "hp": 500,
+       "asPct": 0.3
+      }
+     },
+     {
+      "type": "econ",
+      "when": "roundEnd",
+      "gain": {
+       "heat": 15
+      },
+      "guess": true
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "kill",
+       "ops": [
+        {
+         "op": "econ",
+         "kind": "heat",
+         "value": 3.75
+        }
+       ],
+       "src": "trait:Hyperpop",
+       "text": "擊殺加熱度"
+      }
+     },
+     {
+      "type": "counterReward",
+      "persistKey": "heat",
+      "thresholds": [
+       25,
+       50,
+       75,
+       100,
+       125,
+       150,
+       175,
+       200,
+       225,
+       250,
+       275,
+       300,
+       325,
+       350,
+       375,
+       400,
+       425,
+       450,
+       475,
+       500
+      ],
+      "gain": {
+       "gold": 4
+      },
+      "guess": true
+     }
+    ]
+   ],
+   "simplified": "官方依棋子星級給 4／6／12／40 點熱度、獎勵是熱度等級的特殊獎勵；這裡簡化成每場基礎 4 點 ×倍率（1／2／3／3.75），每次擊殺再 +1×倍率，每 25 熱度固定換 4 金（推測）。",
+   "guess": true,
+   "counter": {
+    "persistKey": "heat",
+    "label": "熱度",
+    "thresholds": [
+     25,
+     50,
+     75,
+     100,
+     125,
+     150,
+     175,
+     200,
+     225,
+     250,
+     275,
+     300,
+     325,
+     350,
+     375,
+     400,
+     425,
+     450,
+     475,
+     500
+    ]
+   }
+  },
+  {
+   "key": "ILLBEATS",
+   "zh": "ILLBEATS",
+   "kind": "origin",
+   "breakpoints": [
+    2,
+    3,
+    4
+   ],
+   "desc": "ILLBEATS 有一個混音器，分配分貝給生命、攻擊和法強。這裡的混音器固定平均分配，不用自己調。\n成員每 1 分貝拿 15 生命、1% 攻擊、1 法強；你的全隊另外拿 50% 的混音效果。\n4 階混音效果再強化 50%。",
+   "levelsText": [
+    "10分貝",
+    "14分貝",
+    "18分貝。混音效果強化50%。"
+   ],
+   "members": [
+    "Illaoi",
+    "Braum",
+    "Draven",
+    "Yuumi"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "hp": 150.0,
+       "adPct": 0.1,
+       "ap": 10.0
+      },
+      "guess": true
+     },
+     {
+      "type": "stat",
+      "who": "nonMembers",
+      "stats": {
+       "hp": 75.0,
+       "adPct": 0.05,
+       "ap": 5.0
+      },
+      "guess": true
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "hp": 210.0,
+       "adPct": 0.14,
+       "ap": 14.0
+      },
+      "guess": true
+     },
+     {
+      "type": "stat",
+      "who": "nonMembers",
+      "stats": {
+       "hp": 105.0,
+       "adPct": 0.07,
+       "ap": 7.0
+      },
+      "guess": true
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "hp": 405.0,
+       "adPct": 0.27,
+       "ap": 27.0
+      },
+      "guess": true
+     },
+     {
+      "type": "stat",
+      "who": "nonMembers",
+      "stats": {
+       "hp": 202.5,
+       "adPct": 0.135,
+       "ap": 13.5
+      },
+      "guess": true
+     }
+    ]
+   ],
+   "simplified": "混音器固定平均分配，每分貝數值（15 生命、1% 攻擊、1 法強）是推測（官方未公布）。成員拿完整混音效果，其他隊友拿 50%。擊殺給金幣的機率不做。",
+   "guess": true,
+   "counter": null
+  },
+  {
+   "key": "GuFeng",
+   "zh": "古風",
+   "kind": "origin",
+   "breakpoints": [
+    2,
+    3,
+    4
+   ],
+   "desc": "古風成員會隨你的玩家等級變強：每 1 級 +2% 攻擊、+2 法強、+2 護甲、+2 魔抗。\n3 階起再多每級 +2% 生命。\n4 階人口上限 +1。",
+   "levelsText": [
+    "每級獲得2%攻擊力與法術強度，以及2點護甲與魔法抗性。",
+    "並且每級獲得2%生命。",
+    "從兩卷卷軸中選擇一卷，可由古風英雄裝備。其中一卷會開啟通往11級的危險道路。"
+   ],
+   "members": [
+    "Xayah",
+    "Wukong",
+    "LeeSin",
+    "Janna"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "statPerLevel",
+      "who": "members",
+      "stats": {
+       "adPct": 0.02,
+       "ap": 2,
+       "armor": 2,
+       "mr": 2
+      }
+     }
+    ],
+    [
+     {
+      "type": "statPerLevel",
+      "who": "members",
+      "stats": {
+       "adPct": 0.02,
+       "ap": 2,
+       "armor": 2,
+       "mr": 2,
+       "hpPct": 0.02
+      }
+     }
+    ],
+    [
+     {
+      "type": "statPerLevel",
+      "who": "members",
+      "stats": {
+       "adPct": 0.02,
+       "ap": 2,
+       "armor": 2,
+       "mr": 2,
+       "hpPct": 0.02
+      }
+     },
+     {
+      "type": "teamSize",
+      "value": 1
+     }
+    ]
+   ],
+   "simplified": "官方 4 階是從兩卷卷軸選一卷（其中一卷通往 11 級），這裡改成人口上限 +1。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Jazz",
+   "zh": "爵士",
+   "kind": "origin",
+   "breakpoints": [
+    2,
+    3,
+    4
+   ],
+   "desc": "你每有一個啟動中的羈絆（獨特羈絆不算），全隊就多拿生命和傷害增幅。\n爵士本身也算一個羈絆。",
+   "levelsText": [
+    "1.5%生命，1%傷害增幅",
+    "2.5%生命，1.5%傷害增幅",
+    "3.5%生命，2%傷害增幅"
+   ],
+   "members": [
+    "Lucian",
+    "Galio",
+    "Bard",
+    "Smeech"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "statPerActiveTrait",
+      "who": "team",
+      "stats": {
+       "hpPct": 0.015,
+       "dmgAmp": 0.01
+      }
+     }
+    ],
+    [
+     {
+      "type": "statPerActiveTrait",
+      "who": "team",
+      "stats": {
+       "hpPct": 0.025,
+       "dmgAmp": 0.015
+      }
+     }
+    ],
+    [
+     {
+      "type": "statPerActiveTrait",
+      "who": "team",
+      "stats": {
+       "hpPct": 0.035,
+       "dmgAmp": 0.02
+      }
+     }
+    ]
+   ],
+   "simplified": "",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "RAndB",
+   "zh": "R&B",
+   "kind": "origin",
+   "breakpoints": [
+    1,
+    2
+   ],
+   "desc": "1 階：全隊受到的技能傷害 -6%。\n2 階：你最強的梅爾和銳兒靈魂相連：梅爾受到的傷害有 70% 轉給銳兒，梅爾每造成傷害，銳兒就幫她回那次傷害的 15%。兩隻要同時在場才有效。",
+   "levelsText": [
+    "你的隊伍受到的技能傷害降低6%。",
+    "你最強的梅爾與銳兒靈魂相連。梅爾受到的傷害有70%轉移給銳兒。銳兒治療梅爾造成傷害的15%。"
+   ],
+   "members": [
+    "Mel",
+    "Rell"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "team",
+      "stats": {
+       "abilityDr": 0.06
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "team",
+      "stats": {
+       "abilityDr": 0.06
+      }
+     },
+     {
+      "type": "special",
+      "id": "soulLink"
+     }
+    ]
+   ],
+   "simplified": "『最強的梅爾與銳兒』在這個版本只有各 1 隻，所以直接綁那兩隻。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "EDM",
+   "zh": "電子舞曲",
+   "kind": "origin",
+   "breakpoints": [
+    2
+   ],
+   "desc": "電子舞曲英雄的技能變強。這裡的設定是技能傷害 +30%，技能裡寫了「電子舞曲強化」的分支也會啟動。",
+   "levelsText": [
+    "電子舞曲英雄的技能獲得強化。"
+   ],
+   "members": [
+    "Jax",
+    "Vi"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "abilityAmp": 0.3
+      },
+      "guess": true
+     }
+    ]
+   ],
+   "simplified": "官方沒公布數字，技能傷害 +30% 是推測；SD19 的 breakpoints 是空的，這裡門檻固定為 2。",
+   "guess": true,
+   "counter": null
+  },
+  {
+   "key": "Frontman",
+   "zh": "主唱",
+   "kind": "class",
+   "countMode": "units",
+   "breakpoints": [
+    2,
+    4,
+    6
+   ],
+   "desc": "全隊多100生命，主唱自己再多吃一大截生命，第一次放技能後還會再往上加。",
+   "levelsText": [
+    "生命 +15%，首次施法後 +25%",
+    "生命 +22%，首次施法後 +40%",
+    "生命 +35%，首次施法後 +60%"
+   ],
+   "members": [
+    "Elise",
+    "Kobuko",
+    "Sett",
+    "Illaoi",
+    "Renekton",
+    "Galio",
+    "Swain",
+    "Shyvana",
+    "Thresh",
+    "NunuWillump"
+   ],
+   "always": [
+    {
+     "type": "stat",
+     "who": "team",
+     "stats": {
+      "hp": 100
+     }
+    }
+   ],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "hpPct": 0.15
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "firstCast",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "hp",
+         "value": {
+          "selfMaxHp": 0.087
+         }
+        }
+       ],
+       "src": "trait:Frontman",
+       "text": "主唱升級！生命提高"
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "hpPct": 0.22
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "firstCast",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "hp",
+         "value": {
+          "selfMaxHp": 0.148
+         }
+        }
+       ],
+       "src": "trait:Frontman",
+       "text": "主唱升級！生命提高"
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "hpPct": 0.35
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "firstCast",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "hp",
+         "value": {
+          "selfMaxHp": 0.185
+         }
+        }
+       ],
+       "src": "trait:Frontman",
+       "text": "主唱升級！生命提高"
+      }
+     }
+    ]
+   ],
+   "simplified": "首次施法後再補一次最大生命，補的量已經照當時的生命換算過，所以總共剛好是 +25%／+40%／+60%。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Juggernaut",
+   "zh": "重裝戰士",
+   "kind": "class",
+   "countMode": "units",
+   "breakpoints": [
+    2,
+    4,
+    6
+   ],
+   "desc": "重裝戰士自帶減傷，血越少減傷越高。",
+   "levelsText": [
+    "減傷15%到25%",
+    "減傷25%到35%",
+    "減傷35%到45%"
+   ],
+   "members": [
+    "Taric",
+    "Olaf",
+    "Gragas",
+    "Annie",
+    "Braum",
+    "Ekko",
+    "Zac",
+    "Yorick",
+    "Vi"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "missingHpScale",
+      "who": "members",
+      "stat": "dr",
+      "min": 0.15,
+      "max": 0.25
+     }
+    ],
+    [
+     {
+      "type": "missingHpScale",
+      "who": "members",
+      "stat": "dr",
+      "min": 0.25,
+      "max": 0.35
+     }
+    ],
+    [
+     {
+      "type": "missingHpScale",
+      "who": "members",
+      "stat": "dr",
+      "min": 0.35,
+      "max": 0.45
+     }
+    ]
+   ],
+   "simplified": "",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Slayer",
+   "zh": "殺戮者",
+   "kind": "class",
+   "countMode": "units",
+   "breakpoints": [
+    2,
+    4,
+    6
+   ],
+   "desc": "殺戮者獲得攻速和全能吸血，血越少加成越高，最多變兩倍。",
+   "levelsText": [
+    "攻速 +20%、吸血 8%",
+    "攻速 +40%、吸血 10%",
+    "攻速 +65%、吸血 12%"
+   ],
+   "members": [
+    "Katarina",
+    "Kayn",
+    "Camille",
+    "Briar",
+    "Viego",
+    "Yone",
+    "Yasuo",
+    "Smeech"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "missingHpScale",
+      "who": "members",
+      "stat": "asPct",
+      "min": 0.2,
+      "max": 0.4
+     },
+     {
+      "type": "missingHpScale",
+      "who": "members",
+      "stat": "omnivamp",
+      "min": 0.08,
+      "max": 0.16
+     }
+    ],
+    [
+     {
+      "type": "missingHpScale",
+      "who": "members",
+      "stat": "asPct",
+      "min": 0.4,
+      "max": 0.8
+     },
+     {
+      "type": "missingHpScale",
+      "who": "members",
+      "stat": "omnivamp",
+      "min": 0.1,
+      "max": 0.2
+     }
+    ],
+    [
+     {
+      "type": "missingHpScale",
+      "who": "members",
+      "stat": "asPct",
+      "min": 0.65,
+      "max": 1.3
+     },
+     {
+      "type": "missingHpScale",
+      "who": "members",
+      "stat": "omnivamp",
+      "min": 0.12,
+      "max": 0.24
+     }
+    ]
+   ],
+   "simplified": "加成在滿血時是基礎值，血量越低線性增加到 2 倍。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Swiftstriker",
+   "zh": "疾襲",
+   "kind": "class",
+   "countMode": "units",
+   "breakpoints": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "desc": "全隊攻速多10%。疾襲每2秒再疊一層攻速，最多5層。",
+   "levelsText": [
+    "每層5%",
+    "每層7%",
+    "每層13%",
+    "每層20%"
+   ],
+   "members": [
+    "Yunara",
+    "Ziggs",
+    "Ashe",
+    "Jax",
+    "Bard",
+    "Kayle",
+    "Locke",
+    "Zeri"
+   ],
+   "always": [
+    {
+     "type": "stat",
+     "who": "team",
+     "stats": {
+      "asPct": 0.1
+     }
+    }
+   ],
+   "tiers": [
+    [
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.05,
+         "stackKey": "swift",
+         "maxStacks": 5
+        }
+       ],
+       "src": "trait:Swiftstriker",
+       "text": "疾襲加速！",
+       "n": 2
+      }
+     }
+    ],
+    [
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.07,
+         "stackKey": "swift",
+         "maxStacks": 5
+        }
+       ],
+       "src": "trait:Swiftstriker",
+       "text": "疾襲加速！",
+       "n": 2
+      }
+     }
+    ],
+    [
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.13,
+         "stackKey": "swift",
+         "maxStacks": 5
+        }
+       ],
+       "src": "trait:Swiftstriker",
+       "text": "疾襲加速！",
+       "n": 2
+      }
+     }
+    ],
+    [
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.2,
+         "stackKey": "swift",
+         "maxStacks": 5
+        }
+       ],
+       "src": "trait:Swiftstriker",
+       "text": "疾襲加速！",
+       "n": 2
+      }
+     }
+    ]
+   ],
+   "simplified": "",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Choreographer",
+   "zh": "編舞師",
+   "kind": "class",
+   "countMode": "units",
+   "breakpoints": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "desc": "開場站在前2排的友軍拿護盾，後排友軍拿傷害增幅。編舞師自己拿雙倍。",
+   "levelsText": [
+    "護盾150、增傷6%",
+    "護盾225、增傷10%",
+    "護盾375、增傷15%",
+    "護盾550、增傷20%"
+   ],
+   "members": [
+    "RenataGlasc",
+    "Lulu",
+    "Syndra",
+    "Viego",
+    "Garen",
+    "Ahri",
+    "Nidalee",
+    "Rakan"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "startShield",
+      "who": "frontRows",
+      "value": 150,
+      "dur": 8
+     },
+     {
+      "type": "stat",
+      "who": "backRows",
+      "stats": {
+       "dmgAmp": 0.06
+      }
+     },
+     {
+      "type": "startShield",
+      "who": "members",
+      "value": 150,
+      "dur": 8
+     },
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "dmgAmp": 0.06
+      }
+     }
+    ],
+    [
+     {
+      "type": "startShield",
+      "who": "frontRows",
+      "value": 225,
+      "dur": 8
+     },
+     {
+      "type": "stat",
+      "who": "backRows",
+      "stats": {
+       "dmgAmp": 0.1
+      }
+     },
+     {
+      "type": "startShield",
+      "who": "members",
+      "value": 225,
+      "dur": 8
+     },
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "dmgAmp": 0.1
+      }
+     }
+    ],
+    [
+     {
+      "type": "startShield",
+      "who": "frontRows",
+      "value": 375,
+      "dur": 8
+     },
+     {
+      "type": "stat",
+      "who": "backRows",
+      "stats": {
+       "dmgAmp": 0.15
+      }
+     },
+     {
+      "type": "startShield",
+      "who": "members",
+      "value": 375,
+      "dur": 8
+     },
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "dmgAmp": 0.15
+      }
+     }
+    ],
+    [
+     {
+      "type": "startShield",
+      "who": "frontRows",
+      "value": 550,
+      "dur": 8
+     },
+     {
+      "type": "stat",
+      "who": "backRows",
+      "stats": {
+       "dmgAmp": 0.2
+      }
+     },
+     {
+      "type": "startShield",
+      "who": "members",
+      "value": 550,
+      "dur": 8
+     },
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "dmgAmp": 0.2
+      }
+     }
+    ]
+   ],
+   "simplified": "「自己拿雙倍」簡化成編舞師額外再拿一份：後排的編舞師也會有護盾，前排的編舞師也會拿到增傷（官方是各拿自己站位那一種的雙倍）。護盾持續時間官方沒寫，抓 8 秒。",
+   "guess": true,
+   "counter": null
+  },
+  {
+   "key": "Bodyguard",
+   "zh": "保鑣",
+   "kind": "class",
+   "countMode": "units",
+   "breakpoints": [
+    2,
+    4,
+    6
+   ],
+   "desc": "全隊多15點護甲和魔抗，保鑣自己再多一截。",
+   "levelsText": [
+    "保鑣再+22",
+    "保鑣再+55",
+    "保鑣再+115"
+   ],
+   "members": [
+    "Kennen",
+    "Lillia",
+    "Nasus",
+    "Jax",
+    "KSante",
+    "Tibbers",
+    "Leona"
+   ],
+   "always": [
+    {
+     "type": "stat",
+     "who": "team",
+     "stats": {
+      "armor": 15,
+      "mr": 15
+     }
+    }
+   ],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "armor": 22,
+       "mr": 22
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "armor": 55,
+       "mr": 55
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "armor": 115,
+       "mr": 115
+      }
+     }
+    ]
+   ],
+   "simplified": "不檢查保鑣是否還活著，全程生效。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Arcanist",
+   "zh": "奧術大師",
+   "kind": "class",
+   "countMode": "units",
+   "breakpoints": [
+    2,
+    4,
+    6
+   ],
+   "desc": "全隊拿法術強度，奧術大師再多拿一份（兩份疊在一起）。",
+   "levelsText": [
+    "全隊 +12，奧術大師再 +25",
+    "全隊 +18，奧術大師再 +50",
+    "全隊 +30，奧術大師再 +70"
+   ],
+   "members": [
+    "Ziggs",
+    "Zoe",
+    "Karthus",
+    "Annie",
+    "Swain",
+    "Mel",
+    "Vladimir"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "team",
+      "stats": {
+       "ap": 12
+      }
+     },
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "ap": 25
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "team",
+      "stats": {
+       "ap": 18
+      }
+     },
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "ap": 50
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "team",
+      "stats": {
+       "ap": 30
+      }
+     },
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "ap": 70
+      }
+     }
+    ]
+   ],
+   "simplified": "奧術大師的加成疊在全隊加成上面，所以奧術大師實際拿到 37／68／100 點法強。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Encore",
+   "zh": "安可",
+   "kind": "class",
+   "countMode": "units",
+   "breakpoints": [
+    2,
+    4
+   ],
+   "desc": "安可的技能會多射一發效果較弱的投射物。",
+   "levelsText": [
+    "額外一發，效果25%",
+    "額外一發，效果50%"
+   ],
+   "members": [
+    "Neeko",
+    "Varus",
+    "Ezreal",
+    "Lucian",
+    "Yuumi",
+    "Jhin",
+    "Taliyah"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "abilityAmp": 0.25
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "abilityAmp": 0.5
+      }
+     }
+    ]
+   ],
+   "simplified": "不做額外投射物，改成技能傷害 +25%／+50%。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Prodigy",
+   "zh": "不世之才",
+   "kind": "class",
+   "countMode": "units",
+   "breakpoints": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "desc": "全隊每秒多 1 點法力，不世之才再多拿一份。5 人時，他們造成傷害的 12% 會治療血最少的友軍。",
+   "levelsText": [
+    "不世之才再 +2",
+    "不世之才再 +3",
+    "不世之才再 +6",
+    "不世之才再 +7，並治療 12%"
+   ],
+   "members": [
+    "Neeko",
+    "Lux",
+    "Ekko",
+    "Malzahar",
+    "Alune",
+    "Janna"
+   ],
+   "always": [
+    {
+     "type": "stat",
+     "who": "team",
+     "stats": {
+      "manaRegen": 1
+     }
+    }
+   ],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "manaRegen": 2
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "manaRegen": 3
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "manaRegen": 6
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "manaRegen": 7
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "damageDealt",
+       "ops": [
+        {
+         "op": "heal",
+         "to": {
+          "lowestHp": 1,
+          "side": "ally"
+         },
+         "value": 12
+        }
+       ],
+       "src": "trait:Prodigy",
+       "text": "不世之才造成傷害，治療最殘的友軍",
+       "n": 100
+      }
+     }
+    ]
+   ],
+   "simplified": "全隊的 1 點法力回復和不世之才的加成是疊加的，所以不世之才實際每秒拿到 3／4／7／8 點。治療改成每造成 100 傷害，治療血最少的友軍 12 點（等於 12%）。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Renegade",
+   "zh": "叛逆者",
+   "kind": "class",
+   "countMode": "units",
+   "breakpoints": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "desc": "叛逆者拿暴擊率和暴擊傷害，技能也能暴擊。5人時再多10%減傷。",
+   "levelsText": [
+    "暴擊15%、暴傷12%",
+    "暴擊20%、暴傷18%",
+    "暴擊25%、暴傷22%",
+    "暴擊35%、暴傷25%，再加10%減傷"
+   ],
+   "members": [
+    "Qiyana",
+    "Samira",
+    "Evelynn",
+    "Aurora",
+    "Graves",
+    "Pyke"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "crit": 0.15,
+       "critDmg": 0.12,
+       "abilityCrit": true
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "crit": 0.2,
+       "critDmg": 0.18,
+       "abilityCrit": true
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "crit": 0.25,
+       "critDmg": 0.22,
+       "abilityCrit": true
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "crit": 0.35,
+       "critDmg": 0.25,
+       "abilityCrit": true,
+       "dr": 0.1
+      }
+     }
+    ]
+   ],
+   "simplified": "官方的「精準度」不做。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Collab",
+   "zh": "聯名",
+   "kind": "class",
+   "countMode": "units",
+   "breakpoints": [
+    3,
+    5
+   ],
+   "desc": "聯名成員打到或被打滿8下，就拿1層靈感，攻擊和法強都會提高，最多5層。全隊靈感每累計7層，戰後送你1隻場上聯名成員的1星。官方每局隨機挑一批英雄當聯名，這個版本固定是下面這6隻。",
+   "levelsText": [
+    "每層10%（官方未公布）",
+    "每層20%"
+   ],
+   "members": [
+    "Sett",
+    "Karthus",
+    "Gragas",
+    "Briar",
+    "Yuumi",
+    "Sona"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "attack",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "adPct",
+         "value": 0.1,
+         "stackKey": "inspire",
+         "maxStacks": 5
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "ap",
+         "value": 10,
+         "stackKey": "inspire2",
+         "maxStacks": 5
+        }
+       ],
+       "src": "trait:Collab",
+       "text": "靈感！攻擊和法強提高",
+       "n": 8
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "hit",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "adPct",
+         "value": 0.1,
+         "stackKey": "inspire",
+         "maxStacks": 5
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "ap",
+         "value": 10,
+         "stackKey": "inspire2",
+         "maxStacks": 5
+        }
+       ],
+       "src": "trait:Collab",
+       "text": "靈感！攻擊和法強提高",
+       "n": 8
+      }
+     },
+     {
+      "type": "counterReward",
+      "persistKey": "inspire",
+      "thresholds": [
+       7,
+       14,
+       21,
+       28,
+       35,
+       42,
+       49,
+       56,
+       63,
+       70,
+       77,
+       84,
+       91,
+       98,
+       105,
+       112,
+       119,
+       126,
+       133,
+       140
+      ],
+      "gain": {
+       "unit": {
+        "maxCost": 5,
+        "source": "collabOnBoard"
+       }
+      }
+     }
+    ],
+    [
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "attack",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "adPct",
+         "value": 0.2,
+         "stackKey": "inspire",
+         "maxStacks": 5
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "ap",
+         "value": 20,
+         "stackKey": "inspire2",
+         "maxStacks": 5
+        }
+       ],
+       "src": "trait:Collab",
+       "text": "靈感！攻擊和法強提高",
+       "n": 8
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "hit",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "adPct",
+         "value": 0.2,
+         "stackKey": "inspire",
+         "maxStacks": 5
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "ap",
+         "value": 20,
+         "stackKey": "inspire2",
+         "maxStacks": 5
+        }
+       ],
+       "src": "trait:Collab",
+       "text": "靈感！攻擊和法強提高",
+       "n": 8
+      }
+     },
+     {
+      "type": "counterReward",
+      "persistKey": "inspire",
+      "thresholds": [
+       7,
+       14,
+       21,
+       28,
+       35,
+       42,
+       49,
+       56,
+       63,
+       70,
+       77,
+       84,
+       91,
+       98,
+       105,
+       112,
+       119,
+       126,
+       133,
+       140
+      ],
+      "gain": {
+       "unit": {
+        "maxCost": 5,
+        "source": "collabOnBoard"
+       }
+      }
+     }
+    ]
+   ],
+   "simplified": "成員固定 6 隻：賽特、卡爾瑟斯、古拉格斯、布蕾爾、悠咪、索娜（官方每局隨機挑，可能的英雄共 48 名）。3 階每層 +10% 是推測，官方沒公布。打人和被打分開算，各滿 8 下拿 1 層。",
+   "guess": true,
+   "counter": {
+    "persistKey": "inspire",
+    "label": "靈感",
+    "thresholds": [
+     7,
+     14,
+     21,
+     28,
+     35,
+     42,
+     49,
+     56,
+     63,
+     70,
+     77,
+     84,
+     91,
+     98,
+     105,
+     112,
+     119,
+     126,
+     133,
+     140
+    ]
+   }
+  },
+  {
+   "key": "Trickshot",
+   "zh": "詭射",
+   "kind": "class",
+   "countMode": "units",
+   "breakpoints": [
+    2,
+    3,
+    4
+   ],
+   "desc": "詭射的普攻會彈射到別的敵人，每次彈射只剩前一次傷害的一部分。",
+   "levelsText": [
+    "彈1次，前次的22%",
+    "彈1次，前次的33%",
+    "彈2次，前次的33%"
+   ],
+   "members": [
+    "Gnar",
+    "Samira",
+    "KaiSa",
+    "Draven",
+    "Vayne",
+    "TwistedFate"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "bounce",
+      "who": "members",
+      "count": 1,
+      "pct": 0.22
+     }
+    ],
+    [
+     {
+      "type": "bounce",
+      "who": "members",
+      "count": 1,
+      "pct": 0.33
+     }
+    ],
+    [
+     {
+      "type": "bounce",
+      "who": "members",
+      "count": 2,
+      "pct": 0.33
+     }
+    ]
+   ],
+   "simplified": "只有普攻會彈，技能不彈。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Hitmaker",
+   "zh": "金曲推手",
+   "kind": "class",
+   "countMode": "units",
+   "breakpoints": [
+    2,
+    4
+   ],
+   "desc": "金曲推手攻擊力多12%。裝備最多的那幾隻會變成「金曲人物」，攻擊力再多一截。",
+   "levelsText": [
+    "1名金曲人物，再加20%",
+    "2名金曲人物，再加35%"
+   ],
+   "members": [
+    "Tristana",
+    "Lucian",
+    "Senna",
+    "Xayah",
+    "Jinx",
+    "MissFortune"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "adPct": 0.12
+      }
+     },
+     {
+      "type": "stat",
+      "who": {
+       "mostItems": 1
+      },
+      "stats": {
+       "adPct": 0.2
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "adPct": 0.12
+      }
+     },
+     {
+      "type": "stat",
+      "who": {
+       "mostItems": 2
+      },
+      "stats": {
+       "adPct": 0.35
+      }
+     }
+    ]
+   ],
+   "simplified": "",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Manager",
+   "zh": "經紀人",
+   "kind": "class",
+   "countMode": "units",
+   "breakpoints": [
+    2,
+    3,
+    4
+   ],
+   "desc": "你有一格聚光燈，自動打在全隊裝備最多的那隻身上。開場和之後每5秒，他都拿一次加成，可以疊。",
+   "levelsText": [
+    "每次傷害增幅+8%",
+    "再加8點法力",
+    "再加每場戰鬥1金幣"
+   ],
+   "members": [
+    "Alune",
+    "Leona",
+    "DrMundo"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "passive",
+      "who": "mostItemsAlly",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "dmgAmp",
+         "value": 0.08,
+         "stackKey": "spot",
+         "maxStacks": 99
+        }
+       ],
+       "src": "trait:Manager",
+       "text": "聚光燈！"
+      }
+     },
+     {
+      "type": "passive",
+      "who": "mostItemsAlly",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "dmgAmp",
+         "value": 0.08,
+         "stackKey": "spot",
+         "maxStacks": 99
+        }
+       ],
+       "src": "trait:Manager",
+       "text": "聚光燈！",
+       "n": 5
+      }
+     }
+    ],
+    [
+     {
+      "type": "passive",
+      "who": "mostItemsAlly",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "dmgAmp",
+         "value": 0.08,
+         "stackKey": "spot",
+         "maxStacks": 99
+        },
+        {
+         "op": "mana",
+         "to": "self",
+         "value": 8
+        }
+       ],
+       "src": "trait:Manager",
+       "text": "聚光燈！"
+      }
+     },
+     {
+      "type": "passive",
+      "who": "mostItemsAlly",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "dmgAmp",
+         "value": 0.08,
+         "stackKey": "spot",
+         "maxStacks": 99
+        },
+        {
+         "op": "mana",
+         "to": "self",
+         "value": 8
+        }
+       ],
+       "src": "trait:Manager",
+       "text": "聚光燈！",
+       "n": 5
+      }
+     }
+    ],
+    [
+     {
+      "type": "passive",
+      "who": "mostItemsAlly",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "dmgAmp",
+         "value": 0.08,
+         "stackKey": "spot",
+         "maxStacks": 99
+        },
+        {
+         "op": "mana",
+         "to": "self",
+         "value": 8
+        }
+       ],
+       "src": "trait:Manager",
+       "text": "聚光燈！"
+      }
+     },
+     {
+      "type": "passive",
+      "who": "mostItemsAlly",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "dmgAmp",
+         "value": 0.08,
+         "stackKey": "spot",
+         "maxStacks": 99
+        },
+        {
+         "op": "mana",
+         "to": "self",
+         "value": 8
+        }
+       ],
+       "src": "trait:Manager",
+       "text": "聚光燈！",
+       "n": 5
+      }
+     },
+     {
+      "type": "econ",
+      "when": "roundEnd",
+      "gain": {
+       "gold": 1
+      }
+     }
+    ]
+   ],
+   "simplified": "聚光燈不用自己放，系統自動給裝備最多的友軍。每次 +8% 傷害增幅可以一直疊。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "8Bit",
+   "zh": "8-bit",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "全隊的傷害會一路累計，好運姐的傷害算3倍。每破一個紀錄就拿5金幣。紀錄：5萬、8萬、15萬、22.5萬、35萬、55萬、70萬、100萬。",
+   "levelsText": [
+    "破紀錄拿5金幣"
+   ],
+   "members": [
+    "MissFortune"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "counterReward",
+      "persistKey": "eightBit",
+      "thresholds": [
+       50000,
+       80000,
+       150000,
+       225000,
+       350000,
+       550000,
+       700000,
+       1000000
+      ],
+      "gain": {
+       "gold": 5
+      }
+     }
+    ]
+   ],
+   "simplified": "每破一個紀錄拿 5 金是推測（官方只說有獎勵）。傷害跨回合一路累計，好運姐的傷害算 3 倍。",
+   "guess": true,
+   "counter": {
+    "persistKey": "eightBit",
+    "label": "累計傷害",
+    "thresholds": [
+     50000,
+     80000,
+     150000,
+     225000,
+     350000,
+     550000,
+     700000,
+     1000000
+    ]
+   }
+  },
+  {
+   "key": "OneMonsterBand",
+   "zh": "一獸樂團",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "巴龍納什占 2 個人口，而且不會被控。他第一次放技能後，會把所有敵人的攻擊、法強和攻速各偷走 10%（推測），自己各加 30%（推測）。",
+   "levelsText": [
+    "占2人口、免控、首次施法偷屬性"
+   ],
+   "members": [
+    "BaronNashor"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "status",
+         "to": "self",
+         "kind": "ccImmune",
+         "dur": 999
+        }
+       ],
+       "src": "trait:OneMonsterBand",
+       "text": "巴龍：免疫控制"
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "firstCast",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "allEnemies",
+         "stat": "adPct",
+         "value": -0.1
+        },
+        {
+         "op": "buff",
+         "to": "allEnemies",
+         "stat": "ap",
+         "value": -10
+        },
+        {
+         "op": "buff",
+         "to": "allEnemies",
+         "stat": "asPct",
+         "value": -0.1
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "adPct",
+         "value": 0.3
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "ap",
+         "value": 30
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.3
+        }
+       ],
+       "src": "trait:OneMonsterBand",
+       "text": "巴龍的歌聲，偷走敵人屬性"
+      }
+     }
+    ]
+   ],
+   "simplified": "偷取量官方沒公布：敵人攻擊、法強、攻速各 −10%，巴龍自己各 +30%（推測）。暴擊率沒偷。",
+   "guess": true,
+   "counter": null
+  },
+  {
+   "key": "Composer",
+   "zh": "作曲家",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "這個版本不用去商店找樂器：馬爾札哈在場又打贏，就自動多 1 件，最多 5 件。每件樂器全隊 +3 法強，馬爾札哈拿雙倍。集滿 5 件送你一隻巴龍納什。",
+   "levelsText": [
+    "每件樂器全隊+3法強"
+   ],
+   "members": [
+    "Malzahar"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "team",
+      "stats": {
+       "ap": 3
+      },
+      "perPersist": "instrument"
+     },
+     {
+      "type": "stat",
+      "who": {
+       "unit": "Malzahar"
+      },
+      "stats": {
+       "ap": 3
+      },
+      "perPersist": "instrument"
+     },
+     {
+      "type": "econ",
+      "when": "win",
+      "gain": {
+       "instrument": 1
+      }
+     },
+     {
+      "type": "counterReward",
+      "persistKey": "instrument",
+      "thresholds": [
+       5
+      ],
+      "gain": {
+       "unit": {
+        "key": "BaronNashor"
+       }
+      }
+     }
+    ]
+   ],
+   "simplified": "官方的樂器是在商店買的，而且馬爾札哈還要累計 65000 傷害才會解鎖巴龍；這裡改成贏一場拿一件、集滿就送。",
+   "guess": true,
+   "counter": {
+    "persistKey": "instrument",
+    "label": "樂器",
+    "thresholds": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "max": 5,
+    "gainWhen": "win",
+    "requireUnit": "Malzahar"
+   }
+  },
+  {
+   "key": "Synthwave",
+   "zh": "合成波",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "蓋倫血量掉到 35% 時，拿一個 6 秒的護盾（300＋他最大生命的 30%）。",
+   "levelsText": [
+    "掉到 35% 血拿護盾（300＋最大生命的 30%）"
+   ],
+   "members": [
+    "Garen"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "passive",
+      "who": {
+       "unit": "Garen"
+      },
+      "passive": {
+       "on": "hpBelow",
+       "ops": [
+        {
+         "op": "shield",
+         "to": "self",
+         "value": {
+          "flat": 300,
+          "selfMaxHp": 0.3
+         },
+         "dur": 6
+        }
+       ],
+       "src": "trait:Synthwave",
+       "text": "合成波護盾！",
+       "n": 0.35,
+       "limit": 1
+      }
+     }
+    ]
+   ],
+   "simplified": "官方護盾量是「本場受到的治療加護盾總量的 50%」，這裡簡化成 300 加蓋倫最大生命 30%（數字為推測）。",
+   "guess": true,
+   "counter": null
+  },
+  {
+   "key": "Goth",
+   "zh": "哥德",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "婕莉每場第一次打到敵人，吸血蝙蝠會偷走那個敵人8%的攻擊力給她。",
+   "levelsText": [
+    "首次傷害偷8%攻擊"
+   ],
+   "members": [
+    "Zeri"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "passive",
+      "who": {
+       "unit": "Zeri"
+      },
+      "passive": {
+       "on": "attack",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "adPct",
+         "value": 0.08
+        },
+        {
+         "op": "buff",
+         "to": "current",
+         "stat": "adPct",
+         "value": -0.08
+        }
+       ],
+       "src": "trait:Goth",
+       "text": "蝙蝠偷攻擊！",
+       "n": 1,
+       "limit": 1
+      }
+     }
+    ]
+   ],
+   "simplified": "用婕莉第一次普攻代替「第一次傷害敵人」；偷的量簡化成雙方各 8%。",
+   "guess": true,
+   "counter": null
+  },
+  {
+   "key": "RecordMogul",
+   "zh": "唱片大亨",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "你有一份唱片合約，會自動簽給全隊裝備最多的友軍：他的傷害增幅+5%。簽約的人每次擊殺，蒙多醫生就永久多25點生命。",
+   "levelsText": [
+    "合約：傷害增幅+5%，擊殺幫蒙多加生命"
+   ],
+   "members": [
+    "DrMundo"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "mostItemsAlly",
+      "stats": {
+       "dmgAmp": 0.05
+      }
+     },
+     {
+      "type": "passive",
+      "who": "mostItemsAlly",
+      "passive": {
+       "on": "kill",
+       "ops": [
+        {
+         "op": "econ",
+         "kind": "mundoHp",
+         "value": 25
+        }
+       ],
+       "src": "trait:RecordMogul",
+       "text": "唱片合約：蒙多永久 +25 生命"
+      }
+     }
+    ]
+   ],
+   "simplified": "合約自動簽給全隊裝備最多的那隻（傷害增幅 +5%），只做 1 份（官方每 4 回合多 1 份）。簽約者每次擊殺，蒙多永久 +25 生命（跨回合累計）。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Emo",
+   "zh": "情緒搖滾",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "開場時如果阿姆姆旁邊沒有友軍，就拿護甲和魔抗，星級越高越多。",
+   "levelsText": [
+    "孤單時雙抗25/40/55"
+   ],
+   "members": [
+    "Amumu"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "statByStar",
+      "unit": "Amumu",
+      "stats": {
+       "armor": [
+        25,
+        40,
+        55
+       ],
+       "mr": [
+        25,
+        40,
+        55
+       ]
+      },
+      "cond": {
+       "noAdjacentAlly": true
+      }
+     }
+    ]
+   ],
+   "simplified": "",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Tango",
+   "zh": "探戈",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "逆命會把最近的友軍當舞伴，兩人攻速+15%。逆命打到的敵人會被灼燒和重傷3秒。",
+   "levelsText": [
+    "舞伴攻速+15%、灼燒重傷"
+   ],
+   "members": [
+    "TwistedFate"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "passive",
+      "who": {
+       "unit": "TwistedFate"
+      },
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.15
+        },
+        {
+         "op": "buff",
+         "to": {
+          "allies": 1,
+          "notSelf": true
+         },
+         "stat": "asPct",
+         "value": 0.15
+        }
+       ],
+       "src": "trait:Tango",
+       "text": "探戈開跳！"
+      }
+     },
+     {
+      "type": "passive",
+      "who": {
+       "unit": "TwistedFate"
+      },
+      "passive": {
+       "on": "attack",
+       "ops": [
+        {
+         "op": "status",
+         "to": "current",
+         "kind": "burn",
+         "dur": 3,
+         "value": 0.01
+        },
+        {
+         "op": "status",
+         "to": "current",
+         "kind": "wound",
+         "dur": 3,
+         "value": 0.33
+        }
+       ],
+       "src": "trait:Tango",
+       "text": "灼燒加重傷",
+       "n": 1
+      }
+     }
+    ]
+   ],
+   "simplified": "只有逆命的普攻會上灼燒和重傷（官方連舞伴也會）。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "MelodicHeart",
+   "zh": "旋律之心",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "開場前12秒，關會被迷霧包住，敵人選不到她。她旁邊的友軍也多10%減傷。",
+   "levelsText": [
+    "關前12秒不能被選取"
+   ],
+   "members": [
+    "Gwen"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "special",
+      "id": "untargetableStart",
+      "unit": "Gwen",
+      "dur": 12
+     },
+     {
+      "type": "passive",
+      "who": {
+       "unit": "Gwen"
+      },
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "buff",
+         "to": {
+          "adjacent": "ally"
+         },
+         "stat": "dr",
+         "value": 0.1,
+         "dur": 12
+        }
+       ],
+       "src": "trait:MelodicHeart",
+       "text": "迷霧護體"
+      }
+     }
+    ]
+   ],
+   "simplified": "官方「迷霧內的友軍 +10% 韌性」簡化成開場相鄰的友軍前12秒減傷10%。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "HypeMan",
+   "zh": "氣氛擔當",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "超流行的英雄每造成 2500 點傷害，熱度就多 1 點（官方連受到的傷害也算，這裡沒算）。",
+   "levelsText": [
+    "每2500傷害熱度+1"
+   ],
+   "members": [
+    "Teemo"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "passive",
+      "who": {
+       "trait": "Hyperpop"
+      },
+      "passive": {
+       "on": "damageDealt",
+       "ops": [
+        {
+         "op": "econ",
+         "kind": "heat",
+         "value": 1
+        }
+       ],
+       "src": "trait:HypeMan",
+       "text": "熱度+1",
+       "n": 2500
+      }
+     }
+    ]
+   ],
+   "simplified": "只算超流行成員「造成」的傷害，受到的傷害沒算。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Indie",
+   "zh": "獨立音樂",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "每2回合戰後，瑟菈紛吸引粉絲，送你1隻隨機1到3費的1星英雄。你有3星英雄時她變新星，技能更強；有4隻以上就是超級巨星。",
+   "levelsText": [
+    "每2回合送牌，3星加強技能"
+   ],
+   "members": [
+    "Seraphine"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "econ",
+      "when": "everyNRounds",
+      "n": 2,
+      "gain": {
+       "unit": {
+        "maxCost": 3
+       }
+      }
+     },
+     {
+      "type": "stat",
+      "who": {
+       "unit": "Seraphine"
+      },
+      "stats": {
+       "abilityAmp": 0.3
+      },
+      "cond": {
+       "threeStarCount": {
+        "min": 1,
+        "max": 3
+       }
+      }
+     },
+     {
+      "type": "stat",
+      "who": {
+       "unit": "Seraphine"
+      },
+      "stats": {
+       "abilityAmp": 0.8
+      },
+      "cond": {
+       "threeStarCount": {
+        "min": 4
+       }
+      }
+     }
+    ]
+   ],
+   "simplified": "「訂閱者獎勵」沒做。新星技能傷害 +30%、超級巨星 +80% 是推測。官方是每場戰後送，這裡每 2 回合送一次。",
+   "guess": true,
+   "counter": null
+  },
+  {
+   "key": "BoyBand",
+   "zh": "男團",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "銳空會帶一個分身，分身有他50%的生命，傷害是他的30%，裝備也一樣。",
+   "levelsText": [
+    "銳空多一個分身"
+   ],
+   "members": [
+    "Rakan"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "special",
+      "id": "clone",
+      "unit": "Rakan"
+     }
+    ]
+   ],
+   "simplified": "分身只有1個，生在銳空旁邊的空格。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "BeatMaster",
+   "zh": "節拍大師",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "銳兒血量掉到50%會上馬，2秒內補滿血。騎馬時，她每第3下普攻會沿直線打出魔法傷害，傷害看她的護甲加魔抗。",
+   "levelsText": [
+    "半血上馬回滿，之後第3下普攻放直線傷害"
+   ],
+   "members": [
+    "Rell"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "passive",
+      "who": {
+       "unit": "Rell"
+      },
+      "passive": {
+       "on": "hpBelow",
+       "ops": [
+        {
+         "op": "flag",
+         "name": "riding",
+         "on": true
+        },
+        {
+         "op": "repeat",
+         "times": 4,
+         "gap": 0.5,
+         "ops": [
+          {
+           "op": "heal",
+           "to": "self",
+           "value": {
+            "selfMaxHp": 0.25
+           }
+          }
+         ]
+        }
+       ],
+       "src": "trait:BeatMaster",
+       "text": "銳兒上馬！",
+       "n": 0.5,
+       "limit": 1
+      }
+     },
+     {
+      "type": "passive",
+      "who": {
+       "unit": "Rell"
+      },
+      "passive": {
+       "on": "attack",
+       "ops": [
+        {
+         "op": "if",
+         "cond": {
+          "flag": "riding"
+         },
+         "then": [
+          {
+           "op": "damage",
+           "to": {
+            "line": "current",
+            "len": "board"
+           },
+           "type": "magic",
+           "value": {
+            "resist": [
+             2,
+             3,
+             5
+            ]
+           }
+          }
+         ]
+        }
+       ],
+       "src": "trait:BeatMaster",
+       "text": "騎兵衝鋒",
+       "n": 3
+      }
+     }
+    ]
+   ],
+   "simplified": "1 星、2 星的傷害倍率官方沒公布（推測 ×2、×3），3 星是官方的 ×5（倍率乘上護甲＋魔抗）。不做「騎乘時最大法力 -40」。",
+   "guess": true,
+   "counter": null
+  },
+  {
+   "key": "Freestyle",
+   "zh": "自由風格",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "阿卡莉有 True Damage 的兩面。這個版本只做A面：贏了就拿1金幣。",
+   "levelsText": [
+    "A面：贏+1金幣"
+   ],
+   "members": [
+    "AkaliTrueDamage"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "econ",
+      "when": "win",
+      "gain": {
+       "gold": 1
+      }
+     }
+    ]
+   ],
+   "simplified": "只做 A 面，B 面（回復玩家生命）沒重製。贏 +1 金是推測，官方沒寫數字。",
+   "guess": true,
+   "counter": null
+  },
+  {
+   "key": "Producer",
+   "zh": "製作人",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "索娜在場時，選一個樂團跟她合作，拿到那個羈絆。這個版本自動挑場上人數最多的起源羈絆，幫它多算1人。",
+   "levelsText": [
+    "索娜讓人數最多的起源羈絆+1"
+   ],
+   "members": [
+    "Sona"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "special",
+      "id": "producer"
+     }
+    ]
+   ],
+   "simplified": "自動挑場上人數最多的起源（一樣多就照固定順序挑）。索娜「額外攻擊與攻速轉法強」不做。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Disco",
+   "zh": "迪斯可",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "全隊每秒回1%最大生命。全隊總共放技能6次後進入迪斯可狂熱，全隊攻速+125%。",
+   "levelsText": [
+    "每秒回1%血，放6次技能後攻速+125%"
+   ],
+   "members": [
+    "NunuWillump"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "every",
+       "n": 1,
+       "ops": [
+        {
+         "op": "heal",
+         "to": {
+          "allies": "all"
+         },
+         "value": {
+          "tgtMaxHp": 0.01
+         }
+        }
+       ],
+       "src": "trait:Disco",
+       "text": "迪斯可回血"
+      }
+     },
+     {
+      "type": "teamPassive",
+      "passive": {
+       "on": "cast",
+       "n": 6,
+       "limit": 1,
+       "ops": [
+        {
+         "op": "buff",
+         "to": {
+          "allies": "all"
+         },
+         "stat": "asPct",
+         "value": 1.25
+        }
+       ],
+       "src": "trait:Disco",
+       "text": "迪斯可狂熱！攻速大增"
+      }
+     }
+    ]
+   ],
+   "simplified": "全隊累計放技能滿6次才觸發（只觸發一次）。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Country",
+   "zh": "鄉村音樂",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "戰鬥開始時，如果亞歷斯塔靠裝備和羈絆多出來的生命超過500，他就拿15%減傷。",
+   "levelsText": [
+    "額外生命超過500，減傷+15%"
+   ],
+   "members": [
+    "Alistar"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": {
+       "unit": "Alistar"
+      },
+      "stats": {
+       "dr": 0.15
+      },
+      "cond": {
+       "bonusHpOver": 500
+      }
+     }
+    ]
+   ],
+   "simplified": "無。",
+   "guess": false,
+   "counter": null
+  },
+  {
+   "key": "Windblessed",
+   "zh": "風之祝福",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "戰鬥開始時，珍娜會放一道龍捲風，暈眩離她最近的 4 個敵人 1 秒。",
+   "levelsText": [
+    "開場暈眩離珍娜最近的 4 個敵人 1 秒"
+   ],
+   "members": [
+    "Janna"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "passive",
+      "who": {
+       "unit": "Janna"
+      },
+      "passive": {
+       "on": "start",
+       "ops": [
+        {
+         "op": "stun",
+         "to": {
+          "nearest": 4
+         },
+         "dur": 1
+        }
+       ],
+       "src": "trait:Windblessed",
+       "text": "龍捲風！"
+      }
+     }
+    ]
+   ],
+   "simplified": "官方是把她那一行（加左右各一行）的敵人擊飛，這裡簡化成暈眩離珍娜最近的 4 個敵人。",
+   "guess": true,
+   "counter": null
+  },
+  {
+   "key": "Mariachi",
+   "zh": "馬利亞奇",
+   "kind": "unique",
+   "countMode": "units",
+   "breakpoints": [
+    1
+   ],
+   "desc": "奈德麗血量高於75%放技能，會變獵豹並放跳躍派對；否則放生命之舞。血量每次掉到50%以下，她會跳開並變回人形。",
+   "levelsText": [
+    "純說明，效果寫在奈德麗技能裡"
+   ],
+   "members": [
+    "Nidalee"
+   ],
+   "always": [],
+   "tiers": [
+    []
+   ],
+   "simplified": "沒有羈絆效果，行為寫在奈德麗的技能。",
+   "guess": false,
+   "counter": null
+  }
+ ]
+}

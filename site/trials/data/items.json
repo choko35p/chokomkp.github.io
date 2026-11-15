@@ -1,0 +1,889 @@
+{
+ "components": [
+  {
+   "key": "BFSword",
+   "zh": "暴風之劍",
+   "stats": {
+    "adPct": 0.1
+   }
+  },
+  {
+   "key": "RecurveBow",
+   "zh": "反曲弓",
+   "stats": {
+    "asPct": 0.1
+   }
+  },
+  {
+   "key": "NeedlesslyLargeRod",
+   "zh": "巨型魔棒",
+   "stats": {
+    "ap": 10
+   }
+  },
+  {
+   "key": "TearOfTheGoddess",
+   "zh": "女神之淚",
+   "stats": {
+    "manaRegen": 1
+   }
+  },
+  {
+   "key": "ChainVest",
+   "zh": "鎖子甲",
+   "stats": {
+    "armor": 20
+   }
+  },
+  {
+   "key": "NegatronCloak",
+   "zh": "負極斗篷",
+   "stats": {
+    "mr": 20
+   }
+  },
+  {
+   "key": "GiantsBelt",
+   "zh": "巨人腰帶",
+   "stats": {
+    "hp": 150
+   }
+  },
+  {
+   "key": "SparringGloves",
+   "zh": "格鬥手套",
+   "stats": {
+    "crit": 0.2
+   }
+  }
+ ],
+ "items": [
+  {
+   "key": "Deathblade",
+   "zh": "死神之刃",
+   "recipe": [
+    "BFSword",
+    "BFSword"
+   ],
+   "stats": {
+    "adPct": 0.55,
+    "dmgAmp": 0.1
+   },
+   "passives": [],
+   "desc": "攻擊 +55%、傷害增幅 +10%",
+   "simplified": ""
+  },
+  {
+   "key": "GiantSlayer",
+   "zh": "巨人殺手",
+   "recipe": [
+    "RecurveBow",
+    "BFSword"
+   ],
+   "stats": {
+    "adPct": 0.15,
+    "ap": 15,
+    "asPct": 0.15
+   },
+   "passives": [
+    {
+     "on": "start",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "dmgAmp",
+       "value": 0.1
+      }
+     ],
+     "src": "item:GiantSlayer",
+     "text": "巨人殺手"
+    }
+   ],
+   "desc": "攻擊 +15%、法術強度 +15、攻速 +15%。傷害增幅 +10%。",
+   "simplified": "原版是打高血量目標才加成，這裡簡化成全程 +10%。"
+  },
+  {
+   "key": "HextechGunblade",
+   "zh": "海克斯科技槍刃",
+   "recipe": [
+    "BFSword",
+    "NeedlesslyLargeRod"
+   ],
+   "stats": {
+    "adPct": 0.2,
+    "ap": 20,
+    "manaRegen": 1,
+    "omnivamp": 0.15
+   },
+   "passives": [],
+   "desc": "攻擊 +20%、法術強度 +20、法力回復 +1、全能吸血 +15%",
+   "simplified": ""
+  },
+  {
+   "key": "SpearOfShojin",
+   "zh": "精進之矛",
+   "recipe": [
+    "TearOfTheGoddess",
+    "BFSword"
+   ],
+   "stats": {
+    "adPct": 0.15,
+    "ap": 15,
+    "manaRegen": 1
+   },
+   "passives": [],
+   "desc": "攻擊 +15%、法術強度 +15、法力回復 +1",
+   "simplified": ""
+  },
+  {
+   "key": "InfinityEdge",
+   "zh": "無盡之刃",
+   "recipe": [
+    "BFSword",
+    "SparringGloves"
+   ],
+   "stats": {
+    "adPct": 0.35,
+    "crit": 0.35
+   },
+   "passives": [],
+   "desc": "攻擊 +35%、暴擊率 +35%",
+   "simplified": "技能暴擊沒做，只留數值。"
+  },
+  {
+   "key": "GuinsoosRageblade",
+   "zh": "鬼索的狂暴之刃",
+   "recipe": [
+    "RecurveBow",
+    "NeedlesslyLargeRod"
+   ],
+   "stats": {
+    "ap": 10,
+    "asPct": 0.1
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "asPct",
+       "value": 0.05,
+       "stackKey": "guinsoo",
+       "maxStacks": 40
+      }
+     ],
+     "src": "item:GuinsoosRageblade",
+     "text": "狂暴"
+    }
+   ],
+   "desc": "法術強度 +10、攻速 +10%。每次普攻，攻速 +5%，可疊加。",
+   "simplified": ""
+  },
+  {
+   "key": "VoidStaff",
+   "zh": "虛空之杖",
+   "recipe": [
+    "RecurveBow",
+    "TearOfTheGoddess"
+   ],
+   "stats": {
+    "ap": 35,
+    "asPct": 0.15,
+    "manaRegen": 1
+   },
+   "passives": [
+    {
+     "on": "cast",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "shred",
+       "dur": 3,
+       "value": 0.3
+      }
+     ],
+     "src": "item:VoidStaff",
+     "text": "破魔"
+    }
+   ],
+   "desc": "法術強度 +35、攻速 +15%、法力回復 +1。施放技能後，目標魔抗 -30%，持續 3 秒。",
+   "simplified": ""
+  },
+  {
+   "key": "KrakensFury",
+   "zh": "海妖之怒",
+   "recipe": [
+    "RecurveBow",
+    "NegatronCloak"
+   ],
+   "stats": {
+    "adPct": 0.1,
+    "asPct": 0.1,
+    "mr": 20
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "adPct",
+       "value": 0.04,
+       "stackKey": "kraken",
+       "maxStacks": 30
+      }
+     ],
+     "src": "item:KrakensFury",
+     "text": "疊攻"
+    }
+   ],
+   "desc": "攻擊 +10%、攻速 +10%、魔抗 +20。每次普攻，攻擊 +4%，可疊加。",
+   "simplified": ""
+  },
+  {
+   "key": "NashorsTooth",
+   "zh": "納什之牙",
+   "recipe": [
+    "RecurveBow",
+    "GiantsBelt"
+   ],
+   "stats": {
+    "ap": 15,
+    "asPct": 0.1,
+    "crit": 0.2,
+    "hp": 150
+   },
+   "passives": [
+    {
+     "on": "cast",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "asPct",
+       "value": 0.4,
+       "dur": 4
+      }
+     ],
+     "src": "item:NashorsTooth",
+     "text": "攻速"
+    }
+   ],
+   "desc": "法術強度 +15、攻速 +10%、暴擊率 +20%、生命 +150。施放技能後，攻速 +40%，持續 4 秒。",
+   "simplified": ""
+  },
+  {
+   "key": "LastWhisper",
+   "zh": "最後耳語",
+   "recipe": [
+    "RecurveBow",
+    "SparringGloves"
+   ],
+   "stats": {
+    "adPct": 0.15,
+    "asPct": 0.2,
+    "crit": 0.2
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "sunder",
+       "dur": 3,
+       "value": 0.3
+      }
+     ],
+     "src": "item:LastWhisper",
+     "text": "破甲"
+    }
+   ],
+   "desc": "攻擊 +15%、攻速 +20%、暴擊率 +20%。普攻讓目標護甲 -30%，持續 3 秒。",
+   "simplified": ""
+  },
+  {
+   "key": "ArchangelsStaff",
+   "zh": "大天使之杖",
+   "recipe": [
+    "NeedlesslyLargeRod",
+    "TearOfTheGoddess"
+   ],
+   "stats": {
+    "ap": 30,
+    "manaRegen": 1
+   },
+   "passives": [
+    {
+     "on": "every",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "ap",
+       "value": 20,
+       "stackKey": "archangel",
+       "maxStacks": 9
+      }
+     ],
+     "src": "item:ArchangelsStaff",
+     "text": "法強",
+     "n": 5
+    }
+   ],
+   "desc": "法術強度 +30、法力回復 +1。每 5 秒，法術強度 +20，可疊加。",
+   "simplified": ""
+  },
+  {
+   "key": "Crownguard",
+   "zh": "皇冠守衛",
+   "recipe": [
+    "NeedlesslyLargeRod",
+    "ChainVest"
+   ],
+   "stats": {
+    "ap": 20,
+    "armor": 20,
+    "hp": 100
+   },
+   "passives": [],
+   "desc": "法術強度 +20、護甲 +20、生命 +100",
+   "simplified": ""
+  },
+  {
+   "key": "IonicSpark",
+   "zh": "離子星火",
+   "recipe": [
+    "NeedlesslyLargeRod",
+    "NegatronCloak"
+   ],
+   "stats": {
+    "ap": 15,
+    "hp": 250,
+    "mr": 35
+   },
+   "passives": [
+    {
+     "on": "start",
+     "ops": [
+      {
+       "op": "status",
+       "to": "allEnemies",
+       "kind": "shred",
+       "dur": 30,
+       "value": 0.3
+      }
+     ],
+     "src": "item:IonicSpark",
+     "text": "破魔"
+    }
+   ],
+   "desc": "法術強度 +15、生命 +250、魔抗 +35。開場讓所有敵人魔抗 -30%。",
+   "simplified": "原版是周圍 2 格的敵人，簡化成全部敵人。"
+  },
+  {
+   "key": "JeweledGauntlet",
+   "zh": "寶石手套",
+   "recipe": [
+    "SparringGloves",
+    "NeedlesslyLargeRod"
+   ],
+   "stats": {
+    "ap": 35,
+    "crit": 0.35
+   },
+   "passives": [],
+   "desc": "法術強度 +35、暴擊率 +35%",
+   "simplified": "技能暴擊沒做，只留數值。"
+  },
+  {
+   "key": "BlueBuff",
+   "zh": "藍Buff",
+   "recipe": [
+    "TearOfTheGoddess",
+    "TearOfTheGoddess"
+   ],
+   "stats": {
+    "adPct": 0.15,
+    "ap": 15,
+    "manaRegen": 5
+   },
+   "passives": [],
+   "desc": "攻擊 +15%、法術強度 +15、法力回復 +5",
+   "simplified": ""
+  },
+  {
+   "key": "SpiritVisage",
+   "zh": "振奮盔甲",
+   "recipe": [
+    "GiantsBelt",
+    "TearOfTheGoddess"
+   ],
+   "stats": {
+    "hp": 300,
+    "manaRegen": 2
+   },
+   "passives": [
+    {
+     "on": "every",
+     "ops": [
+      {
+       "op": "heal",
+       "to": "self",
+       "value": {
+        "selfMissingHp": 0.09
+       }
+      }
+     ],
+     "src": "item:SpiritVisage",
+     "text": "治療",
+     "n": 5
+    }
+   ],
+   "desc": "生命 +300、法力回復 +2。每 5 秒，回復已損失生命的 9%。",
+   "simplified": "原版還會治療附近友軍，簡化成只治療自己。"
+  },
+  {
+   "key": "GargoyleStoneplate",
+   "zh": "石像鬼磐核",
+   "recipe": [
+    "ChainVest",
+    "NegatronCloak"
+   ],
+   "stats": {
+    "armor": 25,
+    "hp": 100,
+    "mr": 25
+   },
+   "passives": [],
+   "desc": "護甲 +25、生命 +100、魔抗 +25",
+   "simplified": ""
+  },
+  {
+   "key": "SteadfastHeart",
+   "zh": "堅定之心",
+   "recipe": [
+    "ChainVest",
+    "SparringGloves"
+   ],
+   "stats": {
+    "armor": 20,
+    "crit": 0.2,
+    "hp": 250
+   },
+   "passives": [],
+   "desc": "護甲 +20、暴擊率 +20%、生命 +250",
+   "simplified": ""
+  },
+  {
+   "key": "WarmogsArmor",
+   "zh": "好戰者鎧甲",
+   "recipe": [
+    "GiantsBelt",
+    "GiantsBelt"
+   ],
+   "stats": {
+    "hp": 500,
+    "hpPct": 0.18
+   },
+   "passives": [],
+   "desc": "生命 +500、生命 +18%",
+   "simplified": ""
+  },
+  {
+   "key": "StrikersFlail",
+   "zh": "打手連枷",
+   "recipe": [
+    "GiantsBelt",
+    "SparringGloves"
+   ],
+   "stats": {
+    "asPct": 0.1,
+    "crit": 0.2,
+    "dmgAmp": 0.1,
+    "hp": 150
+   },
+   "passives": [],
+   "desc": "攻速 +10%、暴擊率 +20%、傷害增幅 +10%、生命 +150",
+   "simplified": ""
+  },
+  {
+   "key": "RabadonsDeathcap",
+   "zh": "死亡之帽",
+   "recipe": [
+    "NeedlesslyLargeRod",
+    "NeedlesslyLargeRod"
+   ],
+   "stats": {
+    "ap": 55,
+    "dmgAmp": 0.15
+   },
+   "passives": [],
+   "desc": "法術強度 +55、傷害增幅 +15%",
+   "simplified": ""
+  },
+  {
+   "key": "Bloodthirster",
+   "zh": "嗜血者",
+   "recipe": [
+    "BFSword",
+    "NegatronCloak"
+   ],
+   "stats": {
+    "adPct": 0.18,
+    "ap": 18,
+    "mr": 20,
+    "omnivamp": 0.2
+   },
+   "passives": [
+    {
+     "on": "hpBelow",
+     "ops": [
+      {
+       "op": "shield",
+       "to": "self",
+       "value": {
+        "selfMaxHp": 0.25
+       },
+       "dur": 5
+      }
+     ],
+     "src": "item:Bloodthirster",
+     "text": "護盾",
+     "n": 0.4,
+     "limit": 1
+    }
+   ],
+   "desc": "攻擊 +18%、法術強度 +18、魔抗 +20、全能吸血 +20%。生命低於 40% 時，獲得 25% 最大生命的護盾，5 秒。",
+   "simplified": ""
+  },
+  {
+   "key": "SunfireCape",
+   "zh": "日炎斗篷",
+   "recipe": [
+    "ChainVest",
+    "GiantsBelt"
+   ],
+   "stats": {
+    "armor": 20,
+    "hp": 150,
+    "hpPct": 0.08
+   },
+   "passives": [
+    {
+     "on": "every",
+     "ops": [
+      {
+       "op": "status",
+       "to": {
+        "adjacent": "enemy"
+       },
+       "kind": "burn",
+       "dur": 3,
+       "value": 0.01
+      },
+      {
+       "op": "status",
+       "to": {
+        "adjacent": "enemy"
+       },
+       "kind": "wound",
+       "dur": 3,
+       "value": 0.33
+      }
+     ],
+     "src": "item:SunfireCape",
+     "text": "灼燒",
+     "n": 2
+    }
+   ],
+   "desc": "護甲 +20、生命 +150、生命 +8%。每 2 秒，讓身邊敵人灼燒與重傷 3 秒。",
+   "simplified": ""
+  },
+  {
+   "key": "ThiefsGloves",
+   "zh": "竊賊手套",
+   "recipe": [
+    "SparringGloves",
+    "SparringGloves"
+   ],
+   "stats": {
+    "crit": 0.2,
+    "hp": 150
+   },
+   "passives": [],
+   "desc": "暴擊率 +20%、生命 +150。開場隨機複製 2 件完整裝備的數值。",
+   "simplified": "開場會複製一件身上的裝備。"
+  },
+  {
+   "key": "RedBuff",
+   "zh": "紅Buff",
+   "recipe": [
+    "RecurveBow",
+    "RecurveBow"
+   ],
+   "stats": {
+    "asPct": 0.45
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "burn",
+       "dur": 5,
+       "value": 0.01
+      },
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "wound",
+       "dur": 5,
+       "value": 0.33
+      }
+     ],
+     "src": "item:RedBuff",
+     "text": "灼燒"
+    }
+   ],
+   "desc": "攻速 +45%。普攻讓目標灼燒（每秒 1% 最大生命）與重傷 5 秒。",
+   "simplified": ""
+  },
+  {
+   "key": "EdgeOfNight",
+   "zh": "夜色緣界",
+   "recipe": [
+    "BFSword",
+    "ChainVest"
+   ],
+   "stats": {
+    "adPct": 0.1,
+    "ap": 10,
+    "armor": 20,
+    "asPct": 0.15
+   },
+   "passives": [],
+   "desc": "攻擊 +10%、法術強度 +10、護甲 +20、攻速 +15%",
+   "simplified": ""
+  },
+  {
+   "key": "SteraksGage",
+   "zh": "史特拉克手套",
+   "recipe": [
+    "BFSword",
+    "GiantsBelt"
+   ],
+   "stats": {
+    "adPct": 0.45,
+    "hp": 300
+   },
+   "passives": [
+    {
+     "on": "hpBelow",
+     "ops": [
+      {
+       "op": "shield",
+       "to": "self",
+       "value": {
+        "selfMaxHp": 0.25
+       },
+       "dur": 5
+      }
+     ],
+     "src": "item:SteraksGage",
+     "text": "護盾",
+     "n": 0.6,
+     "limit": 1
+    }
+   ],
+   "desc": "攻擊 +45%、生命 +300。生命低於 60% 時，獲得 25% 最大生命的護盾，5 秒。",
+   "simplified": "原版是增加最大生命，簡化成護盾。"
+  },
+  {
+   "key": "TitansResolve",
+   "zh": "泰坦的決意",
+   "recipe": [
+    "RecurveBow",
+    "ChainVest"
+   ],
+   "stats": {
+    "armor": 20,
+    "asPct": 0.1
+   },
+   "passives": [],
+   "desc": "護甲 +20、攻速 +10%",
+   "simplified": ""
+  },
+  {
+   "key": "Morellonomicon",
+   "zh": "黑魔禁書",
+   "recipe": [
+    "NeedlesslyLargeRod",
+    "GiantsBelt"
+   ],
+   "stats": {
+    "ap": 20,
+    "hp": 150,
+    "manaRegen": 1
+   },
+   "passives": [
+    {
+     "on": "cast",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "burn",
+       "dur": 5,
+       "value": 0.01
+      },
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "wound",
+       "dur": 5,
+       "value": 0.33
+      }
+     ],
+     "src": "item:Morellonomicon",
+     "text": "灼燒"
+    }
+   ],
+   "desc": "法術強度 +20、生命 +150、法力回復 +1。施放技能後，讓目標灼燒與重傷 5 秒。",
+   "simplified": ""
+  },
+  {
+   "key": "ProtectorsVow",
+   "zh": "保衛者之誓",
+   "recipe": [
+    "TearOfTheGoddess",
+    "ChainVest"
+   ],
+   "stats": {
+    "armor": 25,
+    "manaRegen": 1,
+    "mr": 25,
+    "startMana": 20
+   },
+   "passives": [],
+   "desc": "護甲 +25、法力回復 +1、魔抗 +25、起始法力 +20",
+   "simplified": ""
+  },
+  {
+   "key": "AdaptiveHelm",
+   "zh": "適性神盔",
+   "recipe": [
+    "TearOfTheGoddess",
+    "NegatronCloak"
+   ],
+   "stats": {
+    "manaRegen": 3,
+    "mr": 20
+   },
+   "passives": [],
+   "desc": "法力回復 +3、魔抗 +20",
+   "simplified": ""
+  },
+  {
+   "key": "HandOfJustice",
+   "zh": "正義手套",
+   "recipe": [
+    "TearOfTheGoddess",
+    "SparringGloves"
+   ],
+   "stats": {
+    "adPct": 0.18,
+    "ap": 18,
+    "crit": 0.2,
+    "manaRegen": 1,
+    "omnivamp": 0.12
+   },
+   "passives": [],
+   "desc": "攻擊 +18%、法術強度 +18、暴擊率 +20%、法力回復 +1、全能吸血 +12%",
+   "simplified": ""
+  },
+  {
+   "key": "BrambleVest",
+   "zh": "刺藤胸甲",
+   "recipe": [
+    "ChainVest",
+    "ChainVest"
+   ],
+   "stats": {
+    "armor": 50,
+    "hpPct": 0.06
+   },
+   "passives": [],
+   "desc": "護甲 +50、生命 +6%",
+   "simplified": ""
+  },
+  {
+   "key": "DragonsClaw",
+   "zh": "龍之爪",
+   "recipe": [
+    "NegatronCloak",
+    "NegatronCloak"
+   ],
+   "stats": {
+    "hpPct": 0.06,
+    "mr": 60
+   },
+   "passives": [],
+   "desc": "生命 +6%、魔抗 +60",
+   "simplified": ""
+  },
+  {
+   "key": "Evenshroud",
+   "zh": "均等法衣",
+   "recipe": [
+    "NegatronCloak",
+    "GiantsBelt"
+   ],
+   "stats": {
+    "hp": 250,
+    "mr": 20
+   },
+   "passives": [],
+   "desc": "生命 +250、魔抗 +20",
+   "simplified": ""
+  },
+  {
+   "key": "Quicksilver",
+   "zh": "水銀兜帽",
+   "recipe": [
+    "NegatronCloak",
+    "SparringGloves"
+   ],
+   "stats": {
+    "asPct": 0.15,
+    "crit": 0.2,
+    "mr": 20
+   },
+   "passives": [
+    {
+     "on": "start",
+     "ops": [
+      {
+       "op": "status",
+       "to": "self",
+       "kind": "ccImmune",
+       "dur": 8
+      }
+     ],
+     "src": "item:Quicksilver",
+     "text": "免控"
+    }
+   ],
+   "desc": "攻速 +15%、暴擊率 +20%、魔抗 +20。開場 8 秒免疫控制。",
+   "simplified": ""
+  }
+ ]
+}

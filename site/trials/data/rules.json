@@ -1,0 +1,1179 @@
+{
+ "_doc": {
+  "rounds": "pre：回合開始前的事件。startGift＝開局禮（用 start.freeUnitCost／start.components，不要重複發）；components＝送 n 散件；augment＝增幅階（1 銀 2 金 3 彩，3 選 1，可免費重抽一次）；bossReward＝打贏第 N 隻頭目的獎勵（輸了只拿 1 散件，見 bossReward）。",
+  "enemy": "count 人數；maxCost 最高費用；star.base 預設星級；star.costStar{費用:星級} 覆寫該費用星級；star.lowestStar2＝費用最低的 n 隻 2★；star.halfStar2＝一半的棋子 2★（費用高的優先）；items＝全隊合計裝備件數（先給 prio 小的）；componentOnly 由 enemyItemComponentUntil 決定；hpMult／dmgMult＝難度旋鈕。",
+  "boss": "頭目回合 enemy 為 null，改看 bosses[boss-1]。boss.bossHp／bossDmg 乘在頭目本體；minions 正常；extraPassives 掛在頭目本體（on/ops 格式同 SPEC 2.4 Passive）；expectTraits 只是檢查用。pos＝[r,c]，r 0 是敵方前排，c 0–6。"
+ },
+ "shopOdds": {
+  "1": [
+   100,
+   0,
+   0,
+   0,
+   0
+  ],
+  "2": [
+   100,
+   0,
+   0,
+   0,
+   0
+  ],
+  "3": [
+   75,
+   25,
+   0,
+   0,
+   0
+  ],
+  "4": [
+   55,
+   30,
+   15,
+   0,
+   0
+  ],
+  "5": [
+   45,
+   33,
+   20,
+   2,
+   0
+  ],
+  "6": [
+   30,
+   40,
+   25,
+   5,
+   0
+  ],
+  "7": [
+   19,
+   30,
+   40,
+   10,
+   1
+  ],
+  "8": [
+   17,
+   24,
+   32,
+   24,
+   3
+  ],
+  "9": [
+   15,
+   18,
+   25,
+   30,
+   12
+  ],
+  "10": [
+   5,
+   10,
+   20,
+   40,
+   25
+  ]
+ },
+ "pool": {
+  "1": 30,
+  "2": 25,
+  "3": 18,
+  "4": 10,
+  "5": 9
+ },
+ "xpToNext": {
+  "1": 2,
+  "2": 2,
+  "3": 6,
+  "4": 10,
+  "5": 20,
+  "6": 36,
+  "7": 48,
+  "8": 76,
+  "9": 84
+ },
+ "maxLevel": 10,
+ "xpCost": 4,
+ "xpPerBuy": 4,
+ "rerollCost": 2,
+ "xpPerRound": 2,
+ "shopSlots": 5,
+ "start": {
+  "gold": 4,
+  "level": 1,
+  "lives": 3,
+  "freeUnitCost": 1,
+  "components": 1
+ },
+ "income": {
+  "base": 5,
+  "interestPer": 10,
+  "interestCap": 5,
+  "win": 1,
+  "streak": [
+   [
+    2,
+    1
+   ],
+   [
+    4,
+    2
+   ],
+   [
+    5,
+    3
+   ]
+  ]
+ },
+ "benchSize": 9,
+ "itemBenchSize": 10,
+ "maxItems": 3,
+ "sellPrice": {
+  "star2Mult": 3,
+  "star3Mult": 9,
+  "minus": 1
+ },
+ "sevenCost": {
+  "key": 7,
+  "sellPrice": 7,
+  "bossRewardChoices": [
+   "BaronNashor",
+   "Rakan",
+   "Smeech",
+   "Sona"
+  ]
+ },
+ "retryOnLose": false,
+ "enemyItemComponentUntil": 5,
+ "bossReward": {
+  "winOnly": true,
+  "loseGain": {
+   "components": 1
+  },
+  "options": [
+   {
+    "kind": "completed",
+    "choices": 3
+   },
+   {
+    "kind": "gold",
+    "n": 8
+   },
+   {
+    "kind": "unit",
+    "top": true,
+    "star": 1,
+    "components": 1
+   }
+  ],
+  "sevenCostBosses": [
+   4,
+   5
+  ]
+ },
+ "augment": {
+  "rerollsPerChoice": 1,
+  "choices": 3
+ },
+ "rounds": [
+  {
+   "n": 1,
+   "type": "normal",
+   "pre": {
+    "startGift": true
+   },
+   "enemy": {
+    "count": 1,
+    "maxCost": 1,
+    "star": {
+     "base": 1
+    },
+    "items": 0,
+    "hpMult": 0.6,
+    "dmgMult": 0.6
+   }
+  },
+  {
+   "n": 2,
+   "type": "normal",
+   "pre": {
+    "augment": 1
+   },
+   "enemy": {
+    "count": 2,
+    "maxCost": 1,
+    "star": {
+     "base": 1
+    },
+    "items": 0,
+    "hpMult": 0.7,
+    "dmgMult": 0.7
+   }
+  },
+  {
+   "n": 3,
+   "type": "normal",
+   "pre": {
+    "components": 1
+   },
+   "enemy": {
+    "count": 3,
+    "maxCost": 2,
+    "star": {
+     "base": 1
+    },
+    "items": 0,
+    "hpMult": 0.75,
+    "dmgMult": 0.75
+   }
+  },
+  {
+   "n": 4,
+   "type": "normal",
+   "pre": {},
+   "enemy": {
+    "count": 4,
+    "maxCost": 2,
+    "star": {
+     "base": 1
+    },
+    "items": 1,
+    "hpMult": 0.65,
+    "dmgMult": 0.65
+   }
+  },
+  {
+   "n": 5,
+   "type": "boss",
+   "boss": 1,
+   "pre": {
+    "components": 1
+   },
+   "enemy": null
+  },
+  {
+   "n": 6,
+   "type": "normal",
+   "pre": {
+    "bossReward": 1
+   },
+   "enemy": {
+    "count": 4,
+    "maxCost": 3,
+    "star": {
+     "base": 1,
+     "lowestStar2": 2
+    },
+    "items": 1,
+    "hpMult": 0.6,
+    "dmgMult": 0.6
+   }
+  },
+  {
+   "n": 7,
+   "type": "normal",
+   "pre": {
+    "components": 1
+   },
+   "enemy": {
+    "count": 5,
+    "maxCost": 3,
+    "star": {
+     "base": 1,
+     "lowestStar2": 2
+    },
+    "items": 1,
+    "hpMult": 0.62,
+    "dmgMult": 0.62
+   }
+  },
+  {
+   "n": 8,
+   "type": "normal",
+   "pre": {},
+   "enemy": {
+    "count": 5,
+    "maxCost": 3,
+    "star": {
+     "base": 1,
+     "halfStar2": true
+    },
+    "items": 2,
+    "hpMult": 0.6,
+    "dmgMult": 0.6
+   }
+  },
+  {
+   "n": 9,
+   "type": "normal",
+   "pre": {
+    "components": 1
+   },
+   "enemy": {
+    "count": 5,
+    "maxCost": 3,
+    "star": {
+     "base": 2
+    },
+    "items": 2,
+    "hpMult": 0.5,
+    "dmgMult": 0.5
+   }
+  },
+  {
+   "n": 10,
+   "type": "boss",
+   "boss": 2,
+   "pre": {},
+   "enemy": null
+  },
+  {
+   "n": 11,
+   "type": "normal",
+   "pre": {
+    "bossReward": 2,
+    "augment": 2
+   },
+   "enemy": {
+    "count": 6,
+    "maxCost": 4,
+    "star": {
+     "base": 2,
+     "costStar": {
+      "4": 1
+     }
+    },
+    "items": 2,
+    "hpMult": 0.62,
+    "dmgMult": 0.62
+   }
+  },
+  {
+   "n": 12,
+   "type": "normal",
+   "pre": {
+    "components": 1
+   },
+   "enemy": {
+    "count": 6,
+    "maxCost": 4,
+    "star": {
+     "base": 2,
+     "costStar": {
+      "4": 1
+     }
+    },
+    "items": 3,
+    "hpMult": 0.6,
+    "dmgMult": 0.6
+   }
+  },
+  {
+   "n": 13,
+   "type": "normal",
+   "pre": {},
+   "enemy": {
+    "count": 6,
+    "maxCost": 4,
+    "star": {
+     "base": 2
+    },
+    "items": 3,
+    "hpMult": 0.49,
+    "dmgMult": 0.49
+   }
+  },
+  {
+   "n": 14,
+   "type": "normal",
+   "pre": {
+    "components": 1
+   },
+   "enemy": {
+    "count": 7,
+    "maxCost": 4,
+    "star": {
+     "base": 2
+    },
+    "items": 3,
+    "hpMult": 0.46,
+    "dmgMult": 0.46
+   }
+  },
+  {
+   "n": 15,
+   "type": "boss",
+   "boss": 3,
+   "pre": {},
+   "enemy": null
+  },
+  {
+   "n": 16,
+   "type": "normal",
+   "pre": {
+    "bossReward": 3
+   },
+   "enemy": {
+    "count": 7,
+    "maxCost": 5,
+    "star": {
+     "base": 2,
+     "costStar": {
+      "5": 1
+     }
+    },
+    "items": 4,
+    "hpMult": 0.45,
+    "dmgMult": 0.45
+   }
+  },
+  {
+   "n": 17,
+   "type": "normal",
+   "pre": {
+    "components": 1
+   },
+   "enemy": {
+    "count": 7,
+    "maxCost": 5,
+    "star": {
+     "base": 2,
+     "costStar": {
+      "5": 1
+     }
+    },
+    "items": 5,
+    "hpMult": 0.47,
+    "dmgMult": 0.44
+   }
+  },
+  {
+   "n": 18,
+   "type": "normal",
+   "pre": {},
+   "enemy": {
+    "count": 8,
+    "maxCost": 5,
+    "star": {
+     "base": 2
+    },
+    "items": 5,
+    "hpMult": 0.39,
+    "dmgMult": 0.37
+   }
+  },
+  {
+   "n": 19,
+   "type": "normal",
+   "pre": {
+    "components": 1
+   },
+   "enemy": {
+    "count": 8,
+    "maxCost": 5,
+    "star": {
+     "base": 2
+    },
+    "items": 6,
+    "hpMult": 0.45,
+    "dmgMult": 0.4
+   }
+  },
+  {
+   "n": 20,
+   "type": "boss",
+   "boss": 4,
+   "pre": {},
+   "enemy": null
+  },
+  {
+   "n": 21,
+   "type": "normal",
+   "pre": {
+    "bossReward": 4,
+    "augment": 3
+   },
+   "enemy": {
+    "count": 8,
+    "maxCost": 5,
+    "star": {
+     "base": 2
+    },
+    "items": 6,
+    "hpMult": 0.5,
+    "dmgMult": 0.43
+   }
+  },
+  {
+   "n": 22,
+   "type": "normal",
+   "pre": {
+    "components": 1
+   },
+   "enemy": {
+    "count": 8,
+    "maxCost": 5,
+    "star": {
+     "base": 2
+    },
+    "items": 6,
+    "hpMult": 0.46,
+    "dmgMult": 0.37
+   }
+  },
+  {
+   "n": 23,
+   "type": "normal",
+   "pre": {},
+   "enemy": {
+    "count": 9,
+    "maxCost": 5,
+    "star": {
+     "base": 2
+    },
+    "items": 7,
+    "hpMult": 0.45,
+    "dmgMult": 0.36
+   }
+  },
+  {
+   "n": 24,
+   "type": "normal",
+   "pre": {
+    "components": 1
+   },
+   "enemy": {
+    "count": 9,
+    "maxCost": 5,
+    "star": {
+     "base": 2
+    },
+    "items": 8,
+    "hpMult": 0.46,
+    "dmgMult": 0.36
+   }
+  },
+  {
+   "n": 25,
+   "type": "boss",
+   "boss": 5,
+   "pre": {},
+   "enemy": null
+  },
+  {
+   "n": 26,
+   "type": "normal",
+   "pre": {
+    "bossReward": 5
+   },
+   "enemy": {
+    "count": 9,
+    "maxCost": 5,
+    "star": {
+     "base": 2,
+     "costStar": {
+      "1": 3,
+      "2": 3
+     }
+    },
+    "items": 9,
+    "hpMult": 0.44,
+    "dmgMult": 0.35
+   }
+  },
+  {
+   "n": 27,
+   "type": "normal",
+   "pre": {
+    "components": 1
+   },
+   "enemy": {
+    "count": 9,
+    "maxCost": 5,
+    "star": {
+     "base": 2,
+     "costStar": {
+      "1": 3,
+      "2": 3
+     }
+    },
+    "items": 9,
+    "hpMult": 0.48,
+    "dmgMult": 0.35
+   }
+  },
+  {
+   "n": 28,
+   "type": "normal",
+   "pre": {},
+   "enemy": {
+    "count": 9,
+    "maxCost": 5,
+    "star": {
+     "base": 2,
+     "costStar": {
+      "1": 3,
+      "2": 3
+     }
+    },
+    "items": 9,
+    "hpMult": 0.51,
+    "dmgMult": 0.35
+   }
+  },
+  {
+   "n": 29,
+   "type": "normal",
+   "pre": {
+    "components": 1
+   },
+   "enemy": {
+    "count": 9,
+    "maxCost": 5,
+    "star": {
+     "base": 2,
+     "costStar": {
+      "1": 3,
+      "2": 3
+     }
+    },
+    "items": 9,
+    "hpMult": 0.56,
+    "dmgMult": 0.35
+   }
+  },
+  {
+   "n": 30,
+   "type": "boss",
+   "boss": 6,
+   "pre": {},
+   "enemy": null
+  }
+ ],
+ "bosses": [
+  {
+   "id": 1,
+   "round": 5,
+   "name": "開場嘉賓・阿姆姆",
+   "theme": "情緒搖滾",
+   "mechanic": "每 7 秒對最近 3 名敵人暈眩 1 秒，並造成 80 魔法傷害。",
+   "hint": "陣型分散站，別讓三隻同時被點到；單體輸出集中打他。",
+   "boss": {
+    "key": "Amumu",
+    "star": 2,
+    "bossHp": 1.7,
+    "bossDmg": 0.65,
+    "ccCap": 0.5,
+    "slotsScale": 1.3,
+    "pos": [
+     0,
+     3
+    ],
+    "items": []
+   },
+   "minions": [],
+   "extraPassives": [
+    {
+     "on": "every",
+     "n": 7,
+     "src": "unit",
+     "text": "開場嘉賓的見面禮",
+     "ops": [
+      {
+       "op": "damage",
+       "to": {
+        "nearest": 3
+       },
+       "type": "magic",
+       "value": 80
+      },
+      {
+       "op": "stun",
+       "to": "prev",
+       "dur": 1
+      }
+     ]
+    }
+   ],
+   "expectTraits": {
+    "Emo": 1
+   }
+  },
+  {
+   "id": 2,
+   "round": 10,
+   "name": "殺五社・魔鬥凱薩",
+   "theme": "殺五社",
+   "mechanic": "殺五社處決：你的第一隻掉到 10% 以下的棋子會被處決，原地冒出食屍鬼。頭目每 10 秒對全體敵人造成 120 魔法傷害。",
+   "hint": "殺五社 3 隻就會啟動，先看清楚誰會被處決；別讓脆皮先掉血。",
+   "boss": {
+    "key": "Mordekaiser",
+    "star": 2,
+    "bossHp": 3,
+    "bossDmg": 1,
+    "ccCap": 0.5,
+    "slotsScale": 1.3,
+    "pos": [
+     0,
+     3
+    ],
+    "items": []
+   },
+   "minions": [
+    {
+     "key": "Gnar",
+     "star": 2,
+     "pos": [
+      1,
+      2
+     ],
+     "items": []
+    },
+    {
+     "key": "Olaf",
+     "star": 2,
+     "pos": [
+      0,
+      4
+     ],
+     "items": []
+    },
+    {
+     "key": "Karthus",
+     "star": 2,
+     "pos": [
+      3,
+      3
+     ],
+     "items": []
+    }
+   ],
+   "extraPassives": [
+    {
+     "on": "every",
+     "n": 10,
+     "src": "unit",
+     "text": "凱薩的鐵鎖",
+     "ops": [
+      {
+       "op": "damage",
+       "to": "allEnemies",
+       "type": "magic",
+       "value": 120
+      }
+     ]
+    }
+   ],
+   "expectTraits": {
+    "Pentakill": 3
+   },
+   "hpMult": 0.48,
+   "dmgMult": 0.48
+  },
+  {
+   "id": 3,
+   "round": 15,
+   "name": "K/DA 舞台・阿璃",
+   "theme": "K/DA",
+   "mechanic": "K/DA 的歌：開場和第 8 秒，全隊各拿一次護盾和攻速。",
+   "hint": "K/DA 看的是總星數，6 隻 2★ 就是 12。8 秒前盡量搶輸出。",
+   "boss": {
+    "key": "Ahri",
+    "star": 2,
+    "bossHp": 2.5,
+    "bossDmg": 1,
+    "ccCap": 0.5,
+    "slotsScale": 1.3,
+    "pos": [
+     3,
+     3
+    ],
+    "items": []
+   },
+   "minions": [
+    {
+     "key": "Gragas",
+     "star": 2,
+     "pos": [
+      0,
+      3
+     ],
+     "items": []
+    },
+    {
+     "key": "Lillia",
+     "star": 2,
+     "pos": [
+      0,
+      4
+     ],
+     "items": []
+    },
+    {
+     "key": "Evelynn",
+     "star": 2,
+     "pos": [
+      1,
+      2
+     ],
+     "items": []
+    },
+    {
+     "key": "KaiSa",
+     "star": 2,
+     "pos": [
+      3,
+      2
+     ],
+     "items": []
+    },
+    {
+     "key": "Neeko",
+     "star": 2,
+     "pos": [
+      3,
+      4
+     ],
+     "items": []
+    }
+   ],
+   "extraPassives": [
+    {
+     "on": "start",
+     "at": 0,
+     "limit": 1,
+     "src": "unit",
+     "text": "K/DA 的歌",
+     "ops": [
+      {
+       "op": "shield",
+       "to": {
+        "allies": "all"
+       },
+       "value": {
+        "selfMaxHp": 0.1
+       },
+       "dur": 4
+      },
+      {
+       "op": "buff",
+       "to": {
+        "allies": "all"
+       },
+       "stat": "asPct",
+       "value": 0.3,
+       "dur": 4
+      }
+     ]
+    },
+    {
+     "on": "start",
+     "at": 8,
+     "limit": 1,
+     "src": "unit",
+     "text": "K/DA 的歌（第二段）",
+     "ops": [
+      {
+       "op": "shield",
+       "to": {
+        "allies": "all"
+       },
+       "value": {
+        "selfMaxHp": 0.1
+       },
+       "dur": 4
+      },
+      {
+       "op": "buff",
+       "to": {
+        "allies": "all"
+       },
+       "stat": "asPct",
+       "value": 0.3,
+       "dur": 4
+      }
+     ]
+    }
+   ],
+   "expectTraits": {
+    "KDA": 10
+   },
+   "hpMult": 0.71,
+   "dmgMult": 0.71
+  },
+  {
+   "id": 4,
+   "round": 20,
+   "name": "心鋼之聲・亞菲利歐",
+   "theme": "心鋼之聲",
+   "mechanic": "亞菲利歐每攻擊 4 次，攻擊力 +10%，可以疊。",
+   "hint": "他站在最後排角落，要想辦法切過去；心鋼成員身上的裝備越多越強。",
+   "boss": {
+    "key": "Aphelios",
+    "star": 2,
+    "bossHp": 2.2,
+    "bossDmg": 1,
+    "ccCap": 0.5,
+    "slotsScale": 1.3,
+    "pos": [
+     3,
+     0
+    ],
+    "items": []
+   },
+   "minions": [
+    {
+     "key": "Sett",
+     "star": 2,
+     "pos": [
+      0,
+      2
+     ],
+     "items": []
+    },
+    {
+     "key": "KSante",
+     "star": 2,
+     "pos": [
+      0,
+      3
+     ],
+     "items": []
+    },
+    {
+     "key": "Yone",
+     "star": 2,
+     "pos": [
+      1,
+      4
+     ],
+     "items": []
+    },
+    {
+     "key": "Ezreal",
+     "star": 2,
+     "pos": [
+      3,
+      2
+     ],
+     "items": []
+    },
+    {
+     "key": "Alune",
+     "star": 2,
+     "pos": [
+      3,
+      3
+     ],
+     "items": []
+    },
+    {
+     "key": "Kayn",
+     "star": 2,
+     "pos": [
+      1,
+      1
+     ],
+     "items": []
+    }
+   ],
+   "extraPassives": [
+    {
+     "on": "attack",
+     "n": 4,
+     "src": "unit",
+     "text": "越唱越大聲",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "adPct",
+       "value": 0.1,
+       "stackKey": "bossAphelios",
+       "maxStacks": 20
+      }
+     ]
+    }
+   ],
+   "expectTraits": {
+    "Heartsteel": 7
+   },
+   "hpMult": 0.64,
+   "dmgMult": 0.64
+  },
+  {
+   "id": 5,
+   "round": 25,
+   "name": "True Damage・阿卡莉",
+   "theme": "True Damage",
+   "mechanic": "頭目每次施放技能後，不可選取 1.5 秒。成員有 30% 真實傷害。",
+   "hint": "真實傷害不吃抗性，堆生命比堆雙抗有用。",
+   "boss": {
+    "key": "AkaliTrueDamage",
+    "star": 2,
+    "bossHp": 3,
+    "bossDmg": 1,
+    "ccCap": 0.5,
+    "slotsScale": 1.3,
+    "pos": [
+     1,
+     3
+    ],
+    "items": []
+   },
+   "minions": [
+    {
+     "key": "Kennen",
+     "star": 2,
+     "pos": [
+      0,
+      2
+     ],
+     "items": []
+    },
+    {
+     "key": "Ekko",
+     "star": 2,
+     "pos": [
+      0,
+      4
+     ],
+     "items": []
+    },
+    {
+     "key": "Qiyana",
+     "star": 2,
+     "pos": [
+      1,
+      1
+     ],
+     "items": []
+    },
+    {
+     "key": "Yasuo",
+     "star": 2,
+     "pos": [
+      1,
+      5
+     ],
+     "items": []
+    },
+    {
+     "key": "Senna",
+     "star": 2,
+     "pos": [
+      3,
+      3
+     ],
+     "items": []
+    }
+   ],
+   "extraPassives": [
+    {
+     "on": "cast",
+     "src": "unit",
+     "text": "收工，下班",
+     "ops": [
+      {
+       "op": "status",
+       "to": "self",
+       "kind": "untargetable",
+       "dur": 1.5
+      }
+     ]
+    }
+   ],
+   "expectTraits": {
+    "TrueDamage": 5
+   },
+   "hpMult": 1.06,
+   "dmgMult": 1.06
+  },
+  {
+   "id": 6,
+   "round": 30,
+   "name": "一獸樂團・巴龍納什",
+   "theme": "一獸樂團",
+   "mechanic": "每 12 秒全場暈眩 1 秒。30 秒後進入加時。",
+   "hint": "7 費棋子的最終檢定：輸出要夠快，別拖進加時。",
+   "boss": {
+    "key": "BaronNashor",
+    "star": 2,
+    "bossHp": 3.5,
+    "bossDmg": 1.2,
+    "ccCap": 0.5,
+    "slotsScale": 1.3,
+    "pos": [
+     0,
+     3
+    ],
+    "items": []
+   },
+   "minions": [
+    {
+     "key": "Smeech",
+     "star": 1,
+     "pos": [
+      0,
+      2
+     ],
+     "items": []
+    },
+    {
+     "key": "Rakan",
+     "star": 1,
+     "pos": [
+      1,
+      4
+     ],
+     "items": []
+    },
+    {
+     "key": "Sona",
+     "star": 1,
+     "pos": [
+      3,
+      3
+     ],
+     "items": []
+    }
+   ],
+   "extraPassives": [
+    {
+     "on": "every",
+     "n": 12,
+     "src": "unit",
+     "text": "巴龍的低音炮",
+     "ops": [
+      {
+       "op": "stun",
+       "to": "allEnemies",
+       "dur": 1
+      }
+     ]
+    }
+   ],
+   "expectTraits": {
+    "OneMonsterBand": 1
+   },
+   "hpMult": 0.81,
+   "dmgMult": 0.81
+  }
+ ],
+ "score": {
+  "win": {
+   "base": 100,
+   "perRound": 10,
+   "perAlive": 10,
+   "timeCap": 30,
+   "perSecondUnder": 2,
+   "bossMult": 3
+  },
+  "lose": {
+   "mult": 50
+  }
+ },
+ "guess": true
+}

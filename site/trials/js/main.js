@@ -1,0 +1,145 @@
+// 進入點：載入資料 → 讀存檔或開新局 → 掛載介面。SPEC 1.9、4.12。
+import { loadData } from './data.js';
+import * as audio from './audio.js';
+import { mount, askModal } from './ui/layout.js';
+
+const q = new URLSearchParams(location.search);
+const SAVE_KEY = 'trials19.save';
+
+const REASONS = {
+  gold: '金錢不夠', 'not enough gold': '金錢不夠', noGold: '金錢不夠',
+  benchFull: '板凳滿了', 'bench full': '板凳滿了', bench: '板凳滿了',
+  popFull: '人口滿了', 'pop full': '人口滿了', population: '人口滿了',
+  maxItems: '這隻最多 3 件裝備', itemsFull: '這隻最多 3 件裝備',
+  maxLevel: '已經滿級了',
+};
+const reasonText = (r) => (r && /[一-鿿]/.test(r) ? r : REASONS[r] || '這個動作現在做不到');
+
+const SFX = { buy: 'buy', sell: 'sell', reroll: 'reroll', buyXp: 'xp', move: 'place', equip: 'equip', pickAugment: 'pick', pickReward: 'pick', startBattle: 'start' };
+
+function showFatal(msg, withLink) {
+  const root = document.getElementById('tt-root');
+  const p = Object.assign(document.createElement('p'), { className: 'tt-fatal', textContent: msg });
+  if (withLink) p.append(' ', Object.assign(document.createElement('a'), { href: '../?s=19', textContent: '回攻略站' }));
+  root.replaceChildren(p);
+}
+
+async function boot() {
+  const sParam = q.get('s');
+  if (sParam && sParam !== '19') { showFatal('目前只有 S19 版。', true); return; }
+
+  const DATA = await loadData('./data/');
+  // 整合：拿掉 ?fake=1 的假遊戲（/ttfix/ 不上線），一律用真的 game／stats／enemies
+  const game = await import('./game.js');
+  const stats = await import('./stats.js');
+  const enemies = await import('./enemies.js');
+  const fake = false;
+
+  const rnd = () => { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0]; };
+  const newState = (seed) => game.newGame(seed, DATA);
+
+  // 存檔
+  let state = null;
+  // 存檔外面包一層資料版本號：版本不同（例如 PBE 換了資料）就不接，直接開新局
+  const dataVer = String(DATA.units.version || '0');
+  const clearSave = () => { try { localStorage.removeItem(SAVE_KEY); } catch (_) { /* 無痕模式 */ } };
+  const saved = (() => {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY); if (!raw) return null;
+      const env = JSON.parse(raw);
+      if (!env || env.dv !== dataVer || typeof env.save !== 'string') { clearSave(); return null; }
+      if (JSON.parse(env.save).phase === 'over') { clearSave(); return null; }
+      return env.save;
+    } catch (_) { clearSave(); return null; }
+  })();
+  if (q.has('seed')) state = newState(Number(q.get('seed')));
+  else if (saved && !fake) {
+    const pick = await askModal('接著玩？', '上次的進度還在。', [{ label: '接著玩', primary: true, value: 'resume' }, { label: '重新開始', value: 'new' }]);
+    if (pick === 'resume') { try { state = game.deserialize(saved, DATA); } catch (_) { state = null; } }
+  }
+  if (!state) state = newState(rnd());
+
+  // 事件、api
+  const L = {};
+  const api = {
+    DATA, ui: { mode: 'plan', sel: null, speed: 2 },
+    get state() { return state; },
+    on(evt, fn) { (L[evt] = L[evt] || []).push(fn); return () => api.off(evt, fn); },
+    off(evt, fn) { L[evt] = (L[evt] || []).filter(f => f !== fn); },
+    emit(evt, payload) { for (const f of (L[evt] || []).slice()) f(payload); },
+    countTraits: stats ? (u, D, o) => stats.countTraits(u, D, o) : null,
+    teamLimit: () => game.teamLimit(state, DATA),
+    toast: () => {},
+    sfx(n) { try { audio.sfx(n); } catch (_) { /* 音效壞了不影響遊戲 */ } },
+    restart(seed) {
+      clearSave();
+      state = newState(seed ?? rnd()); cache = null; api.ui.sel = null; api.ui.mode = 'plan';
+      best = {}; track();
+      api.emit('restart'); api.emit('change');
+    },
+  };
+  // 這場啟動過的羈絆（最高階）給結算畫面用
+  let best = {};
+  const track = () => { if (!api.countTraits) return; try { for (const t of api.countTraits(state.board.filter(Boolean), DATA, { augments: state.augments || [] })) if (t.tier > (best[t.key] || 0)) best[t.key] = t.tier; } catch (_) { /* 略過 */ } };
+  api.bestTraits = () => Object.entries(best).map(([key, tier]) => ({ key, tier })).sort((a, b) => b.tier - a.tier);
+
+  // 對手（同回合同重打次數只算一次）
+  let cache = null;
+  api.enemy = () => {
+    const key = state.round + ':' + (state.attempt || 0) + ':' + state.seed;
+    if (!cache || cache.key !== key) {
+      const fn = (enemies && enemies.enemyForRound) || game.enemyForRound;
+      cache = { key, v: fn ? fn(state.round, state.seed, DATA) : { name: '—', units: [] } };
+    }
+    return cache.v;
+  };
+
+  const tiers = () => { if (!api.countTraits) return null; try { return Object.fromEntries(api.countTraits(state.board.filter(Boolean), DATA, { augments: state.augments || [] }).map(t => [t.key, t.tier])); } catch (_) { return null; } };
+
+  api.act = (name, ...args) => {
+    if (name === 'restart') { api.restart(...args); return { ok: true }; }
+    const fn = game['act' + name[0].toUpperCase() + name.slice(1)];
+    if (!fn) throw new Error('沒有這個動作：' + name);
+    const before = (name === 'move' || name === 'buy' || name === 'sell') ? tiers() : null;
+    const r = fn(state, ...args, DATA) || { ok: false };
+    if (!r.ok) {
+      if (name !== 'finishBattle') { api.toast(reasonText(r.reason)); api.sfx('error'); }
+      return r;
+    }
+    if (name === 'startBattle') { api.sfx('start'); return r; }
+    const evs = r.events || [];
+    for (const m of r.merged || []) if (!evs.some(e => e.type === 'merge' && e.key === m.key && e.star === m.star)) evs.push({ type: 'merge', key: m.key, star: m.star });
+    let played = false;
+    for (const ev of evs) {
+      api.emit(ev.type, ev);
+      if (ev.type === 'merge') { api.sfx(ev.star >= 3 ? 'star3' : 'star2'); played = true; }
+      else if (ev.type === 'levelup') { api.sfx('levelup'); played = true; }
+      else if (ev.type === 'interest') api.sfx('coin');
+    }
+    if (!played && SFX[name]) api.sfx(SFX[name]);
+    if (before) { const after = tiers(); if (after && Object.keys(after).some(k => after[k] > (before[k] || 0))) setTimeout(() => api.sfx('trait'), 120); }
+    // 佈陣、選增幅、選獎勵都存；打完（沒命或通關）就清掉，重整後不能接著玩
+    if (state.phase === 'over' || r.gameOver || r.cleared) clearSave();
+    else if (!fake && (state.phase === 'plan' || state.phase === 'augment' || state.phase === 'reward')) {
+      try { localStorage.setItem(SAVE_KEY, JSON.stringify({ dv: dataVer, save: game.serialize(state) })); } catch (_) { /* 滿了就算了 */ }
+    }
+    track();
+    if (name !== 'startBattle') api.emit('change');
+    return r;
+  };
+
+  await mount(document.getElementById('tt-root'), api);
+
+  // 測試掛鉤：只有網址帶 ?seed= 才掛（正式玩不會有）
+  if (q.has('seed')) window.__trials = {
+    state: () => state,
+    act: (name, ...a) => api.act(name, ...a),
+    DATA,
+    simulateNow: () => api.ui.battleNow && api.ui.battleNow(),
+    setSpeed: (n) => api.ui.setSpeed && api.ui.setSpeed(n),
+    skipBattle: () => api.ui.skipBattle && api.ui.skipBattle(),
+    api,
+  };
+}
+
+boot().catch((e) => { console.error(e); showFatal('載入失敗：' + (e && e.message ? e.message : e)); });

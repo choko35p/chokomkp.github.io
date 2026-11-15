@@ -1,0 +1,8264 @@
+{
+ "version": "s19-prepbe-1",
+ "guessNote": "S19 的血量、攻擊、攻速、雙抗、射程尚未公布，依 S18 同費用同定位推測；PBE 後更新。",
+ "starMult": {
+  "hp": [
+   1,
+   1.8,
+   3.24
+  ],
+  "ad": [
+   1,
+   1.5,
+   2.25
+  ]
+ },
+ "sprite": {
+  "src": "../icons/s19/champions.webp",
+  "cols": 10,
+  "rows": 10,
+  "cell": 64,
+  "map": {
+   "Ahri": 0,
+   "AkaliKDA": 1,
+   "AkaliTrueDamage": 2,
+   "Alistar": 3,
+   "Alune": 4,
+   "Amumu": 5,
+   "Annie": 6,
+   "Aphelios": 7,
+   "Ashe": 8,
+   "Aurora": 9,
+   "Bard": 10,
+   "BaronNashor": 11,
+   "Braum": 12,
+   "Briar": 13,
+   "Camille": 14,
+   "DrMundo": 15,
+   "Draven": 16,
+   "Ekko": 17,
+   "Elise": 18,
+   "Evelynn": 19,
+   "Ezreal": 20,
+   "Galio": 21,
+   "Garen": 22,
+   "Gnar": 23,
+   "Gragas": 24,
+   "Graves": 25,
+   "Gwen": 26,
+   "Illaoi": 27,
+   "Janna": 28,
+   "Jax": 29,
+   "Jhin": 30,
+   "Jinx": 31,
+   "KSante": 32,
+   "KaiSa": 33,
+   "Karthus": 34,
+   "Katarina": 35,
+   "Kayle": 36,
+   "Kayn": 37,
+   "Kennen": 38,
+   "Kobuko": 39,
+   "LeeSin": 40,
+   "Leona": 41,
+   "Lillia": 42,
+   "Locke": 43,
+   "Lucian": 44,
+   "Lulu": 45,
+   "Lux": 46,
+   "Malzahar": 47,
+   "Mel": 48,
+   "MissFortune": 49,
+   "Mordekaiser": 50,
+   "Nasus": 51,
+   "Neeko": 52,
+   "Nidalee": 53,
+   "NunuWillump": 54,
+   "Olaf": 55,
+   "Pyke": 56,
+   "Qiyana": 57,
+   "Rakan": 58,
+   "Rell": 59,
+   "RenataGlasc": 60,
+   "Renekton": 61,
+   "Samira": 62,
+   "Senna": 63,
+   "Seraphine": 64,
+   "Sett": 65,
+   "Shyvana": 66,
+   "Smeech": 67,
+   "Sona": 68,
+   "Swain": 69,
+   "Syndra": 70,
+   "Taliyah": 71,
+   "Taric": 72,
+   "Teemo": 73,
+   "Thresh": 74,
+   "Tibbers": 75,
+   "Tristana": 76,
+   "TwistedFate": 77,
+   "Varus": 78,
+   "Vayne": 79,
+   "Vi": 80,
+   "Viego": 81,
+   "Vladimir": 82,
+   "Wukong": 83,
+   "Xayah": 84,
+   "Yasuo": 85,
+   "Yone": 86,
+   "Yorick": 87,
+   "Yunara": 88,
+   "Yuumi": 89,
+   "Zac": 90,
+   "Zeri": 91,
+   "Ziggs": 92,
+   "Zoe": 93
+  }
+ },
+ "units": [
+  {
+   "key": "Elise",
+   "zh": "伊莉絲",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "IonicSpark",
+    "Frontman"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 700,
+    "ad": 50,
+    "as": 0.6,
+    "armor": 40,
+    "mr": 40,
+    "range": 1,
+    "mana": [
+     60,
+     120
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "蛛繭",
+    "desc": "變身為蜘蛛，獲得250/300/350（受法術強度加成）生命。接著對本回合造成最多傷害的敵人吐出蛛網，暈眩第一個被擊中的敵人1.5秒，並造成90/135/200（受法術強度加成）魔法傷害。\n之後每次施放改為治療200/250/300（受法術強度加成），然後再吐出蛛網。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "if",
+      "cond": {
+       "flag": "spider"
+      },
+      "then": [
+       {
+        "op": "heal",
+        "to": "self",
+        "value": {
+         "ap": [
+          200,
+          250,
+          300
+         ]
+        }
+       }
+      ],
+      "else": [
+       {
+        "op": "buff",
+        "to": "self",
+        "stat": "hp",
+        "value": {
+         "ap": [
+          250,
+          300,
+          350
+         ]
+        }
+       },
+       {
+        "op": "flag",
+        "name": "spider",
+        "on": true
+       }
+      ]
+     },
+     {
+      "op": "damage",
+      "to": {
+       "mostDamage": 1
+      },
+      "type": "magic",
+      "value": {
+       "ap": [
+        90,
+        135,
+        200
+       ]
+      }
+     },
+     {
+      "op": "stun",
+      "to": "prev",
+      "dur": 1.5
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "變身加血併入第一次施放；網子直接打「造成最多傷害的敵人」，不算「第一個被擊中」。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Gnar",
+   "zh": "吶兒",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "Pentakill",
+    "Trickshot"
+   ],
+   "role": "混合專家",
+   "roleClass": "Specialist",
+   "dmgType": "hybrid",
+   "stats": {
+    "hp": 500,
+    "ad": 40,
+    "as": 0.7,
+    "armor": 30,
+    "mr": 30,
+    "range": 2,
+    "mana": [
+     0,
+     0
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "重搖滾",
+    "desc": "被動：每第3次攻擊改為投出一顆巨石，造成130/195/290（受攻擊力加成）物理傷害，並使吶兒獲得9%（受法術強度加成）攻擊速度。",
+    "castTime": 0,
+    "steps": [],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "巨石改為普攻之外額外一發，不取代那一下普攻。"
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "n": 3,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "damage",
+       "type": "physical",
+       "value": {
+        "ad": [
+         130,
+         195,
+         290
+        ]
+       }
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "asPct",
+       "value": {
+        "ap": 0.09
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "Katarina",
+   "zh": "卡特蓮娜",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "Classical",
+    "Slayer"
+   ],
+   "role": "魔法鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 650,
+    "ad": 40,
+    "as": 0.75,
+    "armor": 35,
+    "mr": 35,
+    "range": 1,
+    "mana": [
+     0,
+     40
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "刀刃奏鳴曲",
+    "desc": "旋轉並劈砍相鄰敵人，造成100/150/240（受法術強度加成）魔法傷害。接著對當前目標開膛，造成240/360/575（受法術強度加成）魔法傷害。被命中的敵人會著迷5秒。\n古典樂成員會使敵人著迷，並對其施加額外效果。",
+    "castTime": 0.6,
+    "steps": [
+     {
+      "op": "damage",
+      "to": {
+       "adjacent": "enemy"
+      },
+      "type": "magic",
+      "value": {
+       "ap": [
+        100,
+        150,
+        240
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "to": "current",
+      "type": "magic",
+      "value": {
+       "ap": [
+        240,
+        360,
+        575
+       ]
+      }
+     },
+     {
+      "op": "status",
+      "to": "prev",
+      "kind": "charm",
+      "dur": 5
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "古典樂的額外效果交給羈絆；著迷只套用在開膛的目標。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Kayn",
+   "zh": "慨影",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "Heartsteel",
+    "Slayer"
+   ],
+   "role": "物理鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 650,
+    "ad": 40,
+    "as": 0.75,
+    "armor": 35,
+    "mr": 35,
+    "range": 1,
+    "mana": [
+     0,
+     30
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "暗夜之影",
+    "desc": "滑行並劈砍，對2格直線內的敵人造成15/25/45（受法術強度加成） + 115/175/270（受攻擊力加成）物理傷害。\n心鋼之聲強化：生命低於70%時變身為暗影刺客，短暫無法被選取為目標，並在本場戰鬥剩餘時間額外造成35%魔法傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "to": {
+       "line": "current",
+       "len": 2
+      },
+      "type": "physical",
+      "value": {
+       "ap": [
+        15,
+        25,
+        45
+       ],
+       "ad": [
+        115,
+        175,
+        270
+       ]
+      }
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "滑行簡化成不位移；「額外35%魔法傷害」簡化為全傷害增幅 +35%；無法被選取的秒數原文沒寫，估 1.5 秒。"
+   },
+   "passives": [
+    {
+     "on": "hpBelow",
+     "n": 0.7,
+     "limit": 1,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "if",
+       "cond": {
+        "favorite": true
+       },
+       "then": [
+        {
+         "op": "status",
+         "to": "self",
+         "kind": "untargetable",
+         "dur": 1.5
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "dmgAmp",
+         "value": 0.35
+        }
+       ]
+      }
+     ],
+     "text": "慨影變身為暗影刺客"
+    }
+   ]
+  },
+  {
+   "key": "Kennen",
+   "zh": "凱能",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "TrueDamage",
+    "Bodyguard"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 700,
+    "ad": 50,
+    "as": 0.6,
+    "armor": 40,
+    "mr": 40,
+    "range": 1,
+    "mana": [
+     0,
+     0
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "電流釋放",
+    "desc": "被動：受到的所有傷害降低7 + 5/8/12（受法術強度加成）。每秒電擊相鄰敵人，造成12/18/30（受法術強度加成）魔法傷害。",
+    "castTime": 0,
+    "steps": [],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "「受到傷害降低 7+5/8/12」是固定減傷，簡化成百分比減傷（約 12%，不分星級）；這個百分比是推測。"
+   },
+   "passives": [
+    {
+     "on": "start",
+     "src": "unit",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "dr",
+       "value": {
+        "ap": 0.05,
+        "flat": 0.07
+       }
+      }
+     ]
+    },
+    {
+     "on": "every",
+     "n": 1,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "damage",
+       "to": {
+        "adjacent": "enemy"
+       },
+       "type": "magic",
+       "value": {
+        "ap": [
+         12,
+         18,
+         30
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "Kobuko",
+   "zh": "柯布柯",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "Hyperpop",
+    "Frontman"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 700,
+    "ad": 50,
+    "as": 0.6,
+    "armor": 40,
+    "mr": 40,
+    "range": 1,
+    "mana": [
+     40,
+     90
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "音量調大！",
+    "desc": "被動：你最強的柯布柯獲得相當於超流行熱度100%的額外生命。（目前生命：（數值未公布））\n主動：進入興奮狀態8秒，每秒治療50/60/85（受法術強度加成） + 1%最大生命。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "repeat",
+      "times": 8,
+      "gap": 1,
+      "ops": [
+       {
+        "op": "heal",
+        "to": "self",
+        "value": {
+         "ap": [
+          50,
+          60,
+          85
+         ],
+         "selfMaxHp": 0.01
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "被動「最強的柯布柯獲得超流行熱度 100% 額外生命」數值未公布，丟掉；興奮狀態 8 秒簡化成連續 8 次每秒治療（沒有別的加成）。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Lillia",
+   "zh": "莉莉亞",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "KDA",
+    "Bodyguard"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 700,
+    "ad": 50,
+    "as": 0.6,
+    "armor": 40,
+    "mr": 40,
+    "range": 1,
+    "mana": [
+     40,
+     100
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "我們愛你，K/DA",
+    "desc": "治療300/375/600（受法術強度加成）生命，並攻擊目標，對1格圓形範圍內的敵人造成120/180/270（受法術強度加成）魔法傷害，同時施加10%虛弱，持續5秒。\n虛弱：降低造成的傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "heal",
+      "to": "self",
+      "value": {
+       "ap": [
+        300,
+        375,
+        600
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "to": {
+       "around": "current",
+       "r": 1,
+       "includeCenter": true
+      },
+      "type": "magic",
+      "value": {
+       "ap": [
+        120,
+        180,
+        270
+       ]
+      }
+     },
+     {
+      "op": "status",
+      "to": "prev",
+      "kind": "weaken",
+      "dur": 5,
+      "value": 0.1
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": ""
+   },
+   "passives": []
+  },
+  {
+   "key": "Neeko",
+   "zh": "妮可",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "KDA",
+    "Encore",
+    "Prodigy"
+   ],
+   "role": "魔法施法者",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 500,
+    "ad": 35,
+    "as": 0.7,
+    "armor": 25,
+    "mr": 25,
+    "range": 4,
+    "mana": [
+     0,
+     40
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "K/DA 粉絲後援會",
+    "desc": "召集 K/DA 粉絲後援會，向目標射出3道彩帶，每道造成78/120/175（受法術強度加成）魔法傷害。若擊殺目標，永久獲得1%法術強度。\n目前加成：（數值未公布）法術強度",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        78,
+        120,
+        175
+       ]
+      },
+      "hits": 3
+     },
+     {
+      "op": "if",
+      "cond": {
+       "killed": true
+      },
+      "then": [
+       {
+        "op": "buff",
+        "to": "self",
+        "stat": "ap",
+        "value": 1
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "擊殺的永久 +1% 法術強度改成本場 AP +1（原文沒給基準，這個數字是推測）。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Olaf",
+   "zh": "歐拉夫",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "Pentakill",
+    "Rock",
+    "Juggernaut"
+   ],
+   "role": "物理坦",
+   "roleClass": "Tank",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 700,
+    "ad": 50,
+    "as": 0.6,
+    "armor": 40,
+    "mr": 40,
+    "range": 1,
+    "mana": [
+     0,
+     0
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "諸神黃昏搖滾",
+    "desc": "被動：攻擊時治療12/16/25（受法術強度加成） + 1%最大生命。\n死亡時改為完全回復生命並獲得100%攻擊速度，但之後每秒持續損失22%最大生命。",
+    "castTime": 0,
+    "steps": [],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "「每秒損失 22% 最大生命」簡化成 10 秒的真實持續傷害（總計 220%），等於復活後最多撐 4～5 秒。"
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "src": "unit",
+     "ops": [
+      {
+       "op": "heal",
+       "to": "self",
+       "value": {
+        "ap": [
+         12,
+         16,
+         25
+        ],
+        "selfMaxHp": 0.01
+       }
+      }
+     ]
+    },
+    {
+     "on": "death",
+     "limit": 1,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "heal",
+       "to": "self",
+       "value": {
+        "selfMaxHp": 1
+       }
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "asPct",
+       "value": 1.0
+      },
+      {
+       "op": "dot",
+       "to": "self",
+       "type": "true",
+       "value": {
+        "selfMaxHp": 2.2
+       },
+       "dur": 10
+      }
+     ],
+     "text": "歐拉夫狂暴復活"
+    }
+   ]
+  },
+  {
+   "key": "Sett",
+   "zh": "賽特",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "Heartsteel",
+    "Frontman",
+    "Collab"
+   ],
+   "role": "物理坦",
+   "roleClass": "Tank",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 700,
+    "ad": 50,
+    "as": 0.6,
+    "armor": 40,
+    "mr": 40,
+    "range": 1,
+    "mana": [
+     30,
+     90
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "活出我人生",
+    "desc": "被動：所有來源的最大生命提高30%。\n主動：治療200/210/220（受法術強度加成） + 4%最大生命。對目標揮擊兩次，每次造成7%最大生命的物理傷害。\n心鋼之聲強化：每4秒治療4%最大生命，依已損失生命最多提高100%。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "heal",
+      "to": "self",
+      "value": {
+       "ap": [
+        200,
+        210,
+        220
+       ],
+       "selfMaxHp": 0.04
+      }
+     },
+     {
+      "op": "damage",
+      "to": "current",
+      "type": "physical",
+      "value": {
+       "selfMaxHp": 0.07
+      },
+      "hits": 2
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "「所有來源最大生命 +30%」簡化成開場自身最大生命 +30%（不含裝備與羈絆加成）。"
+   },
+   "passives": [
+    {
+     "on": "start",
+     "src": "unit",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "hp",
+       "value": {
+        "selfMaxHp": 0.3
+       }
+      }
+     ]
+    },
+    {
+     "on": "every",
+     "n": 4,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "if",
+       "cond": {
+        "favorite": true
+       },
+       "then": [
+        {
+         "op": "heal",
+         "to": "self",
+         "value": {
+          "selfMaxHp": 0.04
+         },
+         "missingScale": 1.0
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "Taric",
+   "zh": "塔里克",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "BeachPop",
+    "Juggernaut"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 700,
+    "ad": 50,
+    "as": 0.6,
+    "armor": 40,
+    "mr": 40,
+    "range": 1,
+    "mana": [
+     30,
+     90
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "良好共鳴",
+    "desc": "為塔里克與附近一名受傷的友軍提供250/325/425（受法術強度加成）護盾，持續4秒。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "ap": [
+        250,
+        325,
+        425
+       ]
+      },
+      "dur": 4
+     },
+     {
+      "op": "shield",
+      "to": {
+       "allies": 1,
+       "notSelf": true,
+       "injured": true
+      },
+      "value": {
+       "ap": [
+        250,
+        325,
+        425
+       ]
+      },
+      "dur": 4
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "「附近」簡化成受傷的友軍中最近的一位。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Varus",
+   "zh": "法洛士",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "Rock",
+    "Encore"
+   ],
+   "role": "物理施法者",
+   "roleClass": "Caster",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 500,
+    "ad": 35,
+    "as": 0.7,
+    "armor": 25,
+    "mr": 25,
+    "range": 4,
+    "mana": [
+     30,
+     70
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "千支箭",
+    "desc": "射出一陣箭雨，對目標造成30/45/70（受法術強度加成） + 230/345/520（受攻擊力加成）物理傷害，對相鄰敵人造成15/22.5/35（受法術強度加成） + 115/172.5/260（受攻擊力加成）傷害，並施加20%緩速，持續5秒。\n緩速：降低攻擊速度。",
+    "castTime": 0.6,
+    "steps": [
+     {
+      "op": "damage",
+      "to": "current",
+      "type": "physical",
+      "value": {
+       "ap": [
+        30,
+        45,
+        70
+       ],
+       "ad": [
+        230,
+        345,
+        520
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "to": {
+       "around": "current",
+       "r": 1,
+       "includeCenter": false
+      },
+      "type": "physical",
+      "value": {
+       "ap": [
+        15,
+        22.5,
+        35
+       ],
+       "ad": [
+        115,
+        172.5,
+        260
+       ]
+      }
+     },
+     {
+      "op": "status",
+      "to": "prev",
+      "kind": "chill",
+      "dur": 5,
+      "value": 0.2
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "緩速只加在相鄰的敵人身上（照原文），主目標不緩速。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Yunara",
+   "zh": "尤娜拉",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "IonicSpark",
+    "Swiftstriker"
+   ],
+   "role": "物理射手",
+   "roleClass": "Marksman",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 450,
+    "ad": 45,
+    "as": 0.7,
+    "armor": 25,
+    "mr": 25,
+    "range": 4,
+    "mana": [
+     40,
+     80
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "少女靈修",
+    "desc": "本場戰鬥剩餘時間，攻擊會額外射出一顆光球，造成3/5/7（受法術強度加成） + 13/20/30（受攻擊力加成）物理傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "empower",
+      "to": "self",
+      "dur": 60,
+      "onHit": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "physical",
+        "value": {
+         "ap": [
+          3,
+          5,
+          7
+         ],
+         "ad": [
+          13,
+          20,
+          30
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "「本場剩餘時間」用 60 秒的強化代替；光球當成附加傷害，不另外飛行。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Ziggs",
+   "zh": "希格斯",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "Hyperpop",
+    "Arcanist",
+    "Swiftstriker"
+   ],
+   "role": "魔法射手",
+   "roleClass": "Marksman",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 450,
+    "ad": 45,
+    "as": 0.7,
+    "armor": 25,
+    "mr": 25,
+    "range": 4,
+    "mana": [
+     0,
+     50
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "閃粉炸彈",
+    "desc": "被動：攻擊額外造成40/60/90（受法術強度加成）魔法傷害。\n主動：向目標投擲炸彈，對目標造成120/180/270（受法術強度加成）魔法傷害，對相鄰敵人造成60/90/135（受法術強度加成）魔法傷害。",
+    "castTime": 0.6,
+    "steps": [
+     {
+      "op": "damage",
+      "to": "current",
+      "type": "magic",
+      "value": {
+       "ap": [
+        120,
+        180,
+        270
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "to": {
+       "around": "current",
+       "r": 1,
+       "includeCenter": false
+      },
+      "type": "magic",
+      "value": {
+       "ap": [
+        60,
+        90,
+        135
+       ]
+      }
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": ""
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "src": "unit",
+     "ops": [
+      {
+       "op": "damage",
+       "to": "current",
+       "type": "magic",
+       "value": {
+        "ap": [
+         40,
+         60,
+         90
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "Zoe",
+   "zh": "柔依",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "BeachPop",
+    "Arcanist"
+   ],
+   "role": "魔法施法者",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 500,
+    "ad": 35,
+    "as": 0.7,
+    "armor": 25,
+    "mr": 25,
+    "range": 4,
+    "mana": [
+     15,
+     90
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "板式網球",
+    "desc": "向後拋出一顆板網球，再將它打向最遠的敵人，對第一個命中的敵人造成450/675/1000（受法術強度加成）魔法傷害。若該敵人被擊殺，球會彈跳並將剩餘傷害轉給下一個命中的敵人。",
+    "castTime": 0.8,
+    "steps": [
+     {
+      "op": "damage",
+      "to": {
+       "farthest": 1
+      },
+      "type": "magic",
+      "value": {
+       "ap": [
+        450,
+        675,
+        1000
+       ]
+      }
+     },
+     {
+      "op": "if",
+      "cond": {
+       "killed": true
+      },
+      "then": [
+       {
+        "op": "damage",
+        "to": {
+         "nearest": 1
+        },
+        "type": "magic",
+        "value": {
+         "ap": [
+          225,
+          337.5,
+          500
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "球彈跳簡化成擊殺後再打最近的敵人一次，傷害為 50%（「剩餘傷害」的比例是推測），不連鎖。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Annie",
+   "zh": "安妮",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "IonicSpark",
+    "Arcanist",
+    "Juggernaut"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 900,
+    "ad": 50,
+    "as": 0.65,
+    "armor": 45,
+    "mr": 45,
+    "range": 1,
+    "mana": [
+     20,
+     80
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "我們「真的」放火了",
+    "desc": "獲得350/425/600（受法術強度加成）護盾，持續4秒。釋放一道火焰錐，對敵人造成80/120/180（受法術強度加成）魔法傷害，並施加1%灼燒與重傷，持續4秒。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "ap": [
+        350,
+        425,
+        600
+       ]
+      },
+      "dur": 4
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        80,
+        120,
+        180
+       ]
+      },
+      "to": {
+       "cone": "current",
+       "r": 2
+      }
+     },
+     {
+      "op": "status",
+      "to": "prev",
+      "kind": "burn",
+      "dur": 4,
+      "value": 0.01
+     },
+     {
+      "op": "status",
+      "to": "prev",
+      "kind": "wound",
+      "dur": 4,
+      "value": 0.33
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "重傷強度原文只寫1%，改用33%減治療（推測）；灼燒1%照原文。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Ashe",
+   "zh": "艾希",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "BeachPop",
+    "Swiftstriker"
+   ],
+   "role": "物理射手",
+   "roleClass": "Marksman",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 550,
+    "ad": 50,
+    "as": 0.7,
+    "armor": 30,
+    "mr": 30,
+    "range": 4,
+    "mana": [
+     20,
+     60
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "連射不停",
+    "desc": "接下來6次攻擊獲得30% + 20%（受法術強度加成）攻擊速度，並改為射出3支箭的連射，每支箭造成33/50/75（受攻擊力加成）物理傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "empower",
+      "to": "self",
+      "attacks": 6,
+      "asPct": {
+       "flat": 0.3,
+       "ap": 0.2
+      },
+      "replace": true,
+      "onHit": [
+       {
+        "op": "damage",
+        "type": "physical",
+        "value": {
+         "ad": [
+          33,
+          50,
+          75
+         ]
+        },
+        "hits": 3
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "3支箭都打同一個目標，合成一次三連擊。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Camille",
+   "zh": "卡蜜兒",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "Rock",
+    "Slayer"
+   ],
+   "role": "物理鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 750,
+    "ad": 45,
+    "as": 0.75,
+    "armor": 45,
+    "mr": 45,
+    "range": 1,
+    "mana": [
+     0,
+     40
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "直擊心臟的鉤爪",
+    "desc": "被動：目標死亡時，使用鉤爪衝向下一個目標，造成90/135/210（受攻擊力加成）物理傷害。\n主動：掃堂腿，對錐形範圍造成60/90/135（受法術強度加成） + 200/300/465（受攻擊力加成）物理傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "ap": [
+        60,
+        90,
+        135
+       ],
+       "ad": [
+        200,
+        300,
+        465
+       ]
+      },
+      "to": {
+       "cone": "current",
+       "r": 2
+      }
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": ""
+   },
+   "passives": [
+    {
+     "on": "kill",
+     "src": "unit",
+     "ops": [
+      {
+       "op": "dash",
+       "to": {
+        "nearest": 1
+       }
+      },
+      {
+       "op": "damage",
+       "type": "physical",
+       "value": {
+        "ad": [
+         90,
+         135,
+         210
+        ]
+       }
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "Ezreal",
+   "zh": "伊澤瑞爾",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "Heartsteel",
+    "Encore"
+   ],
+   "role": "物理施法者",
+   "roleClass": "Caster",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 550,
+    "ad": 35,
+    "as": 0.7,
+    "armor": 30,
+    "mr": 30,
+    "range": 4,
+    "mana": [
+     0,
+     35
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "咬緊子彈",
+    "desc": "射出一枚飛彈標記目標，再射出一發將其引爆。爆炸對目標造成30/45/70（受法術強度加成） + 190/285/430（受攻擊力加成）物理傷害，對1格內的單位造成9.9/14.85/23.1（受法術強度加成） + 62.7/94.05/141.9（受攻擊力加成）物理傷害。\n心鋼之聲強化：引爆多造成25%傷害。每第3次施放會波及2格半徑內的敵人。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "ap": [
+        30,
+        45,
+        70
+       ],
+       "ad": [
+        190,
+        285,
+        430
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "ap": [
+        9.9,
+        14.85,
+        23.1
+       ],
+       "ad": [
+        62.7,
+        94.05,
+        141.9
+       ]
+      },
+      "to": {
+       "around": "current",
+       "r": 1,
+       "includeCenter": false
+      }
+     },
+     {
+      "op": "if",
+      "cond": {
+       "favorite": true
+      },
+      "then": [
+       {
+        "op": "damage",
+        "type": "physical",
+        "value": {
+         "ap": [
+          7.5,
+          11.25,
+          17.5
+         ],
+         "ad": [
+          47.5,
+          71.25,
+          107.5
+         ]
+        },
+        "to": "current"
+       }
+      ]
+     },
+     {
+      "op": "if",
+      "cond": {
+       "castN": 3
+      },
+      "then": [
+       {
+        "op": "damage",
+        "type": "physical",
+        "value": {
+         "ap": [
+          9.9,
+          14.85,
+          23.1
+         ],
+         "ad": [
+          62.7,
+          94.05,
+          141.9
+         ]
+        },
+        "to": {
+         "around": "current",
+         "r": 2,
+         "includeCenter": false
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "標記＋引爆合成一次傷害；每第3次的2格擴散用1格波及的數字再打一次（沒有原文數字）。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Gragas",
+   "zh": "古拉格斯",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "KDA",
+    "Juggernaut",
+    "Collab"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 900,
+    "ad": 50,
+    "as": 0.65,
+    "armor": 45,
+    "mr": 45,
+    "range": 1,
+    "mana": [
+     30,
+     80
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "粉絲派對",
+    "desc": "狂歡5秒，每秒回復56/61/68（受法術強度加成） + 2%最大生命，並在攻擊時額外造成60/80/100（受法術強度加成） + 6%最大生命魔法傷害。\n每有一名3星的 K/DA 友軍，兩項效果提高15%。（總提升：（數值未公布））",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "empower",
+      "to": "self",
+      "dur": 5,
+      "onHit": [
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          60,
+          80,
+          100
+         ],
+         "selfMaxHp": 0.06
+        }
+       }
+      ]
+     },
+     {
+      "op": "repeat",
+      "times": 5,
+      "gap": 1,
+      "ops": [
+       {
+        "op": "heal",
+        "to": "self",
+        "value": {
+         "ap": [
+          56,
+          61,
+          68
+         ],
+         "selfMaxHp": 0.02
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "3星K/DA友軍的15%加成丟掉；原文「最大生命」當成古拉格斯自己的最大生命。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Illaoi",
+   "zh": "伊羅旖",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "ILLBEATS",
+    "Frontman"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 900,
+    "ad": 50,
+    "as": 0.65,
+    "armor": 45,
+    "mr": 45,
+    "range": 1,
+    "mana": [
+     30,
+     90
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "金曲版稅",
+    "desc": "主動：治療275/325/575（受法術強度加成），並對2格直線內的敵人造成120/180/270（受法術強度加成）魔法傷害。\n任務：在玩家對戰中施放技能時，你每有10金幣，伊羅旖獲得1點名氣（最多計算70金幣）。累積175點名氣時，伊羅旖達成白金成就，獲得15%韌性，且之後每次施放技能改為產生1金幣。\n（目前名氣：（數值未公布）/ 175）伊羅旖達成白金！（已產生金幣：（數值未公布））",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "heal",
+      "to": "self",
+      "value": {
+       "ap": [
+        275,
+        325,
+        575
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        120,
+        180,
+        270
+       ]
+      },
+      "to": {
+       "line": "current",
+       "len": 2
+      }
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "名氣任務、15%韌性、產生金幣全部丟掉。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Jax",
+   "zh": "賈克斯",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "EDM",
+    "Bodyguard",
+    "Swiftstriker"
+   ],
+   "role": "魔法鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 750,
+    "ad": 45,
+    "as": 0.75,
+    "armor": 45,
+    "mr": 45,
+    "range": 1,
+    "mana": [
+     0,
+     30
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "閃電鞭擊",
+    "desc": "攻擊目前目標，造成200/300/480（受法術強度加成）魔法傷害，並治療傷害量的20%。本場戰鬥剩餘時間獲得（數值未公布）攻擊速度。\n電子舞曲強化：向最近的2名敵人發射光束，各造成50/75/115（受法術強度加成）魔法傷害，每穿過一名敵人，傷害降低（數值未公布）。",
+    "castTime": 0.4,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        200,
+        300,
+        480
+       ]
+      }
+     },
+     {
+      "op": "heal",
+      "to": "self",
+      "value": {
+       "dealt": 0.2
+      }
+     },
+     {
+      "op": "buff",
+      "to": "self",
+      "stat": "asPct",
+      "value": 0.2
+     },
+     {
+      "op": "if",
+      "cond": {
+       "traitActive": "EDM"
+      },
+      "then": [
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          50,
+          75,
+          115
+         ]
+        },
+        "to": {
+         "nearest": 2
+        },
+        "falloff": 0.3
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "加攻速（20%）與每穿過一人降低傷害（30%）原文未公布，皆為推測；光束用2名最近敵人加遞減。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Karthus",
+   "zh": "卡爾瑟斯",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "Pentakill",
+    "Arcanist",
+    "Collab"
+   ],
+   "role": "魔法施法者",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 550,
+    "ad": 35,
+    "as": 0.7,
+    "armor": 30,
+    "mr": 30,
+    "range": 4,
+    "mana": [
+     10,
+     50
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "安魂曲",
+    "desc": "短暫延遲後，對當前目標造成440/660/930（受法術強度加成）魔法傷害。若目標死亡，則以70%效果再次施放技能。",
+    "castTime": 0.8,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        440,
+        660,
+        930
+       ]
+      }
+     },
+     {
+      "op": "if",
+      "cond": {
+       "killed": true
+      },
+      "then": [
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          308,
+          462,
+          651
+         ]
+        },
+        "to": {
+         "nearest": 1
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "擊殺後只再放一次（70%），不連鎖。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Lucian",
+   "zh": "路西恩",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "Jazz",
+    "Hitmaker",
+    "Encore"
+   ],
+   "role": "物理施法者",
+   "roleClass": "Caster",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 550,
+    "ad": 35,
+    "as": 0.7,
+    "armor": 30,
+    "mr": 30,
+    "range": 4,
+    "mana": [
+     0,
+     20
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "緊追不捨",
+    "desc": "滑行到附近一格，並向目標射擊2次，每發造成8/12/18（受法術強度加成） + 80/120/180（受攻擊力加成）物理傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "ap": [
+        8,
+        12,
+        18
+       ],
+       "ad": [
+        80,
+        120,
+        180
+       ]
+      },
+      "hits": 2
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "滑行位移省略，只保留2發射擊。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Lulu",
+   "zh": "露璐",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "Hyperpop",
+    "Choreographer"
+   ],
+   "role": "魔法施法者",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 550,
+    "ad": 35,
+    "as": 0.7,
+    "armor": 30,
+    "mr": 30,
+    "range": 4,
+    "mana": [
+     0,
+     50
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "啦啦隊女孩",
+    "desc": "在兩種效果之間輪流切換：\n奇想！：賦予一名友軍35% + 45%/55%/65%（受法術強度加成）會逐漸衰減的攻擊速度，以及命中時20/30/45（受法術強度加成）魔法傷害，持續5秒。\n狂野生長：使一名友軍生命提高175/260/395（受法術強度加成），持續5秒。效果期間，相鄰敵人每秒受到20/30/45（受法術強度加成）魔法傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "buff",
+      "to": {
+       "allies": 1
+      },
+      "stat": "asPct",
+      "value": {
+       "flat": 0.35,
+       "ap": [
+        0.45,
+        0.55,
+        0.65
+       ]
+      },
+      "dur": 5,
+      "decay": true
+     },
+     {
+      "op": "empower",
+      "to": {
+       "allies": 1
+      },
+      "dur": 5,
+      "onHit": [
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          20,
+          30,
+          45
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": [
+     {
+      "op": "buff",
+      "to": {
+       "allies": 1
+      },
+      "stat": "hp",
+      "value": {
+       "ap": [
+        175,
+        260,
+        395
+       ]
+      },
+      "dur": 5
+     },
+     {
+      "op": "zone",
+      "at": {
+       "allies": 1
+      },
+      "r": 1,
+      "dur": 5,
+      "tick": 1,
+      "enemy": [
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          20,
+          30,
+          45
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "altEvery": 2,
+    "guess": false,
+    "simplified": "地面區域不跟著友軍移動，固定在施放當下友軍的位置。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Lux",
+   "zh": "拉克絲",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "IonicSpark",
+    "Prodigy"
+   ],
+   "role": "魔法施法者",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 550,
+    "ad": 35,
+    "as": 0.7,
+    "armor": 30,
+    "mr": 30,
+    "range": 4,
+    "mana": [
+     0,
+     40
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "拉克絲光束！",
+    "desc": "向空中拋出稜鏡並以光束擊中它。光束分裂，對目標造成350/525/850（受法術強度加成）魔法傷害，對附近另一名敵人造成170/255/425（受法術強度加成）魔法傷害。每有一名敵人死亡，獲得8點魔力。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        350,
+        525,
+        850
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        170,
+        255,
+        425
+       ]
+      },
+      "to": {
+       "around": "current",
+       "r": 1,
+       "includeCenter": false
+      }
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "第二道光束打目標周圍1格的敵人（可能不只一名）。"
+   },
+   "passives": [
+    {
+     "on": "enemyDeath",
+     "src": "unit",
+     "ops": [
+      {
+       "op": "mana",
+       "to": "self",
+       "value": 8
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "Nasus",
+   "zh": "納瑟斯",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "Classical",
+    "Bodyguard"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 900,
+    "ad": 50,
+    "as": 0.65,
+    "armor": 45,
+    "mr": 45,
+    "range": 1,
+    "mana": [
+     25,
+     75
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "藝術守護",
+    "desc": "創造一個2格範圍的華麗領域，持續5秒。效果期間，每秒治療自身125/175/300（受法術強度加成），領域內的友軍每秒治療25/35/60（受法術強度加成）。敵人受到30/45/70（受法術強度加成）魔法傷害，若最大生命低於納瑟斯則會著迷。\n著迷的敵人會為古典樂成員提供加成。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "zone",
+      "at": "self",
+      "r": 2,
+      "dur": 5,
+      "tick": 1,
+      "enemy": [
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          30,
+          45,
+          70
+         ]
+        }
+       },
+       {
+        "op": "status",
+        "kind": "charm",
+        "dur": 1
+       }
+      ],
+      "ally": [
+       {
+        "op": "heal",
+        "value": {
+         "ap": [
+          25,
+          35,
+          60
+         ]
+        }
+       }
+      ]
+     },
+     {
+      "op": "repeat",
+      "times": 5,
+      "gap": 1,
+      "ops": [
+       {
+        "op": "heal",
+        "to": "self",
+        "value": {
+         "ap": [
+          125,
+          175,
+          300
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "著迷不判斷最大生命，區域內敵人每秒都著迷1秒（時間推測）；自身治療另寫，區域友軍治療若含自己會多算。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Qiyana",
+   "zh": "姬亞娜",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "TrueDamage",
+    "Renegade"
+   ],
+   "role": "物理鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 750,
+    "ad": 45,
+    "as": 0.75,
+    "armor": 45,
+    "mr": 45,
+    "range": 1,
+    "mana": [
+     0,
+     40
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "隨機播放清單",
+    "desc": "被動：姬亞娜的指環會定期變色，使她的技能獲得不同的額外效果。\n主動：直線衝刺攻擊敵人，對目標造成30/45/70（受法術強度加成） + 195/290/440（受攻擊力加成）物理傷害，對其他被命中的敵人造成15/22.5/35（受法術強度加成） + 97.5/145/220（受攻擊力加成）傷害。\n紅色：額外造成20%傷害\n綠色：治療傷害量的20%\n藍色：回復10點魔力\n金色：獲得1金幣，並隨機套用其他一種效果。（已獲得金幣：（數值未公布））",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "ap": [
+        30,
+        45,
+        70
+       ],
+       "ad": [
+        195,
+        290,
+        440
+       ]
+      },
+      "to": {
+       "line": "current",
+       "len": 2
+      },
+      "falloff": 0.5,
+      "minPct": 0.5
+     },
+     {
+      "op": "if",
+      "cond": {
+       "castN": 3
+      },
+      "then": [
+       {
+        "op": "heal",
+        "to": "self",
+        "value": {
+         "dealt": 0.2
+        }
+       }
+      ]
+     },
+     {
+      "op": "if",
+      "cond": {
+       "castN": 2
+      },
+      "then": [
+       {
+        "op": "mana",
+        "to": "self",
+        "value": 10
+       }
+      ]
+     },
+     {
+      "op": "if",
+      "cond": {
+       "castN": 4
+      },
+      "then": [
+       {
+        "op": "econ",
+        "kind": "gold",
+        "value": 1
+       }
+      ]
+     },
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "dealt": 0.2
+      },
+      "to": "current"
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "顏色輪替改成固定規則：紅色20%傷害每次都有，綠色（治療）每第3次，藍色（回魔）每第2次，金色（1金幣）每第4次；其餘目標只吃紅色以外的傷害。"
+   },
+   "passives": []
+  },
+  {
+   "key": "RenataGlasc",
+   "zh": "睿娜妲．格萊斯克",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "Classical",
+    "Choreographer"
+   ],
+   "role": "魔法施法者",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 550,
+    "ad": 35,
+    "as": 0.7,
+    "armor": 30,
+    "mr": 30,
+    "range": 4,
+    "mana": [
+     0,
+     45
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "敵意小節",
+    "desc": "向目標投出樂譜，施加2層毒素。毒素在15秒內造成160/240/580（受法術強度加成）魔法傷害。同時對2名附近敵人各施加1層毒素，優先選擇未中毒者。\n敵人在受到毒素時會著迷3秒；若其星級小於或等於睿娜妲．格萊斯克，則延長為12秒。\n著迷的敵人會為古典樂成員提供加成。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "dot",
+      "to": "current",
+      "type": "magic",
+      "value": {
+       "ap": [
+        160,
+        240,
+        580
+       ]
+      },
+      "dur": 15,
+      "tick": 1
+     },
+     {
+      "op": "dot",
+      "to": {
+       "around": "current",
+       "r": 2,
+       "includeCenter": false
+      },
+      "type": "magic",
+      "value": {
+       "ap": [
+        80,
+        120,
+        290
+       ]
+      },
+      "dur": 15,
+      "tick": 1
+     },
+     {
+      "op": "status",
+      "to": "current",
+      "kind": "charm",
+      "dur": 3
+     },
+     {
+      "op": "status",
+      "to": {
+       "around": "current",
+       "r": 2,
+       "includeCenter": false
+      },
+      "kind": "charm",
+      "dur": 3
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "毒素層數改成總傷害（目標2層＝全額，周圍各1層＝一半，周圍不限2人）；星級較低者著迷12秒略掉，一律3秒。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Renekton",
+   "zh": "雷尼克頓",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "BeachPop",
+    "Frontman"
+   ],
+   "role": "物理坦",
+   "roleClass": "Tank",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 900,
+    "ad": 50,
+    "as": 0.65,
+    "armor": 45,
+    "mr": 45,
+    "range": 1,
+    "mana": [
+     60,
+     110
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "鱷魚搖滾",
+    "desc": "體型變大，本場戰鬥剩餘時間獲得225/275/375（受法術強度加成）最大生命。接著旋轉，對相鄰敵人造成100/145/240（受攻擊力加成） + 8%最大生命的物理傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "buff",
+      "to": "self",
+      "stat": "hp",
+      "value": {
+       "ap": [
+        225,
+        275,
+        375
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "ad": [
+        100,
+        145,
+        240
+       ],
+       "selfMaxHp": 0.08
+      },
+      "to": {
+       "adjacent": "enemy"
+      }
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "原文「8%最大生命」當成雷尼克頓自己的最大生命。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Samira",
+   "zh": "煞蜜拉",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "Classical",
+    "Renegade",
+    "Trickshot"
+   ],
+   "role": "物理施法者",
+   "roleClass": "Caster",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 550,
+    "ad": 35,
+    "as": 0.7,
+    "armor": 30,
+    "mr": 30,
+    "range": 4,
+    "mana": [
+     0,
+     60
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "子彈與玫瑰",
+    "desc": "被動：煞蜜拉對敵人打出暴擊時，使其著迷3秒。\n主動：向當前目標射出10發子彈，每發造成4/6/9（受法術強度加成） + 35/53/80（受攻擊力加成）傷害。\n著迷的敵人會為古典樂成員提供加成。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "ap": [
+        4,
+        6,
+        9
+       ],
+       "ad": [
+        35,
+        53,
+        80
+       ]
+      },
+      "hits": 10
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "暴擊著迷沒有對應觸發，改成每第4次普攻（暴擊率25%）著迷目標3秒；技能傷害類型原文未寫，當物理。"
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "n": 4,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "charm",
+       "dur": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "Seraphine",
+   "zh": "瑟菈紛",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "Indie"
+   ],
+   "role": "魔法施法者",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 550,
+    "ad": 35,
+    "as": 0.7,
+    "armor": 30,
+    "mr": 30,
+    "range": 4,
+    "mana": [
+     0,
+     50
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "音符直播",
+    "desc": "獨立音樂：向目標傾瀉一串音符，同時對粉絲擺姿勢，在2.5秒內造成600/900/1350（受法術強度加成）魔法傷害。\n新星：向附近敵人額外射出音符。\n超級巨星：向所有敵人射出高音音符。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "dot",
+      "to": "current",
+      "type": "magic",
+      "value": {
+       "ap": [
+        600,
+        900,
+        1350
+       ]
+      },
+      "dur": 2.5,
+      "tick": 0.5
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "新星、超級巨星的額外音符（沒有數字）丟掉。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Tristana",
+   "zh": "崔絲塔娜",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "Hyperpop",
+    "Hitmaker"
+   ],
+   "role": "物理施法者",
+   "roleClass": "Caster",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 550,
+    "ad": 35,
+    "as": 0.7,
+    "armor": 30,
+    "mr": 30,
+    "range": 4,
+    "mana": [
+     0,
+     55
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "甩頭",
+    "desc": "向3名附近敵人丟出炸彈並引爆，每顆造成15/20/30（受法術強度加成） + 125/190/285（受攻擊力加成）物理傷害。最後一次爆炸改為造成30/40/60（受法術強度加成） + 250/380/570（受攻擊力加成）傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "ap": [
+        15,
+        20,
+        30
+       ],
+       "ad": [
+        125,
+        190,
+        285
+       ]
+      },
+      "to": {
+       "nearest": 3
+      }
+     },
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "ap": [
+        15,
+        20,
+        30
+       ],
+       "ad": [
+        125,
+        190,
+        285
+       ]
+      },
+      "to": {
+       "nearest": 1
+      }
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "最後一顆加倍的爆炸，改成再補一次一般傷害在最近敵人身上。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Amumu",
+   "zh": "阿姆姆",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "Emo"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1100,
+    "ad": 50,
+    "as": 0.65,
+    "armor": 50,
+    "mr": 50,
+    "range": 1,
+    "mana": [
+     60,
+     120
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "孤單又淒涼",
+    "desc": "治療475/625/750（受法術強度加成）。向最近的4名敵人甩出繃帶，造成100/150/240（受法術強度加成）魔法傷害，並暈眩1.25/1.5/1.75秒。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "heal",
+      "to": "self",
+      "value": {
+       "ap": [
+        475,
+        625,
+        750
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        100,
+        150,
+        240
+       ]
+      },
+      "to": {
+       "nearest": 4
+      }
+     },
+     {
+      "op": "stun",
+      "to": "prev",
+      "dur": [
+       1.25,
+       1.5,
+       1.75
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": ""
+   },
+   "passives": []
+  },
+  {
+   "key": "Bard",
+   "zh": "巴德",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "Jazz",
+    "Swiftstriker"
+   ],
+   "role": "魔法射手",
+   "roleClass": "Marksman",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 650,
+    "ad": 55,
+    "as": 0.75,
+    "armor": 35,
+    "mr": 35,
+    "range": 4,
+    "mana": [
+     20,
+     80
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "與我同鳴",
+    "desc": "被動：獲得旅人號角。裝備期間，施放技能會產生經驗值，攻擊會額外提供魔力。\n主動：召喚一波小精靈，對被擊中的敵人造成210/315/505（受法術強度加成）魔法傷害，每穿過一名敵人傷害降低30%。",
+    "castTime": 0.6,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        210,
+        315,
+        505
+       ]
+      },
+      "to": {
+       "line": "current",
+       "len": "board",
+       "width": 1
+      },
+      "falloff": 0.3
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "旅人號角（施法得經驗、攻擊多回魔力）拿掉；小精靈改成沿目標方向的直線，每多穿一人 −30%。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Braum",
+   "zh": "布郎姆",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "ILLBEATS",
+    "Juggernaut"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1100,
+    "ad": 50,
+    "as": 0.65,
+    "armor": 50,
+    "mr": 50,
+    "range": 1,
+    "mana": [
+     75,
+     135
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "打擊樂重擊",
+    "desc": "獲得275/325/375（受法術強度加成） + 10%最大生命護盾，持續4秒。接著重擊地面，對相鄰敵人造成120/180/300（受法術強度加成）魔法傷害並暈眩1.5秒。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "ap": [
+        275,
+        325,
+        375
+       ],
+       "selfMaxHp": 0.1
+      },
+      "dur": 4
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        120,
+        180,
+        300
+       ]
+      },
+      "to": {
+       "adjacent": "enemy"
+      }
+     },
+     {
+      "op": "stun",
+      "to": "prev",
+      "dur": 1.5
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": ""
+   },
+   "passives": []
+  },
+  {
+   "key": "Briar",
+   "zh": "布蕾爾",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "IonicSpark",
+    "Slayer",
+    "Collab"
+   ],
+   "role": "物理刺客",
+   "roleClass": "Assassin",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 950,
+    "ad": 55,
+    "as": 0.85,
+    "armor": 55,
+    "mr": 55,
+    "range": 1,
+    "mana": [
+     0,
+     30
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "零食攻擊",
+    "desc": "治療100/150/200（受法術強度加成），並將一份零食踢向3格內最遠的敵人，滑行過去並對1格範圍造成100/150/240（受攻擊力加成）物理傷害。\n接著吞下零食，獲得200%攻擊速度（持續3次攻擊），並將這些攻擊改為劈砍，每次造成100/150/240（受攻擊力加成）物理傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "heal",
+      "to": "self",
+      "value": {
+       "ap": [
+        100,
+        150,
+        200
+       ]
+      }
+     },
+     {
+      "op": "dash",
+      "to": {
+       "farthest": 1,
+       "within": 3
+      }
+     },
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "ad": [
+        100,
+        150,
+        240
+       ]
+      },
+      "to": {
+       "around": "current",
+       "r": 1,
+       "includeCenter": true
+      }
+     },
+     {
+      "op": "empower",
+      "to": "self",
+      "attacks": 3,
+      "asPct": 2.0,
+      "replace": true,
+      "onHit": [
+       {
+        "op": "damage",
+        "type": "physical",
+        "value": {
+         "ad": [
+          100,
+          150,
+          240
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "踢零食改成直接衝向 3 格內最遠的敵人，對其 1 格範圍造成傷害；劈砍強化 3 次攻擊照做。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Draven",
+   "zh": "達瑞文",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "ILLBEATS",
+    "Trickshot"
+   ],
+   "role": "物理施法者",
+   "roleClass": "Caster",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 650,
+    "ad": 35,
+    "as": 0.75,
+    "armor": 35,
+    "mr": 35,
+    "range": 4,
+    "mana": [
+     0,
+     60
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "像斧頭一樣轉啊轉",
+    "desc": "向目標投出巨大的旋轉圓盤，造成155/235/375（受攻擊力加成）物理傷害。圓盤會留下持續3秒的漩渦，每秒對1格內的敵人分攤造成15/25/35（受法術強度加成） + 125/185/300（受攻擊力加成）物理傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "ad": [
+        155,
+        235,
+        375
+       ]
+      }
+     },
+     {
+      "op": "zone",
+      "at": "current",
+      "r": 1,
+      "dur": 3,
+      "tick": 1,
+      "enemy": [
+       {
+        "op": "damage",
+        "type": "physical",
+        "value": {
+         "ap": [
+          15,
+          25,
+          35
+         ],
+         "ad": [
+          125,
+          185,
+          300
+         ]
+        },
+        "split": true
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": ""
+   },
+   "passives": []
+  },
+  {
+   "key": "Ekko",
+   "zh": "艾克",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "TrueDamage",
+    "Juggernaut",
+    "Prodigy"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1100,
+    "ad": 50,
+    "as": 0.65,
+    "armor": 50,
+    "mr": 50,
+    "range": 1,
+    "mana": [
+     30,
+     120
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "時間倒轉",
+    "desc": "被動：回溯4秒內受到傷害的30%。\n主動：立即治療所有正在回溯的傷害，再加上125/150/200（受法術強度加成）生命。接著攻擊當前目標，造成200/300/480（受法術強度加成）魔法傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "heal",
+      "to": "self",
+      "value": {
+       "ap": [
+        125,
+        150,
+        200
+       ]
+      },
+      "missingScale": 0.6
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        200,
+        300,
+        480
+       ]
+      }
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "被動回溯 4 秒內 30% 傷害拿掉，改成治療依已損失生命最多 +60%（數字為推測）。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Evelynn",
+   "zh": "伊芙琳",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "KDA",
+    "Renegade"
+   ],
+   "role": "魔法鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 875,
+    "ad": 50,
+    "as": 0.8,
+    "armor": 50,
+    "mr": 50,
+    "range": 1,
+    "mana": [
+     0,
+     40
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "惡女",
+    "desc": "被動：戰鬥開始的前15秒內，只要至少還有3名其他友軍存活，就獲得（數值未公布）韌性，且無法被選取為攻擊目標。\n主動：對當前目標造成300/450/720（受法術強度加成）魔法傷害，對半圓範圍內的其他敵人造成130/195/310（受法術強度加成）魔法傷害。無視40%的敵方魔法抗性。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        300,
+        450,
+        720
+       ]
+      },
+      "pen": 0.4
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        130,
+        195,
+        310
+       ]
+      },
+      "to": {
+       "cone": "current",
+       "r": 2
+      },
+      "pen": 0.4
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "「至少 3 名友軍存活」的條件拿掉；韌性數值未公布，當成 20% 減傷（推測）；半圓範圍可能連主目標再打一次。"
+   },
+   "passives": [
+    {
+     "on": "start",
+     "limit": 1,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "status",
+       "to": "self",
+       "kind": "untargetable",
+       "dur": 15
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "dr",
+       "value": 0.2,
+       "dur": 15
+      }
+     ],
+     "text": "惡女：前 15 秒無法被選取"
+    }
+   ]
+  },
+  {
+   "key": "Galio",
+   "zh": "加里歐",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "Jazz",
+    "Frontman"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1100,
+    "ad": 50,
+    "as": 0.65,
+    "armor": 50,
+    "mr": 50,
+    "range": 1,
+    "mana": [
+     50,
+     120
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "掀起風暴",
+    "desc": "獲得325/400/500（受法術強度加成） + 10%最大生命護盾，持續4秒。對本場戰鬥造成最多傷害的敵人釋放強風，造成120/180/300（受法術強度加成）魔法傷害並暈眩1秒。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "ap": [
+        325,
+        400,
+        500
+       ],
+       "selfMaxHp": 0.1
+      },
+      "dur": 4
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        120,
+        180,
+        300
+       ]
+      },
+      "to": {
+       "mostDamage": 1
+      }
+     },
+     {
+      "op": "stun",
+      "to": "prev",
+      "dur": 1
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": ""
+   },
+   "passives": []
+  },
+  {
+   "key": "KSante",
+   "zh": "卡桑帝",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "Heartsteel",
+    "Bodyguard"
+   ],
+   "role": "物理坦",
+   "roleClass": "Tank",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 1100,
+    "ad": 50,
+    "as": 0.65,
+    "armor": 50,
+    "mr": 50,
+    "range": 1,
+    "mana": [
+     70,
+     140
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "進你家！",
+    "desc": "獲得（數值未公布）護盾，持續4秒。衝撞並推開目標，暈眩目標與其他被擊中的敵人1.25秒，接著攻擊目標並造成（數值未公布）物理傷害。衝撞後嘲諷附近敵人。\n心鋼之聲強化：獲得2525護甲與魔法抗性，攻擊時額外造成0.5/0.75/1.2 × 護甲 + 0.5/0.75/1.2 × 魔法抗性的物理傷害。",
+    "castTime": 0.6,
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "flat": [
+        250,
+        300,
+        400
+       ],
+       "selfMaxHp": 0.1
+      },
+      "dur": 4
+     },
+     {
+      "op": "dash",
+      "to": "current"
+     },
+     {
+      "op": "stun",
+      "to": {
+       "around": "current",
+       "r": 1,
+       "includeCenter": true
+      },
+      "dur": 1.25
+     },
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "ad": [
+        250,
+        375,
+        600
+       ]
+      },
+      "to": "current"
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "護盾、技能傷害數值未公布，為推測；嘲諷簡化成暈眩；「2525」讀成 +25 護甲 +25 魔抗（開場拿一次，之後一直有）。"
+   },
+   "passives": [
+    {
+     "on": "start",
+     "src": "unit",
+     "ops": [
+      {
+       "op": "if",
+       "cond": {
+        "favorite": true
+       },
+       "then": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "armor",
+         "value": 25
+        },
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "mr",
+         "value": 25
+        }
+       ]
+      }
+     ],
+     "text": "心鋼強化：常駐 +25 護甲與魔抗"
+    },
+    {
+     "on": "attack",
+     "src": "unit",
+     "ops": [
+      {
+       "op": "if",
+       "cond": {
+        "favorite": true
+       },
+       "then": [
+        {
+         "op": "damage",
+         "type": "physical",
+         "value": {
+          "resist": [
+           0.5,
+           0.75,
+           1.2
+          ]
+         }
+        }
+       ]
+      }
+     ],
+     "text": "心鋼強化：攻擊追加傷害"
+    }
+   ]
+  },
+  {
+   "key": "KaiSa",
+   "zh": "凱莎",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "KDA",
+    "Trickshot"
+   ],
+   "role": "物理射手",
+   "roleClass": "Marksman",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 650,
+    "ad": 55,
+    "as": 0.75,
+    "armor": 35,
+    "mr": 35,
+    "range": 4,
+    "mana": [
+     0,
+     30
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "傾盆而下",
+    "desc": "被動：每攻擊3次，發射3枚飛彈，每枚造成6/9/15（受法術強度加成） + 36/54/85（受攻擊力加成）物理傷害。\n主動：本場戰鬥剩餘時間獲得12%攻擊速度。",
+    "castTime": 0.3,
+    "steps": [
+     {
+      "op": "buff",
+      "to": "self",
+      "stat": "asPct",
+      "value": 0.12
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": ""
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "n": 3,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "repeat",
+       "times": 3,
+       "ops": [
+        {
+         "op": "damage",
+         "type": "physical",
+         "value": {
+          "ap": [
+           6,
+           9,
+           15
+          ],
+          "ad": [
+           36,
+           54,
+           85
+          ]
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "Malzahar",
+   "zh": "馬爾札哈",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "Composer",
+    "Prodigy"
+   ],
+   "role": "魔法施法者",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 650,
+    "ad": 35,
+    "as": 0.75,
+    "armor": 35,
+    "mr": 35,
+    "range": 4,
+    "mana": [
+     0,
+     50
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "禁忌不和諧音",
+    "desc": "向目標發射2秒光束，造成400/600/960（受法術強度加成）魔法傷害。能量隨節奏爆發4次，對1格範圍內的敵人施加30%撕裂，持續4秒，每次爆發造成50/75/120（受法術強度加成）魔法傷害。\n撕裂：降低魔法抗性。",
+    "castTime": 0.6,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        400,
+        600,
+        960
+       ]
+      }
+     },
+     {
+      "op": "repeat",
+      "times": 4,
+      "gap": 0.5,
+      "ops": [
+       {
+        "op": "status",
+        "to": {
+         "around": "current",
+         "r": 1,
+         "includeCenter": true
+        },
+        "kind": "shred",
+        "dur": 4,
+        "value": 0.3
+       },
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          50,
+          75,
+          120
+         ]
+        },
+        "to": "prev"
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "2 秒光束改成瞬間主傷害，之後 4 次爆發（每 0.5 秒）撕裂 30% 魔抗。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Senna",
+   "zh": "姍娜",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "TrueDamage",
+    "Hitmaker"
+   ],
+   "role": "物理施法者",
+   "roleClass": "Caster",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 650,
+    "ad": 35,
+    "as": 0.75,
+    "armor": 35,
+    "mr": 35,
+    "range": 4,
+    "mana": [
+     0,
+     20
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "迴響毀滅",
+    "desc": "射擊目標，造成25/35/60（受法術強度加成） + 140/210/340（受攻擊力加成）物理傷害並標記。若目標已被標記，則引爆標記，造成37.5/52.5/90（受法術強度加成） + 210/315/510（受攻擊力加成）傷害。\n引爆標記或擊殺被標記的敵人時，獲得10%傷害增幅，持續到戰鬥結束。",
+    "castTime": 0.4,
+    "steps": [
+     {
+      "op": "if",
+      "cond": {
+       "castN": 2
+      },
+      "then": [
+       {
+        "op": "damage",
+        "type": "physical",
+        "value": {
+         "ap": [
+          37.5,
+          52.5,
+          90
+         ],
+         "ad": [
+          210,
+          315,
+          510
+         ]
+        }
+       },
+       {
+        "op": "buff",
+        "to": "self",
+        "stat": "dmgAmp",
+        "value": 0.1,
+        "stackKey": "senna",
+        "maxStacks": 5
+       }
+      ],
+      "else": [
+       {
+        "op": "damage",
+        "type": "physical",
+        "value": {
+         "ap": [
+          25,
+          35,
+          60
+         ],
+         "ad": [
+          140,
+          210,
+          340
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "標記／引爆改成每 2 次施放第 2 次引爆；擊殺標記目標的加成拿掉；傷害增幅可疊最多 5 次（推測）。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Swain",
+   "zh": "斯溫",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "Rock",
+    "Arcanist",
+    "Frontman"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1100,
+    "ad": 50,
+    "as": 0.65,
+    "armor": 50,
+    "mr": 50,
+    "range": 1,
+    "mana": [
+     70,
+     120
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "殘酷惡魔的論文",
+    "desc": "進入惡魔形態，獲得220/275/400（受法術強度加成）最大生命，並每秒對相鄰敵人造成20/30/48（受法術強度加成）魔法傷害。之後每次施放會治療275/350/475（受法術強度加成），並使傷害提高5/8/12（受法術強度加成）。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "if",
+      "cond": {
+       "flag": "demon"
+      },
+      "then": [
+       {
+        "op": "heal",
+        "to": "self",
+        "value": {
+         "ap": [
+          275,
+          350,
+          475
+         ]
+        }
+       }
+      ],
+      "else": [
+       {
+        "op": "buff",
+        "to": "self",
+        "stat": "hp",
+        "value": {
+         "ap": [
+          220,
+          275,
+          400
+         ]
+        }
+       },
+       {
+        "op": "flag",
+        "name": "demon",
+        "on": true
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "之後每次施放增加傷害 5/8/12 的成長拿掉。"
+   },
+   "passives": [
+    {
+     "on": "every",
+     "n": 1,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "if",
+       "cond": {
+        "flag": "demon"
+       },
+       "then": [
+        {
+         "op": "damage",
+         "type": "magic",
+         "value": {
+          "ap": [
+           20,
+           30,
+           48
+          ]
+         },
+         "to": {
+          "adjacent": "enemy"
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "Syndra",
+   "zh": "星朵拉",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "BeachPop",
+    "Choreographer"
+   ],
+   "role": "魔法施法者",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 650,
+    "ad": 35,
+    "as": 0.75,
+    "armor": 35,
+    "mr": 35,
+    "range": 4,
+    "mana": [
+     0,
+     30
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "發球！",
+    "desc": "向目標扣殺排球，造成300/450/720（受法術強度加成）魔法傷害。球會彈向其後方物品最少的敵人，造成110/165/265（受法術強度加成）魔法傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        300,
+        450,
+        720
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        110,
+        165,
+        265
+       ]
+      },
+      "to": {
+       "fewestItems": 1
+      }
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "彈球彈向物品最少的敵人，若就是主目標則再打一次。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Tibbers",
+   "zh": "泰貝爾",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "IonicSpark",
+    "Bodyguard"
+   ],
+   "role": "物理坦",
+   "roleClass": "Tank",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 1100,
+    "ad": 50,
+    "as": 0.65,
+    "armor": 50,
+    "mr": 50,
+    "range": 1,
+    "mana": [
+     40,
+     100
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "女孩最好的朋友",
+    "desc": "被動：生命降到30%或你最強的安妮死亡時，進入狂暴，獲得300/500/800最大生命、100%攻擊力，以及會在6秒內衰減的200%攻擊速度。\n主動：獲得500/600/750（受法術強度加成）護盾，持續4秒。若處於狂暴狀態，則刷新衰減中的攻擊速度。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "ap": [
+        500,
+        600,
+        750
+       ]
+      },
+      "dur": 4
+     },
+     {
+      "op": "if",
+      "cond": {
+       "flag": "enraged"
+      },
+      "then": [
+       {
+        "op": "buff",
+        "to": "self",
+        "stat": "asPct",
+        "value": 2.0,
+        "dur": 6,
+        "decay": true
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "「最強的安妮死亡」觸發條件拿掉，只剩生命低於 30%。"
+   },
+   "passives": [
+    {
+     "on": "hpBelow",
+     "n": 0.3,
+     "limit": 1,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "hp",
+       "value": [
+        300,
+        500,
+        800
+       ]
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "adPct",
+       "value": 1.0
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "asPct",
+       "value": 2.0,
+       "dur": 6,
+       "decay": true
+      },
+      {
+       "op": "flag",
+       "name": "enraged",
+       "on": true
+      }
+     ],
+     "text": "狂暴"
+    }
+   ]
+  },
+  {
+   "key": "Viego",
+   "zh": "維爾戈",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "Pentakill",
+    "Choreographer",
+    "Slayer"
+   ],
+   "role": "物理鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 875,
+    "ad": 50,
+    "as": 0.8,
+    "armor": 50,
+    "mr": 50,
+    "range": 1,
+    "mana": [
+     0,
+     40
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "無處可逃",
+    "desc": "在目標周圍召喚（數值未公布）把劍，短暫延遲後刺穿目標，每把劍造成39/59/93（受法術強度加成）物理傷害。\n每擊殺8名敵人，永久獲得一把劍。（目前擊殺數：（數值未公布））",
+    "castTime": 0.8,
+    "steps": [
+     {
+      "op": "repeat",
+      "times": 6,
+      "gap": 0.15,
+      "ops": [
+       {
+        "op": "damage",
+        "type": "physical",
+        "value": {
+         "ap": [
+          39,
+          59,
+          93
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "劍的數量未公布，估 6 把；擊殺累積永久多一把劍拿掉。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Ahri",
+   "zh": "阿璃",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "KDA",
+    "Choreographer"
+   ],
+   "role": "魔法施法者",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 850,
+    "ad": 40,
+    "as": 0.75,
+    "armor": 40,
+    "mr": 40,
+    "range": 4,
+    "mana": [
+     0,
+     30
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "燃燒一切",
+    "desc": "被動：戰鬥開始時擁有6枚狐火，施放技能後獲得2/2/4枚，最多14枚。接著進入流動狀態，移動更快並強化接下來的施放。\n主動：向目標射出所有狐火，每枚造成（數值未公布）魔法傷害。處於流動狀態時，改為向目標投出一顆愛心，造成（數值未公布）魔法傷害，並將狐火分散給目標2格內的所有敵人。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        60,
+        90,
+        150
+       ]
+      },
+      "to": "current",
+      "hits": 10
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "狐火每枚傷害未公布，推測 10 枚×AP60 的總量；流動狀態、愛心、狐火分散都省略。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Alistar",
+   "zh": "亞歷斯塔",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "Country"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1300,
+    "ad": 70,
+    "as": 0.65,
+    "armor": 60,
+    "mr": 60,
+    "range": 1,
+    "mana": [
+     55,
+     155
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "藍牛雨中哭泣",
+    "desc": "治療265/300/2000（受法術強度加成），依已損失生命最多提高100%。接著攻擊目標，將其3格內的敵人擊飛1.5/1.75/8秒，並對所有被擊中的敵人造成100/150/2500（受法術強度加成）魔法傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "heal",
+      "to": "self",
+      "value": {
+       "ap": [
+        265,
+        300,
+        2000
+       ]
+      },
+      "missingScale": 1.0
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        100,
+        150,
+        2500
+       ]
+      },
+      "to": {
+       "around": "current",
+       "r": 3,
+       "includeCenter": true
+      }
+     },
+     {
+      "op": "stun",
+      "to": "prev",
+      "dur": [
+       1.5,
+       1.75,
+       8
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "攻擊目標的動作省略，擊飛簡化成暈眩。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Alune",
+   "zh": "亞盧妮",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "Heartsteel",
+    "Manager",
+    "Prodigy"
+   ],
+   "role": "魔法施法者",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 850,
+    "ad": 40,
+    "as": 0.75,
+    "armor": 40,
+    "mr": 40,
+    "range": 4,
+    "mana": [
+     20,
+     65
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "聚光燈",
+    "desc": "以聚光燈照亮目標，造成315/475/2250（受法術強度加成）魔法傷害。目標2格內的所有敵人分攤375/565/2500（受法術強度加成）魔法傷害。若目標死亡，剩餘傷害會分給最近的2名敵人。\n心鋼之聲強化：向目標發射5枚投射物，每枚造成30/45/72（受法術強度加成）魔法傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "if",
+      "cond": {
+       "favorite": true
+      },
+      "then": [
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          30,
+          45,
+          72
+         ]
+        },
+        "to": "current",
+        "hits": 5
+       }
+      ],
+      "else": [
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          315,
+          475,
+          2250
+         ]
+        },
+        "to": "current"
+       },
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          375,
+          565,
+          2500
+         ]
+        },
+        "to": {
+         "around": "current",
+         "r": 2,
+         "includeCenter": false
+        },
+        "split": true
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "目標死亡時剩餘傷害轉給最近 2 名敵人這段省略。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Aurora",
+   "zh": "歐羅拉",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "IonicSpark",
+    "Renegade"
+   ],
+   "role": "魔法施法者",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 850,
+    "ad": 40,
+    "as": 0.75,
+    "armor": 40,
+    "mr": 40,
+    "range": 4,
+    "mana": [
+     0,
+     60
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "分隔的世界之間",
+    "desc": "傳送並沿最佳直線發射一道光束。對生命最高的2名敵人造成275/415/2000（受法術強度加成）魔法傷害，對其餘敵人造成90/135/1500（受法術強度加成）魔法傷害。接著回到原位。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        275,
+        415,
+        2000
+       ]
+      },
+      "to": {
+       "highestHp": 2
+      }
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        90,
+        135,
+        1500
+       ]
+      },
+      "to": {
+       "nearest": 4
+      }
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "傳送與回原位省略；其餘敵人改成最近 4 名，不含已被打的那 2 名之外的光束路徑判定。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Garen",
+   "zh": "蓋倫",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "Synthwave",
+    "Choreographer"
+   ],
+   "role": "物理坦",
+   "roleClass": "Tank",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 1300,
+    "ad": 70,
+    "as": 0.65,
+    "armor": 60,
+    "mr": 60,
+    "range": 1,
+    "mana": [
+     30,
+     100
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "真理之劍",
+    "desc": "治療300/350/2400（受法術強度加成） + 12%最大生命，接著向當前目標釋放衝擊波，對被擊中的敵人造成70/105/3000（受攻擊力加成）物理傷害，並施加10/10/15%虛弱，持續4/4/6秒。\n虛弱：降低造成的傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "heal",
+      "to": "self",
+      "value": {
+       "ap": [
+        300,
+        350,
+        2400
+       ],
+       "selfMaxHp": 0.12
+      }
+     },
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "ad": [
+        70,
+        105,
+        3000
+       ]
+      },
+      "to": {
+       "cone": "current",
+       "r": 2
+      }
+     },
+     {
+      "op": "status",
+      "to": "prev",
+      "kind": "weaken",
+      "dur": [
+       4,
+       4,
+       6
+      ],
+      "value": [
+       0.1,
+       0.1,
+       0.15
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": ""
+   },
+   "passives": []
+  },
+  {
+   "key": "Graves",
+   "zh": "葛雷夫",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "BeachPop",
+    "Renegade"
+   ],
+   "role": "物理鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 1100,
+    "ad": 80,
+    "as": 0.8,
+    "armor": 60,
+    "mr": 60,
+    "range": 1,
+    "mana": [
+     0,
+     30
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "自由左手",
+    "desc": "接下來2次攻擊獲得125%攻擊速度，向目標滑行，並將攻擊改為5發子彈的錐形射擊，每發造成5/7/35（受法術強度加成） + 40/60/325（受攻擊力加成）物理傷害。擊殺時強化額外一次攻擊。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "dash",
+      "to": "current"
+     },
+     {
+      "op": "empower",
+      "attacks": 2,
+      "asPct": 1.25,
+      "onHit": [
+       {
+        "op": "damage",
+        "type": "physical",
+        "value": {
+         "ap": [
+          5,
+          7,
+          35
+         ],
+         "ad": [
+          40,
+          60,
+          325
+         ]
+        },
+        "to": {
+         "cone": "current",
+         "r": 2
+        },
+        "hits": 5
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "擊殺時強化額外一次攻擊省略；滑行改成位移到目標旁。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Jhin",
+   "zh": "燼",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "Classical",
+    "Encore"
+   ],
+   "role": "物理專家",
+   "roleClass": "Specialist",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 900,
+    "ad": 60,
+    "as": 0.8,
+    "armor": 45,
+    "mr": 45,
+    "range": 4,
+    "mana": [
+     0,
+     0
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "弦樂四重奏",
+    "desc": "被動：將每1%額外攻擊速度轉換為0.8%攻擊力。\n攻擊會召喚小提琴同步攻擊，造成26/40/124（受攻擊力加成）物理傷害，並使目標著迷4秒。每第4次攻擊會被強化，造成14/21/104（受法術強度加成） + 90/135/744（受攻擊力加成）物理傷害，並重置小提琴。\n從第4次連奏開始，小提琴會留存，燼獲得無限射程，攻擊會貫穿，每命中一個目標傷害降低60%。",
+    "castTime": 0,
+    "steps": [],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "攻速轉攻擊力、第 4 次連奏後的無限射程／貫穿／小提琴留存都省略；第 4 發直接額外加傷。法力用不到（[0,0]）。"
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "n": 1,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "damage",
+       "type": "physical",
+       "value": {
+        "ad": [
+         26,
+         40,
+         124
+        ]
+       },
+       "to": "current"
+      },
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "charm",
+       "dur": 4
+      }
+     ],
+     "text": "小提琴同步攻擊"
+    },
+    {
+     "on": "attack",
+     "n": 4,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "damage",
+       "type": "physical",
+       "value": {
+        "ap": [
+         14,
+         21,
+         104
+        ],
+        "ad": [
+         90,
+         135,
+         744
+        ]
+       },
+       "to": "current"
+      }
+     ],
+     "text": "第四發"
+    }
+   ]
+  },
+  {
+   "key": "Jinx",
+   "zh": "吉茵珂絲",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "IonicSpark",
+    "Hitmaker"
+   ],
+   "role": "物理射手",
+   "roleClass": "Marksman",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 850,
+    "ad": 60,
+    "as": 0.8,
+    "armor": 35,
+    "mr": 35,
+    "range": 4,
+    "mana": [
+     30,
+     90
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "砰砰，碰碰",
+    "desc": "快速向附近敵人發射（數值未公布）枚飛彈，每枚造成6/9/30（受法術強度加成） + 38/57/300（受攻擊力加成）物理傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "ap": [
+        6,
+        9,
+        30
+       ],
+       "ad": [
+        38,
+        57,
+        300
+       ]
+      },
+      "to": "current",
+      "hits": 14
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "飛彈數未公布，推測 14 枚；全部打當前目標，不分散給附近敵人。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Kayle",
+   "zh": "凱爾",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "Pentakill",
+    "Swiftstriker"
+   ],
+   "role": "魔法射手",
+   "roleClass": "Marksman",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 850,
+    "ad": 60,
+    "as": 0.8,
+    "armor": 35,
+    "mr": 35,
+    "range": 4,
+    "mana": [
+     0,
+     50
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "地獄階梯",
+    "desc": "被動：攻擊額外造成40/60/500（受法術強度加成）魔法傷害。\n主動：4秒內獲得80%攻擊速度與無限射程，每次攻擊召喚一把劍。之後讓劍雨落向目標，對2格內所有敵人造成250/375/2000（受法術強度加成）傷害，並為每把劍額外對目標造成35/55/400（受法術強度加成）魔法傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "buff",
+      "to": "self",
+      "stat": "asPct",
+      "value": 0.8,
+      "dur": 4
+     },
+     {
+      "op": "buff",
+      "to": "self",
+      "stat": "range",
+      "value": 6,
+      "dur": 4
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        250,
+        375,
+        2000
+       ]
+      },
+      "to": {
+       "around": "current",
+       "r": 2,
+       "includeCenter": true
+      }
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        35,
+        55,
+        400
+       ]
+      },
+      "to": "current",
+      "hits": 6
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "劍雨不等 4 秒，施放時立刻落下；劍數推測 6 把；劍雨傷害原文沒寫類型，當魔法。"
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "n": 1,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "damage",
+       "type": "magic",
+       "value": {
+        "ap": [
+         40,
+         60,
+         500
+        ]
+       },
+       "to": "current"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "Leona",
+   "zh": "雷歐娜",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "KDA",
+    "Bodyguard",
+    "Manager"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1300,
+    "ad": 70,
+    "as": 0.65,
+    "armor": 60,
+    "mr": 60,
+    "range": 1,
+    "mana": [
+     40,
+     100
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "同步燈光秀",
+    "desc": "獲得600/750/2000（受法術強度加成）護盾，持續4秒。在附近敵人身上召喚7/7/25道光束，每道造成50/75/2000（受法術強度加成）魔法傷害，並降低目標5/5/15魔法抗性。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "ap": [
+        600,
+        750,
+        2000
+       ]
+      },
+      "dur": 4
+     },
+     {
+      "op": "repeat",
+      "times": [
+       7,
+       7,
+       25
+      ],
+      "ops": [
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          50,
+          75,
+          2000
+         ]
+        },
+        "to": {
+         "random": 1
+        }
+       },
+       {
+        "op": "buff",
+        "to": "prev",
+        "stat": "mr",
+        "value": [
+         -5,
+         -5,
+         -15
+        ]
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "光束隨機打附近敵人，魔抗降低整場有效；總傷害低於 4 費參考範圍，因為原文數字就小。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Locke",
+   "zh": "洛克",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "Rock",
+    "Swiftstriker"
+   ],
+   "role": "魔法刺客",
+   "roleClass": "Assassin",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1050,
+    "ad": 65,
+    "as": 0.85,
+    "armor": 55,
+    "mr": 55,
+    "range": 1,
+    "mana": [
+     0,
+     30
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "追尋罪孽（靈魂之釘之歌）",
+    "desc": "被動：攻擊額外造成40/60/500（受法術強度加成）魔法傷害。洛克每在敵人身上施加一個標記，其造成的所有傷害提高10%。\n主動：向4格內最遠的敵人投出3根靈魂釘，每根造成15/22/400（受法術強度加成）魔法傷害，並標記所有被擊中的敵人。接著傳送到敵人身邊，造成150/225/2000（受法術強度加成）魔法傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        15,
+        22,
+        400
+       ]
+      },
+      "to": {
+       "farthest": 1,
+       "within": 4
+      },
+      "hits": 3
+     },
+     {
+      "op": "buff",
+      "to": "self",
+      "stat": "dmgAmp",
+      "value": 0.1,
+      "stackKey": "mark",
+      "maxStacks": 3
+     },
+     {
+      "op": "dash",
+      "to": {
+       "farthest": 1,
+       "within": 4
+      }
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        150,
+        225,
+        2000
+       ]
+      },
+      "to": "current"
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "標記改成洛克自己的增傷層（最多 3 層，每次施放 +10%），不是記在敵人身上。"
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "n": 1,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "damage",
+       "type": "magic",
+       "value": {
+        "ap": [
+         40,
+         60,
+         500
+        ]
+       },
+       "to": "current"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "Mel",
+   "zh": "梅爾",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "RAndB",
+    "Arcanist"
+   ],
+   "role": "魔法施法者",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 850,
+    "ad": 40,
+    "as": 0.75,
+    "armor": 40,
+    "mr": 40,
+    "range": 4,
+    "mana": [
+     0,
+     40
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "藍調連鎖",
+    "desc": "發射30/30/60枚飛彈，分配給最近的3名敵人，每枚造成17/26/200（受法術強度加成）魔法傷害並施加一層藍調。每3層藍調，敵人受到此技能的傷害提高5%。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "repeat",
+      "times": [
+       10,
+       10,
+       20
+      ],
+      "ops": [
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          17,
+          26,
+          200
+         ]
+        },
+        "to": {
+         "nearest": 3
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "30／60 枚飛彈分給最近 3 名＝每名 10／20 枚；藍調層數與 5% 增傷省略。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Shyvana",
+   "zh": "希瓦娜",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "IonicSpark",
+    "Frontman"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1300,
+    "ad": 70,
+    "as": 0.65,
+    "armor": 60,
+    "mr": 60,
+    "range": 1,
+    "mana": [
+     30,
+     100
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "龍之力",
+    "desc": "被動：生命低於70%/70%/95%時變身為龍。變身後獲得300/500/3000最大生命、150%/150%/250%攻擊速度，且每第3次攻擊對1格範圍額外造成150/225/3000（受法術強度加成）魔法傷害。\n主動：獲得350/375/1000（受法術強度加成） + 8%最大生命護盾，持續4秒。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "ap": [
+        350,
+        375,
+        1000
+       ],
+       "selfMaxHp": 0.08
+      },
+      "dur": 4
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "變身門檻 3★ 的 95% 沒做，三星也用 70%。"
+   },
+   "passives": [
+    {
+     "on": "hpBelow",
+     "n": 0.7,
+     "limit": 1,
+     "src": "unit",
+     "text": "變身為龍",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "hp",
+       "value": [
+        300,
+        500,
+        3000
+       ]
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "asPct",
+       "value": [
+        1.5,
+        1.5,
+        2.5
+       ]
+      },
+      {
+       "op": "flag",
+       "name": "enraged",
+       "on": true
+      }
+     ]
+    },
+    {
+     "on": "attack",
+     "n": 3,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "if",
+       "cond": {
+        "flag": "enraged"
+       },
+       "then": [
+        {
+         "op": "damage",
+         "type": "magic",
+         "value": {
+          "ap": [
+           150,
+           225,
+           3000
+          ]
+         },
+         "to": {
+          "around": "current",
+          "r": 1,
+          "includeCenter": true
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "Thresh",
+   "zh": "瑟雷西",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "Classical",
+    "Frontman"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1300,
+    "ad": 70,
+    "as": 0.65,
+    "armor": 60,
+    "mr": 60,
+    "range": 1,
+    "mana": [
+     40,
+     100
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "暗黑通道，重奏",
+    "desc": "被動：敵人對瑟雷西造成傷害時，若其目前生命低於瑟雷西，會著迷12秒。\n主動：回復350/450/2000（受法術強度加成）生命。接著在3秒內從最多3名附近敵人身上汲取90/135/1200（受法術強度加成）最大生命。\n古典樂成員會使敵人著迷，並對其施加額外效果。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "heal",
+      "to": "self",
+      "value": {
+       "ap": [
+        350,
+        450,
+        2000
+       ]
+      }
+     },
+     {
+      "op": "dot",
+      "to": {
+       "nearest": 3
+      },
+      "type": "magic",
+      "value": {
+       "ap": [
+        90,
+        135,
+        1200
+       ]
+      },
+      "dur": 3
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "被動的「生命低於瑟雷西」條件與攻擊者選取省略（當前目標著迷 12 秒）；汲取不回血；古典樂額外效果省略。"
+   },
+   "passives": [
+    {
+     "on": "hit",
+     "src": "unit",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "charm",
+       "dur": 12
+      }
+     ],
+     "text": "著迷"
+    }
+   ]
+  },
+  {
+   "key": "Vayne",
+   "zh": "汎",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "Rock",
+    "Trickshot"
+   ],
+   "role": "物理射手",
+   "roleClass": "Marksman",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 850,
+    "ad": 60,
+    "as": 0.8,
+    "armor": 35,
+    "mr": 35,
+    "range": 4,
+    "mana": [
+     0,
+     50
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "最黑暗的時刻",
+    "desc": "被動：施放技能或被擊中時會翻滾，並獲得（數值未公布）韌性，持續2秒。（冷卻4秒）\n主動：獲得惡魔之力，強化接下來3/3/15次攻擊，造成195/290/2000（受攻擊力加成） + 目標3%/5%/20%最大生命的物理傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "empower",
+      "attacks": [
+       3,
+       3,
+       15
+      ],
+      "onHit": [
+       {
+        "op": "damage",
+        "type": "physical",
+        "value": {
+         "ad": [
+          195,
+          290,
+          2000
+         ],
+         "tgtMaxHp": [
+          0.03,
+          0.05,
+          0.2
+         ]
+        },
+        "to": "current"
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "翻滾冷卻 4 秒改成每場最多 3 次；韌性數值未公布，當成 2 秒 20% 減傷（推測）；翻滾位移省略。"
+   },
+   "passives": [
+    {
+     "on": "hit",
+     "limit": 3,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "dr",
+       "value": 0.2,
+       "dur": 2
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "Wukong",
+   "zh": "悟空",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "GuFeng"
+   ],
+   "role": "物理坦",
+   "roleClass": "Tank",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 1300,
+    "ad": 70,
+    "as": 0.65,
+    "armor": 60,
+    "mr": 60,
+    "range": 1,
+    "mana": [
+     40,
+     100
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "眾多神話騙子的把戲",
+    "desc": "治療400/500/2000（受法術強度加成） + 8%最大生命，並向2格圓形範圍送出6個分身，分身會快速返回。分身從穿過的敵人身上偷取5點護甲與魔法抗性，並造成30/45/3000（受攻擊力加成）物理傷害。返回時，悟空獲得被偷取的防禦。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "heal",
+      "to": "self",
+      "value": {
+       "ap": [
+        400,
+        500,
+        2000
+       ],
+       "selfMaxHp": 0.08
+      }
+     },
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "ad": [
+        30,
+        45,
+        3000
+       ]
+      },
+      "to": {
+       "around": "current",
+       "r": 2,
+       "includeCenter": true
+      },
+      "hits": 6
+     },
+     {
+      "op": "buff",
+      "to": "prev",
+      "stat": "armor",
+      "value": -5
+     },
+     {
+      "op": "buff",
+      "to": "prev",
+      "stat": "mr",
+      "value": -5
+     },
+     {
+      "op": "buff",
+      "to": "self",
+      "stat": "armor",
+      "value": 15
+     },
+     {
+      "op": "buff",
+      "to": "self",
+      "stat": "mr",
+      "value": 15
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "分身偷護甲魔抗簡化成：圈內每名敵人 -5、悟空固定 +15（約 3 名）；分身往返省略。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Xayah",
+   "zh": "剎雅",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "GuFeng",
+    "Hitmaker"
+   ],
+   "role": "物理施法者",
+   "roleClass": "Caster",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 850,
+    "ad": 40,
+    "as": 0.75,
+    "armor": 40,
+    "mr": 40,
+    "range": 4,
+    "mana": [
+     0,
+     60
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "如風中落葉飛舞的羽毛",
+    "desc": "召喚30/30/60根羽毛擊中目標，每根造成4/6/16（受法術強度加成） + 20/30/150（受攻擊力加成）物理傷害，並降低1點護甲。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "repeat",
+      "times": [
+       30,
+       30,
+       60
+      ],
+      "ops": [
+       {
+        "op": "damage",
+        "type": "physical",
+        "value": {
+         "ap": [
+          4,
+          6,
+          16
+         ],
+         "ad": [
+          20,
+          30,
+          150
+         ]
+        },
+        "to": "current"
+       },
+       {
+        "op": "buff",
+        "to": "prev",
+        "stat": "armor",
+        "value": -1,
+        "stackKey": "feather",
+        "maxStacks": 60
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": ""
+   },
+   "passives": []
+  },
+  {
+   "key": "Yasuo",
+   "zh": "犽宿",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "TrueDamage",
+    "Slayer"
+   ],
+   "role": "物理鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 1100,
+    "ad": 80,
+    "as": 0.8,
+    "armor": 60,
+    "mr": 60,
+    "range": 1,
+    "mana": [
+     0,
+     30
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "最後一口氣",
+    "desc": "滑行並向前突刺，對直線上的敵人造成140/210/2100（受攻擊力加成）物理傷害。\n每第3次施放會擊飛目標並造成400/600/3400（受攻擊力加成）物理傷害。接著將其摔向地面，對1/1/2格內的敵人造成30/45/200（受法術強度加成） + 155/235/2350（受攻擊力加成）物理傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "ad": [
+        140,
+        210,
+        2100
+       ]
+      },
+      "to": {
+       "line": "current",
+       "len": 2
+      }
+     },
+     {
+      "op": "if",
+      "cond": {
+       "castN": 3
+      },
+      "then": [
+       {
+        "op": "damage",
+        "type": "physical",
+        "value": {
+         "ad": [
+          400,
+          600,
+          3400
+         ]
+        },
+        "to": "current"
+       },
+       {
+        "op": "stun",
+        "to": "prev",
+        "dur": 1
+       },
+       {
+        "op": "damage",
+        "type": "physical",
+        "value": {
+         "ap": [
+          30,
+          45,
+          200
+         ],
+         "ad": [
+          155,
+          235,
+          2350
+         ]
+        },
+        "to": {
+         "around": "current",
+         "r": 1,
+         "includeCenter": true
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "滑行省略；擊飛時間原文沒寫，推測 1 秒；落地範圍 3★ 的 2 格沒做，固定 1 格。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Yone",
+   "zh": "犽凝",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "Heartsteel",
+    "Slayer"
+   ],
+   "role": "物理鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 1100,
+    "ad": 80,
+    "as": 0.8,
+    "armor": 60,
+    "mr": 60,
+    "range": 1,
+    "mana": [
+     0,
+     50
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "雙面",
+    "desc": "被動：此技能會依攻擊力或法術強度（取較高者）成長。攻擊造成60/90/135（受攻擊力加成）物理傷害。\n主動：快速攻擊目標與最多2/2/4名附近敵人，共10/10/30次，每次造成45/68/1400（受攻擊力加成）物理傷害。攻擊結束後揮出巨大斬擊，對目標造成190/285/2500（受攻擊力加成）物理傷害。\n心鋼之聲強化：施放時多攻擊3次，並無視25%護甲。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "repeat",
+      "times": [
+       3,
+       3,
+       8
+      ],
+      "ops": [
+       {
+        "op": "damage",
+        "type": "physical",
+        "value": {
+         "ad": [
+          45,
+          68,
+          1400
+         ]
+        },
+        "to": {
+         "nearest": 3
+        }
+       }
+      ]
+     },
+     {
+      "op": "if",
+      "cond": {
+       "favorite": true
+      },
+      "then": [
+       {
+        "op": "repeat",
+        "times": 1,
+        "ops": [
+         {
+          "op": "damage",
+          "type": "physical",
+          "value": {
+           "ad": [
+            45,
+            68,
+            1400
+           ]
+          },
+          "to": {
+           "nearest": 3
+          },
+          "pen": 0.25
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "op": "damage",
+      "type": "physical",
+      "value": {
+       "ad": [
+        190,
+        285,
+        2500
+       ]
+      },
+      "to": "current"
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "10／30 次快攻改成打最近 3 名各 3／8 次（約 9／24 次）；心鋼強化多 3 次改成多打一輪最近 3 名，並無視 25% 護甲；依較高者成長省略。"
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "n": 1,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "damage",
+       "type": "physical",
+       "value": {
+        "ad": [
+         60,
+         90,
+         135
+        ]
+       },
+       "to": "current"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "Yorick",
+   "zh": "約瑞科",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "Pentakill",
+    "Juggernaut"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1300,
+    "ad": 70,
+    "as": 0.65,
+    "armor": 60,
+    "mr": 60,
+    "range": 1,
+    "mana": [
+     50,
+     100
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "骷髏之舞",
+    "desc": "演奏一段史詩獨奏，回復425/525/2000（受法術強度加成） + 8%最大生命，並創造一個2格範圍的區域，每秒對區域內敵人造成25/40/1250（受法術強度加成）魔法傷害。最後一個音符對區域內敵人造成100/150/2400（受法術強度加成）魔法傷害，並施加20%緩速，持續4秒。\n緩速：降低攻擊速度。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "heal",
+      "to": "self",
+      "value": {
+       "ap": [
+        425,
+        525,
+        2000
+       ],
+       "selfMaxHp": 0.08
+      }
+     },
+     {
+      "op": "zone",
+      "at": "current",
+      "r": 2,
+      "dur": 3,
+      "tick": 1,
+      "enemy": [
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          25,
+          40,
+          1250
+         ]
+        }
+       }
+      ]
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        100,
+        150,
+        2400
+       ]
+      },
+      "to": {
+       "around": "current",
+       "r": 2,
+       "includeCenter": true
+      }
+     },
+     {
+      "op": "status",
+      "to": "prev",
+      "kind": "chill",
+      "dur": 4,
+      "value": 0.2
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "區域持續時間原文沒寫，推測 3 秒；最後一個音符不延遲，施放時就打。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Yuumi",
+   "zh": "悠咪",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "ILLBEATS",
+    "Encore",
+    "Collab"
+   ],
+   "role": "魔法施法者",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 850,
+    "ad": 40,
+    "as": 0.75,
+    "armor": 40,
+    "mr": 40,
+    "range": 4,
+    "mana": [
+     0,
+     20
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "女孩，把唱片戴上頭",
+    "desc": "丟出旋轉唱片，造成180/270/1500（受法術強度加成）魔法傷害，並疊在目標頭上，每秒降低其1點魔法抗性。\n疊到（數值未公布）張唱片時，唱片堆崩塌，對目標造成累積唱片總傷害的40%，並將另外40%分給4名附近敵人。\n若帶著唱片的敵人死亡，唱片會轉移到另一名敵人身上。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        180,
+        270,
+        1500
+       ]
+      },
+      "to": "current"
+     },
+     {
+      "op": "status",
+      "to": "prev",
+      "kind": "shred",
+      "dur": 8,
+      "value": 10
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "dealt": 0.4
+      },
+      "to": "current"
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "dealt": 1
+      },
+      "to": {
+       "around": "current",
+       "r": 2,
+       "includeCenter": false
+      },
+      "split": true
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "唱片堆疊改成單張：崩塌立刻發生（目標 40%、附近平分 40%）；魔抗每秒 -1 改成固定 -10（推測）；唱片轉移省略。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Zac",
+   "zh": "札克",
+   "cost": 4,
+   "slots": 1,
+   "traits": [
+    "BeachPop",
+    "Juggernaut"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1300,
+    "ad": 70,
+    "as": 0.65,
+    "armor": 60,
+    "mr": 60,
+    "range": 1,
+    "mana": [
+     60,
+     120
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "人體砲彈！",
+    "desc": "蓄力2/2/1秒，獲得15%/15%/50%韌性，並治療475/550/2500（受法術強度加成） + 10%最大生命。接著跳起並落在目標身上，對相鄰敵人造成250/375/3500（受法術強度加成）魔法傷害並短暫擊飛。",
+    "castTime": 1.5,
+    "steps": [
+     {
+      "op": "buff",
+      "to": "self",
+      "stat": "dr",
+      "value": [
+       0.15,
+       0.15,
+       0.5
+      ],
+      "dur": 2
+     },
+     {
+      "op": "heal",
+      "to": "self",
+      "value": {
+       "ap": [
+        475,
+        550,
+        2500
+       ],
+       "selfMaxHp": 0.1
+      }
+     },
+     {
+      "op": "dash",
+      "to": "current"
+     },
+     {
+      "op": "damage",
+      "type": "magic",
+      "value": {
+       "ap": [
+        250,
+        375,
+        3500
+       ]
+      },
+      "to": {
+       "around": "current",
+       "r": 1,
+       "includeCenter": true
+      }
+     },
+     {
+      "op": "stun",
+      "to": "prev",
+      "dur": 1
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "蓄力 2 秒（3★ 1 秒）簡化成施放時間 1.5 秒；韌性就是減傷，蓄力時有 15%／15%／50% 減傷；擊飛時間推測 1 秒。"
+   },
+   "passives": []
+  },
+  {
+   "key": "AkaliKDA",
+   "zh": "阿卡莉（K/DA）",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "KDA"
+   ],
+   "role": "物理刺客",
+   "roleClass": "Assassin",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 1200,
+    "ad": 75,
+    "as": 0.85,
+    "armor": 60,
+    "mr": 60,
+    "range": 1,
+    "mana": [
+     0,
+     45
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "滑板少女",
+    "desc": "沿著最長的未上色敵人隊列滑行，對被擊中的敵人造成10/15/999（受法術強度加成） + 70/105/5000（受攻擊力加成）物理傷害，並為他們與路徑上的格子上色。被上色的敵人或位於上色格子上的敵人有10%易傷。\n每第3次施放會點燃顏料，對所有被上色或站在上色格子上的敵人造成32.5/48.75/3246.75（受法術強度加成） + 227.5/341.25/16250（受攻擊力加成）物理傷害。\n易傷：提高受到的傷害。",
+    "castTime": 0.6,
+    "steps": [
+     {
+      "op": "damage",
+      "to": {
+       "line": "current",
+       "len": "board"
+      },
+      "type": "physical",
+      "value": {
+       "ap": [
+        10,
+        15,
+        999
+       ],
+       "ad": [
+        70,
+        105,
+        5000
+       ]
+      }
+     },
+     {
+      "op": "status",
+      "to": "prev",
+      "kind": "vulnerable",
+      "dur": 6,
+      "value": 0.1
+     },
+     {
+      "op": "if",
+      "cond": {
+       "castN": 3
+      },
+      "then": [
+       {
+        "op": "damage",
+        "to": "allEnemies",
+        "type": "physical",
+        "value": {
+         "ap": [
+          32.5,
+          48.75,
+          3246.75
+         ],
+         "ad": [
+          227.5,
+          341.25,
+          16250
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "上色格子簡化：被滑板擊中的敵人才算上色；每第3次施放的點燃改打全部敵人。"
+   },
+   "passives": []
+  },
+  {
+   "key": "AkaliTrueDamage",
+   "zh": "阿卡莉（True Damage）",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "TrueDamage",
+    "Freestyle"
+   ],
+   "role": "魔法鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1300,
+    "ad": 100,
+    "as": 0.85,
+    "armor": 70,
+    "mr": 70,
+    "range": 1,
+    "mana": [
+     0,
+     50
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "像骨牌一樣倒下",
+    "desc": "B面被動：每擊殺4名敵人，獲得1/1/10點玩家生命。（（數值未公布）/ 4）\n主動：快速斬擊當前目標，造成550/825/9999（受法術強度加成）魔法傷害，對坦克提高50%。施放期間獲得25%韌性，且無法被選取為攻擊目標。\n接著傳送到目標上方並投下炸彈，對2格內所有敵人分攤造成620/930/9999（受法術強度加成）魔法傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "status",
+      "to": "self",
+      "kind": "untargetable",
+      "dur": 0.8
+     },
+     {
+      "op": "damage",
+      "to": "current",
+      "type": "magic",
+      "value": {
+       "ap": [
+        550,
+        825,
+        9999
+       ]
+      },
+      "bonusVsTank": 0.5
+     },
+     {
+      "op": "dash",
+      "to": "current"
+     },
+     {
+      "op": "damage",
+      "to": {
+       "around": "current",
+       "r": 2,
+       "includeCenter": true
+      },
+      "type": "magic",
+      "value": {
+       "ap": [
+        620,
+        930,
+        9999
+       ]
+      },
+      "split": true
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "B 面被動（擊殺回玩家生命）沒重製；25% 韌性省略。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Aphelios",
+   "zh": "亞菲利歐",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "Heartsteel"
+   ],
+   "role": "物理射手",
+   "roleClass": "Marksman",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 900,
+    "ad": 65,
+    "as": 0.85,
+    "armor": 45,
+    "mr": 45,
+    "range": 4,
+    "mana": [
+     40,
+     180
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "全火力金曲",
+    "desc": "被動：每攻擊4次獲得一個輪刃，最多15個。攻擊時，每個已裝備的輪刃額外造成7/10/200（受攻擊力加成）物理傷害。集滿15個後，獲得30%/30%/500%攻擊力與無限射程。\n主動：向最近的3名敵人發射投射物，造成60/90/300（受法術強度加成） + 280/420/3000（受攻擊力加成）物理傷害，接著分裂成16枚投射物，對穿過的敵人造成9/13.5/300（受法術強度加成） + 42/63/3000（受攻擊力加成）物理傷害。獲得75%攻擊速度，持續4秒。\n心鋼之聲強化：戰鬥開始時已裝備5個輪刃。",
+    "castTime": 0.6,
+    "steps": [
+     {
+      "op": "damage",
+      "to": {
+       "nearest": 3
+      },
+      "type": "physical",
+      "value": {
+       "ap": [
+        60,
+        90,
+        300
+       ],
+       "ad": [
+        280,
+        420,
+        3000
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "to": {
+       "nearest": 3
+      },
+      "type": "physical",
+      "value": {
+       "ap": [
+        9,
+        13.5,
+        300
+       ],
+       "ad": [
+        42,
+        63,
+        3000
+       ]
+      },
+      "hits": 4
+     },
+     {
+      "op": "buff",
+      "to": "self",
+      "stat": "asPct",
+      "value": 0.75,
+      "dur": 4
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "輪刃「每個額外造成7點」改成每個輪刃 +10% 攻擊力（推測）；集滿15個的加成省略；16枚分裂彈改成對最近3名各打4次。"
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "n": 4,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "adPct",
+       "value": [
+        0.1,
+        0.15,
+        3
+       ],
+       "stackKey": "chakram",
+       "maxStacks": 15
+      }
+     ],
+     "text": "輪刃 +1"
+    },
+    {
+     "on": "start",
+     "src": "unit",
+     "ops": [
+      {
+       "op": "if",
+       "cond": {
+        "favorite": true
+       },
+       "then": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "adPct",
+         "value": 0.5,
+         "stackKey": "chakram",
+         "maxStacks": 15
+        }
+       ]
+      }
+     ],
+     "text": "心鋼：開場5個輪刃"
+    }
+   ]
+  },
+  {
+   "key": "DrMundo",
+   "zh": "蒙多醫生",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "RecordMogul",
+    "Manager"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1400,
+    "ad": 70,
+    "as": 0.7,
+    "armor": 65,
+    "mr": 65,
+    "range": 1,
+    "mana": [
+     20,
+     80
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "大生意",
+    "desc": "被動：蒙多醫生最大生命達到3000以上時進入興奮狀態，獲得20%/20%/300%最大生命，且攻擊額外造成125/185/1000 + 4%/4%/100%最大生命的魔法傷害。\n主動：在5/5/3.5秒內回復350/400/3000 + 10%/10%/100%最大生命，並每秒對2/2/5格內所有敵人造成12/16/50（受法術強度加成） + 1%/1%/4%最大生命的魔法傷害。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "heal",
+      "to": "self",
+      "value": {
+       "flat": [
+        350,
+        400,
+        3000
+       ],
+       "selfMaxHp": [
+        0.1,
+        0.1,
+        1
+       ]
+      }
+     },
+     {
+      "op": "zone",
+      "to": "self",
+      "at": "self",
+      "r": 2,
+      "dur": 5,
+      "tick": 1,
+      "enemy": [
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          12,
+          16,
+          50
+         ],
+         "selfMaxHp": [
+          0.01,
+          0.01,
+          0.04
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "最大生命3000的興奮狀態省略；5秒回血改成一次回完；3★範圍5格改成2格。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Gwen",
+   "zh": "關",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "IonicSpark",
+    "MelodicHeart"
+   ],
+   "role": "魔法鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1300,
+    "ad": 100,
+    "as": 0.85,
+    "armor": 70,
+    "mr": 70,
+    "range": 1,
+    "mana": [
+     0,
+     100
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "夜裡的閃光",
+    "desc": "被動：攻擊額外對目標造成60/90/1000（受法術強度加成）魔法傷害，對錐形範圍內的其他敵人造成30/45/500（受法術強度加成）。並滑向新目標。\n主動：在戰場上召喚巨大剪刀。短暫延遲後，在目標上方橫向剪出一條線，對所有被擊中的敵人造成90/135/4000（受法術強度加成）魔法傷害，另外再分攤900/1350/8000（受法術強度加成）。若只命中1名以下的敵人，回復50/50/200點魔力。",
+    "castTime": 0.7,
+    "steps": [
+     {
+      "op": "damage",
+      "to": {
+       "line": "current",
+       "len": "board"
+      },
+      "type": "magic",
+      "value": {
+       "ap": [
+        90,
+        135,
+        4000
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "to": "prev",
+      "type": "magic",
+      "value": {
+       "ap": [
+        900,
+        1350,
+        8000
+       ]
+      },
+      "split": true
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "滑向新目標、「命中1名以下回魔」省略。"
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "src": "unit",
+     "ops": [
+      {
+       "op": "damage",
+       "to": "current",
+       "type": "magic",
+       "value": {
+        "ap": [
+         60,
+         90,
+         1000
+        ]
+       }
+      },
+      {
+       "op": "damage",
+       "to": {
+        "around": "current",
+        "r": 1,
+        "includeCenter": false
+       },
+       "type": "magic",
+       "value": {
+        "ap": [
+         30,
+         45,
+         500
+        ]
+       }
+      }
+     ],
+     "text": "攻擊附加魔傷"
+    }
+   ]
+  },
+  {
+   "key": "Janna",
+   "zh": "珍娜",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "GuFeng",
+    "Windblessed",
+    "Prodigy"
+   ],
+   "role": "魔法施法者",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 900,
+    "ad": 50,
+    "as": 0.8,
+    "armor": 45,
+    "mr": 45,
+    "range": 4,
+    "mana": [
+     0,
+     45
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "天際颶風頌歌",
+    "desc": "向最多3名附近敵人投出天龍，每條造成140/210/9999（受法術強度加成）魔法傷害。\n第3次施放時，天際颶風籠罩整個戰場，在45秒內對每名敵人造成1800/2700/9000（受法術強度加成）魔法傷害。",
+    "castTime": 0.6,
+    "steps": [
+     {
+      "op": "if",
+      "cond": {
+       "castN": 3
+      },
+      "then": [
+       {
+        "op": "dot",
+        "to": "allEnemies",
+        "type": "magic",
+        "value": {
+         "ap": [
+          1800,
+          2700,
+          9000
+         ]
+        },
+        "dur": 4.5,
+        "tick": 1
+       }
+      ],
+      "else": [
+       {
+        "op": "damage",
+        "to": {
+         "nearest": 3
+        },
+        "type": "magic",
+        "value": {
+         "ap": [
+          140,
+          210,
+          9999
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "原文「45秒」疑為4.5秒（推測）；第3次施放只放颶風、不再丟天龍；3★每次施放都放颶風，這裡一律每第3次。"
+   },
+   "passives": []
+  },
+  {
+   "key": "LeeSin",
+   "zh": "李星",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "GuFeng"
+   ],
+   "role": "物理鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 1300,
+    "ad": 100,
+    "as": 0.85,
+    "armor": 70,
+    "mr": 70,
+    "range": 1,
+    "mana": [
+     0,
+     50
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "取悅天際的天界連擊",
+    "desc": "釋放一套共（數值未公布）擊的毀滅性連擊，從龍擊開始依序進行。之後的施放會延長連擊。\n龍擊：對目標造成15/20/150（受法術強度加成） + 150/225/1300（受攻擊力加成）物理傷害。2格內的其他敵人受到40%傷害。\n暴風迴旋：對目標造成20.25/27/202.5（受法術強度加成） + 202.5/303.75/1755（受攻擊力加成）物理傷害，並擊飛1/1/10秒。1格內的其他敵人受到50%傷害。\n天界之拳：對目標造成30/40/300（受法術強度加成） + 300/450/2600（受攻擊力加成）物理傷害並標記。若已被標記，則擊中其核心，額外造成400%真實傷害。",
+    "castTime": 1.0,
+    "steps": [
+     {
+      "op": "damage",
+      "to": "current",
+      "type": "physical",
+      "value": {
+       "ap": [
+        15,
+        20,
+        150
+       ],
+       "ad": [
+        150,
+        225,
+        1300
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "to": {
+       "around": "current",
+       "r": 2,
+       "includeCenter": false
+      },
+      "type": "physical",
+      "value": {
+       "ap": [
+        6,
+        8,
+        60
+       ],
+       "ad": [
+        60,
+        90,
+        520
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "to": "current",
+      "type": "physical",
+      "value": {
+       "ap": [
+        20.25,
+        27,
+        202.5
+       ],
+       "ad": [
+        202.5,
+        303.75,
+        1755
+       ]
+      }
+     },
+     {
+      "op": "stun",
+      "to": "prev",
+      "dur": [
+       1,
+       1,
+       10
+      ]
+     },
+     {
+      "op": "damage",
+      "to": {
+       "around": "current",
+       "r": 1,
+       "includeCenter": false
+      },
+      "type": "physical",
+      "value": {
+       "ap": [
+        10.125,
+        13.5,
+        101.25
+       ],
+       "ad": [
+        101.25,
+        151.875,
+        877.5
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "to": "current",
+      "type": "physical",
+      "value": {
+       "ap": [
+        30,
+        40,
+        300
+       ],
+       "ad": [
+        300,
+        450,
+        2600
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "to": "current",
+      "type": "true",
+      "value": {
+       "dealt": 4
+      }
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "連擊擊數未公布，固定3段（推測）；「標記後再擊中核心」改成每次都額外 +400% 該段傷害的真傷；之後施放延長連擊省略。"
+   },
+   "passives": []
+  },
+  {
+   "key": "MissFortune",
+   "zh": "好運姐",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "8Bit",
+    "Hitmaker"
+   ],
+   "role": "物理施法者",
+   "roleClass": "Caster",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 900,
+    "ad": 50,
+    "as": 0.8,
+    "armor": 45,
+    "mr": 45,
+    "range": 4,
+    "mana": [
+     0,
+     50
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "彈珠台女王",
+    "desc": "向目標發射一顆彈珠台球，造成30/45/908（受法術強度加成） + 145/220/1337（受攻擊力加成）物理傷害。擊中敵人後會彈跳，直到傷害12名敵人為止，每次命中傷害降低20%。（最低傷害：20%）",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "to": {
+       "nearest": 12
+      },
+      "type": "physical",
+      "value": {
+       "ap": [
+        30,
+        45,
+        908
+       ],
+       "ad": [
+        145,
+        220,
+        1337
+       ]
+      },
+      "falloff": 0.2,
+      "minPct": 0.2
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "彈跳改成由近到遠依序打最多12名，每名 -20%。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Mordekaiser",
+   "zh": "魔鬥凱薩",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "Pentakill"
+   ],
+   "role": "魔法鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1300,
+    "ad": 100,
+    "as": 0.85,
+    "armor": 70,
+    "mr": 70,
+    "range": 1,
+    "mana": [
+     0,
+     60
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "末日之手",
+    "desc": "短暫獲得40%韌性。召喚一隻巨爪，對一條寬大的直線造成130/195/800（受法術強度加成）魔法傷害。最近的4名敵人額外受到25%傷害，並被拉向魔鬥凱薩。\n本場戰鬥剩餘時間，獲得20%全能吸血與1格射程，並將攻擊改為一記重擊，對目標造成340/510/3000（受法術強度加成）魔法傷害，對2格內其他敵人造成70/105/1500（受法術強度加成）傷害。",
+    "castTime": 0.6,
+    "steps": [
+     {
+      "op": "status",
+      "to": "self",
+      "kind": "ccImmune",
+      "dur": 1.2
+     },
+     {
+      "op": "damage",
+      "to": {
+       "line": "current",
+       "len": "board",
+       "width": 2
+      },
+      "type": "magic",
+      "value": {
+       "ap": [
+        130,
+        195,
+        800
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "to": {
+       "nearest": 4
+      },
+      "type": "magic",
+      "value": {
+       "ap": [
+        32.5,
+        48.75,
+        200
+       ]
+      }
+     },
+     {
+      "op": "stun",
+      "to": {
+       "nearest": 4
+      },
+      "dur": 0.8
+     },
+     {
+      "op": "if",
+      "cond": {
+       "flag": "smash"
+      },
+      "then": [],
+      "else": [
+       {
+        "op": "buff",
+        "to": "self",
+        "stat": "omnivamp",
+        "value": 0.2
+       },
+       {
+        "op": "buff",
+        "to": "self",
+        "stat": "range",
+        "value": 1
+       },
+       {
+        "op": "empower",
+        "dur": 999,
+        "replace": true,
+        "onHit": [
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "magic",
+          "value": {
+           "ap": [
+            340,
+            510,
+            3000
+           ]
+          }
+         },
+         {
+          "op": "damage",
+          "to": {
+           "around": "current",
+           "r": 2,
+           "includeCenter": false
+          },
+          "type": "magic",
+          "value": {
+           "ap": [
+            70,
+            105,
+            1500
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "op": "flag",
+        "name": "smash",
+        "on": true
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "拉扯簡化成0.8秒暈眩；40%韌性改成1.2秒免控；重擊普攻在第一次施放後啟用。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Nidalee",
+   "zh": "奈德麗",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "Mariachi",
+    "Choreographer"
+   ],
+   "role": "魔法鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1300,
+    "ad": 100,
+    "as": 0.85,
+    "armor": 70,
+    "mr": 70,
+    "range": 1,
+    "mana": [
+     20,
+     45
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "跳躍派對／生命之舞",
+    "desc": "跳躍派對：對敵人跳躍4/4/99次，造成150/225/1500（受法術強度加成）魔法傷害，每次跳躍傷害提高40%。\n生命之舞：治療325/500/2000（受法術強度加成）。向目標投出標槍，造成380/570/3000（受法術強度加成）魔法傷害，並在其周圍散開3朵花。短暫延遲後，花朵對1格半徑內的敵人造成80/120/500（受法術強度加成）魔法傷害。\n以獵豹形態施放跳躍派對，以人形施放生命之舞。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "if",
+      "cond": {
+       "selfHpAbove": 0.75
+      },
+      "then": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "magic",
+        "value": {
+         "ap": [
+          150,
+          225,
+          1500
+         ]
+        },
+        "hits": 4,
+        "ramp": 0.4
+       }
+      ],
+      "else": [
+       {
+        "op": "heal",
+        "to": "self",
+        "value": {
+         "ap": [
+          325,
+          500,
+          2000
+         ]
+        }
+       },
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "magic",
+        "value": {
+         "ap": [
+          380,
+          570,
+          3000
+         ]
+        }
+       },
+       {
+        "op": "damage",
+        "to": {
+         "around": "current",
+         "r": 1,
+         "includeCenter": true
+        },
+        "type": "magic",
+        "value": {
+         "ap": [
+          80,
+          120,
+          500
+         ]
+        },
+        "hits": 3
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "形態改以生命 >75% 判斷；跳躍次數3★的99次改成4次；3朵花改成連打3次。"
+   },
+   "passives": []
+  },
+  {
+   "key": "NunuWillump",
+   "zh": "努努和威朗普",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "Disco",
+    "Frontman"
+   ],
+   "role": "魔法專家",
+   "roleClass": "Specialist",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1000,
+    "ad": 80,
+    "as": 0.9,
+    "armor": 55,
+    "mr": 55,
+    "range": 1,
+    "mana": [
+     20,
+     75
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "迪斯可時間到！",
+    "desc": "被動：獲得10/10/40魔力回復。緩慢滾動一顆迪斯可球，對穿過的所有敵人造成（數值未公布）魔法傷害。\n主動：本場戰鬥剩餘時間移動更快，並使迪斯可球的大小與傷害提高30%/30%/200%。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "buff",
+      "to": "self",
+      "stat": "abilityAmp",
+      "value": [
+       0.3,
+       0.3,
+       2.0
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "迪斯可球傷害未公布（推測：100/150/500，每 4 秒滾一次）；移動加快省略。"
+   },
+   "passives": [
+    {
+     "on": "every",
+     "n": 4,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "damage",
+       "to": {
+        "line": "current",
+        "len": "board"
+       },
+       "type": "magic",
+       "value": {
+        "ap": [
+         100,
+         150,
+         500
+        ]
+       }
+      }
+     ],
+     "text": "迪斯可球滾過"
+    },
+    {
+     "on": "start",
+     "src": "unit",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "manaRegen",
+       "value": [
+        10,
+        10,
+        40
+       ]
+      }
+     ],
+     "text": "迪斯可：法力回復加快"
+    }
+   ]
+  },
+  {
+   "key": "Pyke",
+   "zh": "派克",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "Rock",
+    "Renegade"
+   ],
+   "role": "物理鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 1300,
+    "ad": 100,
+    "as": 0.85,
+    "armor": 70,
+    "mr": 70,
+    "range": 1,
+    "mana": [
+     0,
+     30
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "處決正朝你而來",
+    "desc": "被動：敵人生命低於最大生命的8% + 2%/2%/85%（受法術強度加成）時，立即對其施放技能，然後回到當前目標。\n主動：對目標造成345/520/4000（受攻擊力加成）物理傷害，並以X字形對所有其他敵人造成120/180/800（受攻擊力加成）傷害。處決生命低於8% + 2%/2%/85%（受法術強度加成）的敵人。",
+    "castTime": 0.4,
+    "steps": [
+     {
+      "op": "damage",
+      "to": "current",
+      "type": "physical",
+      "value": {
+       "ad": [
+        345,
+        520,
+        4000
+       ]
+      }
+     },
+     {
+      "op": "damage",
+      "to": "allEnemies",
+      "type": "physical",
+      "value": {
+       "ad": [
+        120,
+        180,
+        800
+       ]
+      }
+     },
+     {
+      "op": "execute",
+      "to": "current",
+      "below": {
+       "flat": 0.08,
+       "ap": [
+        0.02,
+        0.02,
+        0.85
+       ]
+      }
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "X字形改成全場敵人（含目標）；被動「低血敵人立即補放技能」省略，只保留主動處決。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Rell",
+   "zh": "銳兒",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "RAndB",
+    "BeatMaster"
+   ],
+   "role": "魔法坦",
+   "roleClass": "Tank",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1400,
+    "ad": 70,
+    "as": 0.7,
+    "armor": 65,
+    "mr": 65,
+    "range": 1,
+    "mana": [
+     30,
+     100
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "節奏射擊／金屬小馬俱樂部",
+    "desc": "節奏射擊：獲得550/650/2000（受法術強度加成）護盾，持續4秒，並召喚3支喇叭。每秒發出音波，對被擊中的敵人造成1.5/2.25/15 × 護甲 + 1.5/2.25/15 × 魔法抗性的魔法傷害。\n金屬小馬俱樂部：撲向一群敵人，對中心的敵人造成1.8/2.7/300 × 護甲 + 1.8/2.7/300 × 魔法抗性的魔法傷害，並對3格內的敵人分攤造成2.025/3.0375/300 × 護甲 + 2.025/3.0375/300 × 魔法抗性的傷害。\n未騎乘時施放節奏射擊，騎乘時施放金屬小馬俱樂部。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "if",
+      "cond": {
+       "flag": "riding"
+      },
+      "then": [
+       {
+        "op": "dash",
+        "to": "current"
+       },
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "magic",
+        "value": {
+         "resist": [
+          1.8,
+          2.7,
+          300
+         ]
+        }
+       },
+       {
+        "op": "damage",
+        "to": {
+         "around": "current",
+         "r": 3,
+         "includeCenter": true
+        },
+        "type": "magic",
+        "value": {
+         "resist": [
+          2.025,
+          3.0375,
+          300
+         ]
+        },
+        "split": true
+       }
+      ],
+      "else": [
+       {
+        "op": "shield",
+        "to": "self",
+        "value": {
+         "ap": [
+          550,
+          650,
+          2000
+         ]
+        },
+        "dur": 4
+       },
+       {
+        "op": "zone",
+        "to": "self",
+        "at": "self",
+        "r": 2,
+        "dur": 4,
+        "tick": 1,
+        "enemy": [
+         {
+          "op": "damage",
+          "type": "magic",
+          "value": {
+           "resist": [
+            1.5,
+            2.25,
+            15
+           ]
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "3 支喇叭合併成自己周圍 2 格的音波區。要先靠節拍大師羈絆在半血時上馬，才會換成衝撞招式。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Taliyah",
+   "zh": "塔莉雅",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "BeachPop",
+    "Encore"
+   ],
+   "role": "魔法施法者",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 900,
+    "ad": 50,
+    "as": 0.8,
+    "armor": 45,
+    "mr": 45,
+    "range": 4,
+    "mana": [
+     0,
+     40
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "在人群上衝浪",
+    "desc": "向目標投出3顆岩石，每顆造成185/280/2000（受法術強度加成）魔法傷害。\n每第3/3/1次施放，快速換位並沿直線衝浪。被擊中的敵人受到160/240/2000（受法術強度加成） + 2%/3%/50%（受法術強度加成）最大生命的魔法傷害，並被短暫擊飛。",
+    "castTime": 0.6,
+    "steps": [
+     {
+      "op": "damage",
+      "to": "current",
+      "type": "magic",
+      "value": {
+       "ap": [
+        185,
+        280,
+        2000
+       ]
+      },
+      "hits": 3
+     },
+     {
+      "op": "if",
+      "cond": {
+       "castN": 3
+      },
+      "then": [
+       {
+        "op": "damage",
+        "to": {
+         "line": "current",
+         "len": "board"
+        },
+        "type": "magic",
+        "value": {
+         "ap": [
+          160,
+          240,
+          2000
+         ],
+         "tgtMaxHp": {
+          "ap": [
+           0.02,
+           0.03,
+           0.5
+          ]
+         }
+        }
+       },
+       {
+        "op": "stun",
+        "to": "prev",
+        "dur": 0.8
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "「每第3/3/1次」的3★每次都衝浪，這裡一律每第3次；換位省略。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Teemo",
+   "zh": "提摩",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "Hyperpop",
+    "HypeMan"
+   ],
+   "role": "魔法施法者",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 900,
+    "ad": 50,
+    "as": 0.8,
+    "armor": 45,
+    "mr": 45,
+    "range": 4,
+    "mana": [
+     0,
+     100
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "爆紅",
+    "desc": "被動：攻擊會施加病毒，在15秒內造成120/180/1337（受法術強度加成）魔法傷害。被感染的敵人死亡後會變成殭屍，尋找未感染的敵人並自爆，對相鄰敵人造成80/120/800（受法術強度加成）傷害並施加病毒。\n主動：投出一顆蘑菇，對3格半徑內的敵人施加病毒，並造成570/855/13337（受法術強度加成）魔法傷害，距離中心每遠1格傷害降低20%。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "damage",
+      "to": {
+       "around": "current",
+       "r": 3,
+       "includeCenter": true
+      },
+      "type": "magic",
+      "value": {
+       "ap": [
+        570,
+        855,
+        13337
+       ]
+      }
+     },
+     {
+      "op": "dot",
+      "to": {
+       "around": "current",
+       "r": 3,
+       "includeCenter": true
+      },
+      "type": "magic",
+      "value": {
+       "ap": [
+        120,
+        180,
+        1337
+       ]
+      },
+      "dur": 15,
+      "tick": 1
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "殭屍自爆省略；蘑菇「距離中心每遠1格 -20%」省略。"
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "src": "unit",
+     "ops": [
+      {
+       "op": "dot",
+       "to": "current",
+       "type": "magic",
+       "value": {
+        "ap": [
+         120,
+         180,
+         1337
+        ]
+       },
+       "dur": 15,
+       "tick": 1
+      }
+     ],
+     "text": "施加病毒"
+    }
+   ]
+  },
+  {
+   "key": "TwistedFate",
+   "zh": "逆命",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "Tango",
+    "Trickshot"
+   ],
+   "role": "魔法射手",
+   "roleClass": "Marksman",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 900,
+    "ad": 65,
+    "as": 0.85,
+    "armor": 45,
+    "mr": 45,
+    "range": 4,
+    "mana": [
+     0,
+     50
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "鬼牌切牌",
+    "desc": "被動：戰鬥開始時，商店中每有一名英雄就抽一張牌。若本回合你刷新過商店，會依抽到的牌獲得戰利品！\n1或2張相同：1/1/100金幣\n3張相同：隨機英雄\n4張相同：裝備零件\n5張相同：神祕箱子！\n主動：接下來5次攻擊獲得100%攻擊速度，並改為射出卡牌，對目標造成100/150/2000（受法術強度加成）魔法傷害，對2名附近敵人造成30/45/1000（受法術強度加成）魔法傷害。",
+    "castTime": 0.4,
+    "steps": [
+     {
+      "op": "empower",
+      "attacks": 5,
+      "asPct": 1.0,
+      "replace": true,
+      "onHit": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "magic",
+        "value": {
+         "ap": [
+          100,
+          150,
+          2000
+         ]
+        }
+       },
+       {
+        "op": "damage",
+        "to": {
+         "nearest": 2
+        },
+        "type": "magic",
+        "value": {
+         "ap": [
+          30,
+          45,
+          1000
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "抽牌戰利品只留金幣 +1（3★原文100金幣不採用）；附近2名敵人改成最近2名。"
+   },
+   "passives": [
+    {
+     "on": "start",
+     "src": "unit",
+     "limit": 1,
+     "ops": [
+      {
+       "op": "econ",
+       "kind": "gold",
+       "value": 1
+      }
+     ],
+     "text": "抽牌：1金幣"
+    }
+   ]
+  },
+  {
+   "key": "Vi",
+   "zh": "菲艾",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "EDM",
+    "Juggernaut"
+   ],
+   "role": "物理鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 1300,
+    "ad": 100,
+    "as": 0.85,
+    "armor": 70,
+    "mr": 70,
+    "range": 1,
+    "mana": [
+     0,
+     50
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "放開拳頭海扁",
+    "desc": "召喚2個巨大的全像拳頭。獲得275/375/500（受法術強度加成）護盾，持續2秒，並為2/2/10名附近友軍提供125/165/215（受法術強度加成）護盾。攻擊目標5/5/40次，每次對其造成115/175/1000（受攻擊力加成）物理傷害，對2格半徑內的其他敵人造成45/70/400（受攻擊力加成）傷害。\n電子舞曲強化：多攻擊一次，並治療此技能造成傷害的15%。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "ap": [
+        275,
+        375,
+        500
+       ]
+      },
+      "dur": 2
+     },
+     {
+      "op": "shield",
+      "to": {
+       "allies": 2,
+       "notSelf": true
+      },
+      "value": {
+       "ap": [
+        125,
+        165,
+        215
+       ]
+      },
+      "dur": 2
+     },
+     {
+      "op": "repeat",
+      "times": [
+       5,
+       5,
+       40
+      ],
+      "gap": 0.3,
+      "ops": [
+       {
+        "op": "damage",
+        "to": {
+         "around": "current",
+         "r": 2,
+         "includeCenter": false
+        },
+        "type": "physical",
+        "value": {
+         "ad": [
+          45,
+          70,
+          400
+         ]
+        }
+       },
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "physical",
+        "value": {
+         "ad": [
+          115,
+          175,
+          1000
+         ]
+        }
+       },
+       {
+        "op": "if",
+        "cond": {
+         "traitActive": "EDM"
+        },
+        "then": [
+         {
+          "op": "heal",
+          "to": "self",
+          "value": {
+           "dealt": 0.15
+          }
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "op": "if",
+      "cond": {
+       "traitActive": "EDM"
+      },
+      "then": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "physical",
+        "value": {
+         "ad": [
+          115,
+          175,
+          1000
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "友軍護盾對象固定2名（3★10名省略）；電子舞曲治療只算每次主要打擊的15%。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Vladimir",
+   "zh": "弗拉迪米爾",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "Classical",
+    "Arcanist"
+   ],
+   "role": "魔法鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1300,
+    "ad": 100,
+    "as": 0.85,
+    "armor": 70,
+    "mr": 70,
+    "range": 2,
+    "mana": [
+     0,
+     40
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "歌劇魅影",
+    "desc": "被動：敵人受到撕裂效果時，在本場戰鬥剩餘時間內同時著迷。\n主動：對最近的3名敵人造成85/130/999（受法術強度加成）魔法傷害，施加（數值未公布）撕裂，持續（數值未公布）秒，並治療傷害量的（數值未公布）。\n每施放5/5/1次，會在戰場中央落下一盞吊燈，對所有敵人造成380/600/9999（受法術強度加成）魔法傷害；距離中心每遠1格，傷害降低10%。\n撕裂：降低魔法抗性。\n古典樂成員會使敵人著迷，並對其施加額外效果。",
+    "castTime": 0.6,
+    "steps": [
+     {
+      "op": "damage",
+      "to": {
+       "nearest": 3
+      },
+      "type": "magic",
+      "value": {
+       "ap": [
+        85,
+        130,
+        999
+       ]
+      }
+     },
+     {
+      "op": "status",
+      "to": "prev",
+      "kind": "shred",
+      "dur": 5,
+      "value": 0.3
+     },
+     {
+      "op": "status",
+      "to": "prev",
+      "kind": "charm",
+      "dur": 3
+     },
+     {
+      "op": "heal",
+      "to": "self",
+      "value": {
+       "dealt": 0.3
+      }
+     },
+     {
+      "op": "if",
+      "cond": {
+       "castN": 5
+      },
+      "then": [
+       {
+        "op": "damage",
+        "to": "allEnemies",
+        "type": "magic",
+        "value": {
+         "ap": [
+          380,
+          600,
+          9999
+         ]
+        }
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "撕裂幅度30%、持續5秒、吸血30%為推測；撕裂後著迷改成3秒（原文為整場，太強）；吊燈距離遞減省略，3★每次落下改為每第5次。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Zeri",
+   "zh": "婕莉",
+   "cost": 5,
+   "slots": 1,
+   "traits": [
+    "Goth",
+    "Swiftstriker"
+   ],
+   "role": "物理施法者",
+   "roleClass": "Caster",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 900,
+    "ad": 50,
+    "as": 0.8,
+    "armor": 45,
+    "mr": 45,
+    "range": 4,
+    "mana": [
+     0,
+     150
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "午夜雷射",
+    "desc": "在戰場上快速滑行，並將6道雷射對準當前目標。雷射快速發射，每道對被擊中的敵人造成15/20/100（受法術強度加成） + 135/205/1000（受攻擊力加成）物理傷害，並無視其30%護甲。",
+    "castTime": 0.6,
+    "steps": [
+     {
+      "op": "damage",
+      "to": "current",
+      "type": "physical",
+      "value": {
+       "ap": [
+        15,
+        20,
+        100
+       ],
+       "ad": [
+        135,
+        205,
+        1000
+       ]
+      },
+      "hits": 6,
+      "pen": 0.3
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "滑行位移省略。"
+   },
+   "passives": []
+  },
+  {
+   "key": "BaronNashor",
+   "zh": "巴龍納什",
+   "cost": 7,
+   "slots": 2,
+   "traits": [
+    "OneMonsterBand"
+   ],
+   "role": "物理鬥士",
+   "roleClass": "Fighter",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 2000,
+    "ad": 140,
+    "as": 0.9,
+    "armor": 80,
+    "mr": 80,
+    "range": 1,
+    "mana": [
+     80,
+     120
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "集合樂團",
+    "desc": "召喚由8名樂手與一名重奏先驅組成的樂團，將所有敵人擊飛1秒。對所有敵人分攤造成550/825/10000（受攻擊力加成）物理傷害與400/600/5000（受法術強度加成）魔法傷害。\n每名小兵攻擊4次，每次攻擊造成30/45/2000（受攻擊力加成）物理傷害。",
+    "castTime": 0.8,
+    "steps": [
+     {
+      "op": "stun",
+      "to": "allEnemies",
+      "dur": 1
+     },
+     {
+      "op": "damage",
+      "to": "allEnemies",
+      "type": "physical",
+      "value": {
+       "ad": [
+        550,
+        825,
+        10000
+       ]
+      },
+      "split": true
+     },
+     {
+      "op": "damage",
+      "to": "allEnemies",
+      "type": "magic",
+      "value": {
+       "ap": [
+        400,
+        600,
+        5000
+       ]
+      },
+      "split": true
+     },
+     {
+      "op": "repeat",
+      "times": 8,
+      "ops": [
+       {
+        "op": "summon",
+        "unit": {
+         "zh": "樂手",
+         "hpPct": 0.1,
+         "adPct": 0.21,
+         "as": 0.8,
+         "armor": 30,
+         "mr": 30,
+         "range": 1
+        },
+        "at": "nearTarget",
+        "dur": 5
+       }
+      ]
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "8名樂手各存活5秒（約攻擊4次）；樂手傷害依1★比例（3★原文2000不採用）；重奏先驅省略。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Rakan",
+   "zh": "銳空",
+   "cost": 7,
+   "slots": 1,
+   "traits": [
+    "BoyBand",
+    "Choreographer"
+   ],
+   "role": "魔法刺客",
+   "roleClass": "Assassin",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1600,
+    "ad": 100,
+    "as": 0.9,
+    "armor": 70,
+    "mr": 70,
+    "range": 1,
+    "mana": [
+     0,
+     55
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "如孔雀般飛翔",
+    "desc": "滑向附近一群敵人，並向1格內的敵人分攤射出8/8/32根羽毛，每根造成100/180/2400（受法術強度加成）魔法傷害。\n本尊銳空會擊中2格內的敵人並短暫擊飛。",
+    "castTime": 0.5,
+    "steps": [
+     {
+      "op": "dash",
+      "to": {
+       "nearest": 1
+      }
+     },
+     {
+      "op": "repeat",
+      "times": [
+       8,
+       8,
+       32
+      ],
+      "ops": [
+       {
+        "op": "damage",
+        "to": {
+         "around": "current",
+         "r": 1,
+         "includeCenter": true
+        },
+        "type": "magic",
+        "value": {
+         "ap": [
+          100,
+          180,
+          2400
+         ]
+        },
+        "split": true
+       }
+      ]
+     },
+     {
+      "op": "stun",
+      "to": {
+       "around": "current",
+       "r": 2,
+       "includeCenter": true
+      },
+      "dur": 0.8
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": false,
+    "simplified": "分身與本尊合併成一個；擊飛改成0.8秒暈眩。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Smeech",
+   "zh": "斯米奇",
+   "cost": 7,
+   "slots": 1,
+   "traits": [
+    "Jazz",
+    "Slayer"
+   ],
+   "role": "物理專家",
+   "roleClass": "Specialist",
+   "dmgType": "physical",
+   "stats": {
+    "hp": 1400,
+    "ad": 100,
+    "as": 0.9,
+    "armor": 60,
+    "mr": 60,
+    "range": 1,
+    "mana": [
+     0,
+     0
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "攀升",
+    "desc": "被動：每次攻擊獲得1/1/4到4/4/10點節奏。每4秒施放一次技能。\n主動：獲得250/375/40000（受法術強度加成）護盾，持續3/3/10秒，並對2格內所有敵人造成100/150/4000（受攻擊力加成）物理傷害。接著攻擊當前目標4次，每次造成240/360/2600（受攻擊力加成）物理傷害，並且每點節奏額外造成12/18/350（受攻擊力加成）。\n釋放（數值未公布）點節奏後，獲得一個你未啟動羈絆的紋章，並提高所需節奏。\n（已釋放節奏：（數值未公布）/（數值未公布））",
+    "castTime": 0,
+    "steps": [],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "不靠法力，每4秒自動施放；節奏每點額外傷害改成每次攻擊 +5% 攻擊力（最多4層，推測）；放節奏換紋章省略。"
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "src": "unit",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "adPct",
+       "value": 0.05,
+       "stackKey": "rhythm",
+       "maxStacks": 4
+      }
+     ],
+     "text": "節奏 +1"
+    },
+    {
+     "on": "every",
+     "n": 4,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "shield",
+       "to": "self",
+       "value": {
+        "ap": [
+         250,
+         375,
+         40000
+        ]
+       },
+       "dur": 3
+      },
+      {
+       "op": "damage",
+       "to": {
+        "adjacent": "enemy"
+       },
+       "type": "physical",
+       "value": {
+        "ad": [
+         100,
+         150,
+         4000
+        ]
+       }
+      },
+      {
+       "op": "repeat",
+       "times": 4,
+       "ops": [
+        {
+         "op": "damage",
+         "to": "current",
+         "type": "physical",
+         "value": {
+          "ad": [
+           240,
+           360,
+           2600
+          ]
+         }
+        }
+       ]
+      }
+     ],
+     "text": "攀升"
+    }
+   ]
+  },
+  {
+   "key": "Sona",
+   "zh": "索娜",
+   "cost": 7,
+   "slots": 1,
+   "traits": [
+    "Producer",
+    "Collab"
+   ],
+   "role": "魔法專家",
+   "roleClass": "Specialist",
+   "dmgType": "magic",
+   "stats": {
+    "hp": 1400,
+    "ad": 100,
+    "as": 0.9,
+    "armor": 60,
+    "mr": 60,
+    "range": 4,
+    "mana": [
+     0,
+     190
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "statsGuess": true,
+   "ability": {
+    "name": "與索娜同台",
+    "desc": "被動：無法攻擊。改為每3秒獲得（數值未公布）魔力，對最近的3/3/10名敵人造成120/180/3000（受法術強度加成）魔法傷害，並使2/2/10名友軍獲得50/100/9999（受法術強度加成）護盾，持續3秒。\n主動：釋放一道穿越戰場的音波，對所有敵人分攤造成1600/2400/99999（受法術強度加成）魔法傷害，並暈眩2/2/30秒。友軍分攤獲得400/700/99999（受法術強度加成）護盾，持續5秒。",
+    "castTime": 0.8,
+    "steps": [
+     {
+      "op": "damage",
+      "to": "allEnemies",
+      "type": "magic",
+      "value": {
+       "ap": [
+        1600,
+        2400,
+        99999
+       ]
+      },
+      "split": true
+     },
+     {
+      "op": "stun",
+      "to": "allEnemies",
+      "dur": [
+       2,
+       2,
+       30
+      ]
+     },
+     {
+      "op": "shield",
+      "to": {
+       "allies": "all"
+      },
+      "value": {
+       "ap": [
+        70,
+        120,
+        12500
+       ]
+      },
+      "dur": 5
+     }
+    ],
+    "altSteps": null,
+    "altEvery": 0,
+    "guess": true,
+    "simplified": "「無法攻擊」用攻速 -95% 代替；每 3 秒回 25 魔力為推測；被動對象數 3★ 的 10 名省略；友軍護盾官方是分攤，這裡以 6 人平分計算。"
+   },
+   "passives": [
+    {
+     "on": "start",
+     "src": "unit",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "asPct",
+       "value": -0.95
+      }
+     ],
+     "text": "無法攻擊"
+    },
+    {
+     "on": "every",
+     "n": 3,
+     "src": "unit",
+     "ops": [
+      {
+       "op": "mana",
+       "to": "self",
+       "value": 25
+      },
+      {
+       "op": "damage",
+       "to": {
+        "nearest": 3
+       },
+       "type": "magic",
+       "value": {
+        "ap": [
+         120,
+         180,
+         3000
+        ]
+       }
+      },
+      {
+       "op": "shield",
+       "to": {
+        "allies": 2,
+        "notSelf": true
+       },
+       "value": {
+        "ap": [
+         50,
+         100,
+         9999
+        ]
+       },
+       "dur": 3
+      }
+     ],
+     "text": "同台伴奏"
+    }
+   ]
+  }
+ ]
+}

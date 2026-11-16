@@ -101,7 +101,7 @@
   function adaptLayout() {
     const ul = document.querySelector(".nav ul");
     if (ul) ul.replaceChildren(...[["#tierlist", "nav.tier", "T 度表"], ["#updates-sec", "nav.updates", "本次更新"],
-      ["#version", "nav.version", "版本主軸"], ["#picker", "nav.picker", "隨手速查"], ["#learn", "nav.learn", "新手教學"], ["#comps", "nav.comps", "陣容攻略"], ["sim/", "nav.sim", "戰鬥模擬"], ["trials/", "nav.trials", "滴答克的試煉"]].filter(([href]) => !S19 || href === "#tierlist" || href === "#learn" || href === "#comps" || href === "trials/").map(([href, k, t]) => h("li", null, h("a", { href, "data-tx": k }, t))));  // 戰鬥模擬器 2026-11-11
+      ["#version", "nav.version", "版本主軸"], ["#picker", "nav.picker", "隨手速查"], ["#learn", "nav.learn", "新手教學"], ["#comps", "nav.comps", "陣容攻略"], ["sim/", "nav.editor", "陣容編輯器"], ["sim/", "nav.sim", "戰鬥模擬"], ["trials/", "nav.trials", "滴答克的試煉"]].filter(([href]) => !S19 || href === "#tierlist" || href === "#learn" || href === "#comps" || href === "trials/").map(([href, k, t]) => h("li", null, h("a", { href, "data-tx": k }, t))));  // 戰鬥模擬器 2026-11-11
     const up = $("#updates-sec"), tl = $("#tierlist");
     if (up && !$("#updates-fold")) {
       up.classList.add("slim");

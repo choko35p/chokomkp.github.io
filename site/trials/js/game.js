@@ -46,9 +46,14 @@ function runUnlocks(state, DATA, events) {
 const availKey = (state, DATA, k) => S.available(state, DATA, k);
 
 // ---------- 規則加成（增幅／羈絆） ----------
+// 增幅總開關：rules.json 的 augment.enabled。false＝整個增幅系統關閉（不跳三選一、不抽稀有度、已選的增幅不生效）；
+// 沒寫或 true＝照常。要恢復只要把 enabled 改回 true。
+export function augmentsOn(DATA) { return ((R(DATA).augment || {}).enabled) !== false; }
+// 目前真正生效的增幅（關閉時一律空，舊存檔裡已選的增幅也不生效，但仍留在 state.augments，開關打開後會恢復）
+export function activeAugments(state, DATA) { return augmentsOn(DATA) ? (state.augments || []).slice() : []; }
 function augEffects(state, DATA) {
   const out = [];
-  for (const k of state.augments) {
+  for (const k of activeAugments(state, DATA)) {
     const a = DATA.augments.byKey[k];
     if (!a) continue;
     for (const e of a.effects || []) out.push({ e, aug: a });
@@ -252,6 +257,7 @@ function addXp(state, DATA, n, events) {
 // 增幅分階段（SPEC_AUGMENTS）：整場三次增幅（2-1、3-2、4-2）的稀有度開局一次抽好；每個增幅有自己的出現階段
 // tierCombos 每列＝[第 1 次, 第 2 次, 第 3 次, 份數]；份數越大越常出現
 export function rollAugTiers(seed, DATA) {
+  if (!augmentsOn(DATA)) return null;   // 增幅關閉：不抽稀有度組合
   const ac = R(DATA).augment || {};
   const rows = ac.tierCombos;
   if (!rows || !rows.length) return null;
@@ -347,12 +353,13 @@ function beginRound(state, DATA, events, retry = false) {
       if (prev && prev.round === state.round - 1 && prev.win) {
         const seven = ((R(DATA).bossReward || {}).sevenCostBosses || []).includes(pre.bossReward);
         queue.push(makeRewardChoice(state, DATA, seven));
+        for (let i = 0; i < ((R(DATA).bossReward || {}).winComponents || 0); i++) giveComponent(state, DATA, events);   // 贏頭目：獎勵之外再多給散件
       } else {
         const lg = (R(DATA).bossReward || {}).loseGain || { components: 1 };
         for (let i = 0; i < (lg.components || 0); i++) giveComponent(state, DATA, events);
       }
     }
-    if (pre.augment) queue.push(makeAugmentChoice(state, DATA, pre.augment));
+    if (pre.augment && augmentsOn(DATA)) queue.push(makeAugmentChoice(state, DATA, pre.augment));
     state.pendingQueue = queue;
   }
   if (!retry) {   // 私房錢：每回合開始給錢
@@ -421,6 +428,11 @@ export function deserialize(json, DATA) {
     autoMixer(s, DATA);
   } else fitMixer(s, DATA);
   if (s.dealFrom === undefined) s.dealFrom = null;
+  if (!augmentsOn(DATA)) {   // 增幅關閉：舊存檔卡在增幅三選一的直接略過（不選、不給效果），佇列裡排著的增幅也丟掉；已選的增幅留在 state.augments 但不生效
+    s.pendingQueue = s.pendingQueue.filter(q => !q || q.type !== 'augment');
+    if (s.pendingChoices && s.pendingChoices.type === 'augment') nextPending(s);
+    else if (s.phase === 'augment') s.phase = s.pendingChoices ? 'reward' : 'plan';
+  }
   normAugmentPending(s.pendingChoices, DATA);
   for (const q of s.pendingQueue) normAugmentPending(q, DATA);
   return s;
@@ -626,7 +638,7 @@ function prodEffective(state, DATA) {
 }
 // 算「玩家羈絆」時要帶的參數：所有玩家方的 countTraits 都要用這個，羈絆列才會和實戰一致
 export function traitOpts(state, DATA) {
-  return { augments: (state.augments || []).slice(), producerPick: prodEffective(state, DATA), manual: true };
+  return { augments: activeAugments(state, DATA), producerPick: prodEffective(state, DATA), manual: true };
 }
 U.setTraitOpts(traitOpts);
 const boardTraitMap = (state, DATA) => {
@@ -925,6 +937,7 @@ function applyOnPick(state, DATA, on, events) {
 
 export function actPickAugment(state, idx, DATA) {
   const p = state.pendingChoices;
+  if (!augmentsOn(DATA)) return no('增幅已關閉');
   if (!p || p.type !== 'augment') return no('現在沒有增幅可選');
   const key = p.options[idx];
   if (!key) return no('沒有這個選項');
@@ -939,6 +952,7 @@ export function actPickAugment(state, idx, DATA) {
 // 增幅單張重抽：只換第 idx 張，其他兩張不變；新抽的不會跟畫面上另外兩張（或原本那張）重複
 export function actRerollAugmentSlot(state, idx, DATA) {
   const p = state.pendingChoices;
+  if (!augmentsOn(DATA)) return no('增幅已關閉');
   if (!p || p.type !== 'augment') return no('現在沒有增幅可選');
   normAugmentPending(p, DATA);
   if (!(idx >= 0 && idx < p.options.length)) return no('沒有這個選項');
@@ -1011,7 +1025,7 @@ export function actStartBattle(state, DATA) {
   const unset = ['fav', 'spot', 'deal', 'prod', 'inst'].filter(id => pinfo[id].cap > 0 && !pinfo[id].active.length);
   const mx = mixerInfo(state, DATA);
   if (mx.active && mx.used === 0) unset.push('mixer');
-  const ctx = { level: state.level, round: state.round, augments: state.augments.slice(), persist: clone(state.persist), ...bu.ctx,
+  const ctx = { level: state.level, round: state.round, augments: activeAugments(state, DATA), persist: clone(state.persist), ...bu.ctx,
     rng: makeRng(hashSeed(state.seed, 'combat', state.round, state.attempt, 'items')) };   // 竊賊手套用
   const pTeam = B.buildTeam('player', pUnits, DATA, ctx);
   const eTeam = B.buildTeam('enemy', enemy.units, DATA, { level: enemy.units.length, round: state.round, augments: [], persist: {}, mods: enemy.mods });

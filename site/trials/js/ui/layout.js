@@ -57,6 +57,7 @@ export async function mount(root, api) {
   }
 
   root.replaceChildren();
+  const augOn = !DATA.rules || !DATA.rules.augment || DATA.rules.augment.enabled !== false;   // 增幅總開關（rules.json augment.enabled）；關掉就不畫增幅列、不跳增幅視窗
   const app = el('div', 'tt-shell', { 'data-phase': 'plan' });
   app.innerHTML = `
     <header class="tt-top"><div class="tt-top-in">
@@ -73,7 +74,7 @@ export async function mount(root, api) {
       <div class="tt-stage">
         <div class="tt-roundbar" aria-label="回合"></div>
         <div class="tt-enemybar"></div>
-        <div class="tt-augs" aria-label="增幅"></div>
+        ${augOn ? '<div class="tt-augs" aria-label="增幅"></div>' : ''}
         <div class="tt-xitems" aria-label="裝備欄"></div>
         <div class="tt-xspecial" aria-label="特殊道具" hidden></div>
         <aside class="tt-mix" aria-label="ILLBEATS 混音器" hidden></aside>
@@ -171,6 +172,7 @@ export async function mount(root, api) {
 
   // ---- 增幅 ----
   function renderAugs() {
+    if (!augOn || !R.augs) return;
     const nodes = (api.state.augments || []).slice(0, 3).map((k) => {
       const a = DATA.augments.byKey[k];
       const b = el('button', 'tt-aug t' + (a?.tier || 1), { type: 'button', 'data-tt-tip': 'aug:' + k, 'data-tt-noclear': '', 'aria-label': '增幅：' + (a?.zh || k) + '，點一下看說明' }, el('i', '', { 'aria-hidden': 'true' }));
@@ -288,7 +290,8 @@ export async function mount(root, api) {
   // ---- 增幅／獎勵 ----
   function openChoice(s) {
     const pc = s.pendingChoices;
-    if (ui.choiceOpen === pc) return;   // 同一個選擇視窗只開一次；換了新的（重抽、下一個獎勵）就再開
+    if (ui.choiceOpen === pc) return;
+    if (pc.type === 'augment' && !augOn) return;   // 增幅關閉：不開視窗   // 同一個選擇視窗只開一次；換了新的（重抽、下一個獎勵）就再開
     ui.choiceOpen = pc;
     const fn = pc.type === 'augment' ? panels?.showAugmentChoice : panels?.showReward;
     if (fn) { fn(api, pc); return; }

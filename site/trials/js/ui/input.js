@@ -130,8 +130,21 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
     const res = DATA.items.recipes && DATA.items.recipes[[a, b].sort().join('+')];
     return res ? { res, a, b } : null;
   }
+  // 散件拖到「身上已有 1 件散件」的棋子上＝直接合成（官方做法，game.js giveItem）；拖著經過時跳預覽，不用停
+  function unitComboRecipe(itemI, u) {
+    const a = (api.state.itemBench || [])[itemI];
+    if (!a || !u || !DATA.items.compByKey || !DATA.items.compByKey[a]) return null;
+    for (const e of u.items || []) {
+      const res = DATA.items.recipes && DATA.items.recipes[[a, e].sort().join('+')];
+      if (res) return { res, a, b: e };
+    }
+    return null;
+  }
   function comboStart(fromI, toI, tgt) {
     const rc = comboRecipe(fromI, toI); if (!rc) return;
+    comboBuild(rc, tgt, fromI, toI, true);
+  }
+  function comboBuild(rc, tgt, fromI, toI, hold) {
     const it = DATA.items.byKey[rc.res] || {};
     const nm = (k) => (DATA.items.compByKey && DATA.items.compByKey[k] ? DATA.items.compByKey[k].zh : k);
     const eff = String(it.desc || it.simplified || '').split('。')[0];
@@ -139,7 +152,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
     const txt = document.createElement('div');
     const b = document.createElement('b'); b.textContent = '會合成：' + (it.zh || rc.res);
     const sm = document.createElement('small'); sm.textContent = eff ? eff + '。' : '';
-    const em = document.createElement('em'); em.textContent = `${nm(rc.a)} ＋ ${nm(rc.b)}　停 1 秒再放開`;
+    const em = document.createElement('em'); em.textContent = `${nm(rc.a)} ＋ ${nm(rc.b)}　` + (hold ? '停 1 秒再放開' : '放開就合成');
     txt.append(b, sm, em);
     const pop = document.createElement('div'); pop.className = 'tt-combo-pop'; pop.setAttribute('role', 'status'); pop.setAttribute('data-tt-combo', rc.res);
     pop.append(ic, txt); document.body.append(pop);
@@ -150,6 +163,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
     else { x = r.left + r.width / 2 - pw / 2; y = r.top - ph - 10; if (y < 4) y = r.bottom + 10; }
     pop.style.left = Math.max(4, Math.min(vw - pw - 4, x)) + 'px'; pop.style.top = Math.max(4, y) + 'px';
     tgt.classList.add('tt-combo-tgt');
+    if (!hold) { combo = { from: null, to: null, res: rc.res, pop, tgt, ready: false, timer: 0, raf: 0 }; return; }   // 拖到棋子身上：只顯示預覽
     const t0 = nowMs();
     combo = { from: fromI, to: toI, res: rc.res, pop, tgt, ready: false, timer: 0, raf: 0 };
     const tick = () => { if (!combo) return; tgt.style.setProperty('--p', Math.min(1, (nowMs() - t0) / COMBO_MS).toFixed(3)); if (!combo.ready) combo.raf = requestAnimationFrame(tick); };
@@ -162,6 +176,10 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
     if (f0 && t0 && f0.k === 'item' && t0.k === 'item') {
       const tgt = app.querySelector(`[data-tt-drop="item:${t0.i}"]`);
       if (tgt) comboStart(f0.i, t0.i, tgt);
+    } else if (f0 && t0 && f0.k === 'item' && (t0.k === 'board' || t0.k === 'bench')) {
+      const rc = unitComboRecipe(f0.i, unitAt(t0));
+      const tgt = rc && app.querySelector(`[data-tt-drop="${t0.k === 'board' ? `board:${t0.r},${t0.c}` : `bench:${t0.i}`}"]`);
+      if (tgt) comboBuild(rc, tgt, null, null, false);
     }
     clearRange();
     if (!app.dataset.instDrag) return;
@@ -207,6 +225,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
       if (!cd || cd.from !== f.i || cd.to !== t.i) return render();   // 沒停滿 1 秒、或不能合：照舊（沒事發生）
       ui.sel = null; r = api.act('combineItems', f.i, t.i);
     } else if (f.k === 'item') {
+      comboDone = null;
       const u = (t.k === 'board' || t.k === 'bench') ? unitAt(t) : null;
       if (!u) return bounce();
       ui.sel = null; r = api.act('equip', f.i, u.uid);
@@ -253,15 +272,16 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
   });
   // 雙擊不做事
   app.addEventListener('dblclick', (e) => { if (e.target.closest && e.target.closest('[data-tt-uid]')) e.preventDefault(); });
-  // 懸停：記下滑鼠下的棋子（賣出／上場鍵用）
-  app.addEventListener('pointerover', (e) => { const t = e.target.closest && e.target.closest('[data-tt-uid]'); ui.hoverUid = t ? Number(t.dataset.ttUid) : null; });
+  // 懸停：記下滑鼠下的棋子（賣出／上場鍵用）。觸控沒有游標，不記（快捷鍵不作用，要賣就按面板裡的「賣出」鍵）
+  app.addEventListener('pointerover', (e) => { if (e.pointerType === 'touch') { ui.hoverUid = null; return; } const t = e.target.closest && e.target.closest('[data-tt-uid]'); ui.hoverUid = t ? Number(t.dataset.ttUid) : null; });
   app.addEventListener('pointerleave', () => { ui.hoverUid = null; });
 
   // ---------- 鍵盤（用 event.code，注音輸入法開著也收得到） ----------
-  const target = () => unitByUid(ui.hoverUid) || (ui.sel && ui.sel.kind === 'unit' ? unitByUid(ui.sel.uid) : null);
-  const NEED = '先把滑鼠停在棋子上，或先選一隻';
+  // 官方做法：賣出鍵、上下場鍵只作用在「滑鼠游標正停在上面」的我方棋子（場上或備戰席），跟目前選取的是誰無關；滑鼠沒停在棋子上＝什麼都不做
+  const target = () => unitByUid(ui.hoverUid) || null;
   function doDeploy() {
-    const u = target(); if (!u) return toast(NEED);
+    const u = target(); if (!u) return;
+    ui.hoverUid = null;   // 棋子移走後游標底下就不是它了
     if (u.pos) {
       const i = api.state.bench.indexOf(null);
       if (i < 0) { toast('板凳滿了'); sfx('error'); } else api.act('move', u.uid, { zone: 'bench', idx: i });
@@ -273,7 +293,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
   const ACT = {
     reroll: () => api.act('reroll'),
     buyXp: () => api.act('buyXp'),
-    sell: () => { const u = target(); if (u) PN.sellUnit(api, u); else toast(NEED); },
+    sell: () => { const u = target(); if (u) { ui.hoverUid = null; PN.sellUnit(api, u); } },
     deploy: doDeploy,
     fight: () => h.go && h.go(),
     speed: () => h.cycleSpeed && h.cycleSpeed(),

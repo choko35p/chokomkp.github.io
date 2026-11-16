@@ -28,7 +28,7 @@ function boardTraits(ctx) {
   if (!ctx._traits) {
     const { state, DATA } = ctx;
     try {
-      ctx._traits = counter(state.board.map(u => ({ key: u.key, star: u.star, items: u.items })), DATA, optsFn ? optsFn(state, DATA) : { augments: (state.augments || []).slice() });
+      ctx._traits = counter(state.board.map(u => ({ key: u.key, star: u.star, items: u.items })), DATA, optsFn ? optsFn(state, DATA) : { augments: [] });
     } catch (e) { ctx._traits = []; }
   }
   return ctx._traits;
@@ -71,10 +71,13 @@ export const CONDS = {
     text: (c, D) => `一隻${c.traitAny ? sp(c.traitAny.map(t => tzhOf(D, t)).join('、')) : ''}${c.roleAny ? c.roleAny.map(r => ROLE_ZH[r] || r).join('或') : '英雄'}${c.roleAny && c.traitAny ? '英雄' : ''}身上有 ${c.n} 件${c.item ? (D.items.byKey[c.item] || D.items.compByKey[c.item] || {}).zh || c.item : '裝備'}`,
   },
   traitUnits: {
-    // 每組各自算（不合計），取最接近完成的一組
-    cur: (c, ctx) => bestGroup(c, ctx).cur,
-    need: (c, ctx) => (ctx ? bestGroup(c, ctx).need : Math.min(...c.anyOf.map(g => g.n))),
-    text: (c, D) => c.anyOf.map(g => `${g.n} 隻${c.unique ? '不同的' : ''}${tzhOf(D, g.trait)}`).join(' 或 '),
+    // 「A 或 B 羈絆的英雄」＝合計：屬於 A 或 B 任一羈絆的英雄數加起來算（同時有兩個羈絆的只算一次），達到門檻就算。
+    // 各組門檻一樣才合計；門檻不同的組（目前資料沒有）維持各自算、取最接近完成的一組。
+    cur: (c, ctx) => (sumGroups(c) ? sumCount(c, ctx) : bestGroup(c, ctx).cur),
+    need: (c, ctx) => (sumGroups(c) ? c.anyOf[0].n : ctx ? bestGroup(c, ctx).need : Math.min(...c.anyOf.map(g => g.n))),
+    text: (c, D) => (sumGroups(c)
+      ? `${sp(c.anyOf.map(g => tzhOf(D, g.trait)).join('＋'))}${c.unique ? ' 不同英雄' : ' 英雄'}`.replace(/ ( 不同英雄| 英雄)$/, '$1')
+      : c.anyOf.map(g => `${g.n} 隻${c.unique ? '不同的' : ''}${tzhOf(D, g.trait)}`).join(' 或 ')),
   },
   traitStars: {
     cur: (c, ctx) => {
@@ -181,6 +184,12 @@ export const CONDS = {
   },
 };
 
+const sumGroups = (c) => c.anyOf.length > 1 && c.anyOf.every(g => g.n === c.anyOf[0].n);
+function sumCount(c, ctx) {
+  const traits = c.anyOf.map(g => g.trait);
+  const mine = unitsIn(ctx.state, c.zone || 'own').filter(u => hasTrait(ctx.DATA, u, traits));   // 有任一個羈絆就算一隻，兩個都有也只算一次
+  return c.unique ? new Set(mine.map(u => u.key)).size : mine.length;
+}
 function bestGroup(c, ctx) {
   let best = null;
   const us = unitsIn(ctx.state, c.zone || 'own');

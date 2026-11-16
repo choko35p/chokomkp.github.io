@@ -3,7 +3,8 @@
   "rounds": "pre：回合開始前的事件。startGift＝開局禮（用 start.freeUnitCost／start.components，不要重複發）；components＝送 n 散件；augment＝第幾次增幅（1、2、3＝正式遊戲的 2-1、3-2、4-2；稀有度開局抽一組，見 augment.tierCombos），3 選 1，每張可免費重抽一次；bossReward＝打贏第 N 隻頭目的獎勵（輸了只拿 1 散件，見 bossReward）。",
   "enemy": "count 人數；maxCost 最高費用；star.base 預設星級；star.costStar{費用:星級} 覆寫該費用星級；star.lowestStar2＝費用最低的 n 隻 2★；star.halfStar2＝一半的棋子 2★（費用高的優先）；items＝全隊合計裝備件數（先給 prio 小的）；componentOnly 由 enemyItemComponentUntil 決定；hpMult／dmgMult＝難度旋鈕。",
   "boss": "頭目回合 enemy 為 null，改看 bosses[boss-1]。boss.bossHp／bossDmg 乘在頭目本體；minions 正常；extraPassives 掛在頭目本體（on/ops 格式同 SPEC 2.4 Passive）；expectTraits 只是檢查用。pos＝[r,c]，r 0 是敵方前排，c 0–6。",
-  "augment": "tierCombos 每列＝[第 1 次, 第 2 次, 第 3 次, 份數]（1 銀 2 金 3 彩；份數總和 109）；stages＝三次增幅對應的正式遊戲回合；每個增幅的 stages 欄位決定它會在哪幾次出現"
+  "augment": "enabled＝增幅總開關（false＝整個關閉：不跳三選一、不抽稀有度、已選的增幅不生效；改回 true 就恢復）；tierCombos 每列＝[第 1 次, 第 2 次, 第 3 次, 份數]（1 銀 2 金 3 彩；份數總和 109）；stages＝三次增幅對應的正式遊戲回合；每個增幅的 stages 欄位決定它會在哪幾次出現",
+  "economy": "v11：站主說裝備很難合、錢不夠，所以放寬經濟。start.gold 4→8；start.components 1→3（開局 3 件散件）；income.base 5→7；rounds 第 2、4、8、13、18、23、28 回合各多送 1 件散件（原本是單數回合送，現在更早更密）；bossReward.winComponents＝打贏頭目的獎勵之外再多給的散件數。　難度：增幅關掉後變難、錢和散件變多又變簡單，兩邊一起算後，第 10 回合起的一般回合敵人 hpMult／dmgMult 全部 ×1.10（第 1–9 回合不動，頭目不動）。"
  },
  "shopOdds": {
   "1": [
@@ -102,14 +103,14 @@
  "xpPerRound": 2,
  "shopSlots": 5,
  "start": {
-  "gold": 4,
+  "gold": 8,
   "level": 1,
   "lives": 3,
   "freeUnitCost": 1,
-  "components": 1
+  "components": 3
  },
  "income": {
-  "base": 5,
+  "base": 7,
   "interestPer": 10,
   "interestCap": 5,
   "win": 1,
@@ -172,9 +173,11 @@
   "sevenCostBosses": [
    4,
    5
-  ]
+  ],
+  "winComponents": 1
  },
  "augment": {
+  "enabled": false,
   "rerollsPerChoice": 1,
   "choices": 3,
   "stages": [
@@ -315,7 +318,8 @@
    "n": 2,
    "type": "normal",
    "pre": {
-    "augment": 1
+    "augment": 1,
+    "components": 1
    },
    "enemy": {
     "count": 2,
@@ -348,7 +352,9 @@
   {
    "n": 4,
    "type": "normal",
-   "pre": {},
+   "pre": {
+    "components": 1
+   },
    "enemy": {
     "count": 4,
     "maxCost": 2,
@@ -408,7 +414,9 @@
   {
    "n": 8,
    "type": "normal",
-   "pre": {},
+   "pre": {
+    "components": 1
+   },
    "enemy": {
     "count": 5,
     "maxCost": 3,
@@ -462,8 +470,8 @@
      }
     },
     "items": 2,
-    "hpMult": 0.703,
-    "dmgMult": 0.703
+    "hpMult": 0.773,
+    "dmgMult": 0.773
    }
   },
   {
@@ -482,14 +490,16 @@
      }
     },
     "items": 3,
-    "hpMult": 0.681,
-    "dmgMult": 0.681
+    "hpMult": 0.749,
+    "dmgMult": 0.749
    }
   },
   {
    "n": 13,
    "type": "normal",
-   "pre": {},
+   "pre": {
+    "components": 1
+   },
    "enemy": {
     "count": 6,
     "maxCost": 4,
@@ -497,8 +507,8 @@
      "base": 2
     },
     "items": 3,
-    "hpMult": 0.555,
-    "dmgMult": 0.555
+    "hpMult": 0.611,
+    "dmgMult": 0.611
    }
   },
   {
@@ -514,8 +524,8 @@
      "base": 2
     },
     "items": 3,
-    "hpMult": 0.522,
-    "dmgMult": 0.522
+    "hpMult": 0.574,
+    "dmgMult": 0.574
    }
   },
   {
@@ -541,8 +551,8 @@
      }
     },
     "items": 4,
-    "hpMult": 0.511,
-    "dmgMult": 0.511
+    "hpMult": 0.562,
+    "dmgMult": 0.562
    }
   },
   {
@@ -561,14 +571,16 @@
      }
     },
     "items": 5,
-    "hpMult": 0.533,
-    "dmgMult": 0.499
+    "hpMult": 0.586,
+    "dmgMult": 0.549
    }
   },
   {
    "n": 18,
    "type": "normal",
-   "pre": {},
+   "pre": {
+    "components": 1
+   },
    "enemy": {
     "count": 8,
     "maxCost": 5,
@@ -576,8 +588,8 @@
      "base": 2
     },
     "items": 5,
-    "hpMult": 0.442,
-    "dmgMult": 0.42
+    "hpMult": 0.486,
+    "dmgMult": 0.462
    }
   },
   {
@@ -593,8 +605,8 @@
      "base": 2
     },
     "items": 6,
-    "hpMult": 0.511,
-    "dmgMult": 0.454
+    "hpMult": 0.562,
+    "dmgMult": 0.499
    }
   },
   {
@@ -618,8 +630,8 @@
      "base": 2
     },
     "items": 6,
-    "hpMult": 0.567,
-    "dmgMult": 0.488
+    "hpMult": 0.624,
+    "dmgMult": 0.537
    }
   },
   {
@@ -635,14 +647,16 @@
      "base": 2
     },
     "items": 6,
-    "hpMult": 0.522,
-    "dmgMult": 0.42
+    "hpMult": 0.574,
+    "dmgMult": 0.462
    }
   },
   {
    "n": 23,
    "type": "normal",
-   "pre": {},
+   "pre": {
+    "components": 1
+   },
    "enemy": {
     "count": 9,
     "maxCost": 5,
@@ -650,8 +664,8 @@
      "base": 2
     },
     "items": 7,
-    "hpMult": 0.511,
-    "dmgMult": 0.408
+    "hpMult": 0.562,
+    "dmgMult": 0.449
    }
   },
   {
@@ -667,8 +681,8 @@
      "base": 2
     },
     "items": 8,
-    "hpMult": 0.522,
-    "dmgMult": 0.408
+    "hpMult": 0.574,
+    "dmgMult": 0.449
    }
   },
   {
@@ -695,8 +709,8 @@
      }
     },
     "items": 9,
-    "hpMult": 0.499,
-    "dmgMult": 0.396
+    "hpMult": 0.549,
+    "dmgMult": 0.436
    }
   },
   {
@@ -716,14 +730,16 @@
      }
     },
     "items": 9,
-    "hpMult": 0.545,
-    "dmgMult": 0.396
+    "hpMult": 0.6,
+    "dmgMult": 0.436
    }
   },
   {
    "n": 28,
    "type": "normal",
-   "pre": {},
+   "pre": {
+    "components": 1
+   },
    "enemy": {
     "count": 9,
     "maxCost": 5,
@@ -735,8 +751,8 @@
      }
     },
     "items": 9,
-    "hpMult": 0.579,
-    "dmgMult": 0.396
+    "hpMult": 0.637,
+    "dmgMult": 0.436
    }
   },
   {
@@ -756,8 +772,8 @@
      }
     },
     "items": 9,
-    "hpMult": 0.635,
-    "dmgMult": 0.396
+    "hpMult": 0.699,
+    "dmgMult": 0.436
    }
   },
   {

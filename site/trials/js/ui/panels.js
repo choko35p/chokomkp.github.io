@@ -557,6 +557,7 @@ export function unlockTipNodes(api, key) {
   const done = api.unlocks.isUnlocked(key);
   const nodes = [el('b', { class: 'tt-tip-title' }, `${U.zh}　${done ? '已解鎖' : '還沒解鎖'}`), el('p', { class: 'tt-tip-p' }, ent.text || '')];
   if (ent.local) nodes.push(el('p', { class: 'tt-tip-p tt-tip-muted' }, '本頁做法：' + ent.local));
+  if (ent.note) nodes.push(el('p', { class: 'tt-tip-p tt-tip-muted' }, '算法：' + ent.note));
   const b = blockedBy(api, ent.cond);
   if (b && !done) nodes.push(el('p', { class: 'tt-tip-p tt-tip-muted' }, '這一局不能解鎖了（已解鎖另一隻阿卡莉）'));
   else if (!done) nodes.push(...progressNodes(unlockProgress(api, key)));
@@ -683,9 +684,22 @@ function itemSide(api, r) {
       if (seen.has(other)) continue; seen.add(other);
       ul.append(el('li', {}, `＋${DATA.items?.compByKey?.[other]?.zh || DATA.items?.byKey?.[other]?.zh || other}＝`, el('b', {}, it.zh)));
     }
-    if (ul.children.length) wrap.append(el('h3', { class: 'tt-us-h' }, '可以合成'), ul);
+    // 裝備欄裡現在就能跟它合的散件：每個旁邊一顆「合成」鍵，按一下直接合（不用拖、不用停 1 秒）
+    const bench = api.state.itemBench || []; const can = [];
+    bench.forEach((o, j) => { if (j === r.idx) return; const res = DATA.items.recipes && DATA.items.recipes[[k, o].sort().join('+')]; if (res) can.push({ j, o, res }); });
+    if (can.length) {
+      const cl = el('ul', { class: 'tt-us-combos' });
+      for (const c of can) {
+        const ci = el('span', { class: 'tt-us-itemicon tt-us-mini' }); ci.style.backgroundImage = `url("../icons/items/${c.o}.webp")`;
+        const btn = el('button', { type: 'button', class: 'tt-btn tt-us-combo', 'data-tt': 'combine', 'data-j': c.j, 'aria-label': `和${DATA.items.compByKey[c.o]?.zh || c.o}合成${DATA.items.byKey[c.res]?.zh || c.res}` }, '合成');
+        btn.addEventListener('click', (e) => { e.stopPropagation(); if (api.ui) api.ui.sel = null; api.act('combineItems', r.idx, c.j); });
+        cl.append(el('li', {}, ci, el('span', { class: 'tt-us-combotxt' }, `${DATA.items.compByKey[c.o]?.zh || c.o} ＝ `, el('b', {}, DATA.items.byKey[c.res]?.zh || c.res)), btn));
+      }
+      wrap.append(el('h3', { class: 'tt-us-h' }, '裝備欄裡可以合的'), cl);
+    }
+    if (ul.children.length) wrap.append(el('details', { class: 'tt-us-alldet' }, el('summary', { class: 'tt-us-h' }, '全部可以合成的'), ul));   // 完整配方表收起來放後面：先看到能直接按的合成鍵，手機抽屜也不會長到蓋住裝備欄
   }
-  wrap.append(el('p', { class: 'tt-us-hint tt-muted' }, '要裝備就把它拖到棋子身上。'));
+  wrap.append(el('p', { class: 'tt-us-hint tt-muted' }, '要裝備就把它拖到棋子身上；棋子身上已有 1 件散件，拖上去會直接合成。'));
   return wrap;
 }
 
@@ -821,7 +835,7 @@ export function showUnlocks(api) {
     el('li', {}, `這一季有 ${total} 隻棋子要先達成條件才會進商店。`),
     el('li', {}, '解鎖後的下一次商店，最右邊那格一定是它（一次）。'),
     el('li', {}, '達成一次，這一局就一直有效；每一局重新來過。'),
-    el('li', {}, '正式服解鎖後一直不買會變少出現，這裡沒有做。標「推測」的條件官方還沒公布完整數字，PBE 開了會更新。'));
+    el('li', {}, '正式服解鎖後一直不買會變少出現，這裡沒有做。標「推測」的條件官方還沒公布完整數字，PBE 開了會更新。「A 或 B 羈絆的英雄」這類條件是兩個羈絆加起來算，同時有兩個羈絆的英雄只算一次。'));
   let filter = 'all';
   const list = el('div', { class: 'tt-ul-list' });
   const tabs = el('div', { class: 'tt-ul-tabs', role: 'group', 'aria-label': '篩選' });
@@ -854,7 +868,8 @@ export function showUnlocks(api) {
     if (ent.local) tags.push(badge('簡化', 'tt-simp'));
     if (ent.guess) tags.push(badge('推測', 'tt-guess'));
     const cond = el('div', { class: 'tt-ul-cond' }, el('p', {}, textWithLinks(ent), ' ', tags),
-      ent.local ? el('p', { class: 'tt-ul-local' }, '本頁做法：' + ent.local) : null);
+      ent.local ? el('p', { class: 'tt-ul-local' }, '本頁做法：' + ent.local) : null,
+      ent.note ? el('p', { class: 'tt-ul-local' }, '算法：' + ent.note) : null);
     const prog = el('div', { class: 'tt-ul-prog' });
     if (blk) prog.append(el('p', { class: 'tt-ul-block' }, '這一局不能解鎖了（已解鎖另一隻阿卡莉）'));
     else if (p && p.parts && p.parts.length) {
@@ -907,7 +922,7 @@ const FIXED_KEY = /^(Escape|Tab|Enter|NumpadEnter|F\d{1,2}|Control(Left|Right)|A
 const HK_ACTIONS = [
   { id: 'reroll', zh: '重抽', phase: 'plan', official: true, def: 'KeyD' },
   { id: 'buyXp', zh: '購買經驗值', phase: 'plan', official: true, def: 'KeyF' },
-  { id: 'sell', zh: '賣出（滑鼠下的棋子，沒有就賣已選取的）', phase: 'plan', official: true, def: 'KeyE' },
+  { id: 'sell', zh: '賣出（滑鼠指著棋子按）', phase: 'plan', official: true, def: 'KeyE' },
   { id: 'deploy', zh: '上場／回板凳（同上）', phase: 'plan', official: true, def: 'KeyW' },
   { id: 'fight', zh: '戰鬥', phase: 'plan', official: false, def: 'Space' },
   { id: 'speed', zh: '切換戰鬥速度', phase: 'battle', official: false, def: 'Space' },
@@ -1027,6 +1042,7 @@ export function showHotkeys(api) {
 }
 
 // ---------- 說明 ----------
+const augOnOf = (api) => { const a = api && api.DATA && api.DATA.rules && api.DATA.rules.augment; return !a || a.enabled !== false; };   // 增幅總開關（rules.json augment.enabled）
 export function showHelp(opts = {}) {
   const api = opts.api || curApi;
   const hk = hotkeysOf(api);
@@ -1035,7 +1051,7 @@ export function showHelp(opts = {}) {
   const secD = (title, ...kids) => el('div', { class: 'tt-only-desktop' }, el('h3', { class: 'tt-h' }, title), ...kids);   // 手機沒有鍵盤，整段不顯示
   const body = [
     el('ol', { class: 'tt-ol' }, el('li', {}, '一共 30 回合，每 5 回合有一隻頭目（共 6 隻）。'), el('li', {}, '有 3 條命，輸一場扣 1 條，沒命就結束。'), el('li', {}, '沒有計時，準備好再按「戰鬥」。')),
-    sec('增幅怎麼出',
+    !augOnOf(api) ? null : sec('增幅怎麼出',
       el('p', { class: 'tt-desc' }, '一場三個增幅：第 2、11、21 回合，對應正式遊戲的 2-1、3-2、4-2。'),
       el('p', { class: 'tt-desc' }, '稀有度跟正式遊戲一樣是開局就抽好一整組，機率照官方的表。最常見是金金金（兩成），開局就彩色大概一成，三個全彩不到 1%。'),
       el('p', { class: 'tt-desc' }, '每個增幅有自己會出現的階段。給錢、給經驗、給棋子的大多只在第一個出，打架用的數值大多在後面兩個。所以加速開始、銀湯匙這種第 11 回合之後就不會再看到。'),
@@ -1049,13 +1065,13 @@ export function showHelp(opts = {}) {
         el('li', {}, '要換位子只能用拖的：拖到空格是移動，拖到有棋子的格子是兩隻交換，拖到商店就是賣掉。'),
         el('li', {}, '點裝備是看說明，要裝上去也是拖到棋子身上。右鍵跟左鍵一樣，是選取。'),
         el('li', {}, '裝備欄旁邊有兩種特殊道具：黃金卸除器（每局 1 個，拖到有裝備的棋子身上，把裝備全卸回裝備欄）、心鋼最愛（心鋼之聲 3 階給 1 個、5 階再給 1 個，拖到心鋼之聲成員身上就是選他強化技能，佈陣時可以從一位拖到另一位改選）。'),
-        el('li', {}, '選增幅時，每一張下面都有自己的重抽鍵，按了只換那一張。'),
-        el('li', {}, '用鍵盤的話：Tab 選到棋子按 Enter 是選取，上場、下場用 ' + L('deploy') + ' 鍵。場上換格子沒有鍵盤的做法，只能用滑鼠或手指拖。'))),
+        augOnOf(api) ? el('li', {}, '選增幅時，每一張下面都有自己的重抽鍵，按了只換那一張。') : null,
+        el('li', {}, '用鍵盤的話：Tab 選到棋子按 Enter 是選取，賣出用 ' + L('sell') + '、上場／下場用 ' + L('deploy') + '，這兩個都是滑鼠指著那隻棋子按，跟選取的是誰無關；手機沒有游標，賣出請按右側面板裡的「賣出」鍵。場上換格子沒有鍵盤的做法，只能用滑鼠或手指拖。'))),
     sec('裝備合成、升級補位、人口超出',
       el('ul', { class: 'tt-ul-plain' },
         el('li', {}, '裝備欄裡兩件散件可以直接合：拖一件到另一件上面，旁邊會跳出「會合成：○○」，停滿 1 秒（目標格會繞一圈倒數）再放開，就合成了，成品放在你放的那一格。不到 1 秒放開就什麼都不會發生；成品或配不出來的組合不會有提示。手機一樣用手指拖著不放。'),
         el('li', {}, '買經驗升級後，如果場上人口還沒放滿，會自動從板凳最左邊的棋子開始補上場，補到滿或板凳沒人為止。位置：坦克、鬥士放前排（從最前面一排、由中間往兩邊找空格），施法者、射手、刺客這些放後排（從最後面一排找起），查不到定位的放最前排最左邊的空格；放不下的 2 人口棋子會跳過，換下一隻。'),
-        el('li', {}, '選獎勵、增幅、頭目獎勵拿到棋子，但板凳滿了，不會直接賣掉，會先放到場上，人口可以超過上限，超出的那隻會標「超出人口」。佈陣時只要板凳空出一格（賣掉、合星、拖下場都算），超出的棋子就自動跳回板凳，最後放上去的先跳。'),
+        el('li', {}, (augOnOf(api) ? '選獎勵、增幅、頭目獎勵' : '選獎勵、頭目獎勵') + '拿到棋子，但板凳滿了，不會直接賣掉，會先放到場上，人口可以超過上限，超出的那隻會標「超出人口」。佈陣時只要板凳空出一格（賣掉、合星、拖下場都算），超出的棋子就自動跳回板凳，最後放上去的先跳。'),
         el('li', {}, '按「戰鬥」的時候場上還是超出人口：先試著移回板凳，板凳放不下才自動賣掉（照賣出價給錢，畫面會告訴你賣了誰）。商店買棋子還是要有板凳空格，這點沒變。三張一樣的合星，場上加板凳一起算。'),
         el('li', {}, '滑鼠停在左邊的羈絆上，場上、板凳屬於它的棋子會亮起金框（其他的變暗），商店裡有這個羈絆的卡片也會亮、羈絆圖示發光；手機是長按羈絆。滑鼠停在羈絆面板、圖鑑、解鎖清單、隊伍編輯器裡的棋子頭像上，會直接跳出他的羈絆跟技能（手機長按），不用再點一下。'))),
     sec('ILLBEATS 混音器',
@@ -1076,7 +1092,7 @@ export function showHelp(opts = {}) {
     sec('音效',
       el('p', { class: 'tt-desc' }, '頁首的「音效」鍵點開可以調音量、靜音，快捷鍵面板裡的滑桿是同一個。')),
     secD('快捷鍵（桌機）', el('div', { class: 'tt-keys' },
-      ...[[L('reroll'), '重抽'], [L('buyXp'), '購買經驗值'], [L('sell'), '賣出（滑鼠下的棋子，沒有就賣已選取的）'], [L('deploy'), '上場／回板凳'],
+      ...[[L('reroll'), '重抽'], [L('buyXp'), '購買經驗值'], [L('sell'), '滑鼠指著棋子按，賣掉那一隻'], [L('deploy'), '滑鼠指著棋子按，上場／回板凳'],
         [[1, 2, 3, 4, 5].map(n => L('buy' + n)).join(' '), '買商店第 1–5 格'],
         [L('fight') + '（戰鬥中：' + L('speed') + '）', '開戰；戰鬥中切換速度'], [L('planner'), '開關隊伍編輯器'], ['Esc', '關面板、取消選取']]
         .flatMap(([k, d]) => [el('kbd', {}, k), el('span', {}, d)])),

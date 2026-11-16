@@ -299,3 +299,11 @@
 .tt-tip-trait { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 700; color: var(--g-gold-hi, #f0e6d2); }
 .tt-tip-abname b { color: var(--g-teal, #0ac8b9); }
 .tt-tip-lock { margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--g-line, #2b4257); }
+
+/* 裝備欄散件：右側面板列出「現在就能合的散件」，每個旁邊一顆合成鍵（手機也好按） */
+.tt-us-combos { list-style: none; margin: 0 .55em; padding: 0; display: grid; gap: .4em; }
+.tt-us-combos li { display: flex; align-items: center; gap: .6em; }
+.tt-us-mini { width: 2.4em; height: 2.4em; }
+.tt-us-combotxt { flex: 1 1 auto; min-width: 0; font-size: var(--fs-s, .9em); }
+.tt-us-combo { flex: 0 0 auto; min-width: 64px; min-height: 44px; }
+.tt-us-alldet > summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; }

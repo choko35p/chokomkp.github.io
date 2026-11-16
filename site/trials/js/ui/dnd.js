@@ -89,6 +89,7 @@ export function enableDnd(root, handlers) {
       if (st.over) st.over.classList.remove('tt-over');
       st.over = t;
       if (t) t.classList.add('tt-over');
+      if (handlers.onDragOver) handlers.onDragOver(t ? t.dataset.ttDrop : null, st.desc);
     }
   }
 

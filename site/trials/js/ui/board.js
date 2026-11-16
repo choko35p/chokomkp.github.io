@@ -4,6 +4,7 @@
 // 佈陣：8 排正六角形（和戰鬥畫面同比例），位置全用 CSS 變數 --x（欄＋奇數排半格）、--r（0–7 排）、--g（我方半場 1）；格線整張置中、隨可用空間縮放。
 import { traitIcon } from './traitbar.js';
 import { starsEl } from './stars.js';
+import { neighbors } from '../hex.js';
 export { starsEl };
 export const COLS = 7;
 const ROW_H = 0.866;
@@ -79,7 +80,11 @@ function cellEl(row, col, extra, mine) {
 }
 
 const PICK_ZH = { fav: '心鋼最愛', spot: '聚光燈', deal: '唱片合約', prod: '合作邀請', clone: '分身站位' };
+// 沙灘樂器相鄰 6 格（我方半場座標 [r,c]，超出我方半場的不算）；佈陣畫範圍、拖曳顯示範圍都用這個
+export const coverOf = (r, c) => neighbors({ row: 4 + r, col: c }).filter(h => h.row >= 4).map(h => [h.row - 4, h.col]);
+const INST_SVG = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' aria-hidden='true'><g transform='rotate(38 24 25)'><rect x='21.5' y='2' width='5' height='20' rx='1.5' fill='#e9c98b' stroke='#8a5a2b' stroke-width='1.6'/><rect x='20' y='0.5' width='8' height='6' rx='2' fill='#c9904a' stroke='#8a5a2b' stroke-width='1.4'/><path d='M24 14c-6 0-9 3-9 7 0 2.5 1.5 3.6 1.5 5.3 0 1.7-4.5 3.7-4.5 8.7 0 4.5 5.4 7 12 7s12-2.5 12-7c0-5-4.5-7-4.5-8.7 0-1.7 1.5-2.8 1.5-5.3 0-4-3-7-9-7z' fill='#2ec4b6' stroke='#0f6d66' stroke-width='2' stroke-linejoin='round'/><circle cx='24' cy='32' r='4.2' fill='#10302d' stroke='#f4e3b2' stroke-width='1.6'/><rect x='19.5' y='40' width='9' height='2.4' rx='1' fill='#f4e3b2'/><path d='M23 18v20M25 18v20' stroke='#f4e3b2' stroke-width='.7' opacity='.8'/></g></svg>";
 const PICK_ORDER = ['fav', 'spot', 'deal', 'prod', 'clone'];
+const SP_ORDER = [...PICK_ORDER, 'inst'];
 // 這隻棋子身上有哪些指定道具標記（含暫時失效的）
 const marksOf = (api, u) => {
   try {
@@ -98,6 +103,7 @@ export const SPECIAL_INFO = {
   deal: { zh: '唱片合約', sub: '蒙多在場就有，每 4 回合多 1 份', desc: '拖到你要簽的那隻身上：他傷害增幅 +5%，他每殺一個，蒙多永久 +25 生命。簽錯了再拖一次就能改。', hint: '蒙多自己也可以簽，同一隻只能簽 1 份。' },
   prod: { zh: '合作邀請', sub: '索娜在場就有', desc: '拖到一隻棋子身上，索娜就跟他的樂團合作，那個羈絆多算 1 人。想換樂團就拖到別隻身上。', hint: '要拖給有起源羈絆的棋子，歐拉夫有兩個樂團，連拖兩次可以換。' },
   clone: { zh: '分身站位', sub: '銳空在場就有', desc: '拖到一隻棋子身上，銳空的分身開場就站在他旁邊。沒拖就站在銳空旁邊。', hint: '' },
+  inst: { zh: '沙灘樂器', sub: '海灘流行 3 階給 1 個、5 階 2 個、7 階 3 個', desc: '拖到我方棋盤的空格就擺好了（樂器佔一格、不算人口，棋子不能站上去）。開戰那一刻，站在樂器旁邊 6 格內的友軍整場吃到海灘流行的加成：每 3 秒回 2% 生命；海灘流行成員還有攻速和回魔力。擺好的可以再拖去別格，或拖回這裡收回；放滿再拖會頂掉最早擺的。沒擺就沒效果。', hint: '一隻貼著好幾個樂器不會疊，所以盡量把樂器分開擺、讓更多人碰得到。' },
   favmark: { zh: '心鋼最愛', sub: '', desc: '這位是你選的最愛，技能變強（技能增幅 +25%）。把這個標記拖到另一位心鋼之聲成員身上就能改選。要上場才有效。', hint: '' },
   favoff: { zh: '心鋼最愛（暫時失效）', sub: '', desc: '心鋼之聲掉階了，或他在板凳上，先沒有效果。湊回來、上場就自動恢復。', hint: '' },
   spotmark: { zh: '聚光燈', sub: '', desc: '這隻是你捧的人，開場和每 5 秒都拿一次傷害增幅。把這個標記拖到另一隻身上就能換人。要上場才有效。', hint: '' },
@@ -106,6 +112,8 @@ export const SPECIAL_INFO = {
   dealoff: { zh: '唱片合約（暫時失效）', sub: '', desc: '蒙多不在場、他在板凳上，或合約份數不夠，先沒有效果。回來就自動恢復。', hint: '' },
   prodmark: { zh: '合作邀請', sub: '', desc: '索娜跟他的樂團合作，標記上的那個羈絆多算 1 人。把這個標記拖到別隻身上就能換樂團。要上場才有效。', hint: '' },
   prodoff: { zh: '合作邀請（暫時失效）', sub: '', desc: '索娜不在場，或他在板凳上，先沒有效果。回來就自動恢復。', hint: '' },
+  instmark: { zh: '沙灘樂器', sub: '', desc: '開戰那一刻站在這個樂器旁邊 6 格內的友軍，整場都吃到海灘流行的加成（戰鬥中走開也不會掉）。可以拖去別格，或拖回道具列收回。棋子不能站在這一格。', hint: '' },
+  instoff: { zh: '沙灘樂器（暫時失效）', sub: '', desc: '海灘流行掉階了，多出來的樂器先變灰、留在原位沒有效果。湊回原階就自動恢復，不用重擺。這一格棋子還是不能站。', hint: '' },
   clonemark: { zh: '分身站位', sub: '', desc: '銳空的分身開場會站在這隻旁邊。把這個標記拖到別隻身上就能換位置。要上場才有效。', hint: '' },
   cloneoff: { zh: '分身站位（暫時失效）', sub: '', desc: '銳空不在場，或他在板凳上，先沒有效果，分身就站在銳空旁邊。', hint: '' },
 };
@@ -116,6 +124,7 @@ const SP_LABEL = {
   deal: '唱片合約，拖到你要簽的那隻身上，可以重選',
   prod: '合作邀請，拖到一隻棋子身上，選他的樂團多算 1 人，可以重選',
   clone: '分身站位，拖到一隻棋子身上，分身開場站在他旁邊，可以重選',
+  inst: '沙灘樂器，拖到我方棋盤的空格擺好，開戰時相鄰 6 格內的友軍吃到海灘流行加成，可以重擺',
 };
 
 export function renderSpecials(el_, api) {
@@ -132,7 +141,8 @@ export function renderSpecials(el_, api) {
     return b;
   };
   nodes.push(mk('rm', null));   // 黃金卸除器每局都在、無限用
-  for (const id of PICK_ORDER) { const f = p[id]; if (f && f.cap > 0) nodes.push(mk(id, f.free)); }
+  for (const id of SP_ORDER) { const f = p[id]; if (f && f.cap > 0) nodes.push(mk(id, f.free)); }
+  el_.setAttribute('data-tt-drop', 'spbar');   // 已經擺好的樂器拖回這一排＝收回
   el_.replaceChildren(...nodes);
   el_.hidden = !nodes.length;
   // 桌機版：道具排成幾列由寬度決定，把高度記在舞台上，讓下面的增幅列、羈絆欄跟著往下讓
@@ -176,10 +186,26 @@ export function renderBoard(el_, api, view = {}) {
   const sel = selUid(api);
   const place = new Map();
   for (const u of state.board || []) if (u && u.pos) place.set(u.pos[0] + ',' + u.pos[1], u);
+  // 沙灘樂器：有效的樂器相鄰 6 格淡淡標出範圍；變灰的（羈絆掉階）不標
+  let ip = null; try { ip = api.picks ? api.picks().inst : null; } catch (_) { ip = null; }
+  const instAt = new Map(), cover = new Set();
+  if (ip) {
+    ip.held.forEach((p, i) => instAt.set(p[0] + ',' + p[1], i < ip.cap));
+    for (const p of ip.active) for (const q of coverOf(p[0], p[1])) cover.add(q[0] + ',' + q[1]);
+  }
   for (let r = 0; r < 4; r++) for (let c = 0; c < COLS; c++) {
     const u = place.get(r + ',' + c);
-    const label = `我方 ${'ABCD'[r]}${c + 1}` + (u ? `：${zhOf(DATA, u.key)} ${u.star} 星` : '：空格');
+    const k = r + ',' + c;
+    const label = `我方 ${'ABCD'[r]}${c + 1}` + (u ? `：${zhOf(DATA, u.key)} ${u.star} 星` : instAt.has(k) ? '：沙灘樂器' : '：空格');
     const cell = cellEl(4 + r, c, { role: 'button', tabindex: '0', 'aria-label': label, 'data-tt-drop': `board:${r},${c}` }, true);
+    if (cover.has(k)) cell.classList.add('tt-incover');
+    if (instAt.has(k)) {
+      const on = instAt.get(k);
+      const ins = el('div', 'tt-inst' + (on ? '' : ' tt-off'), { role: 'button', tabindex: '-1', 'data-tt-drag': `inst:${r},${c}`, 'data-tt-tap': `inst:${r},${c}`, 'data-tt-tip': 'sp:inst' + (on ? 'mark' : 'off'),
+        'aria-label': on ? '沙灘樂器，可以拖去別格或拖回道具列' : '沙灘樂器（暫時失效）' });
+      ins.innerHTML = INST_SVG;
+      cell.append(ins);
+    }
     if (u) {
       const tk = unitToken(DATA, u, `board:${r},${c}`, { marks: marksOf(api, u) });
       tk.setAttribute('data-tt-tap', `board:${r},${c}`);

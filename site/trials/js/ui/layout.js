@@ -302,6 +302,7 @@ export async function mount(root, api) {
     const front = ['Tank', 'Fighter'].includes(DATA.units.byKey[u.key]?.roleClass);
     const rows = front ? [0, 1, 2, 3] : [3, 2, 1, 0];
     const used = new Set(api.state.board.map(x => x.pos.join(',')));
+    try { for (const p of api.picks().inst.held) used.add(p.join(',')); } catch (_) { /* 沒有樂器就略過 */ }   // 樂器佔格，棋子不能放
     for (const r of rows) for (const c of FRONT_COLS) if (!used.has(r + ',' + c)) return { zone: 'board', pos: [r, c] };
     return null;
   };

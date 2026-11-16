@@ -20,8 +20,8 @@ const REASONS = {
 };
 const reasonText = (r) => (r && /[一-鿿]/.test(r) ? r : REASONS[r] || '這個動作現在做不到');
 
-const PICK_ZH = { fav: '心鋼最愛', spot: '聚光燈', deal: '唱片合約', prod: '合作邀請', clone: '分身站位' };
-const SFX = { buy: 'buy', sell: 'sell', reroll: 'reroll', buyXp: 'xp', move: 'place', equip: 'equip', pickAugment: 'pick', rerollAugmentSlot: 'reroll', setFavorite: 'equip', moveFavorite: 'equip', pick: 'equip', useRemover: 'equip', pickReward: 'pick', startBattle: 'start' };
+const PICK_ZH = { fav: '心鋼最愛', spot: '聚光燈', deal: '唱片合約', prod: '合作邀請', clone: '分身站位', inst: '沙灘樂器' };
+const SFX = { buy: 'buy', sell: 'sell', reroll: 'reroll', buyXp: 'xp', move: 'place', equip: 'equip', pickAugment: 'pick', rerollAugmentSlot: 'reroll', setFavorite: 'equip', moveFavorite: 'equip', pick: 'equip', instrument: 'equip', useRemover: 'equip', pickReward: 'pick', startBattle: 'start' };
 
 function showFatal(msg, withLink) {
   const root = document.getElementById('tt-root');
@@ -138,7 +138,7 @@ async function boot() {
     }
     if (name === 'startBattle') {
       api.sfx('start');
-      for (const ev of r.events || []) if (ev.type === 'pickUnset') api.toast(ev.ids.map(i => PICK_ZH[i] || i).join('、') + ' 還沒指定，這場不會有效果');
+      for (const ev of r.events || []) if (ev.type === 'pickUnset') api.toast(ev.ids.map(i => PICK_ZH[i] || i).join('、') + (ev.ids.length === 1 && ev.ids[0] === 'inst' ? ' 還沒擺，這場不會有效果' : ' 還沒指定，這場不會有效果'));
       return r;
     }
     const evs = r.events || [];

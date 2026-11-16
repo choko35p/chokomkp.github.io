@@ -99,8 +99,8 @@ function buildTrait(api, key) {
   const unit = star ? '星' : '隻';
   const KIND = { origin: '起源', class: '職業', unique: '獨特' };
   let unset = false;   // 經紀人／唱片大亨／製作人啟動了、但還沒指定對象
-  try { const PK = api.picks && api.picks(); const id = { Manager: 'spot', RecordMogul: 'deal', Producer: 'prod' }[key]; unset = !!(PK && id && PK[id].cap > 0 && !PK[id].active.length); } catch (_) { unset = false; }
-  const wrap = h('div', 'tt-tip-in', head(traitIconNode(DATA, key, 40), T.zh, KIND[T.kind] || ''), unset ? h('p', 'tt-tip-p tt-tip-warn', '還沒指定，要把裝備欄旁邊的道具拖到棋子身上才有效果') : null, ...paras(T.desc, 0, 2));
+  try { const PK = api.picks && api.picks(); const id = { Manager: 'spot', RecordMogul: 'deal', Producer: 'prod', BeachPop: 'inst' }[key]; unset = !!(PK && id && PK[id].cap > 0 && !PK[id].active.length); } catch (_) { unset = false; }
+  const wrap = h('div', 'tt-tip-in', head(traitIconNode(DATA, key, 40), T.zh, KIND[T.kind] || ''), unset ? h('p', 'tt-tip-p tt-tip-warn', key === 'BeachPop' ? '樂器還沒擺，要把裝備欄旁邊的沙灘樂器拖到我方空格上才有效果' : '還沒指定，要把裝備欄旁邊的道具拖到棋子身上才有效果') : null, ...paras(T.desc, 0, 2));
   const bps = T.breakpoints || [];
   const ul = h('ul', 'tt-tip-tiers');
   bps.forEach((b, i) => ul.append(h('li', (cur.tier === i + 1 ? 'tt-cur ' : '') + (cur.count >= b ? 'tt-reached' : ''), h('b', '', b), h('span', '', T.levelsText?.[i] || ''))));

@@ -5,6 +5,7 @@
 import { enableDnd } from './dnd.js';
 import { bindTips, showTip, hideTip, isTipPinned } from './tooltip.js';
 import * as PN from './panels.js';
+import { coverOf } from './board.js';
 
 export const parse = (d) => {
   if (!d) return null;
@@ -14,11 +15,13 @@ export const parse = (d) => {
   if (k === 'enemy') return { k, key: rest[0], star: rest[1] != null ? Number(rest[1]) : null };
   if (k === 'sp') return { k, id: rest[0] };
   if (k === 'fav') return { k, uid: Number(rest[0]) };
+  if (k === 'inst') { const [r, c] = (rest[0] || '').split(',').map(Number); return { k, r, c }; }   // 已經擺在棋盤上的沙灘樂器：inst:<r>,<c>
+  if (k === 'spbar') return { k };
   if (k === 'mk') return { k, id: rest[0], uid: Number(rest[1]) };   // 棋子身上的標記：mk:<道具>:<棋子 uid>
   return { k };
 };
 
-const DROP_HINT = { rm: '要拖到有裝備的棋子身上', fav: '要拖到心鋼之聲成員身上', spot: '要拖到你要捧的那隻棋子身上', deal: '要拖到你要簽的那隻棋子身上', prod: '要拖到有樂團羈絆的棋子身上', clone: '要拖到一隻棋子身上' };
+const DROP_HINT = { rm: '要拖到有裝備的棋子身上', fav: '要拖到心鋼之聲成員身上', spot: '要拖到你要捧的那隻棋子身上', deal: '要拖到你要簽的那隻棋子身上', prod: '要拖到有樂團羈絆的棋子身上', clone: '要拖到一隻棋子身上', inst: '樂器要拖到我方棋盤的空格上' };
 const tag = (n) => (n && n.tagName ? n.tagName : '');
 
 export function bindInput({ app, api, R = {}, render, h = {} }) {
@@ -71,6 +74,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
     if (d.k === 'enemy') return select(enemySel(d, el));
     if (d.k === 'item') return select({ kind: 'item', idx: d.i });
     if (d.k === 'sp') return select({ kind: 'sp', id: d.id });
+    if (d.k === 'inst') return select({ kind: 'sp', id: 'inst' });
     if (d.k === 'fav' || d.k === 'mk') return select({ kind: 'unit', uid: d.uid });
     if (d.k === 'board' || d.k === 'bench') {
       const u = unitAt(d);
@@ -87,15 +91,16 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
   function onDragStart(desc) {
     const d = parse(desc); if (!d) return;
     hideTip();
-    app.dataset.dragging = d.k === 'shop' ? 'shop' : (d.k === 'item' || d.k === 'sp' || d.k === 'fav' || d.k === 'mk') ? 'item' : 'unit';
+    app.dataset.dragging = d.k === 'shop' ? 'shop' : (d.k === 'item' || d.k === 'sp' || d.k === 'fav' || d.k === 'mk' || d.k === 'inst') ? 'item' : 'unit';
+    if (d.k === 'inst' || (d.k === 'sp' && d.id === 'inst')) app.dataset.instDrag = '1';
     if (d.k === 'board' || d.k === 'bench') {
       const u = unitAt(d); if (!u) return;
       ui.dragUnit = u.uid;      // 包 B 的 render／syncDrag 讀這個 uid，把商店變成賣出區
       ui.sel = { kind: 'unit', uid: u.uid }; ui.sellArm = null;
       try { PN.renderUnitSide(unitpanel(), api); } catch (_) { /* 略過 */ }
       sfx('pickup');
-    } else if (d.k === 'sp' || d.k === 'fav' || d.k === 'mk') {
-      ui.sel = d.k === 'sp' ? { kind: 'sp', id: d.id } : { kind: 'unit', uid: d.uid };
+    } else if (d.k === 'sp' || d.k === 'fav' || d.k === 'mk' || d.k === 'inst') {
+      ui.sel = d.k === 'sp' ? { kind: 'sp', id: d.id } : d.k === 'inst' ? { kind: 'sp', id: 'inst' } : { kind: 'unit', uid: d.uid };
       try { PN.renderUnitSide(unitpanel(), api); } catch (_) { /* 略過 */ }
       sfx('pickup');
     } else if (d.k === 'item') {
@@ -104,9 +109,20 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
       sfx('pickup');
     }
   }
+  // 拖沙灘樂器時：游標停在哪一格，那一格相鄰的 6 格就亮起來（顯示樂器碰得到的範圍）
+  const clearRange = () => { for (const n of app.querySelectorAll('.tt-rangehint')) n.classList.remove('tt-rangehint'); };
+  function onDragOver(to) {
+    clearRange();
+    if (!app.dataset.instDrag) return;
+    const t = parse(to);
+    if (!t || t.k !== 'board') return;
+    for (const [r, c] of coverOf(t.r, t.c)) { const n = app.querySelector(`[data-tt-drop="board:${r},${c}"]`); if (n) n.classList.add('tt-rangehint'); }
+  }
   function onDragEnd() {
     ui.dragUnit = null; ui.dragging = false;
     app.removeAttribute('data-dragging');
+    app.removeAttribute('data-inst-drag');
+    clearRange();
   }
   const bounce = () => { sfx('error'); render(); };
   function onDrop(from, to) {
@@ -117,6 +133,15 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
     let r = null;
     if (f.k === 'shop') {
       if (t.k === 'bench' || t.k === 'board') { ui.sel = null; r = api.act('buy', f.i); } else return bounce();
+    } else if (f.k === 'inst' || (f.k === 'sp' && f.id === 'inst')) {
+      // 沙灘樂器：拖到我方空格＝擺放／換位置；已擺好的拖回道具列＝收回。棋子不能站在樂器格（拖過去會彈回）
+      const from = f.k === 'inst' ? [f.r, f.c] : null;
+      if (t.k === 'spbar') { if (!from) return render(); ui.sel = null; r = api.act('instrument', { from, to: null }); }
+      else if (t.k === 'board') {
+        if (from && from[0] === t.r && from[1] === t.c) return render();
+        if (unitAt(t)) { toast('那格有棋子，樂器要放在空格上'); return bounce(); }
+        ui.sel = null; r = api.act('instrument', { from, to: [t.r, t.c] });
+      } else { toast(DROP_HINT.inst); return bounce(); }
     } else if (f.k === 'sp' || f.k === 'fav' || f.k === 'mk') {
       const id = f.k === 'fav' ? 'fav' : f.id;
       const u = (t.k === 'board' || t.k === 'bench') ? unitAt(t) : null;
@@ -143,7 +168,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
   function onLongPress(desc, el) {
     if (ui.mode !== 'plan') return;
     const d = parse(desc); if (!d) return;
-    if (d.k === 'sp' || d.k === 'item' || d.k === 'fav' || d.k === 'mk') {   // 觸控長按道具＝看說明（放開就收）
+    if (d.k === 'sp' || d.k === 'item' || d.k === 'fav' || d.k === 'mk' || d.k === 'inst') {   // 觸控長按道具＝看說明（放開就收）
       const spec = el.dataset.ttTip; if (!spec) return;
       showTip(el, spec, { placement: 'top' });
       const off2 = () => { hideTip(); window.removeEventListener('pointerup', off2, true); window.removeEventListener('pointercancel', off2, true); };
@@ -157,7 +182,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
     window.addEventListener('pointerup', off, true); window.addEventListener('pointercancel', off, true);
   }
 
-  enableDnd(app, { onTap, onTapEmpty, onDrop, onDragStart, onDragEnd, onLongPress });
+  enableDnd(app, { onTap, onTapEmpty, onDrop, onDragStart, onDragEnd, onDragOver, onLongPress });
 
   // ---------- 右鍵：棋子＝選取（dnd 已處理）、羈絆＝開羈絆面板、其餘不出瀏覽器選單 ----------
   app.addEventListener('contextmenu', (e) => {

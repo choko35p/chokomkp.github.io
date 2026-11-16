@@ -778,6 +778,16 @@ export function simulate(setup) {
       if (n + 1 > nextNum[side]) nextNum[side] = n + 1;
     }
   });
+  // 沙灘樂器：場上的召喚物。只佔格（擋路、單位不能站上去、召喚物也不會生在上面），不是單位：
+  // 不會被選為目標、不會動、不會攻擊、不會死。範圍效果在戰前（stats.js）已經算好。
+  const instruments = [];
+  sideTeams.forEach((side, i) => {
+    for (const h of (teams[i] && teams[i].instruments) || []) {
+      if (!h || occ[cell(h)]) continue;
+      occ[cell(h)] = { instrument: true, alive: false, side, hex: { row: h.row, col: h.col } };
+      instruments.push({ side, hex: { row: h.row, col: h.col } });
+    }
+  });
   units.sort((a, b) => a.ord - b.ord);
   const openUnits = units.map((u) => snap(u, false));
   const hpMaxInit = { player: 0, enemy: 0 };
@@ -921,7 +931,7 @@ export function simulate(setup) {
     persist.eightBit = (persist.eightBit || 0) + sum;
   }
   const result = {
-    winner, seconds: t / TPS, ticks: t, units: openUnits, events,
+    winner, seconds: t / TPS, ticks: t, units: openUnits, instruments, events,
     summary: {
       byUnit, byTrait, byTraitEnemy, playerAlive: pAlive, enemyAlive: eAlive,
       enemyHpPctLeft: hpMaxInit.enemy > 0 ? eHp / hpMaxInit.enemy : 0,

@@ -94,9 +94,18 @@ export function playBattle(boardEl, result, opts = {}) {
 
   layout();
   for (const d of (result.units || [])) makeUnit(d);
+  // 沙灘樂器：場上的召喚物，只佔格、畫在那一格上（不動、不被打、沒有血條）
+  const instNodes = [];
+  for (const d of (result.instruments || [])) {
+    const n = el('div', 'tt-bt-inst ' + (d.side === 'player' ? 'tt-bt-p' : 'tt-bt-e'), root);
+    n.setAttribute('aria-hidden', 'true');
+    instNodes.push({ n, hex: d.hex });
+  }
+  const placeInst = () => { for (const i of instNodes) { const p = hexXY(i.hex); i.n.style.transform = `translate(${p.x - w / 2}px,${p.y - w / 2}px)`; } };
+  placeInst();
   let ro = null;
   if (typeof ResizeObserver === 'function') {
-    ro = new ResizeObserver(() => { layout(); for (const u of U.values()) place(u, 0); });
+    ro = new ResizeObserver(() => { layout(); for (const u of U.values()) place(u, 0); placeInst(); });
     ro.observe(boardEl);
   }
 

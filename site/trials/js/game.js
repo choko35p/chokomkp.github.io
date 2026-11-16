@@ -3,6 +3,7 @@ import { hashSeed, makeRng } from './rng.js';
 import * as S from './shop.js';
 import { enemyForRound, setCountTraits } from './enemies.js';
 import * as U from './unlocks.js';
+import * as H from './hex.js';
 
 let B = { simulate: null, buildTeam: null, countTraits: null };
 try { const m = await import('./engine.js'); B.simulate = m.simulate; } catch (e) { /* 引擎還沒有 */ }
@@ -294,7 +295,7 @@ export function newGame(seed, DATA) {
     shop: [null, null, null, null, null], pool: S.newPool(DATA), rngShop: makeRng(hashSeed(seed, 'shop')).state(),
     augments: [], pendingChoices: null, pendingQueue: [], persist: {}, history: [], attempt: 0, uidNext: 1,
     freeRerolls: 0, rewardN: 0, counters: {}, battle: null,
-    picks: { fav: [], spot: [], deal: [], prod: [], clone: [] },   // 指定道具的標記：各道具的棋子 uid，最早放的在前
+    picks: { fav: [], spot: [], deal: [], prod: [], clone: [], inst: [] },   // 指定道具的標記：各道具的棋子 uid，最早放的在前；inst（沙灘樂器）存的是格子 [r,c]，不是棋子
     prodTrait: null, dealFrom: null,   // 合作邀請選到的起源；蒙多第一次上場開戰的回合（唱片合約的份數從這裡算）
     unlocks: {}, unlockQueue: [], unlockAcc: {}, stats: { rerolls: 0, loseStreak: 0 },
     augTiers: rollAugTiers(seed, DATA),   // 三次增幅的稀有度（1 銀 2 金 3 彩），開局抽好
@@ -327,6 +328,10 @@ export function deserialize(json, DATA) {
     autoPicks(s, DATA, { only: ['spot', 'deal', 'prod'] });
   }
   for (const id of PICK_IDS) if (!Array.isArray(s.picks[id])) s.picks[id] = [];
+  if (!Array.isArray(s.picks.inst)) {   // 舊存檔沒有沙灘樂器：海灘流行有啟動的話，照原本「自動吃到」的結果自動擺好，不會突然沒效果
+    s.picks.inst = [];
+    autoPicks(s, DATA, { only: ['inst'] });
+  }
   if (s.prodTrait === undefined) s.prodTrait = null;
   if (s.dealFrom === undefined) s.dealFrom = null;
   normAugmentPending(s.pendingChoices, DATA);
@@ -420,6 +425,7 @@ export function actMove(state, uid, to, DATA) {
   if (to.zone !== 'board' || !to.pos) return no('目標不對');
   const [r, c] = to.pos;
   if (!(r >= 0 && r < 4 && c >= 0 && c < 7)) return no('這格不在棋盤上');
+  if (instAt(state, r, c) >= 0) return no('那格有沙灘樂器，棋子不能站上去；先把樂器移開');
   const other = state.board.find(x => x.pos[0] === r && x.pos[1] === c);
   if (other && other.uid === uid) return ok({ events: [] });
   if (f.zone === 'bench') {
@@ -527,7 +533,59 @@ export function pickInfo(state, DATA) {
     const active = held.filter(uid => S.findUnit(state, uid).zone === 'board').slice(0, cap);
     out[id] = { cap, held, active, free: Math.max(0, cap - active.length), trait: id === 'fav' ? 'Heartsteel' : id === 'prod' ? (state.prodTrait || null) : null };
   }
+  out.inst = instInfo(state, tr);
   return out;
+}
+
+// ---------- 沙灘樂器（海灘流行）----------
+// 3 階給 1 個、5 階 2 個、7 階 3 個；擺在我方半場的空格（state.picks.inst＝[[r,c], …]，最早擺的在前），佔格但不算人口、棋子不能站上去。
+// 羈絆掉階：只有最早擺的前 cap 個有效，其餘變灰、留在原位，湊回原階自動恢復。
+const INST_ROWS = 4, INST_COLS = 7;
+const instList = state => (state.picks && Array.isArray(state.picks.inst) ? state.picks.inst : []);
+export function instAt(state, r, c) { return instList(state).findIndex(p => p[0] === r && p[1] === c); }
+function instInfo(state, tr) {
+  const cap = tr.BeachPop && tr.BeachPop.tier ? tr.BeachPop.tier : 0;
+  const held = instList(state).map(p => [p[0], p[1]]);
+  const active = held.slice(0, cap);
+  return { cap, held, active, off: held.slice(cap), free: Math.max(0, cap - active.length) };
+}
+export function instCovered(pos) {   // 一個樂器相鄰 6 格（我方半場座標；超出棋盤的不算）
+  return H.neighbors({ row: 4 + pos[0], col: pos[1] }).filter(h => h.row >= 4).map(h => [h.row - 4, h.col]);
+}
+// 擺放／移動／收回／頂掉：op＝{ to:[r,c]|null, from:[r,c]|null }
+//   from 空＝從道具列拿一個新的擺到 to；from 有、to 有＝換格子；from 有、to 空＝收回道具列
+export function actInstrument(state, op, DATA) {
+  const g = needPlan(state); if (g) return g;
+  const list = state.picks.inst = instList(state);
+  const info = instInfo(state, boardTraitMap(state, DATA));
+  const from = op && op.from ? op.from : null, to = op && op.to ? op.to : null;
+  const events = [{ type: 'instrument', from, to }];
+  if (from) {
+    const i = instAt(state, from[0], from[1]);
+    if (i < 0) return no('那格沒有樂器');
+    if (!to) { list.splice(i, 1); events[0].type = 'instrumentBack'; return ok({ events }); }
+    if (to[0] === from[0] && to[1] === from[1]) return ok({ events: [] });
+    const bad = instCellErr(state, to); if (bad) return no(bad);
+    list[i] = [to[0], to[1]];
+    return ok({ events });
+  }
+  if (!to) return no('要拖到我方棋盤的空格');
+  if (!info.cap) return no('海灘流行要 3 階才有沙灘樂器');
+  const bad = instCellErr(state, to); if (bad) return no(bad);
+  if (info.free <= 0) {   // 都擺完了：最早擺的那個被頂掉，新的接在有效區的最後面（先進先出）
+    list.shift();   // list[0] 就是有效區裡最早擺的
+    list.splice(Math.max(0, info.cap - 1), 0, [to[0], to[1]]);
+    events[0].type = 'instrumentReplace';
+    return ok({ events });
+  }
+  list.push([to[0], to[1]]);
+  return ok({ events });
+}
+function instCellErr(state, to) {
+  if (!(to[0] >= 0 && to[0] < INST_ROWS && to[1] >= 0 && to[1] < INST_COLS)) return '樂器只能放在我方棋盤';
+  if (state.board.some(u => u.pos && u.pos[0] === to[0] && u.pos[1] === to[1])) return '那格有棋子，樂器要放在空格';
+  if (instAt(state, to[0], to[1]) >= 0) return '那格已經有樂器了';
+  return null;
 }
 export function prunePicks(state, DATA) {
   if (!state.picks) state.picks = {};
@@ -600,14 +658,15 @@ export function battleUnits(state, DATA) {
     if (info.clone.active.includes(u.uid)) o.cloneAt = true;
     return o;
   });
-  return { units, ctx: { producerPick: info.prod.active.length ? prodEffective(state, DATA) : null, manual: true } };
+  return { units, ctx: { producerPick: info.prod.active.length ? prodEffective(state, DATA) : null, manual: true, instruments: info.inst.active.map(p => p.slice()) } };
 }
 
 // 自動選法（機器人、舊存檔遷移）：fav／spot／deal＝場上裝備最多的前幾隻（同數取費用高、key 字母序）；
 // prod＝場上人數最多的起源；clone 不放。
 export function autoPicks(state, DATA, opts = {}) {
-  const only = opts.only || ['prod', 'fav', 'spot', 'deal'];
-  if (!state.picks) state.picks = { fav: [], spot: [], deal: [], prod: [], clone: [] };
+  const only = opts.only || ['prod', 'fav', 'spot', 'deal', 'inst'];
+  if (!state.picks) state.picks = { fav: [], spot: [], deal: [], prod: [], clone: [], inst: [] };
+  if (only.includes('inst')) autoInstruments(state, DATA);
   const rank = (a, b) => b.items.length - a.items.length || DATA.units.byKey[b.key].cost - DATA.units.byKey[a.key].cost
     || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0) || a.uid - b.uid;
   for (const id of ['prod', 'fav', 'spot', 'deal']) {
@@ -630,6 +689,31 @@ export function autoPicks(state, DATA, opts = {}) {
     state.picks[id] = pool.slice(0, cap).map(u => u.uid);
   }
   return state;
+}
+
+// 沙灘樂器的自動擺法：每個樂器放在「能多碰到我方棋子」的空格（同數先看海灘流行成員，再依 r、c 順序）
+function autoInstruments(state, DATA) {
+  const cap = instInfo(state, boardTraitMap(state, DATA)).cap;
+  state.picks.inst = [];
+  if (!cap) return;
+  const taken = new Set(state.board.filter(u => u.pos).map(u => u.pos[0] + ',' + u.pos[1]));
+  const covered = new Set();
+  for (let n = 0; n < cap; n++) {
+    let best = null, bs = null;
+    for (let r = 0; r < INST_ROWS; r++) for (let c = 0; c < INST_COLS; c++) {
+      if (taken.has(r + ',' + c)) continue;
+      let all = 0, mem = 0;
+      for (const [rr, cc] of instCovered([r, c])) {
+        const u = state.board.find(x => x.pos && x.pos[0] === rr && x.pos[1] === cc);
+        if (!u || covered.has(u.uid)) continue;
+        all++; if (unitKeyTraits(DATA, u.key).includes('BeachPop')) mem++;
+      }
+      if (!bs || all > bs[0] || (all === bs[0] && mem > bs[1])) { bs = [all, mem]; best = [r, c]; }
+    }
+    if (!best) break;
+    state.picks.inst.push(best); taken.add(best[0] + ',' + best[1]);
+    for (const [rr, cc] of instCovered(best)) { const u = state.board.find(x => x.pos && x.pos[0] === rr && x.pos[1] === cc); if (u) covered.add(u.uid); }
+  }
 }
 
 // 黃金卸除器：把一隻身上所有裝備卸回裝備欄；每局都有、可以一直用
@@ -744,7 +828,7 @@ export function actStartBattle(state, DATA) {
   const bu = battleUnits(state, DATA);
   const pUnits = bu.units;
   const pinfo = pickInfo(state, DATA);
-  const unset = ['fav', 'spot', 'deal', 'prod'].filter(id => pinfo[id].cap > 0 && !pinfo[id].active.length);
+  const unset = ['fav', 'spot', 'deal', 'prod', 'inst'].filter(id => pinfo[id].cap > 0 && !pinfo[id].active.length);
   const ctx = { level: state.level, round: state.round, augments: state.augments.slice(), persist: clone(state.persist), ...bu.ctx,
     rng: makeRng(hashSeed(state.seed, 'combat', state.round, state.attempt, 'items')) };   // 竊賊手套用
   const pTeam = B.buildTeam('player', pUnits, DATA, ctx);

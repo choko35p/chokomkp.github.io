@@ -139,6 +139,53 @@ export function buildTeam(side, units, DATA, ctx = {}) {
   const sortedBy = (arr) => arr.slice().sort((a, b) =>
     b.items.length - a.items.length || b.def.cost - a.def.cost || keyCmp(a.u.key, b.u.key) || a.i - b.i);
 
+  // ---- 海灘流行的沙灘樂器：場上的召喚物（佔格、不能被選為目標、不會動、不會攻擊）----
+  // 開戰那一刻站在樂器相鄰 6 格內的友軍整場有效（同一隻貼著多個樂器只算一次）。
+  // 玩家：ctx.instruments＝自己擺的位置（我方半場座標 [r,c]，擺得早的在前），前 N 個有效（N＝海灘流行階數）。
+  // 敵方（或沒給 ctx.instruments 的舊呼叫）：自動擺在能碰到最多海灘流行成員的空格。
+  const cellOf = (st) => (side === 'enemy' ? { row: 3 - st.pos[0], col: 6 - st.pos[1] } : { row: 4 + st.pos[0], col: st.pos[1] });
+  const ckey = (h) => h.row + ',' + h.col;
+  const instruments = [];
+  const bpInfo = traits.find((t) => t.key === 'BeachPop');
+  const instN = bpInfo && bpInfo.tier > 0 ? bpInfo.tier : 0;
+  if (instN > 0) {
+    const used = new Set(L.filter((st) => st.pos).map((st) => ckey(cellOf(st))));
+    const local = (rc) => (side === 'enemy' ? { row: 3 - rc[0], col: 6 - rc[1] } : { row: 4 + rc[0], col: rc[1] });
+    if (Array.isArray(ctx.instruments)) {
+      for (const rc of ctx.instruments) {
+        if (instruments.length >= instN) break;
+        if (!rc || !(rc[0] >= 0 && rc[0] < 4 && rc[1] >= 0 && rc[1] < 7)) continue;
+        const h = local(rc);
+        if (used.has(ckey(h))) continue;
+        used.add(ckey(h)); instruments.push(h);
+      }
+    } else if (side === 'enemy' || !ctx.manual) {
+      const members = L.filter((st) => st.pos && (st.def.traits || []).includes('BeachPop'));
+      const coveredM = new Set(), coveredAll = new Set();
+      for (let n = 0; n < instN; n++) {
+        let best = null, bs = null;
+        for (let r = 0; r < 4; r++) for (let c = 0; c < 7; c++) {
+          const h = local([r, c]);
+          if (used.has(ckey(h))) continue;
+          const nb = new Set(neighbors(h).map(ckey));
+          let m = 0, a = 0;
+          for (const st of L) if (st.pos && nb.has(ckey(cellOf(st)))) { if (!coveredAll.has(st.i)) a++; if (!coveredM.has(st.i) && members.includes(st)) m++; }
+          if (!bs || m > bs[0] || (m === bs[0] && a > bs[1])) { bs = [m, a]; best = h; }
+        }
+        if (!best) break;
+        used.add(ckey(best)); instruments.push(best);
+        const nb = new Set(neighbors(best).map(ckey));
+        for (const st of L) if (st.pos && nb.has(ckey(cellOf(st)))) { coveredAll.add(st.i); if (members.includes(st)) coveredM.add(st.i); }
+      }
+    }
+  }
+  const boosted = new Set();
+  if (instruments.length) {
+    const near = new Set();
+    for (const h of instruments) for (const n of neighbors(h)) near.add(ckey(n));
+    for (const st of L) if (st.pos && near.has(ckey(cellOf(st)))) boosted.add(st.i);
+  }
+
   const resolveWho = (who, env) => {
     const isM = (st) => env.traitKey && (st.def.traits || []).includes(env.traitKey);
     if (who == null || who === 'team') return L;
@@ -153,6 +200,8 @@ export function buildTeam(side, units, DATA, ctx = {}) {
       if (side === 'player' && ctx.manual) return L.filter((s) => (who === 'spotlight' ? s.u.spot : s.u.deal));
       return sortedBy(L).slice(0, 1);
     }
+    if (who === 'instrumented') return L.filter((s) => boosted.has(s.i));
+    if (who === 'instrumentedMembers') return L.filter((s) => boosted.has(s.i) && isM(s));
     if (who === 'favorites') return L.filter((s) => s.favorite);
     if (typeof who === 'object') {
       if (who.unit) {
@@ -348,5 +397,5 @@ export function buildTeam(side, units, DATA, ctx = {}) {
     if (isBoss) { c.boss = true; c.ccCap = mods.boss.ccCap != null ? mods.boss.ccCap : 0.5; c.slotsScale = mods.boss.slotsScale || 1.3; }
     return c;
   });
-  return { combatants, teamPassives, traits, notes, deferred };
+  return { combatants, teamPassives, traits, notes, deferred, instruments };
 }

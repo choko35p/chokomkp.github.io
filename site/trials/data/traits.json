@@ -836,11 +836,11 @@
     5,
     7
    ],
-   "desc": "海灘流行成員攻速變快，每 3 秒回 2% 生命，同時回魔力。\n成員身邊的友軍每 3 秒也會回 2% 生命。",
+   "desc": "3、5、7 階分別給你 1、2、3 個「沙灘樂器」，開局前自己拖到我方空格擺好（樂器佔格、不算人口）。\n開戰那一刻站在樂器旁邊 6 格內的友軍，整場都吃到加成：每 3 秒回 2% 生命；其中海灘流行成員另外攻速變快、每 3 秒回魔力。",
    "levelsText": [
-    "攻速 +15%、每 3 秒回 5 魔力（推測）",
-    "攻速 +30%、每 3 秒回 10 魔力（推測）",
-    "攻速 +50%、每 3 秒回 15 魔力（推測）"
+    "1 個樂器：成員攻速 +15%、每 3 秒回 5 魔力（推測）",
+    "2 個樂器：成員攻速 +30%、每 3 秒回 10 魔力（推測）",
+    "3 個樂器：成員攻速 +50%、每 3 秒回 15 魔力（推測）"
    ],
    "members": [
     "Taric",
@@ -857,14 +857,14 @@
     [
      {
       "type": "stat",
-      "who": "members",
+      "who": "instrumentedMembers",
       "stats": {
        "asPct": 0.15
       }
      },
      {
       "type": "passive",
-      "who": "members",
+      "who": "instrumented",
       "passive": {
        "on": "every",
        "ops": [
@@ -874,39 +874,42 @@
          "value": {
           "selfMaxHp": 0.02
          }
-        },
-        {
-         "op": "mana",
-         "to": "self",
-         "value": 5
-        },
-        {
-         "op": "heal",
-         "to": {
-          "adjacent": "ally"
-         },
-         "value": {
-          "tgtMaxHp": 0.02
-         }
         }
        ],
        "src": "trait:BeachPop",
        "text": "海灘派對",
        "n": 3
       }
+     },
+     {
+      "type": "passive",
+      "who": "instrumentedMembers",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "mana",
+         "to": "self",
+         "value": 5
+        }
+       ],
+       "src": "trait:BeachPop",
+       "n": 3,
+       "text": "海灘回魔"
+      }
      }
     ],
     [
      {
       "type": "stat",
-      "who": "members",
+      "who": "instrumentedMembers",
       "stats": {
        "asPct": 0.3
       }
      },
      {
       "type": "passive",
-      "who": "members",
+      "who": "instrumented",
       "passive": {
        "on": "every",
        "ops": [
@@ -916,39 +919,42 @@
          "value": {
           "selfMaxHp": 0.02
          }
-        },
-        {
-         "op": "mana",
-         "to": "self",
-         "value": 10
-        },
-        {
-         "op": "heal",
-         "to": {
-          "adjacent": "ally"
-         },
-         "value": {
-          "tgtMaxHp": 0.02
-         }
         }
        ],
        "src": "trait:BeachPop",
        "text": "海灘派對",
        "n": 3
+      }
+     },
+     {
+      "type": "passive",
+      "who": "instrumentedMembers",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "mana",
+         "to": "self",
+         "value": 10
+        }
+       ],
+       "src": "trait:BeachPop",
+       "n": 3,
+       "text": "海灘回魔"
       }
      }
     ],
     [
      {
       "type": "stat",
-      "who": "members",
+      "who": "instrumentedMembers",
       "stats": {
        "asPct": 0.5
       }
      },
      {
       "type": "passive",
-      "who": "members",
+      "who": "instrumented",
       "passive": {
        "on": "every",
        "ops": [
@@ -958,30 +964,33 @@
          "value": {
           "selfMaxHp": 0.02
          }
-        },
-        {
-         "op": "mana",
-         "to": "self",
-         "value": 15
-        },
-        {
-         "op": "heal",
-         "to": {
-          "adjacent": "ally"
-         },
-         "value": {
-          "tgtMaxHp": 0.02
-         }
         }
        ],
        "src": "trait:BeachPop",
        "text": "海灘派對",
        "n": 3
       }
+     },
+     {
+      "type": "passive",
+      "who": "instrumentedMembers",
+      "passive": {
+       "on": "every",
+       "ops": [
+        {
+         "op": "mana",
+         "to": "self",
+         "value": 15
+        }
+       ],
+       "src": "trait:BeachPop",
+       "n": 3,
+       "text": "海灘回魔"
+      }
      }
     ]
    ],
-   "simplified": "不做可放置樂器：改成成員身邊的友軍自動吃到治療（每 3 秒，看當下相鄰，不是開場相鄰）。攻速與回魔數字是推測。同時貼著好幾位成員的友軍會重複回血，治療會比官方固定的 2% 多。",
+   "simplified": "樂器可以自己擺：從裝備欄旁邊的道具列拖到我方空格，已經擺好的可以再拖去別格，或拖回道具列收回；放滿再拖會頂掉最早放的。樂器會佔一格（不算人口），棋子不能站上去。開戰那一刻站在樂器相鄰 6 格內的友軍整場有效，戰鬥中走開也不會掉；同一隻貼著好幾個樂器不會疊（推測）。羈絆掉階時多出來的樂器變灰、留在原位暫時沒效果，湊回原階自動恢復。官方：樂器強化相鄰友軍，被強化的友軍每 3 秒回 2% 生命，海灘流行成員另外得到攻速並每 3 秒回魔力。樂器數量（每階 1／2／3 個）與攻速、回魔數字官方沒公布，都是推測；是否每階共用同一個數值也是推測。",
    "guess": true,
    "counter": null
   },

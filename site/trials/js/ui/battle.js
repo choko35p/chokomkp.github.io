@@ -5,6 +5,7 @@
 //           spriteUrl（預設 '../icons/s19/champions.webp'）, noEndSound:bool }
 // 另外匯出 setBattleSpeed(n)、getBattleSpeed()，戰鬥中可隨時改速度。
 import { sfx } from '../audio.js';
+import { starsEl } from './stars.js';
 
 const TICK_MS = 50;
 const ROW_H = 0.866;
@@ -67,7 +68,8 @@ export function playBattle(boardEl, result, opts = {}) {
       av.style.backgroundPosition = `${(idx % 10) / 9 * 100}% ${Math.floor(idx / 10) / 9 * 100}%`;
     } else av.textContent = (d.zh || d.key || '?').slice(0, 1);
     u.stars = el('div', 'tt-bt-star', inn);
-    u.stars.textContent = '★'.repeat(Math.max(1, d.star || 1));
+    u.stars.append(starsEl(d.star, { label: false }));
+    n.classList.add('tt-bt-s' + Math.min(3, Math.max(1, d.star || 1)));
     u.stbox = el('div', 'tt-bt-st', inn);
     const bars = el('div', 'tt-bt-bars', inn);
     const hp = el('div', 'tt-bt-hp', bars);

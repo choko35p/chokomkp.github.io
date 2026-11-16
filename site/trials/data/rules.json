@@ -1,8 +1,9 @@
 {
  "_doc": {
-  "rounds": "pre：回合開始前的事件。startGift＝開局禮（用 start.freeUnitCost／start.components，不要重複發）；components＝送 n 散件；augment＝增幅階（1 銀 2 金 3 彩，3 選 1，可免費重抽一次）；bossReward＝打贏第 N 隻頭目的獎勵（輸了只拿 1 散件，見 bossReward）。",
+  "rounds": "pre：回合開始前的事件。startGift＝開局禮（用 start.freeUnitCost／start.components，不要重複發）；components＝送 n 散件；augment＝第幾次增幅（1、2、3＝正式遊戲的 2-1、3-2、4-2；稀有度開局抽一組，見 augment.tierCombos），3 選 1，每張可免費重抽一次；bossReward＝打贏第 N 隻頭目的獎勵（輸了只拿 1 散件，見 bossReward）。",
   "enemy": "count 人數；maxCost 最高費用；star.base 預設星級；star.costStar{費用:星級} 覆寫該費用星級；star.lowestStar2＝費用最低的 n 隻 2★；star.halfStar2＝一半的棋子 2★（費用高的優先）；items＝全隊合計裝備件數（先給 prio 小的）；componentOnly 由 enemyItemComponentUntil 決定；hpMult／dmgMult＝難度旋鈕。",
-  "boss": "頭目回合 enemy 為 null，改看 bosses[boss-1]。boss.bossHp／bossDmg 乘在頭目本體；minions 正常；extraPassives 掛在頭目本體（on/ops 格式同 SPEC 2.4 Passive）；expectTraits 只是檢查用。pos＝[r,c]，r 0 是敵方前排，c 0–6。"
+  "boss": "頭目回合 enemy 為 null，改看 bosses[boss-1]。boss.bossHp／bossDmg 乘在頭目本體；minions 正常；extraPassives 掛在頭目本體（on/ops 格式同 SPEC 2.4 Passive）；expectTraits 只是檢查用。pos＝[r,c]，r 0 是敵方前排，c 0–6。",
+  "augment": "tierCombos 每列＝[第 1 次, 第 2 次, 第 3 次, 份數]（1 銀 2 金 3 彩；份數總和 109）；stages＝三次增幅對應的正式遊戲回合；每個增幅的 stages 欄位決定它會在哪幾次出現"
  },
  "shopOdds": {
   "1": [
@@ -175,7 +176,122 @@
  },
  "augment": {
   "rerollsPerChoice": 1,
-  "choices": 3
+  "choices": 3,
+  "stages": [
+   "2-1",
+   "3-2",
+   "4-2"
+  ],
+  "tierCombos": [
+   [
+    2,
+    2,
+    2,
+    22
+   ],
+   [
+    2,
+    1,
+    2,
+    18
+   ],
+   [
+    1,
+    2,
+    2,
+    12
+   ],
+   [
+    2,
+    2,
+    3,
+    12
+   ],
+   [
+    2,
+    3,
+    2,
+    10
+   ],
+   [
+    2,
+    3,
+    1,
+    6
+   ],
+   [
+    1,
+    1,
+    2,
+    5
+   ],
+   [
+    1,
+    1,
+    3,
+    5
+   ],
+   [
+    1,
+    2,
+    3,
+    5
+   ],
+   [
+    3,
+    1,
+    2,
+    4
+   ],
+   [
+    2,
+    1,
+    3,
+    2
+   ],
+   [
+    3,
+    2,
+    2,
+    2
+   ],
+   [
+    3,
+    3,
+    3,
+    1
+   ],
+   [
+    3,
+    1,
+    3,
+    1
+   ],
+   [
+    1,
+    3,
+    3,
+    1
+   ],
+   [
+    2,
+    3,
+    3,
+    1
+   ],
+   [
+    3,
+    2,
+    3,
+    1
+   ],
+   [
+    3,
+    3,
+    2,
+    1
+   ]
+  ]
  },
  "rounds": [
   {
@@ -346,8 +462,8 @@
      }
     },
     "items": 2,
-    "hpMult": 0.663,
-    "dmgMult": 0.663
+    "hpMult": 0.703,
+    "dmgMult": 0.703
    }
   },
   {
@@ -366,8 +482,8 @@
      }
     },
     "items": 3,
-    "hpMult": 0.642,
-    "dmgMult": 0.642
+    "hpMult": 0.681,
+    "dmgMult": 0.681
    }
   },
   {
@@ -381,8 +497,8 @@
      "base": 2
     },
     "items": 3,
-    "hpMult": 0.524,
-    "dmgMult": 0.524
+    "hpMult": 0.555,
+    "dmgMult": 0.555
    }
   },
   {
@@ -398,8 +514,8 @@
      "base": 2
     },
     "items": 3,
-    "hpMult": 0.492,
-    "dmgMult": 0.492
+    "hpMult": 0.522,
+    "dmgMult": 0.522
    }
   },
   {
@@ -425,8 +541,8 @@
      }
     },
     "items": 4,
-    "hpMult": 0.482,
-    "dmgMult": 0.482
+    "hpMult": 0.511,
+    "dmgMult": 0.511
    }
   },
   {
@@ -445,8 +561,8 @@
      }
     },
     "items": 5,
-    "hpMult": 0.503,
-    "dmgMult": 0.471
+    "hpMult": 0.533,
+    "dmgMult": 0.499
    }
   },
   {
@@ -460,8 +576,8 @@
      "base": 2
     },
     "items": 5,
-    "hpMult": 0.417,
-    "dmgMult": 0.396
+    "hpMult": 0.442,
+    "dmgMult": 0.42
    }
   },
   {
@@ -477,8 +593,8 @@
      "base": 2
     },
     "items": 6,
-    "hpMult": 0.482,
-    "dmgMult": 0.428
+    "hpMult": 0.511,
+    "dmgMult": 0.454
    }
   },
   {
@@ -502,8 +618,8 @@
      "base": 2
     },
     "items": 6,
-    "hpMult": 0.535,
-    "dmgMult": 0.46
+    "hpMult": 0.567,
+    "dmgMult": 0.488
    }
   },
   {
@@ -519,8 +635,8 @@
      "base": 2
     },
     "items": 6,
-    "hpMult": 0.492,
-    "dmgMult": 0.396
+    "hpMult": 0.522,
+    "dmgMult": 0.42
    }
   },
   {
@@ -534,8 +650,8 @@
      "base": 2
     },
     "items": 7,
-    "hpMult": 0.482,
-    "dmgMult": 0.385
+    "hpMult": 0.511,
+    "dmgMult": 0.408
    }
   },
   {
@@ -551,8 +667,8 @@
      "base": 2
     },
     "items": 8,
-    "hpMult": 0.492,
-    "dmgMult": 0.385
+    "hpMult": 0.522,
+    "dmgMult": 0.408
    }
   },
   {
@@ -579,8 +695,8 @@
      }
     },
     "items": 9,
-    "hpMult": 0.471,
-    "dmgMult": 0.374
+    "hpMult": 0.499,
+    "dmgMult": 0.396
    }
   },
   {
@@ -600,8 +716,8 @@
      }
     },
     "items": 9,
-    "hpMult": 0.514,
-    "dmgMult": 0.374
+    "hpMult": 0.545,
+    "dmgMult": 0.396
    }
   },
   {
@@ -619,8 +735,8 @@
      }
     },
     "items": 9,
-    "hpMult": 0.546,
-    "dmgMult": 0.374
+    "hpMult": 0.579,
+    "dmgMult": 0.396
    }
   },
   {
@@ -640,8 +756,8 @@
      }
     },
     "items": 9,
-    "hpMult": 0.599,
-    "dmgMult": 0.374
+    "hpMult": 0.635,
+    "dmgMult": 0.396
    }
   },
   {

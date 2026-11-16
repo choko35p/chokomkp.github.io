@@ -1,5 +1,6 @@
 // 面板（SPEC 5.5／5.6／5.8）：羈絆、棋子、圖鑑、增幅三選一、獎勵、結算、結束、說明、頭目登場。
 // 注意：本檔頂層不可使用 traitbar.js 的匯出（兩檔互相 import，只在函式執行時用）。
+import { starsEl } from './stars.js';
 import { el, fmt, avatar, kindOf, traitZh, unitZh, isStars, ensureStyle, traitTags, boardUnits, playerTraits } from './traitbar.js';
 import { countTraits, buildTeam } from '../stats.js';
 import { sellValue } from '../shop.js';
@@ -93,7 +94,7 @@ document.addEventListener('keydown', (e) => {
 const badge = (t, cls = '') => el('span', { class: 'tt-badge ' + cls }, t);
 const KIND_ZH = { origin: '起源', class: '職業', unique: '獨特' };
 const kindBadge = (DATA, key) => el('span', { class: 'tt-badge tt-kind', 'data-kind': kindOf(DATA, key) }, KIND_ZH[kindOf(DATA, key)] || '');
-const stars = (n) => '★'.repeat(n || 1);
+const stars = (n) => starsEl(n);
 
 function whereIs(api, key) {
   const { state } = api;
@@ -197,7 +198,7 @@ export function showUnitPanel(unitOrKey, api) {
   const { c, onBoard } = combatantFor(api, unit);
   const body = [];
   body.push(el('div', { class: 'tt-hero' }, avatar(DATA, unit.key, 64),
-    el('div', {}, el('div', { class: 'tt-hn' }, U.zh, ' ', el('span', { class: 'tt-stars', 'aria-label': star + ' 星' }, stars(star))),
+    el('div', {}, el('div', { class: 'tt-hn' }, U.zh, ' ', el('span', { class: 'tt-stars' }, stars(star))),
       el('div', {}, el('span', { class: 'tt-cost', 'data-cost': U.cost, style: `--tt-cost:var(--c${Math.min(U.cost, 5)})` }, U.cost + ' 費'), ' ', badge(U.role || ''), ' ',
         (U.statsGuess ?? true) ? badge('推測數值', 'tt-guess') : null))));
   body.push(el('div', {}, traitTags(unit.key, api, { clickable: true, max: 4 })));
@@ -271,7 +272,7 @@ export function showAugmentInfo(api, key) {
   const own = (api.state.augments || []).map(k => DATA.augments.byKey[k]).filter(Boolean);
   const body = [el('p', { class: 'tt-desc', style: 'color:var(--muted);font-size:var(--fs-s)' }, '你這場選過的增幅：')];
   const ul = el('ul', { class: 'tt-kv' });
-  for (const a of own) ul.append(el('li', { style: a.key === key ? 'font-weight:700' : '' }, el('span', {}, ['', '銀色', '金色', '彩色'][a.tier] + '｜' + a.zh), el('span', {}, a.desc || '')));
+  for (const a of own) ul.append(el('li', { style: a.key === key ? 'font-weight:700' : '' }, el('span', {}, ['', '銀色', '金色', '彩色'][a.tier] + '｜' + a.zh), el('span', {}, (a.desc || '') + (a.stages && a.stages.length ? `（出現階段：${a.stages.join('、')}）` : ''))));
   body.push(ul);
   return openPanel({ title: A.zh, body, footer: [el('button', { type: 'button', class: 'tt-btn', 'data-autofocus': '', onclick: () => closeAll() }, '關閉')], cls: 'tt-wide' });
 }
@@ -303,9 +304,11 @@ export function showAugmentChoice(api, pending) {
     });
     return row;
   };
-  const tier = DATA.augments.byKey[typeof pending.options[0] === 'string' ? pending.options[0] : pending.options[0]?.key]?.tier;
+  const tier = pending.tier || DATA.augments.byKey[typeof pending.options[0] === 'string' ? pending.options[0] : pending.options[0]?.key]?.tier;
   holder.append(render());
-  return openPanel({ title: `選一個增幅${tier ? '（' + ['', '銀', '金', '彩'][tier] + '）' : ''}`, body: [el('p', { class: 'tt-desc', style: 'color:var(--muted);font-size:var(--fs-s)' }, '三選一。不喜歡哪一張，就按它下面的重抽，只會換那一張（每張可以換 1 次）。'), holder], modal: true, cls: 'tt-wide' });
+  // 標題：第幾個增幅（對應正式遊戲的回合）＋這次的稀有度；不先講後面兩次是什麼稀有度
+  const head = pending.slot && pending.stage ? `第 ${pending.slot} 個增幅（${pending.stage}）｜${['', '銀', '金', '彩'][tier] || ''}` : `選一個增幅${tier ? '（' + ['', '銀', '金', '彩'][tier] + '）' : ''}`;
+  return openPanel({ title: head, body: [el('p', { class: 'tt-desc', style: 'color:var(--muted);font-size:var(--fs-s)' }, '三選一。不喜歡哪一張，就按它下面的重抽，只會換那一張（每張可以換 1 次）。'), holder], modal: true, cls: 'tt-wide' });
 }
 
 // ---------- 獎勵 ----------
@@ -348,7 +351,7 @@ export function showReward(api, pending) {
       box.append(sub);
     } else {
       const title = kind === 'gold' ? `${o.value ?? 8} 金` : '1 隻棋子＋1 散件';
-      const detail = kind === 'gold' ? '直接拿錢。' : [o.key ? el('span', { class: 'tt-item' }, avatar(DATA, o.key, 28), unitZh(DATA, o.key), ' 1★') : '費用最高的隨機棋子', o.component ? [' ＋ ', el('span', { class: 'tt-item' }, DATA.items?.byKey?.[o.component]?.zh || DATA.items?.components?.find?.(c => c.key === o.component)?.zh || '散件')] : ''];
+      const detail = kind === 'gold' ? '直接拿錢。' : [o.key ? el('span', { class: 'tt-item' }, avatar(DATA, o.key, 28), unitZh(DATA, o.key), ' 1 星') : '費用最高的隨機棋子', o.component ? [' ＋ ', el('span', { class: 'tt-item' }, DATA.items?.byKey?.[o.component]?.zh || DATA.items?.components?.find?.(c => c.key === o.component)?.zh || '散件')] : ''];
       box = el('button', { type: 'button', class: 'tt-opt', 'data-autofocus': i === 0 ? '' : null }, el('span', { class: 'tt-on' }, title), el('span', {}, detail));
       box.addEventListener('click', () => done(i));
     }
@@ -377,7 +380,7 @@ function gainText(DATA, g) {
   let v;
   if (g.gold != null) v = `+${g.gold} 金`;
   else if (g.xp != null) v = `+${g.xp} 經驗`;
-  else if (g.unit) v = unitZh(DATA, g.unit) + ' 1★';
+  else if (g.unit) v = unitZh(DATA, g.unit) + ' 1 星';
   else if (g.item) v = DATA.items?.byKey?.[g.item]?.zh || DATA.items?.compByKey?.[g.item]?.zh || g.item;
   else if (g.life != null) v = `+${g.life} 命`;
   else if (g.heat != null) v = `熱度 +${fmt(g.heat)}`;
@@ -571,7 +574,7 @@ export function sellUnit(api, unit, opts = {}) {
     return r;
   };
   if (!(star >= 3 || U.cost >= 7)) return doit();
-  const body = [el('p', { class: 'tt-desc' }, `確定賣掉 ${star}★ ${U.zh}？可以拿 ${price} 金，賣掉就回不來了。`)];
+  const body = [el('p', { class: 'tt-desc' }, `確定賣掉 ${star} 星 ${U.zh}？可以拿 ${price} 金，賣掉就回不來了。`)];
   const footer = [
     el('button', { type: 'button', class: 'tt-btn tt-ghost', 'data-tt': 'sell-cancel', onclick: () => closeTop() }, '取消'),
     el('button', { type: 'button', class: 'tt-btn', 'data-autofocus': '', 'data-tt': 'sell-confirm', onclick: () => { closeTop(); doit(); } }, `確定賣掉 +${price} 金`),
@@ -709,7 +712,7 @@ function unitSide(api, r) {
     b.addEventListener('click', () => showTraitPanel(k, api, enemy ? { side: 'enemy', traits: etraits } : {}));
     tl.append(b);
   }
-  wrap.append(el('div', { class: 'tt-us-hero' }, art, el('div', { class: 'tt-us-stars', role: 'img', 'aria-label': star + ' 星' }, '★'.repeat(star)), tl));
+  wrap.append(el('div', { class: 'tt-us-hero' }, art, el('div', { class: 'tt-us-stars' }, starsEl(star)), tl));
   // 名稱列
   const price = enemy ? U.cost : sellValue(u, DATA);
   wrap.append(el('div', { class: 'tt-us-name' }, el('b', {}, U.zh), enemy ? badge('敵方', 'tt-enemy') : null,
@@ -1027,6 +1030,13 @@ export function showHelp(opts = {}) {
   const secD = (title, ...kids) => el('div', { class: 'tt-only-desktop' }, el('h3', { class: 'tt-h' }, title), ...kids);   // 手機沒有鍵盤，整段不顯示
   const body = [
     el('ol', { class: 'tt-ol' }, el('li', {}, '一共 30 回合，每 5 回合有一隻頭目（共 6 隻）。'), el('li', {}, '有 3 條命，輸一場扣 1 條，沒命就結束。'), el('li', {}, '沒有計時，準備好再按「戰鬥」。')),
+    sec('增幅怎麼出',
+      el('p', { class: 'tt-desc' }, '一場三個增幅：第 2、11、21 回合，對應正式遊戲的 2-1、3-2、4-2。'),
+      el('p', { class: 'tt-desc' }, '稀有度跟正式遊戲一樣是開局就抽好一整組，機率照官方的表。最常見是金金金（兩成），開局就彩色大概一成，三個全彩不到 1%。'),
+      el('p', { class: 'tt-desc' }, '每個增幅有自己會出現的階段。給錢、給經驗、給棋子的大多只在第一個出，打架用的數值大多在後面兩個。所以加速開始、銀湯匙這種第 11 回合之後就不會再看到。'),
+      el('p', { class: 'tt-desc' }, '每張可以免費換一次，只換那一張。')),
+    sec('星級',
+      el('p', { class: 'tt-desc' }, '棋子頭上的星星就是星級：', starsEl(1), ' 1 星銅、', starsEl(2), ' 2 星銀、', starsEl(3), ' 3 星金；2 星銀框、3 星金框。')),
     sec('操作',
       el('ul', { class: 'tt-ul-plain' },
         el('li', {}, '點商店卡就買；滑鼠停在卡片上會跳出技能說明（手機是長按，放開不會買）。'),

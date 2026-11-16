@@ -145,6 +145,7 @@ export function buildTeam(side, units, DATA, ctx = {}) {
     if (who === 'members') return L.filter(isM);
     if (who === 'nonMembers') return L.filter((s) => !isM(s));
     if (who === 'frontRows') return L.filter((s) => s.pos && s.pos[0] < S.frontRowMax);
+    if (who === 'noItems') return L.filter((s) => !s.items.length);
     if (who === 'backRows') return L.filter((s) => s.pos && s.pos[0] >= S.frontRowMax);
     if (who === 'mostItemsAlly') return sortedBy(L).slice(0, 1);
     if (who === 'spotlight' || who === 'contract') {
@@ -215,7 +216,8 @@ export function buildTeam(side, units, DATA, ctx = {}) {
     const mult0 = e.perPersist ? (persist[e.perPersist] || 0) : 1;
     switch (e.type) {
       case 'stat': case 'statPerLevel': case 'statPerActiveTrait': {
-        const m = mult0 * (e.type === 'statPerLevel' ? level : e.type === 'statPerActiveTrait' ? activeNonUnique : 1);
+        const m = mult0 * (e.type === 'statPerLevel' ? level : e.type === 'statPerActiveTrait' ? activeNonUnique : 1)
+          * (e.perFrontRow ? L.filter((s) => s.pos && s.pos[0] < S.frontRowMax).length : 1);   // perFrontRow：前排每有一隻就算一份
         for (const st of resolveWho(e.who, env)) {
           if (!condOk(e.cond, st)) continue;
           if (e.cond && e.cond.bonusHpOver != null) { st.late = st.late || []; st.late.push({ e, env, m }); continue; }
@@ -283,6 +285,7 @@ export function buildTeam(side, units, DATA, ctx = {}) {
   // 跨回合累計的個人加成
   for (const st of L) {
     if (persist.mundoHp && (st.def.traits || []).includes(S.mundoHpTrait)) add(st, 'persist:mundoHp', 'hp', persist.mundoHp);
+    if (persist.interestHp) add(st, 'persist:interestHp', 'hp', persist.interestHp);   // 投資策略：賺的利息換成永久生命
     if (persist.neekoAp && st.u.key === S.neekoKey) add(st, 'persist:neekoAp', 'ap', persist.neekoAp);
   }
   // 頭目：mods.boss 只套在頭目本體；extraPassives 掛在頭目身上（頭目死了機制就停），沒有頭目才當隊伍被動

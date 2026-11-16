@@ -1,8 +1,10 @@
 // 棋盤、板凳、裝備列（佈陣階段）。SPEC 5.2–5.4。
 // 戰鬥階段：renderBoard(el, api, {mode:'battle'}) 只畫 8 排空格的 .tt-field（el.__field），棋子由 battle.js 疊上去。
 // 戰鬥：座標約定（和 battle.js 一致）：格子中心 x = (col + 0.5*(row&1) + 0.5)*w，y = (row*0.866 + 0.5)*w，w = 棋盤寬/7.5。
-// 佈陣：8 排等大、縱向壓扁的六角（官方視角），位置全用 CSS 變數 --x（欄＋奇數排半格）、--r（0–7 排）、--g（我方半場 1）。
+// 佈陣：8 排正六角形（和戰鬥畫面同比例），位置全用 CSS 變數 --x（欄＋奇數排半格）、--r（0–7 排）、--g（我方半場 1）；格線整張置中、隨可用空間縮放。
 import { traitIcon } from './traitbar.js';
+import { starsEl } from './stars.js';
+export { starsEl };
 export const COLS = 7;
 const ROW_H = 0.866;
 
@@ -36,13 +38,14 @@ export function avatarEl(DATA, key, size) {
   return styleAvatar(a, DATA, key);
 }
 
-// 棋子 token（棋盤與板凳共用）。頭上：星級小方塊＋血條（官方樣式）。
+// 棋子 token（棋盤與板凳共用）。頭上：星星圖示（銅／銀／金）＋血條（官方樣式）。
 // marks＝身上的指定道具標記：[{ id: 'fav'|'spot'|'deal'|'prod'|'clone', on: 有沒有效, extra: 合作邀請選到的羈絆 key }]，從右上角往下排。
 export function unitToken(DATA, u, desc, { enemy = false, marks = null } = {}) {
   const cost = costOf(DATA, u.key);
-  const t = el('div', 'tt-unit tt-cost' + cost, { 'data-tt-drag': desc, 'data-tt-uid': u.uid, 'data-tt-unit': u.key, 'data-tt-star': u.star, title: `${zhOf(DATA, u.key)} ${u.star}星` });
+  const t = el('div', 'tt-unit tt-cost' + cost + ' tt-star' + Math.min(3, u.star || 1), { 'data-tt-drag': desc, 'data-tt-uid': u.uid, 'data-tt-unit': u.key, 'data-tt-star': u.star, title: `${zhOf(DATA, u.key)} ${u.star}星` });
   t.append(styleAvatar(el('span', 'tt-xav'), DATA, u.key));
-  t.append(el('span', 'tt-hpb' + (enemy ? ' tt-e' : '') + (u.star >= 2 ? ' tt-s' + u.star : ''), { 'aria-hidden': 'true' }, el('i', 'tt-sq', {}, u.star), el('span', 'tt-hpf')));
+  // 頭上：星星（1 銅、2 銀、3 金）在血條上面，不蓋血條
+  t.append(el('span', 'tt-hpb' + (enemy ? ' tt-e' : ''), { 'aria-hidden': 'true' }, el('span', 'tt-hpf')), el('span', 'tt-ustars', { 'aria-hidden': 'true' }, starsEl(u.star, { label: false })));
   (marks || []).forEach((m, i) => {
     const on = !!m.on, zh = PICK_ZH[m.id] || m.id;
     const tip = 'sp:' + m.id + (on ? 'mark' : 'off');

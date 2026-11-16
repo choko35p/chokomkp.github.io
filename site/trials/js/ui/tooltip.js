@@ -82,7 +82,7 @@ function buildAbility(api, key, star) {
   foot.push(h('span', '', mana && mana[1] ? `法力 ${mana[0]}/${mana[1]}` : '不靠法力'));
   if (ab.simplified) foot.push(badge('簡化', 'tt-simp'));
   if (ab.guess) foot.push(badge('推測數值', 'tt-guess'));
-  const wrap = h('div', 'tt-tip-in', head(abilityIcon(DATA, key, 48), ab.name, `${U.zh}${star ? '　' + '★'.repeat(star) : ''}`), ...paras(ab.desc, star));
+  const wrap = h('div', 'tt-tip-in', head(abilityIcon(DATA, key, 48), ab.name, `${U.zh}${star ? '　' + star + ' 星' : ''}`), ...paras(ab.desc, star));
   if (ab.simplified) wrap.append(h('p', 'tt-tip-p tt-tip-muted', '本頁做法：' + ab.simplified));
   wrap.append(h('div', 'tt-tip-foot', foot));
   return wrap;

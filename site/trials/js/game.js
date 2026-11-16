@@ -105,10 +105,10 @@ function giveCompleted(state, DATA, events, key) {
   events.push({ type: 'item', key: k, ...(g ? { overflowGold: g } : {}) });
   return k;
 }
-function poolPick(state, DATA, cost, rng) {
-  // 該費用還有張數的棋子，照剩餘張數的比例抽；該費用沒有就往低費找
+function poolPick(state, DATA, cost, rng, need = 1) {
+  // 該費用還有張數（至少 need 張）的棋子，照剩餘張數的比例抽；該費用沒有就往低費找
   for (let c = cost; c >= 1; c--) {
-    const keys = DATA.units.list.filter(u => u.cost === c && (state.pool[u.key] || 0) > 0 && availKey(state, DATA, u.key)).map(u => u.key).sort();
+    const keys = DATA.units.list.filter(u => u.cost === c && (state.pool[u.key] || 0) >= need && availKey(state, DATA, u.key)).map(u => u.key).sort();
     if (!keys.length) continue;
     let sum = 0;
     for (const k of keys) sum += state.pool[k];
@@ -118,15 +118,17 @@ function poolPick(state, DATA, cost, rng) {
   }
   return null;
 }
-function giveUnitByCost(state, DATA, cost, events) {
-  const key = poolPick(state, DATA, cost, rewardRng(state));
+// star：送幾星的棋子（2 星＝從棋子池扣 3 張）
+function giveUnitByCost(state, DATA, cost, events, star = 1) {
+  const copies = 3 ** (star - 1);
+  const key = poolPick(state, DATA, cost, rewardRng(state), copies);
   if (!key) return null;
-  state.pool[key] -= 1;
-  return giveUnitKey(state, DATA, key, events);
+  state.pool[key] -= copies;
+  return giveUnitKey(state, DATA, key, events, star);
 }
-function giveUnitKey(state, DATA, key, events, fromPool = false) {
-  const r = S.receiveUnit(state, key, DATA);
-  events.push({ type: 'unit', key, placed: r.placed, ...(r.gold ? { gold: r.gold } : {}) });
+function giveUnitKey(state, DATA, key, events, star = 1) {
+  const r = S.receiveUnit(state, key, DATA, star);
+  events.push({ type: 'unit', key, star, placed: r.placed, ...(r.gold ? { gold: r.gold } : {}) });
   for (const m of r.merged || []) events.push({ type: 'merge', key: m.key, star: m.star });
   return key;
 }
@@ -159,20 +161,51 @@ function addXp(state, DATA, n, events) {
     state.xp -= r.xpToNext[String(state.level)];
     state.level++;
     events.push({ type: 'levelup', level: state.level });
+    const lr = ruleSum(state, DATA, 'levelUpRerolls');   // 向上流動：每次升級送刷新
+    if (lr) state.freeRerolls = (state.freeRerolls || 0) + lr;
   }
   if (state.level >= r.maxLevel) state.xp = 0;
 }
 
 // ---------- 選擇視窗 ----------
-function makeAugmentChoice(state, DATA, tier) {
-  const pool = DATA.augments.list.filter(a => a.tier === tier && !state.augments.includes(a.key)).map(a => a.key).sort();
-  const rng = makeRng(hashSeed(state.seed, 'reward', state.round, 'aug', tier, 0));
+// 增幅分階段（SPEC_AUGMENTS）：整場三次增幅（2-1、3-2、4-2）的稀有度開局一次抽好；每個增幅有自己的出現階段
+// tierCombos 每列＝[第 1 次, 第 2 次, 第 3 次, 份數]；份數越大越常出現
+export function rollAugTiers(seed, DATA) {
+  const ac = R(DATA).augment || {};
+  const rows = ac.tierCombos;
+  if (!rows || !rows.length) return null;
+  let sum = 0;
+  for (const r of rows) sum += r[3];
+  const rng = makeRng(hashSeed(seed, 'augTiers'));
+  let x = rng.next() * sum;
+  for (const r of rows) { if (x < r[3]) return r.slice(0, 3); x -= r[3]; }
+  return rows[rows.length - 1].slice(0, 3);
+}
+function augStage(DATA, slot) { return ((R(DATA).augment || {}).stages || [])[slot - 1] || null; }
+function augTierOf(state, DATA, slot) {
+  if (!state.augTiers) state.augTiers = rollAugTiers(state.seed, DATA);   // 舊存檔：同一個種子補算
+  return state.augTiers ? state.augTiers[slot - 1] : slot;
+}
+// 這個稀有度＋階段還能抽的增幅（沒拿過的）；stage 沒給＝不限階段
+function augPool(state, DATA, tier, stage) {
+  return DATA.augments.list.filter(a => a.tier === tier && !state.augments.includes(a.key)
+    && (!stage || !a.stages || a.stages.includes(stage))).map(a => a.key).sort();
+}
+function makeAugmentChoice(state, DATA, slot) {
+  const tier = augTierOf(state, DATA, slot);
+  const stage = augStage(DATA, slot);
   const ac = R(DATA).augment || {};
   const n = ac.choices ?? DEF.augmentChoices;
-  const options = rng.shuffle(pool).slice(0, n);
+  let pool = augPool(state, DATA, tier, stage);
+  const rng = makeRng(hashSeed(state.seed, 'reward', state.round, 'aug', tier, 0));
+  let options = rng.shuffle(pool).slice(0, n);
+  if (options.length < n) {   // 保底：這個階段不夠 3 個，用同稀有度其他階段的補（照現在資料不會發生）
+    const more = rng.shuffle(augPool(state, DATA, tier, null).filter(k => !options.includes(k)));
+    options = options.concat(more).slice(0, n);
+  }
   const per = ac.rerollsPerChoice ?? DEF.augmentRerolls;
   // 照官方：每一張各有自己的重抽鍵（每張各 per 次），只換那一張。rerollN[i]＝第 i 張已經換過幾次（決定性亂數用）
-  return { type: 'augment', tier, options, rerollLeft: options.map(() => per), rerollN: options.map(() => 0) };
+  return { type: 'augment', tier, stage, slot, options, rerollLeft: options.map(() => per), rerollN: options.map(() => 0) };
 }
 // 舊存檔：pending 可能是 {rerolls:n}（三張一起換）或只有數字的 rerollLeft，照新格式補成每張各一個
 function normAugmentPending(p, DATA) {
@@ -239,6 +272,10 @@ function beginRound(state, DATA, events, retry = false) {
     if (pre.augment) queue.push(makeAugmentChoice(state, DATA, pre.augment));
     state.pendingQueue = queue;
   }
+  if (!retry) {   // 私房錢：每回合開始給錢
+    const rg = ruleSum(state, DATA, 'roundStartGold');
+    if (rg) { state.gold += rg; events.push({ type: 'gold', gold: rg }); }
+  }
   state.freeRerolls = (state.freeRerolls || 0) + ruleSum(state, DATA, 'freeRerollPerRound');
   U.feedUnlocks(state, DATA, { kind: 'roundStart' });
   runUnlocks(state, DATA, events);   // 抽商店之前：開局禮、頭目獎勵帶來的解鎖，這次商店就保證出現
@@ -260,6 +297,7 @@ export function newGame(seed, DATA) {
     picks: { fav: [], spot: [], deal: [], prod: [], clone: [] },   // 指定道具的標記：各道具的棋子 uid，最早放的在前
     prodTrait: null, dealFrom: null,   // 合作邀請選到的起源；蒙多第一次上場開戰的回合（唱片合約的份數從這裡算）
     unlocks: {}, unlockQueue: [], unlockAcc: {}, stats: { rerolls: 0, loseStreak: 0 },
+    augTiers: rollAugTiers(seed, DATA),   // 三次增幅的稀有度（1 銀 2 金 3 彩），開局抽好
   };
   beginRound(state, DATA, []);
   return state;
@@ -281,6 +319,7 @@ export function deserialize(json, DATA) {
   if (!s.unlockQueue) s.unlockQueue = [];
   if (!s.unlockAcc) s.unlockAcc = {};
   if (!s.stats) s.stats = { rerolls: 0, loseStreak: 0 };
+  if (s.augTiers === undefined) s.augTiers = rollAugTiers(s.seed, DATA);
   if (!s.picks) {   // 舊存檔：心鋼最愛標記搬進 picks；聚光燈、合約、製作人照原本自動選的結果補上，不會突然沒效果
     s.picks = { fav: Array.isArray(s.favs) ? s.favs : [], spot: [], deal: [], prod: [], clone: [] };
     delete s.favs; delete s.removers;
@@ -608,13 +647,19 @@ export function actUseRemover(state, uid, DATA) {
   return ok({ events });
 }
 
+// 只從「含某個散件」的成品裡抽（劍匠：含暴風之劍）
+function pickCompletedFrom(state, DATA, comp) {
+  const list = S.itemIndex(DATA).completed.filter(k => (DATA.items.byKey[k].recipe || []).includes(comp));
+  return rewardRng(state).pick(list.length ? list : S.itemIndex(DATA).completed);
+}
 function applyOnPick(state, DATA, on, events) {
   if (!on) return;
   if (on.gold) { state.gold += on.gold; events.push({ type: 'gold', gold: on.gold }); }
   if (on.xp) addXp(state, DATA, on.xp, events);
   for (let i = 0; i < (on.components || 0); i++) giveComponent(state, DATA, events);
-  for (let i = 0; i < (on.completed || 0); i++) giveCompleted(state, DATA, events);
-  for (const u of on.units || []) for (let i = 0; i < (u.n || 1); i++) giveUnitByCost(state, DATA, u.cost, events);
+  for (let i = 0; i < (on.completed || 0); i++) giveCompleted(state, DATA, events, on.completedFrom ? pickCompletedFrom(state, DATA, on.completedFrom) : null);
+  for (const u of on.units || []) for (let i = 0; i < (u.n || 1); i++) giveUnitByCost(state, DATA, u.cost, events, u.star || 1);
+  if (on.tankItem) giveCompleted(state, DATA, events, rewardRng(state).pick(on.tankItem));
   if (on.rerolls) state.freeRerolls = (state.freeRerolls || 0) + on.rerolls;
 }
 
@@ -638,7 +683,7 @@ export function actRerollAugmentSlot(state, idx, DATA) {
   normAugmentPending(p, DATA);
   if (!(idx >= 0 && idx < p.options.length)) return no('沒有這個選項');
   if (!(p.rerollLeft[idx] > 0)) return no('這一張的重抽用完了');
-  const pool = DATA.augments.list.filter(a => a.tier === p.tier && !state.augments.includes(a.key)).map(a => a.key).sort();
+  const pool = augPool(state, DATA, p.tier, p.stage);
   const shown = p.options;
   let cand = pool.filter(k => !shown.includes(k));
   if (!cand.length) cand = pool.filter(k => !shown.some((o, i) => i !== idx && o === k));   // 池子太小：至少不跟另外兩張重複
@@ -780,6 +825,8 @@ export function actFinishBattle(state, DATA) {
   if (advance) add('base', '基礎收入', r.income.base); // 重打模式輸了：不發基礎收入，只發利息
   const interest = Math.min(interestCap(state, DATA), Math.floor(gold0 / r.income.interestPer));
   add('interest', '利息', interest);
+  const ihp = ruleSum(state, DATA, 'interestHp');   // 投資策略：每賺 1 點利息，全隊永久 +生命
+  if (ihp && interest > 0) state.persist.interestHp = (state.persist.interestHp || 0) + interest * ihp;
   if (win) { add('win', '勝利', r.income.win); add('streak', '連勝', streakBonus(DATA, state.streak)); }
   const label = src => {
     const m = /^(trait|aug|item):(.+)$/.exec(src || '');

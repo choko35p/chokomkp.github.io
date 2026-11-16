@@ -1,6 +1,6 @@
 // 商店上緣 HUD（等級條、機率、金幣頁籤、連勝、人口）＋商店本體（左：買經驗／重抽；右：5 張卡）。SPEC 2.3、2.4。
 // 買、刷新等動作一律走 api.act；卡片點擊與拖曳由 input.js／dnd.js 接（desc：shop:<slot>）。
-import { el, avatarEl, styleAvatar, zhOf, costOf } from './board.js';
+import { el, avatarEl, styleAvatar, zhOf, costOf, starsEl } from './board.js';
 import { traitIcon, traitZh } from './traitbar.js';
 
 const COST_NAMES = ['1費', '2費', '3費', '4費', '5費'];
@@ -16,6 +16,7 @@ export function ownedOf(state, key) {
   for (const u of [...(state.board || []), ...(state.bench || [])]) if (u && u.key === key) n[u.star] = (n[u.star] || 0) + 1;
   return { n, equiv: n[1] + n[2] * 3 + n[3] * 9 };
 }
+const haveText = (own) => '已有 ' + [3, 2, 1].filter(st => own.n[st]).map(st => `${st} 星 ${own.n[st]} 隻`).join('、');
 // 再買這張會不會合星：回傳合成後的星級（2 或 3），沒有回 0
 export function mergeStar(state, key) {
   const { n } = ownedOf(state, key);
@@ -100,11 +101,15 @@ function cardEl(api, slot, i) {
   }
   card.append(tags);
   card.append(el('div', 'tt-cfoot', {}, el('span', 'tt-cname', {}, zhOf(DATA, key)), el('span', 'tt-ccost', {}, coin('tt-sm'), el('b', 'tt-num', {}, cost))));
-  if (ms) card.append(el('span', 'tt-mbadge', { 'aria-hidden': 'true' }, `★${ms}`));
-  if (own.equiv) card.append(el('span', 'tt-have', {}, `已有 ${own.equiv}`));
+  if (ms) card.append(el('span', 'tt-mbadge', { 'aria-hidden': 'true' }, '買了＝', starsEl(ms, { label: false })));
+  if (own.equiv) {   // 已有幾隻：依星級分開寫（星星圖示＋隻數），不再只給合計
+    const have = el('span', 'tt-have', { title: haveText(own) });
+    for (const st of [3, 2, 1]) if (own.n[st]) have.append(el('span', 'tt-hv tt-hv' + st, {}, starsEl(st, { label: false }), el('b', '', {}, '×' + own.n[st])));
+    card.append(have);
+  }
   if (slot.fresh) card.append(el('span', 'tt-fresh', {}, '新解鎖'));
   if (ms) card.classList.add('tt-merge');
-  card.setAttribute('aria-label', `商店第 ${i + 1} 格：${zhOf(DATA, key)}，${cost} 費，${cost} 金` + (slot.fresh ? '，新解鎖' : '') + (own.equiv ? `，已有 ${own.equiv}` : '') + (ms ? `，買了可升 ${ms} 星` : ''));
+  card.setAttribute('aria-label', `商店第 ${i + 1} 格：${zhOf(DATA, key)}，${cost} 費，${cost} 金` + (slot.fresh ? '，新解鎖' : '') + (own.equiv ? `，${haveText(own)}` : '') + (ms ? `，買了可升 ${ms} 星` : ''));
   return card;
 }
 

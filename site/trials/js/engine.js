@@ -812,7 +812,7 @@ export function simulate(setup) {
         fire(ent, null, false);
         arm(tick + per);
       });
-      arm(per);
+      arm(p.from > 0 ? secTicks(p.from) : per);   // from：第一次觸發的秒數（巴龍巢穴 8 秒後才開始每秒疊）
     }
   }
   // 古典樂：羈絆啟動就開著迷機制（不必另寫 special）

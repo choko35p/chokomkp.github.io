@@ -107,6 +107,15 @@ export function tierClass(t) {
   return 'silver';
 }
 
+// 羈絆列排序（照官方）：已啟動的獨有羈絆（多半是 5 費自帶）最上面；接著其他已啟動的，先看階級顏色（彩＞金＞銀＞銅）再看人數；未啟動的放最後
+const TIER_RANK = { prism: 4, gold: 3, silver: 2, bronze: 1, off: 0 };
+export function sortTraits(list, DATA) {
+  const kind = t => t.kind || (DATA.traits.byKey[t.key] || {}).kind;
+  const grp = t => (!t.active ? 2 : kind(t) === 'unique' ? 0 : 1);
+  return (list || []).slice().sort((a, b) => grp(a) - grp(b)
+    || (TIER_RANK[tierClass(b)] || 0) - (TIER_RANK[tierClass(a)] || 0) || (b.count - a.count) || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+}
+
 export function traitHex(DATA, t, size) {
   return el('span', { class: 'tt-hex', 'data-tier': tierClass(t), 'aria-hidden': 'true' }, traitIcon(DATA, t.key, size));
 }
@@ -146,10 +155,10 @@ export function traitCard(t, api, { side = 'player', list } = {}) {
 // ---------- 對外：renderTraits ----------
 export function renderTraits(root, traitsPlayer, traitsEnemy, api) {
   ensureStyle(); bindHover(api);
-  const list = (traitsPlayer || []).filter(t => t.count >= 1);
+  const list = sortTraits((traitsPlayer || []).filter(t => t.count >= 1), api.DATA);
   const ul = el('ul', { class: 'tt-trait-list tt-hscroll', 'aria-label': '我的羈絆' });
   if (!list.length) ul.append(el('li', { class: 'tt-traitbar-empty' }, '放棋子上場，羈絆就會出現在這裡'));
-  for (const t of list) ul.append(el('li', {}, traitCard(t, api, { list: traitsPlayer })));
+  for (const t of list) ul.append(el('li', {}, traitCard(t, api, { list })));
   const prev = root.querySelector?.('.tt-trait-list');
   const sx = prev?.scrollLeft || 0, sy = prev?.scrollTop || root.scrollTop || 0;
   root.replaceChildren(ul);
@@ -161,7 +170,7 @@ export function renderTraits(root, traitsPlayer, traitsEnemy, api) {
 export function renderEnemyTraits(root, traitsEnemy, api) {
   ensureStyle(); bindHover(api);
   const { DATA } = api; const wrap = el('span', { class: 'tt-enemy-traits', 'aria-label': '敵方羈絆' });
-  const list = (traitsEnemy || []).filter(t => t.count >= 1);
+  const list = sortTraits((traitsEnemy || []).filter(t => t.count >= 1), DATA);
   for (const t of list) {
     const star = isStars(DATA, t.key);
     const b = el('button', { type: 'button', class: 'tt-etrait' + (t.active ? ' tt-active' : ''), 'data-trait': t.key, 'data-kind': kindOf(DATA, t.key),

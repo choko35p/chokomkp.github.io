@@ -217,7 +217,7 @@ export async function mount(root, api) {
 
   function openUnit(u) {
     if (panels && panels.showUnitPanel) panels.showUnitPanel(u, api);
-    else askModal(zhOf(DATA, u.key) + ' ' + u.star + '★', '（棋子面板尚未接上）', [{ label: '關閉' }]);
+    else askModal(zhOf(DATA, u.key) + ' ' + u.star + ' 星', '（棋子面板尚未接上）', [{ label: '關閉' }]);
   }
 
   // ---- 拖曳中：商店整塊變成賣出區（SPEC 4.2）。dragUnit 由 C 的 onDragStart 設；沒設時從 .tt-drag-src 自己抓 ----
@@ -307,7 +307,7 @@ export async function mount(root, api) {
   async function doSell(u) {
     const needConfirm = u.star >= 3 || costOf(DATA, u.key) >= 7;
     if (needConfirm) {
-      const v = await askModal('確定賣掉？', `${zhOf(DATA, u.key)} ${u.star}★，可得 ${sellPrice(u)} 金。`, [{ label: '賣掉', primary: true, value: 'sell' }, { label: '取消', value: 'no' }]);
+      const v = await askModal('確定賣掉？', `${zhOf(DATA, u.key)} ${u.star} 星，可得 ${sellPrice(u)} 金。`, [{ label: '賣掉', primary: true, value: 'sell' }, { label: '取消', value: 'no' }]);
       if (v !== 'sell') { render(); return; }
       if (!unitByUid(u.uid)) return;
     }

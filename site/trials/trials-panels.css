@@ -63,7 +63,7 @@
 .tt-us-hero { position: relative; height: 9.2em; overflow: hidden; background: #07101a; border-bottom: 1px solid var(--g-gold-dim, #785a28); }
 .tt-us-art { position: absolute; right: -6%; top: 50%; transform: translateY(-46%); width: 100%; aspect-ratio: 1; background-repeat: no-repeat; filter: brightness(.6) saturate(.95); }
 .tt-us-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(7,16,26,.92) 0, rgba(7,16,26,.45) 52%, rgba(7,16,26,0) 100%); }
-.tt-us-stars { position: absolute; z-index: 2; top: .15em; left: 50%; transform: translateX(-50%); color: var(--g-gold, #c8aa6e); font-size: 1.2em; letter-spacing: .05em; text-shadow: 0 1px 2px #000; white-space: nowrap; }
+.tt-us-stars { position: absolute; z-index: 2; top: .2em; left: 50%; transform: translateX(-50%); font-size: 1.2em; white-space: nowrap; --ss: 1.15em; }
 .tt-us-traits { position: absolute; z-index: 2; left: .3em; top: 1.9em; bottom: .3em; max-width: 92%; display: flex; flex-direction: column; justify-content: flex-end; gap: .25em; overflow: hidden; }
 .tt-us-trait { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: .3em; max-width: 100%; padding: .05em .4em .05em .1em; cursor: pointer;
   background: rgba(7,16,26,.72); border: 1px solid var(--g-gold-dim, #785a28); color: var(--g-gold-hi, #f0e6d2); font-size: 1em; font-weight: 700; white-space: nowrap; }

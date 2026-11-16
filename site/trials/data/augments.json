@@ -10,7 +10,11 @@
    "onPick": {
     "components": 2
    },
-   "guess": false
+   "guess": false,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_CognitiveTax",
@@ -23,7 +27,10 @@
     "gold": 8,
     "xp": 1
    },
-   "guess": false
+   "guess": false,
+   "stages": [
+    "2-1"
+   ]
   },
   {
    "key": "DA_RollingForDays",
@@ -35,7 +42,11 @@
    "onPick": {
     "rerolls": 10
    },
-   "guess": false
+   "guess": false,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_ItemGrabBag",
@@ -47,7 +58,12 @@
    "onPick": {
     "completed": 1
    },
-   "guess": false
+   "guess": false,
+   "stages": [
+    "2-1",
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_KickStart",
@@ -66,7 +82,10 @@
     ],
     "gold": 1
    },
-   "guess": false
+   "guess": false,
+   "stages": [
+    "2-1"
+   ]
   },
   {
    "key": "DA_SilverSpoon",
@@ -78,7 +97,10 @@
    "onPick": {
     "xp": 10
    },
-   "guess": false
+   "guess": false,
+   "stages": [
+    "2-1"
+   ]
   },
   {
    "key": "DA_PartialAscension",
@@ -108,7 +130,11 @@
     }
    ],
    "onPick": {},
-   "guess": false
+   "guess": false,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_StandUnited",
@@ -127,25 +153,34 @@
     }
    ],
    "onPick": {},
-   "guess": true
+   "guess": true,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_BoxingLessons",
    "zh": "拳擊訓練",
    "tier": 1,
    "sp": 20,
-   "desc": "全隊生命 +90。",
+   "desc": "戰鬥開始時，前排（前 2 排）每有 1 隻棋子，全隊生命 +30。",
    "effects": [
     {
      "type": "stat",
      "who": "team",
+     "perFrontRow": true,
      "stats": {
-      "hp": 90
+      "hp": 30
      }
     }
    ],
    "onPick": {},
-   "guess": true
+   "guess": false,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_FocusedFire",
@@ -183,33 +218,40 @@
     }
    ],
    "onPick": {},
-   "guess": false
+   "guess": false,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_MakeshiftArmorI",
    "zh": "臨時戰甲I",
    "tier": 1,
    "sp": 46,
-   "desc": "全隊護甲、魔抗各 +20。",
+   "desc": "沒有裝備的棋子，護甲、魔抗各 +30。",
    "effects": [
     {
      "type": "stat",
-     "who": "team",
+     "who": "noItems",
      "stats": {
-      "armor": 20,
-      "mr": 20
+      "armor": 30,
+      "mr": 30
      }
     }
    ],
    "onPick": {},
-   "guess": true
+   "guess": false,
+   "stages": [
+    "3-2"
+   ]
   },
   {
    "key": "DA_CelestialBlessingI",
    "zh": "天賜聖典 I",
    "tier": 1,
    "sp": 10,
-   "desc": "全隊全能吸血 +12%。",
+   "desc": "全隊全能吸血 +12%。（本頁簡化：官方溢補的治療會變成護盾，這裡沒做。）",
    "effects": [
     {
      "type": "stat",
@@ -220,7 +262,11 @@
     }
    ],
    "onPick": {},
-   "guess": false
+   "guess": false,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_TradeSector",
@@ -238,14 +284,17 @@
    "onPick": {
     "gold": 2
    },
-   "guess": false
+   "guess": false,
+   "stages": [
+    "2-1"
+   ]
   },
   {
    "key": "DA_Hustler",
    "zh": "私房錢",
    "tier": 2,
    "sp": 140,
-   "desc": "沒有利息，但每回合結束拿 3 金幣，選到就先拿 3。",
+   "desc": "沒有利息，但每回合開始拿 3 金幣，選到就先拿 3。",
    "effects": [
     {
      "type": "rule",
@@ -253,17 +302,18 @@
      "value": 0
     },
     {
-     "type": "econ",
-     "when": "roundEnd",
-     "gain": {
-      "gold": 3
-     }
+     "type": "rule",
+     "key": "roundStartGold",
+     "value": 3
     }
    ],
    "onPick": {
     "gold": 3
    },
-   "guess": false
+   "guess": false,
+   "stages": [
+    "2-1"
+   ]
   },
   {
    "key": "DA_PatientStudy",
@@ -288,7 +338,10 @@
     }
    ],
    "onPick": {},
-   "guess": false
+   "guess": false,
+   "stages": [
+    "2-1"
+   ]
   },
   {
    "key": "DA_CognitiveOverload",
@@ -319,19 +372,26 @@
      }
     ]
    },
-   "guess": false
+   "guess": false,
+   "stages": [
+    "3-2"
+   ]
   },
   {
    "key": "DA_Swordsmith",
    "zh": "劍匠",
    "tier": 2,
    "sp": 79,
-   "desc": "選到就拿 2 件隨機成品裝備。",
+   "desc": "選到就拿 2 件含暴風之劍的隨機成品裝備。",
    "effects": [],
    "onPick": {
-    "completed": 2
+    "completed": 2,
+    "completedFrom": "BFSword"
    },
-   "guess": true
+   "guess": false,
+   "stages": [
+    "4-2"
+   ]
   },
   {
    "key": "DA_PlotArmor",
@@ -378,7 +438,11 @@
     }
    ],
    "onPick": {},
-   "guess": false
+   "guess": false,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_BodyguardTraining",
@@ -405,7 +469,10 @@
     }
    ],
    "onPick": {},
-   "guess": false
+   "guess": false,
+   "stages": [
+    "2-1"
+   ]
   },
   {
    "key": "DA_Ascension",
@@ -435,7 +502,11 @@
     }
    ],
    "onPick": {},
-   "guess": false
+   "guess": false,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_ClockworkAccelerator",
@@ -466,7 +537,11 @@
     }
    ],
    "onPick": {},
-   "guess": false
+   "guess": false,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_TonsOfStatsI",
@@ -490,7 +565,11 @@
     }
    ],
    "onPick": {},
-   "guess": true
+   "guess": true,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_GlassCannon_Gold",
@@ -509,7 +588,11 @@
     }
    ],
    "onPick": {},
-   "guess": true
+   "guess": true,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_ArcaneViktory",
@@ -552,14 +635,18 @@
     }
    ],
    "onPick": {},
-   "guess": false
+   "guess": false,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_FrontlineFoundation",
    "zh": "前線基礎",
    "tier": 2,
    "sp": 78,
-   "desc": "選到就拿 1 隻 2 星 1 費棋子和 1 個散件（代替職業徽章）。",
+   "desc": "選到就拿 1 隻 2 星 1 費棋子和 1 個散件。（本頁簡化：官方是坦克棋子加職業徽章。）",
    "effects": [],
    "onPick": {
     "units": [
@@ -571,14 +658,17 @@
     ],
     "components": 1
    },
-   "guess": true
+   "guess": true,
+   "stages": [
+    "2-1"
+   ]
   },
   {
    "key": "DA_BacklineBlueprint",
    "zh": "後排藍圖",
    "tier": 2,
    "sp": 99,
-   "desc": "選到就拿 1 隻 3 費棋子和 1 個散件（代替職業徽章）。",
+   "desc": "選到就拿 1 隻 3 費棋子和 1 個散件。（本頁簡化：官方是非坦克棋子加職業徽章。）",
    "effects": [],
    "onPick": {
     "units": [
@@ -590,7 +680,10 @@
     ],
     "components": 1
    },
-   "guess": true
+   "guess": true,
+   "stages": [
+    "2-1"
+   ]
   },
   {
    "key": "DA_MoneyMonsoon",
@@ -610,43 +703,60 @@
    "onPick": {
     "gold": 7
    },
-   "guess": false
+   "guess": false,
+   "stages": [
+    "4-2"
+   ]
   },
   {
    "key": "DA_UpwardMobility",
    "zh": "向上流動",
    "tier": 3,
    "sp": 187,
-   "desc": "買經驗少 1 金幣，選到就拿 2 次刷新。",
+   "desc": "買經驗少 1 金幣，每次升級送 2 次刷新。（官方升級還會回 2 點血，本頁血量是命數，本頁簡化沒做。）",
    "effects": [
     {
      "type": "rule",
      "key": "xpCostDelta",
      "value": -1
+    },
+    {
+     "type": "rule",
+     "key": "levelUpRerolls",
+     "value": 2
     }
    ],
-   "onPick": {
-    "rerolls": 2
-   },
-   "guess": true
+   "onPick": {},
+   "guess": true,
+   "stages": [
+    "2-1"
+   ]
   },
   {
    "key": "DA_InvestmentStrategy",
    "zh": "投資策略II",
    "tier": 3,
    "sp": 203,
-   "desc": "利息上限提高 2，選到就拿 6 金幣。",
+   "desc": "利息上限提高 2，選到就拿 6 金幣。之後每賺 1 點利息，全隊永久 +12 生命。",
    "effects": [
     {
      "type": "rule",
      "key": "interestCap",
      "value": 7
+    },
+    {
+     "type": "rule",
+     "key": "interestHp",
+     "value": 12
     }
    ],
    "onPick": {
     "gold": 6
    },
-   "guess": true
+   "guess": false,
+   "stages": [
+    "2-1"
+   ]
   },
   {
    "key": "DA_TonsOfStatsII",
@@ -670,7 +780,11 @@
     }
    ],
    "onPick": {},
-   "guess": true
+   "guess": true,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_GiantAndMighty",
@@ -689,20 +803,25 @@
     }
    ],
    "onPick": {},
-   "guess": false
+   "guess": false,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_BaronsLair",
    "zh": "巴龍巢穴",
    "tier": 3,
    "sp": 197,
-   "desc": "開戰 8 秒後，全隊攻擊 +30%、技能增幅 +30%。",
+   "desc": "選到就拿 1 件隨機坦克成品裝備。開戰 8 秒後，全隊每秒攻擊 +4%、技能增幅 +4%，一直疊到戰鬥結束。",
    "effects": [
     {
      "type": "teamPassive",
      "passive": {
-      "on": "start",
-      "at": 8,
+      "on": "every",
+      "n": 1,
+      "from": 8,
       "ops": [
        {
         "op": "buff",
@@ -710,7 +829,7 @@
          "allies": "all"
         },
         "stat": "adPct",
-        "value": 0.3
+        "value": 0.04
        },
        {
         "op": "buff",
@@ -718,7 +837,7 @@
          "allies": "all"
         },
         "stat": "abilityAmp",
-        "value": 0.3
+        "value": 0.04
        }
       ],
       "src": "aug:DA_BaronsLair",
@@ -726,8 +845,22 @@
      }
     }
    ],
-   "onPick": {},
-   "guess": true
+   "onPick": {
+    "tankItem": [
+     "BrambleVest",
+     "DragonsClaw",
+     "GargoyleStoneplate",
+     "SunfireCape",
+     "WarmogsArmor",
+     "SteadfastHeart",
+     "ProtectorsVow"
+    ]
+   },
+   "guess": false,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_JeweledLotus_II",
@@ -747,33 +880,42 @@
     }
    ],
    "onPick": {},
-   "guess": false
+   "guess": false,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_HoldTheLine",
    "zh": "堅守前線",
    "tier": 3,
    "sp": 189,
-   "desc": "後排棋子攻擊 +33%、法強 +33（約等於前排 3 隻）。",
+   "desc": "戰鬥開始時，前排（前 2 排）每有 1 隻棋子，後面兩排的棋子攻擊 +11%、法強 +11。",
    "effects": [
     {
      "type": "stat",
      "who": "backRows",
+     "perFrontRow": true,
      "stats": {
-      "adPct": 0.33,
-      "ap": 33
+      "adPct": 0.11,
+      "ap": 11
      }
     }
    ],
    "onPick": {},
-   "guess": true
+   "guess": false,
+   "stages": [
+    "3-2",
+    "4-2"
+   ]
   },
   {
    "key": "DA_TraitLadder",
    "zh": "特性階梯",
    "tier": 3,
    "sp": 214,
-   "desc": "人口上限 +1。",
+   "desc": "人口上限 +1。（本頁簡化：官方是徽章加羈絆數量獎勵，這裡換成人口 +1。）",
    "effects": [
     {
      "type": "teamSize",
@@ -781,14 +923,17 @@
     }
    ],
    "onPick": {},
-   "guess": true
+   "guess": true,
+   "stages": [
+    "2-1"
+   ]
   },
   {
    "key": "DA_HardCommit",
    "zh": "強力投入",
    "tier": 3,
    "sp": 198,
-   "desc": "選到就拿 1 隻 3 費、1 隻 2 費棋子和 3 金幣。",
+   "desc": "選到就拿 1 隻 3 費、1 隻 2 費棋子和 3 金幣。（本頁簡化：官方是徽章，而且每個階段都再給一次。）",
    "effects": [],
    "onPick": {
     "units": [
@@ -805,7 +950,10 @@
     ],
     "gold": 3
    },
-   "guess": true
+   "guess": true,
+   "stages": [
+    "2-1"
+   ]
   }
  ]
 }

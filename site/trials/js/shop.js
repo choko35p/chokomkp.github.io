@@ -281,17 +281,22 @@ export function sell(state, uid, DATA) {
 }
 
 // 是否放得下（板凳有空位，或放進去會合星）
-export function canReceive(state, key, DATA) {
-  return benchFree(state) >= 0 || (countStar1(state, key) >= 2 && costOf(DATA, key) !== 7);
+export function canReceive(state, key, DATA, star = 1) {
+  if (benchFree(state) >= 0) return true;
+  if (costOf(DATA, key) === 7) return false;
+  let n = 0;
+  for (const u of allUnits(state)) if (u.key === key && u.star === star) n++;
+  return n >= 2 && star < 3;
 }
 // 送棋子（獎勵用）：放板凳＋合星；放不下就賣掉。回傳 {placed, merged, gold}
-export function receiveUnit(state, key, DATA) {
+export function receiveUnit(state, key, DATA, star = 1) {
   const unit = makeUnit(state, key);
+  unit.star = star;   // 增幅直接送 2 星：棋子池要扣 3 張，賣掉時也還 3 張
   const f = benchFree(state);
   if (f >= 0) { state.bench[f] = unit; return { placed: true, merged: tryMerge(state, DATA), uid: unit.uid }; }
-  if (canReceive(state, key, DATA)) return { placed: true, merged: tryMerge(state, DATA, unit), uid: unit.uid };
+  if (canReceive(state, key, DATA, star)) return { placed: true, merged: tryMerge(state, DATA, unit), uid: unit.uid };
   const g = sellValue(unit, DATA);
   state.gold += g;
-  if (costOf(DATA, key) !== 7) returnToPool(state, key, 1);
+  if (costOf(DATA, key) !== 7) returnToPool(state, key, 3 ** (star - 1));
   return { placed: false, merged: [], gold: g };
 }

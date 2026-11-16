@@ -170,8 +170,10 @@ export function mountPlanner(api) {
     if (!st.open) return;
     try {
       if (isMobile()) { root.style.removeProperty('--tt-pl-bottom'); return; }
+      // 站主 2026-11-16「每次一結束我的隊伍編輯器都會不見」：戰鬥中 HUD 藏起來，量到 0 會把面板壓成一條線 → 用上次量到的位置
       const hud = document.querySelector('.tt-hud');
-      const top = hud ? hud.getBoundingClientRect().top : window.innerHeight * 0.78;
+      const hr = hud ? hud.getBoundingClientRect() : null;
+      const top = hr && hr.height > 0 && hr.top > window.innerHeight * 0.3 ? (st.hudTop = hr.top) : (st.hudTop || window.innerHeight * 0.78);
       root.style.setProperty('--tt-pl-bottom', Math.max(8, window.innerHeight - top + 8) + 'px');
     } catch (_) { /* 略過 */ }
   }

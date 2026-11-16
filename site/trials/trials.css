@@ -641,3 +641,19 @@ button.tt-tag:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .tt-us-chbtn.tt-can { border-color: #ffd93b; box-shadow: inset 0 0 0 1px rgba(255,217,59,.35); }
 .tt-us-chtxt { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; } .tt-us-chtxt b { font-size: 13px; } .tt-us-chtxt small { font-size: 11px; color: #ffd93b; white-space: normal; }
 .tt-us-itemicon.tt-xchoice { display: grid; place-items: center; }
+/* 站主 2026-11-16：戰鬥中「戰鬥」鍵原地變「跳過」；自動跳過開關放在它上面 */
+[data-phase=battle] .tt-go { display: grid; }
+.tt-autoskip { position: fixed; z-index: 41; right: 6px; bottom: 50px; width: 106px; height: 24px; display: flex; align-items: center; justify-content: center; gap: 4px; background: rgba(8,16,26,.9); border: 1px solid var(--g-gold-dim); border-radius: 2px; font-size: 12px; color: var(--g-gold-hi); cursor: pointer; user-select: none; box-sizing: border-box; }
+.tt-autoskip input { margin: 0; width: 14px; height: 14px; accent-color: #ffd93b; cursor: pointer; }
+.tt-autoskip:has(input:checked) { border-color: #ffd93b; color: #ffd93b; }
+.tt-foot { padding-bottom: 84px; }
+@media (min-width: 1024px) and (orientation: landscape) {
+  .tt-autoskip { position: absolute; z-index: auto; left: 76.8%; right: auto; top: 82.4%; bottom: auto; width: 10%; height: 3.8%; font-size: clamp(12px, .95cqw, 17px); }
+  .tt-autoskip input { width: 1.1cqw; height: 1.1cqw; min-width: 13px; min-height: 13px; }
+  .tt-foot { padding-bottom: 4px; }
+}
+/* 站主 2026-11-16：散件鐵砧（板凳上，賣掉挑散件） */
+.tt-unit.tt-anvil { display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 50% 38%, #3b6a92, #142a40 72%); box-shadow: 0 0 0 2px var(--g-gold, #c8aa6e), 0 0 8px rgba(255,214,100,.45); cursor: grab; }
+.tt-unit.tt-anvil .tt-anv-ic { width: 62%; height: 62%; display: block; } .tt-unit.tt-anvil .tt-anv-ic svg { width: 100%; height: 100%; fill: #ffe9a8; filter: drop-shadow(0 1px 0 rgba(0,0,0,.6)); }
+.tt-unit.tt-anvil .tt-anv-t { position: absolute; left: -10%; right: -10%; bottom: -14%; text-align: center; font-size: max(10px, calc(var(--tk, 40px) * .26)); font-weight: 700; color: #ffe9a8; text-shadow: 0 1px 2px #000; line-height: 1.1; }
+.tt-unit.tt-anvil.tt-sel { box-shadow: 0 0 0 3px #ffd93b, 0 0 12px rgba(255,214,70,.9); }

@@ -19,7 +19,7 @@ const tzhOf = (DATA, key) => (DATA.traits.byKey[key] && DATA.traits.byKey[key].z
 
 function unitsIn(state, zone) {
   const out = state.board.slice();
-  if (zone !== 'board') for (const u of state.bench) if (u) out.push(u);
+  if (zone !== 'board') for (const u of state.bench) if (u && u.key !== 'ComponentAnvil') out.push(u);   // 散件鐵砧不算棋子
   return out;
 }
 const hasTrait = (DATA, u, traits) => { const d = defOf(DATA, u.key); return !!d && (d.traits || []).some(t => traits.includes(t)); };

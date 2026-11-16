@@ -119,7 +119,7 @@ export function autoFillBoard(state, DATA) {
   for (let i = 0; i < state.bench.length; i++) {
     if (population(state, DATA) >= teamLimit(state, DATA)) break;
     const u = state.bench[i];
-    if (!u) continue;
+    if (!u || S.isAnvil(u)) continue;
     if (population(state, DATA) + slotsOf(DATA, u) > teamLimit(state, DATA)) continue;
     const cell = defaultCell(state, DATA, u.key);
     if (!cell) break;
@@ -178,10 +178,19 @@ function trimToLimit(state, DATA, events) {
 // ---------- 抽選工具 ----------
 function rewardRng(state) { return makeRng(hashSeed(state.seed, 'reward', state.round, state.rewardN++)); }
 function giveComponent(state, DATA, events, choice = false) {
-  if (choice && R(DATA).componentChoice) {   // 自選散件（rules.componentChoice；教學頁關掉）
-    const g = S.addItemBench(state, S.CHOICE, DATA);
-    events.push({ type: 'item', key: S.CHOICE, ...(g ? { overflowGold: g } : {}) });
-    return S.CHOICE;
+  if (choice && R(DATA).componentChoice) {   // 自選散件（rules.componentChoice；教學頁關掉）：放在板凳上的散件鐵砧，賣掉時挑
+    const bi = state.bench.findIndex(x => !x);
+    if (bi >= 0) {
+      const a = { uid: state.uidNext++, key: S.ANVIL, star: 1, items: [], pos: null };
+      state.bench[bi] = a;
+      events.push({ type: 'anvil', uid: a.uid });
+      return S.ANVIL;
+    }
+    // 板凳滿了：直接幫你挑（先配裝備欄落單的散件）
+    const k = pickChoiceComponent(state, DATA);
+    const g = S.addItemBench(state, k, DATA);
+    events.push({ type: 'item', key: k, auto: true, ...(g ? { overflowGold: g } : {}) });
+    return k;
   }
   const { compKeys } = S.itemIndex(DATA);
   const k = rewardRng(state).pick(compKeys);
@@ -474,6 +483,7 @@ export function actBuy(state, slot, DATA) {
 }
 export function actSell(state, uid, DATA) {
   const g = needPlan(state); if (g) return g;
+  { const f0 = S.findUnit(state, uid); if (f0 && S.isAnvil(f0.unit)) return no('散件鐵砧：挑一件散件就會換成那件'); }
   const r = S.sell(state, uid, DATA);
   if (!r.ok) return r;
   prunePicks(state, DATA);   // 賣掉的棋子身上的標記收回
@@ -545,11 +555,21 @@ export function actMove(state, uid, to, DATA) {
   const f = S.findUnit(state, uid);
   if (!f) return no('找不到這隻棋子');
   const u = f.unit;
+  if (S.isAnvil(u) && to.zone !== 'bench') return no('散件鐵砧不能上場，賣掉它就能挑散件');
   const events = [{ type: 'move', uid }];
   if (to.zone === 'bench') {
     if (!(to.idx >= 0 && to.idx < state.bench.length)) return no('板凳格不存在');
     const other = state.bench[to.idx];
     if (other && other.uid === uid) return ok({ events: [] });
+    if (f.zone === 'board' && S.isAnvil(other)) {   // 拖到散件鐵砧那格：鐵砧讓到別的空格；板凳沒空格就不行
+      const free = state.bench.findIndex(x => !x);
+      if (free < 0) return no('那格是散件鐵砧，板凳也滿了；先賣掉鐵砧挑散件');
+      state.bench[free] = other;
+      state.board.splice(f.idx, 1);
+      state.bench[to.idx] = u; u.pos = null; delete u.ov;
+      settleEvents(state, DATA, events); runUnlocks(state, DATA, events); fitMixer(state, DATA);
+      return ok({ events });
+    }
     if (f.zone === 'board') {
       if (other) {
         const d = slotsOf(DATA, other) - slotsOf(DATA, u);
@@ -605,6 +625,31 @@ export function actChooseComponent(state, idx, key, DATA) {
   if (!S.itemIndex(DATA).compSet.has(key)) return no('只能挑散件');
   state.itemBench[idx] = key;
   return ok({ events: [{ type: 'chooseComponent', idx, key }] });
+}
+// 挑一件「最能合成」的散件：先配裝備欄落單的散件，沒有就照固定順序
+function pickChoiceComponent(state, DATA, salt = 0) {
+  const { compKeys, compSet } = S.itemIndex(DATA);
+  const basic = compKeys.filter(k => !/Spatula|FryingPan/i.test(k));
+  const lone = state.itemBench.find(k => !S.isChoice(k) && compSet.has(k));
+  const pick = lone ? basic.find(k => S.combineResult(DATA, lone, k)) : null;
+  return pick || basic[(state.round + state.itemBench.length + salt) % basic.length];
+}
+// 賣掉散件鐵砧：挑一件散件放進裝備欄（站主 2026-11-16）
+export function actOpenAnvil(state, uid, key, DATA) {
+  const g = needPlan(state); if (g) return g;
+  const f = S.findUnit(state, uid);
+  if (!f || !S.isAnvil(f.unit)) return no('這不是散件鐵砧');
+  if (!S.itemIndex(DATA).compSet.has(key)) return no('只能挑散件');
+  state.bench[f.idx] = null;
+  const gold = S.addItemBench(state, key, DATA);
+  const events = [{ type: 'openAnvil', uid, key, ...(gold ? { overflowGold: gold } : {}) }];
+  settleEvents(state, DATA, events);   // 板凳空出一格：超出人口的棋子可以回來
+  return ok({ events });
+}
+export function autoOpenAnvils(state, DATA) {
+  let n = 0;
+  for (const u of state.bench.slice()) if (S.isAnvil(u)) { if (actOpenAnvil(state, u.uid, pickChoiceComponent(state, DATA, n), DATA).ok) n++; }
+  return n;
 }
 // 自動挑（機器人、或之後想加「全部自動」用）：先挑能跟裝備欄落單散件合成的，沒有就照固定順序輪流給
 export function autoChooseComponents(state, DATA) {

@@ -25,8 +25,9 @@ async function boot() {
   const s = q.get('s');
   const search = s && /^\d+$/.test(s) ? '?s=' + s : '';
   const store = makeStore(storage);
-  const app = mountApp(document.getElementById('tt-root'), LD, store, { backHref: '../' + search + '#learn', search });
-  app.start(decodeURIComponent(location.hash.slice(1)));
+  const hashId = decodeURIComponent(location.hash.slice(1));
+  const app = await mountApp(document.getElementById('tt-root'), LD, store, { backHref: '../' + search + '#learn', search, hashId });
+  if (!hashId && LD.lessons.every(l => store.get().play.done.includes(l.id))) app.api.toast('12 關都過了，想重玩哪一關都可以');
   window.addEventListener('hashchange', () => { const id = decodeURIComponent(location.hash.slice(1)); if (LD.lessons.some(l => l.id === id)) app.openLesson(id); });
 }
 

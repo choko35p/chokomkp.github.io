@@ -5,7 +5,7 @@
 import { traitIcon } from './traitbar.js';
 import { starsEl } from './stars.js';
 import { neighbors } from '../hex.js';
-import { CHOICE } from '../shop.js';
+import { CHOICE, ANVIL } from '../shop.js';
 export { starsEl };
 export const COLS = 7;
 const ROW_H = 0.866;
@@ -67,6 +67,14 @@ export function unitToken(DATA, u, desc, { enemy = false, marks = null } = {}) {
     for (const k of u.items) { const i = el('i'); i.style.backgroundImage = `url("../icons/items/${k}.webp")`; box.append(i); }
     t.append(box);
   }
+  return t;
+}
+
+const ANVIL_SVG = '<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M4 9h17c4.500 0 7 2 7 5-2.500 0-5 .800-6.500 2.500L21 20h-3v3h4v3H8v-3h4v-3H9.500L8 14.500C5.500 14 4 12 4 9z"/></svg>';
+export function anvilToken(u, desc, selected = false) {
+  const t = el('div', 'tt-unit tt-anvil' + (selected ? ' tt-sel' : ''), { 'data-tt-drag': desc, 'data-tt-tap': desc, 'data-tt-uid': u.uid, 'data-tt-tip': 'text:散件鐵砧：點它或賣掉（拖到商店、滑鼠指著按 E），挑一件你要的散件放進裝備欄', title: '散件鐵砧' });
+  const ic = el('span', 'tt-anv-ic'); ic.innerHTML = ANVIL_SVG;
+  t.append(ic, el('span', 'tt-anv-t', {}, '散件'));
   return t;
 }
 
@@ -226,6 +234,11 @@ export function renderBench(el_, api) {
   const slots = [];
   for (let i = 0; i < 9; i++) {
     const u = (state.bench || [])[i];
+    if (u && u.key === ANVIL) {   // 散件鐵砧（站主 2026-11-16）：賣掉＝挑一件散件
+      const s = el('div', 'tt-bslot', { role: 'button', tabindex: '0', 'data-tt-drop': `bench:${i}`, 'aria-label': `板凳 ${i + 1}：散件鐵砧，點一下或賣掉就能挑散件` });
+      s.append(anvilToken(u, `bench:${i}`, u.uid === sel));
+      slots.push(s); continue;
+    }
     const s = el('div', 'tt-bslot', { role: 'button', tabindex: '0', 'data-tt-drop': `bench:${i}`,
       'aria-label': `板凳 ${i + 1}` + (u ? `：${zhOf(DATA, u.key)} ${u.star} 星` : '：空') });
     if (u) { const tk = unitToken(DATA, u, `bench:${i}`, { marks: marksOf(api, u) }); tk.setAttribute('data-tt-tap', `bench:${i}`); if (u.uid === sel) tk.classList.add('tt-sel'); s.append(tk); }

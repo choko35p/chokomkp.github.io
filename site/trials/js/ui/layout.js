@@ -41,7 +41,12 @@ export function askModal(title, text, buttons) {
 }
 
 // ---------- 掛載 ----------
-export async function mount(root, api) {
+// opts（教學頁用；滴答克不傳，行為不變）：
+//   hide: 要藏起來的區塊（unlocks／last／planner／hotkeys／help／codex／augs／special／mix／roundbar／foot）
+//   title／back{href,label,aria}／footer：換頁首標題、返回連結、頁尾文字；headerExtra：插在「音效」鍵前面的節點
+//   noHelp：第一次進來不跳說明；onRender(R, app)：每次 render 後呼叫；battle{start(), finish(r)}：換成自己的開戰與結算
+export async function mount(root, api, opts = {}) {
+  const hide = new Set(opts.hide || []);
   [traitbar, panels, battle, inputMod] = await Promise.all([
     import('./traitbar.js').catch(() => null),
     import('./panels.js').catch(() => null),
@@ -57,7 +62,7 @@ export async function mount(root, api) {
   }
 
   root.replaceChildren();
-  const augOn = !DATA.rules || !DATA.rules.augment || DATA.rules.augment.enabled !== false;   // 增幅總開關（rules.json augment.enabled）；關掉就不畫增幅列、不跳增幅視窗
+  const augOn = (!DATA.rules || !DATA.rules.augment || DATA.rules.augment.enabled !== false) && !hide.has('augs');   // 增幅總開關（rules.json augment.enabled）；關掉就不畫增幅列、不跳增幅視窗
   const app = el('div', 'tt-shell', { 'data-phase': 'plan' });
   app.innerHTML = `
     <header class="tt-top"><div class="tt-top-in">
@@ -85,6 +90,7 @@ export async function mount(root, api) {
         <div class="tt-hud"></div>
         <div class="tt-xshop" data-tt-drop-zone></div>
         <button class="tt-go" type="button" data-act="go" data-tt-noclear><span>戰鬥</span><kbd class="tt-hk" aria-hidden="true"></kbd></button>
+        <label class="tt-autoskip" data-tt-noclear data-tt-tip="text:打開之後，按「戰鬥」會直接跳到結果，不播戰鬥過程。戰鬥中同一個位置的鍵就是「跳過」。"><input type="checkbox" data-act="autoskip"><span>自動跳過</span></label>
         <div class="tt-battlebar">
           <div class="tt-speed" role="group" aria-label="戰鬥速度"></div>
           <div class="tt-rank" aria-label="即時傷害排行"></div>
@@ -103,7 +109,15 @@ export async function mount(root, api) {
     speed: $(app, '.tt-speed'), rank: $(app, '.tt-rank'), mute: $(app, '[data-act=mute]'), go: $(app, '.tt-go'),
     unlockBtn: $(app, '.tt-unlockbtn'), lastBtn: $(app, '.tt-lastbtn'), mix: $(app, '.tt-mix'),
   };
-  const mixer = mountMixer(R.mix, api);
+  const HIDE_SEL = { unlocks: '.tt-unlockbtn', last: '.tt-lastbtn', planner: '.tt-planbtn', hotkeys: '[data-act=hotkeys]', help: '[data-act=help]', codex: '.tt-codexbtn', special: '.tt-xspecial', mix: '.tt-mix', roundbar: '.tt-roundbar', foot: '.tt-foot' };
+  for (const k of hide) { const n = HIDE_SEL[k] && app.querySelector(HIDE_SEL[k]); if (n) n.dataset.ttOff = '1'; }
+  const hideOn = () => { for (const n of app.querySelectorAll('[data-tt-off]')) n.hidden = true; };
+  if (opts.title) { const h = $(app, '.tt-top h1'); if (h) h.textContent = opts.title; }
+  if (opts.back) { const a = $(app, '.tt-link'); if (a) { a.href = opts.back.href; a.setAttribute('aria-label', opts.back.aria || opts.back.label); a.replaceChildren('← ', el('span', 'tt-hide-s', {}, opts.back.label)); } }
+  if (opts.footer) { const f = $(app, '.tt-foot p'); if (f) f.textContent = opts.footer; }
+  if (opts.headerExtra) R.mute.before(...[].concat(opts.headerExtra));
+  hideOn();
+  const mixer = hide.has('mix') ? { update() {} } : mountMixer(R.mix, api);
   // 站台列的「戰鬥」鍵：戰鬥階段整個收起；快捷鍵提示由 renderShop 填
 
   // 手機抽屜最高不能蓋到板凳（SPEC：抽屜不蓋棋盤與板凳）
@@ -253,10 +267,12 @@ export async function mount(root, api) {
 
   // ---- 主要 render ----
   let curEnemy = null;
-  function render() {
+  function render() { renderCore(); hideOn(); if (opts.onRender) opts.onRender(R, app); }
+  function renderCore() {
     curEnemy = api.enemy();
     validateSel();
-    renderRoundbar(); renderAugs(); renderUnlockBtn();
+    if (!hide.has('roundbar')) renderRoundbar();
+    renderAugs(); renderUnlockBtn();
     renderHud(R.hud, api);
     mixer.update();   // 戰鬥中也要更新（鎖住狀態）
     if (ui.mode === 'battle') return;
@@ -266,7 +282,7 @@ export async function mount(root, api) {
     renderBoard(R.board, api, { mode: 'plan', enemy: curEnemy });
     renderBench(R.bench, api);
     renderItems(R.items, api);
-    renderSpecials(R.special, api);
+    if (!hide.has('special')) renderSpecials(R.special, api);
     renderShop(R.shop, api);
     syncDrag();
     fitDrawer();
@@ -397,7 +413,7 @@ export async function mount(root, api) {
   api.toggleVolume = () => setVolOpen(volPanel.hidden);
 
   // ---- 隊伍編輯器 ----
-  mountPlanner(api);
+  if (!hide.has('planner')) mountPlanner(api);
   const call = (fn, label) => { if (panels && panels[fn]) panels[fn](api); else api.toast(label + '還沒接上'); };
   app.addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]'); if (!b) return;
@@ -410,14 +426,14 @@ export async function mount(root, api) {
     else if (a === 'hotkeys') call('showHotkeys', '快捷鍵設定');
     else if (a === 'lastresult') { if (ui.lastResult && panels?.showResult) { panels.hideResultBanner?.(); panels.showResult(api, { ...ui.lastResult, review: true }); } }
     else if (a === 'odds') toggleOdds();
-    else if (a === 'go') go();
+    else if (a === 'go') { if (ui.mode === 'battle') skipBattle(); else go(); }
   });
   function showHelp() {
     if (panels && panels.showHelp) panels.showHelp({ onRestart: () => api.act('restart'), api });
     else askModal('說明', '30 回合、6 隻頭目、3 條命、沒有計時。非官方重製，數值為推測。把棋子拖到商店可以賣掉，拖到格子可以移動或交換。', [{ label: '知道了', primary: true }]);
   }
   api.showHelp = showHelp;
-  if (!new URLSearchParams(location.search).has('seed')) { if (panels && panels.maybeShowHelpFirst) panels.maybeShowHelpFirst(); else try { if (!localStorage.getItem('trials19.helpSeen')) { localStorage.setItem('trials19.helpSeen', '1'); showHelp(); } } catch (_) { /* 無痕模式 */ } }
+  if (!opts.noHelp && !new URLSearchParams(location.search).has('seed')) { if (panels && panels.maybeShowHelpFirst) panels.maybeShowHelpFirst(); else try { if (!localStorage.getItem('trials19.helpSeen')) { localStorage.setItem('trials19.helpSeen', '1'); showHelp(); } } catch (_) { /* 無痕模式 */ } }
 
   // ---- 戰鬥 ----
   let busy = false, abortCtl = null;
@@ -426,11 +442,24 @@ export async function mount(root, api) {
     R.speed.replaceChildren(...SPEEDS.map(n => {
       const b = el('button', 'tt-xbtn', { type: 'button', 'aria-pressed': String(ui.speed === n) }, n + '×');
       b.addEventListener('click', () => setSpeed(n)); return b;
-    }), (() => { const b = el('button', 'tt-xbtn', { type: 'button' }, '跳過'); b.addEventListener('click', skipBattle); return b; })());
+    }));
   }
   function setSpeed(n) { ui.speed = n; if (battle && battle.setBattleSpeed) battle.setBattleSpeed(n); renderSpeed(); }
   function cycleSpeed() { setSpeed(SPEEDS[(SPEEDS.indexOf(ui.speed) + 1) % SPEEDS.length]); }
   function skipBattle() { if (abortCtl) abortCtl.abort(); }
+  // 站主 2026-11-16「跳過鍵跟開始戰鬥鍵在同個位置，可以選默認跳過」：戰鬥中「戰鬥」鍵變「跳過」；自動跳過存在 trials19.autoSkip
+  const AUTOSKIP_KEY = 'trials19.autoSkip';
+  const readAutoSkip = () => { try { return localStorage.getItem(AUTOSKIP_KEY) === '1'; } catch (_) { return false; } };
+  ui.autoSkip = readAutoSkip();
+  const skipBox = $(app, '.tt-autoskip input');
+  if (skipBox) {
+    skipBox.checked = ui.autoSkip;
+    skipBox.addEventListener('change', () => { ui.autoSkip = skipBox.checked; try { localStorage.setItem(AUTOSKIP_KEY, ui.autoSkip ? '1' : '0'); } catch (_) { /* 無痕模式：只在這次有效 */ } if (ui.autoSkip && ui.mode === 'battle') skipBattle(); });
+  }
+  function setGoLabel(battleOn) {
+    const sp = R.go.querySelector('span'); if (sp) sp.textContent = battleOn ? '跳過' : '戰鬥';
+    R.go.setAttribute('aria-label', battleOn ? '跳過這場戰鬥' : '開始戰鬥');
+  }
   ui.setSpeed = setSpeed; ui.skipBattle = skipBattle;
 
   function trackRank(result) {
@@ -455,6 +484,7 @@ export async function mount(root, api) {
 
   async function go() {
     if (ui.mode !== 'plan' || busy) return;
+    if (opts.battle) { const rb = opts.battle.start(); if (rb && rb.ok) await runBattle(rb); return; }   // 教學頁自己的開戰規則
     if (api.state.phase !== 'plan') return;
     // 場上沒棋子：板凳還有棋子就先擋（提醒上場）；手上完全沒棋子就放行，當作這回合輸掉，不會卡死
     if (!api.state.board.length && api.state.bench.some(Boolean)) { api.toast('場上還沒有棋子'); sfx('error'); return; }
@@ -474,19 +504,29 @@ export async function mount(root, api) {
     if (panels && panels.renderUnitSide) panels.renderUnitSide(R.unitpanel, api);
     syncDrag();
     R.rank.replaceChildren();
-    renderSpeed(); renderHud(R.hud, api); renderRoundbar();
+    renderSpeed(); renderHud(R.hud, api); if (!hide.has('roundbar')) renderRoundbar();
     mixer.update();   // 戰鬥中鎖住推桿
     abortCtl = new AbortController();
+    setGoLabel(true);
+    if (ui.autoSkip) abortCtl.abort();   // 自動跳過：直接看結果
     const onEvent = trackRank(r.result);
-    const opts = {
+    const playOpts = {
       speed: ui.speed, skip: abortCtl.signal, onEvent,
       spriteIndex: (key) => DATA.units.sprite?.map?.[key], spriteUrl: DATA.units.sprite?.src,
     };
     try {
-      if (battle && battle.playBattle) await battle.playBattle(R.board.__field, r.result, opts);
+      if (battle && battle.playBattle) await battle.playBattle(R.board.__field, r.result, playOpts);
       else await new Promise(res => setTimeout(res, 400));
     } catch (err) { console.error(err); }
     abortCtl = null;
+    setGoLabel(false);
+    if (opts.battle) {   // 教學頁：結算交給它（Session.finish），回到佈陣後再跳結果卡
+      const finL = opts.battle.finish(r);
+      ui.mode = 'plan'; busy = false; app.dataset.phase = 'plan';
+      render();
+      if (opts.battle.after) opts.battle.after(finL);
+      return;
+    }
     const fin = api.act('finishBattle') || {};
     const win = r.result.winner === 'player';
     const data = { round: api.state.history?.length ? api.state.history[api.state.history.length - 1].round : undefined, win, result: r.result, enemy: r.enemy || curEnemy, finish: fin, state: api.state, roundScore: fin.roundScore, gains: fin.gains, gameOver: fin.gameOver, cleared: fin.cleared };
@@ -533,5 +573,5 @@ export async function mount(root, api) {
   ui.battleNow = async () => { if (ui.mode !== 'plan') return; const p = go(); await new Promise(r => setTimeout(r, 0)); skipBattle(); return p; };
 
   render();
-  return { render };
+  return { render, R, app };
 }

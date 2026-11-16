@@ -121,9 +121,9 @@ export function rollShop(state, DATA, opts = {}) {
 }
 
 // ---------- 棋子位置 ----------
-export function allUnits(state) {
+export function allUnits(state) {   // 不含散件鐵砧
   const out = state.board.slice();
-  for (const u of state.bench) if (u) out.push(u);
+  for (const u of state.bench) if (u && !isAnvil(u)) out.push(u);
   return out;
 }
 export function findUnit(state, uid) {
@@ -169,6 +169,9 @@ export function combineResult(DATA, a, b) {
 // 站主 2026-11-16「多點自選的散件，不要一堆垃圾合不起來」：自選散件放在裝備欄，點開挑一件你要的散件
 export const CHOICE = 'ChoiceComponent';
 export const isChoice = (k) => k === CHOICE;
+// 站主 2026-11-16「自選不要放在裝備區，要放在備戰席，賣掉可以選裝備」：散件鐵砧＝板凳上的一格，賣掉時挑一件散件
+export const ANVIL = 'ComponentAnvil';
+export const isAnvil = (u) => !!u && u.key === ANVIL;
 export function addItemBench(state, item, DATA) {
   if (state.itemBench.length < DATA.rules.itemBenchSize) { state.itemBench.push(item); return 0; }
   state.gold += 1;
@@ -185,7 +188,7 @@ export function tryMerge(state, DATA, extra = null) {
     const order = [];
     const board = state.board.slice().sort((a, b) => a.uid - b.uid);
     for (const u of board) order.push({ u, zone: 'board' });
-    state.bench.forEach((u, i) => { if (u) order.push({ u, zone: 'bench', i }); });
+    state.bench.forEach((u, i) => { if (u && !isAnvil(u)) order.push({ u, zone: 'bench', i }); });
     for (const o of order) {
       if (o.u.star >= 3 || costOf(DATA, o.u.key) === 7) continue;
       const g = o.u.key + '|' + o.u.star;

@@ -164,7 +164,7 @@ export class Session {
     if (this.pending) return { ok: false, reason: '戰鬥中' };
     if (name === 'buy' && this.shopOff()) return { ok: false, reason: '這一關沒有商店' };
     if (name === 'reroll' && this.rerollOff()) return { ok: false, reason: '這一關先不用重抽' };
-    if (name === 'buyXp' && this.buyXpOff()) return { ok: false, reason: '這一關先不用買經驗' };
+    if ((name === 'buyXp' || name === 'levelUp') && this.buyXpOff()) return { ok: false, reason: '這一關先不用買經驗' };
     if (this.stats.battles >= this.rounds && this.rounds > 1) return { ok: false, reason: '這一關打完了' };
     const fn = G['act' + name[0].toUpperCase() + name.slice(1)];
     if (!fn) throw new Error('沒有這個動作：' + name);

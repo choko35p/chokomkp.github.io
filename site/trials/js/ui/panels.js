@@ -3,7 +3,7 @@
 import { starsEl } from './stars.js';
 import { el, fmt, avatar, kindOf, traitZh, unitZh, isStars, ensureStyle, traitTags, boardUnits, playerTraits } from './traitbar.js';
 import { countTraits, buildTeam } from '../stats.js';
-import { sellValue, CHOICE } from '../shop.js';
+import { sellValue, CHOICE, ANVIL } from '../shop.js';
 import * as TB from './traitbar.js';
 import * as AU from '../audio.js';
 import { sfx } from '../audio.js';
@@ -567,6 +567,12 @@ export function unlockTipNodes(api, key) {
 
 // ---------- 賣出（3★ 與 7 費要確認；拖到商店、E 鍵、面板賣出鍵共用） ----------
 export function sellUnit(api, unit, opts = {}) {
+  if (unit && unit.key === ANVIL) {   // 散件鐵砧：賣掉＝打開挑散件
+    if (api.ui) api.ui.sel = { kind: 'unit', uid: unit.uid };
+    api.emit && api.emit('change');
+    api.toast && api.toast('挑一件散件，就會放進裝備欄');
+    return null;
+  }
   const { DATA } = api; const U = DATA.units.byKey[unit.key]; if (!U) return null;
   const star = unit.star || 1, price = sellValue(unit, DATA);
   const doit = () => {
@@ -670,20 +676,21 @@ function bar(cls, cur, max, text, label) {
 // 自選散件：列出全部散件，每件寫出「跟裝備欄裡的哪件能合成什麼」，點一件就換上（站主 2026-11-16）
 function choiceSide(api, r) {
   const { DATA } = api;
+  const anvil = r.kind === 'unit';   // 板凳上的散件鐵砧；不然是裝備欄的自選散件（舊存檔）
   const bench = api.state.itemBench || [];
   const wrap = el('div', { class: 'tt-us tt-us-item tt-us-choice' }, el('div', { class: 'tt-us-grip', 'data-tt-grip': '', 'aria-hidden': 'true' }),
-    el('div', { class: 'tt-us-itemhead' }, el('span', { class: 'tt-us-itemicon tt-xchoice' }, el('span', { class: 'tt-xch-q' }, '?')), el('div', {}, el('b', { class: 'tt-us-iname' }, '自選散件'), el('small', {}, '挑一件你要的散件'))));
+    el('div', { class: 'tt-us-itemhead' }, el('span', { class: 'tt-us-itemicon tt-xchoice' }, el('span', { class: 'tt-xch-q' }, '?')), el('div', {}, el('b', { class: 'tt-us-iname' }, anvil ? '散件鐵砧' : '自選散件'), el('small', {}, anvil ? '挑一件散件，會放進裝備欄' : '挑一件你要的散件'))));
   const grid = el('div', { class: 'tt-us-chgrid', role: 'group', 'aria-label': '挑散件' });
   const comps = (DATA.items.components || []).map(x => (typeof x === 'string' ? x : x.key));
   for (const k of comps) {
     const zh = DATA.items.compByKey?.[k]?.zh || k;
     const makes = [];
-    bench.forEach((o, j) => { if (j === r.idx || o === CHOICE) return; const res = DATA.items.recipes && DATA.items.recipes[[k, o].sort().join('+')]; if (res && !makes.includes(res)) makes.push(res); });
+    bench.forEach((o, j) => { if ((!anvil && j === r.idx) || o === CHOICE) return; const res = DATA.items.recipes && DATA.items.recipes[[k, o].sort().join('+')]; if (res && !makes.includes(res)) makes.push(res); });
     const ic = el('span', { class: 'tt-us-itemicon tt-us-mini' }); ic.style.backgroundImage = `url("../icons/items/${k}.webp")`;
     const b = el('button', { type: 'button', class: 'tt-us-chbtn' + (makes.length ? ' tt-can' : ''), 'data-tt': 'choose-comp', 'data-key': k,
       'aria-label': `挑${zh}` + (makes.length ? `，可以合成${makes.map(x => DATA.items.byKey[x]?.zh || x).join('、')}` : '') },
       ic, el('span', { class: 'tt-us-chtxt' }, el('b', {}, zh), makes.length ? el('small', {}, '可合：' + makes.map(x => DATA.items.byKey[x]?.zh || x).join('、')) : null));
-    b.addEventListener('click', (e) => { e.stopPropagation(); if (api.ui) api.ui.sel = null; api.act('chooseComponent', r.idx, k); });
+    b.addEventListener('click', (e) => { e.stopPropagation(); if (api.ui) api.ui.sel = null; if (anvil) api.act('openAnvil', r.unit.uid, k); else api.act('chooseComponent', r.idx, k); });
     grid.append(b);
   }
   wrap.append(grid, el('p', { class: 'tt-us-hint tt-muted' }, '亮起來的那幾件，跟你裝備欄裡現有的散件可以直接合成。'));
@@ -832,7 +839,7 @@ export function renderUnitSide(root, api) {
   if (ui.sel && !r && ui.mode !== 'battle') ui.sel = null;   // 選取的東西不在了
   if (!r) { root.hidden = true; root.replaceChildren(); delete root.dataset.sel; return; }
   root.hidden = false; root.dataset.sel = r.kind; root.classList.add('tt-unitside');
-  const node = r.kind === 'sp' ? spSide(api, r) : r.kind === 'item' ? itemSide(api, r) : unitSide(api, r);
+  const node = r.kind === 'sp' ? spSide(api, r) : r.kind === 'item' ? itemSide(api, r) : (r.kind === 'unit' && r.unit.key === ANVIL) ? choiceSide(api, r) : unitSide(api, r);
   root.replaceChildren(node);
   if (!root.__ttGrip) {   // 手機抽屜：點把手或往下滑收起
     root.__ttGrip = true;

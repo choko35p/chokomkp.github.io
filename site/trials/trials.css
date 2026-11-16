@@ -141,7 +141,7 @@ html, body { background: var(--g-bg); }
     50% 3.2px, calc(100% - 2.5px) calc(25% + 1.9px), calc(100% - 2.5px) calc(75% - 1.9px), 50% calc(100% - 3.2px), 2.5px calc(75% - 1.9px), 2.5px calc(25% + 1.9px), 50% 3.2px); }
 .tt-cell > .tt-unit { z-index: 1; }
 .tt-shell:has(.tt-drag-src[data-tt-uid]) .tt-p .tt-cell, .tt-shell:has(.tt-drag-src[data-tt-drag^=shop]) .tt-p .tt-cell { --hl: rgba(255,236,170,.85); --hf: rgba(255,255,255,.12); }
-.tt-shell .tt-board .tt-p .tt-cell.tt-over.tt-over.tt-over { --hl: #fff; --hf: rgba(255,150,10,.9); }   /* 比「拖曳中全場亮」的規則權重高 */
+.tt-shell .tt-board .tt-p .tt-cell.tt-over.tt-over.tt-over { --hl: #fff; --hf: rgba(255,150,10,.9); }   /* 要蓋過「拖曳中全場亮」那條規則 */
 .tt-cell.tt-over { box-shadow: none; background: none; }
 .tt-cell:focus-visible { outline: none; --hl: #5ff0e4; --hf: rgba(10,200,185,.35); }
 .tt-bcell { display: none; }

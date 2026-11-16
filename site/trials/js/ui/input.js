@@ -197,6 +197,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
     speed: () => h.cycleSpeed && h.cycleSpeed(),
     skip: () => h.skipBattle && h.skipBattle(),
     unlocks: () => PN.showUnlocks(api),
+    planner: () => { if (api.togglePlanner) api.togglePlanner(); },
   };
   for (let n = 1; n <= 5; n++) ACT['buy' + n] = () => api.act('buy', n - 1);
 
@@ -215,7 +216,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
     if (modalOpen()) return;
     const a = hot().actionFor(e.code, ui.mode);
     if (!a || !ACT[a]) return;
-    if (e.repeat && (a === 'fight' || a === 'speed' || a === 'skip' || a === 'unlocks')) { e.preventDefault(); return; }
+    if (e.repeat && (a === 'fight' || a === 'speed' || a === 'skip' || a === 'unlocks' || a === 'planner')) { e.preventDefault(); return; }
     if (e.code === 'Space' || e.key === ' ') e.preventDefault();
     ACT[a]();
   };

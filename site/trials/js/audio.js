@@ -197,11 +197,17 @@ export function sfx(name) {
   } catch (e) { /* 音效失敗不影響遊戲 */ }
 }
 
+// 音量、靜音有變就通知（頁首音效面板和快捷鍵面板的滑桿要同步）
+const listeners = [];
+const notify = () => { for (const f of listeners.slice()) { try { f(); } catch (e) { /* 聽的人壞了不影響 */ } } };
+export function onAudioChange(fn) { listeners.push(fn); return () => { const i = listeners.indexOf(fn); if (i >= 0) listeners.splice(i, 1); }; }
+
 export function setVolume(v) {
   const n = Number(v);
   volume = Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : volume;
   try { localStorage.setItem(VOL_KEY, String(volume)); } catch (e) { /* 無痕模式 */ }
   applyGain();
+  notify();
 }
 export function getVolume() { return volume; }
 
@@ -209,6 +215,7 @@ export function setMuted(b) {
   muted = !!b;
   try { localStorage.setItem(MUTE_KEY, muted ? '1' : '0'); } catch (e) { /* 無痕模式 */ }
   applyGain();
+  notify();
 }
 
 export function isMuted() { return muted; }

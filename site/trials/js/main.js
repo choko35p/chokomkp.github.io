@@ -4,6 +4,7 @@ import * as audio from './audio.js';
 import * as U from './unlocks.js';
 import { hotkeys } from './ui/hotkeys.js';
 import { mount, askModal } from './ui/layout.js';
+import { createPlanner } from './planner.js';
 
 const q = new URLSearchParams(location.search);
 const SAVE_KEY = 'trials19.save';
@@ -89,6 +90,9 @@ async function boot() {
   };
   // 解鎖機制（SPEC_UI2 第 7 章）。enabled＝unlocks.json 有列棋子；關閉時 UI 不顯示入口
   api.hotkeys = hotkeys;
+  // 隊伍編輯器：清單存在 localStorage（trials19.planner），跟存檔分開、換局還在；?seed= 測試局可讀不寫
+  api.planner = createPlanner({ valid: (k) => !!DATA.units.byKey[k], persist: !seeded });
+  api.ownedUnits = () => [...state.board, ...state.bench].filter(Boolean);
   api.unlocks = {
     enabled: DATA.unlocks.list.length > 0,
     // 全部要解鎖的棋子，照 unlocks.json 順序：{key, zh, cost, text, local, guess, cond, unlocked, round, progress}

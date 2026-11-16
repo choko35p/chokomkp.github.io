@@ -912,6 +912,7 @@ const HK_ACTIONS = [
   { id: 'skip', zh: '跳過戰鬥', phase: 'battle', official: false, def: null },
   ...[1, 2, 3, 4, 5].map(n => ({ id: 'buy' + n, zh: `買商店第 ${n} 格`, phase: 'plan', official: false, def: 'Digit' + n })),
   { id: 'unlocks', zh: '開解鎖說明', phase: 'any', official: false, def: null },
+  { id: 'planner', zh: '開關隊伍編輯器', phase: 'any', official: false, def: 'KeyT' },
 ];
 // 包 A 的 api.hotkeys 還沒接上時的備用（同介面、同儲存格式）
 let fbHot = null;
@@ -1014,6 +1015,8 @@ export function showHotkeys(api) {
     sl.addEventListener('input', () => { AU.setVolume(Number(sl.value) / 100); out.textContent = sl.value + '%'; });
     sl.addEventListener('change', () => sfx('buy'));
     vol.append(el('label', {}, '音量'), sl, out);
+    // 頁首音效面板調了音量，這裡跟著動
+    if (AU.onAudioChange) { const off2 = AU.onAudioChange(() => { if (!sl.isConnected) { off2(); return; } const v = String(Math.round(AU.getVolume() * 100)); if (sl.value !== v) { sl.value = v; out.textContent = v + '%'; } }); }
   }
   const reset = el('button', { type: 'button', class: 'tt-btn tt-ghost', 'data-tt': 'hk-reset', onclick: () => { stopRec(); displaced = new Set(); pending = null; confirmBox.hidden = true; note = ''; hk.reset(); draw(); } }, '還原預設');
   return openPanel({ title: '快捷鍵設定', cls: 'tt-wide tt-hotkeys', onClose: () => { stopRec(); if (typeof off === 'function') off(); },
@@ -1046,10 +1049,18 @@ export function showHelp(opts = {}) {
         el('li', {}, '裝備欄旁邊有兩種特殊道具：黃金卸除器（每局 1 個，拖到有裝備的棋子身上，把裝備全卸回裝備欄）、心鋼最愛（心鋼之聲 3 階給 1 個、5 階再給 1 個，拖到心鋼之聲成員身上就是選他強化技能，佈陣時可以從一位拖到另一位改選）。'),
         el('li', {}, '選增幅時，每一張下面都有自己的重抽鍵，按了只換那一張。'),
         el('li', {}, '用鍵盤的話：Tab 選到棋子按 Enter 是選取，上場、下場用 ' + L('deploy') + ' 鍵。場上換格子沒有鍵盤的做法，只能用滑鼠或手指拖。'))),
+    sec('隊伍編輯器',
+      el('p', { class: 'tt-desc' }, '頁首的「隊伍編輯器」（快捷鍵 ' + L('planner') + '）可以先排好你想湊的隊伍，最多 25 隻，換局也還在。'),
+      el('ul', { class: 'tt-ul-plain' },
+        el('li', {}, '左鍵點棋子加入（目標 2 星），再點一次改成 3 星，再點回 2 星。右鍵是移出。手機點一下加入、長按移出。'),
+        el('li', {}, '商店裡出現你要的棋子，會有金框和書籤。你場上加板凳已經有 2 星（目標 3 星就要有 3 星）就不再標，編輯器裡那隻會變暗打勾；賣掉了又會標回來。'),
+        el('li', {}, '「看圖匯入」可以貼截圖（Ctrl+V）或選圖，認出頭像讓你確認再加。對戰畫面的 3D 模型認不出來，請截隊伍編輯器或陣容頁。圖片只在你的瀏覽器裡處理，不會上傳。'))),
+    sec('音效',
+      el('p', { class: 'tt-desc' }, '頁首的「音效」鍵點開可以調音量、靜音，快捷鍵面板裡的滑桿是同一個。')),
     secD('快捷鍵（桌機）', el('div', { class: 'tt-keys' },
       ...[[L('reroll'), '重抽'], [L('buyXp'), '購買經驗值'], [L('sell'), '賣出（滑鼠下的棋子，沒有就賣已選取的）'], [L('deploy'), '上場／回板凳'],
         [[1, 2, 3, 4, 5].map(n => L('buy' + n)).join(' '), '買商店第 1–5 格'],
-        [L('fight') + '（戰鬥中：' + L('speed') + '）', '開戰；戰鬥中切換速度'], ['Esc', '關面板、取消選取']]
+        [L('fight') + '（戰鬥中：' + L('speed') + '）', '開戰；戰鬥中切換速度'], [L('planner'), '開關隊伍編輯器'], ['Esc', '關面板、取消選取']]
         .flatMap(([k, d]) => [el('kbd', {}, k), el('span', {}, d)])),
       api ? el('p', { class: 'tt-only-desktop' }, el('button', { type: 'button', class: 'tt-btn tt-ghost', 'data-tt': 'open-hotkeys', onclick: () => showHotkeys(api) }, '設定快捷鍵')) : null),
   ];

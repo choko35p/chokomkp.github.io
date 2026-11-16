@@ -17,6 +17,7 @@ export const ACTIONS = [
   { id: 'buy4', zh: '買商店第 4 格', phase: 'plan', official: false, def: 'Digit4' },
   { id: 'buy5', zh: '買商店第 5 格', phase: 'plan', official: false, def: 'Digit5' },
   { id: 'unlocks', zh: '開解鎖說明', phase: 'any', official: false, def: null },
+  { id: 'planner', zh: '開關隊伍編輯器', phase: 'any', official: false, def: 'KeyT' },
 ];
 const BY_ID = Object.fromEntries(ACTIONS.map(a => [a.id, a]));
 

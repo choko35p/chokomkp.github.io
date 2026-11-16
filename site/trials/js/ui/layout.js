@@ -6,7 +6,8 @@
 //   面板：panels.showUnitPanel／showTraitPanel／showAugmentChoice／showReward／showResult／showGameOver／showHelp／showCodex
 import { renderBoard, renderBench, renderItems, renderSpecials, el, zhOf, costOf, itemZh } from './board.js';
 import { renderShop, renderHud } from './shopbar.js';
-import { sfx, setMuted, isMuted } from '../audio.js';
+import { sfx, setMuted, isMuted, setVolume, getVolume, onAudioChange } from '../audio.js';
+import { mountPlanner } from './planner.js';
 
 let traitbar = null, panels = null, battle = null, inputMod = null;
 const FRONT_COLS = [3, 2, 4, 1, 5, 0, 6];
@@ -62,9 +63,10 @@ export async function mount(root, api) {
       <h1>滴答克的試煉 <small>S19</small></h1>
       <button class="tt-ibtn tt-unlockbtn" type="button" data-act="unlocks" hidden></button>
       <button class="tt-ibtn tt-lastbtn" type="button" data-act="lastresult" hidden>上回合</button>
+      <button class="tt-ibtn tt-planbtn" type="button" data-act="planner" aria-pressed="false" aria-label="隊伍編輯器"><span class="tt-hide-s">隊伍</span>編輯器</button>
       <button class="tt-ibtn tt-hide-m" type="button" data-act="hotkeys">快捷鍵</button>
       <button class="tt-ibtn" type="button" data-act="help" aria-label="說明">說明</button>
-      <button class="tt-ibtn" type="button" data-act="mute" aria-pressed="false"></button>
+      <button class="tt-ibtn tt-mutebtn" type="button" data-act="mute" aria-haspopup="true" aria-expanded="false" aria-controls="tt-vol"></button>
     </div></header>
     <main class="tt-app">
       <div class="tt-stage">
@@ -329,13 +331,68 @@ export async function mount(root, api) {
   app.addEventListener('pointerleave', () => { ui.hoverUid = null; });
 
   // ---- 頁首按鈕 ----
-  const syncMute = () => { const m = isMuted(); R.mute.textContent = m ? '音效：關' : '音效：開'; R.mute.setAttribute('aria-pressed', String(m)); R.mute.setAttribute('aria-label', m ? '音效：關（點一下開啟）' : '音效：開（點一下關閉）'); };
+  // ---- 音效面板：點「音效」鍵展開，音量滑桿 0～100、靜音開關（桌機下拉、手機底部小抽屜）----
+  const volPct = () => Math.round(getVolume() * 100);
+  const volPanel = el('div', 'tt-vol', { id: 'tt-vol', role: 'group', 'aria-label': '音效設定', hidden: true, 'data-tt-noclear': '' });
+  const volSlider = el('input', 'tt-vol-range', { type: 'range', min: '0', max: '100', step: '5', 'aria-label': '音量' });
+  const volOut = el('b', 'tt-num tt-vol-out', {});
+  const volMute = el('button', 'tt-vol-mute', { type: 'button', 'aria-pressed': 'false' });
+  const volClose = el('button', 'tt-vol-close', { type: 'button', 'aria-label': '關閉音效設定' }, '完成');
+  volPanel.append(el('div', 'tt-vol-row', {}, el('label', 'tt-vol-lab', { for: 'tt-vol-range' }, '音量'), volSlider, volOut), el('div', 'tt-vol-row tt-vol-act', {}, volMute, volClose));
+  volSlider.id = 'tt-vol-range';
+  app.append(volPanel);
+  const syncMute = () => {
+    const m = isMuted(), v = volPct();
+    R.mute.textContent = m || v === 0 ? '靜音' : `音效 ${v}%`;
+    R.mute.setAttribute('aria-label', m ? '音效設定：目前靜音' : `音效設定：目前音量 ${v}%`);
+    R.mute.classList.toggle('tt-muted', m || v === 0);
+    if (document.activeElement !== volSlider) volSlider.value = String(v);
+    volOut.textContent = v + '%';
+    volMute.textContent = m ? '取消靜音' : '靜音';
+    volMute.setAttribute('aria-pressed', String(m));
+    volPanel.classList.toggle('tt-muted', m);
+    volSlider.style.setProperty('--tt-fill', v + '%');
+  };
   syncMute();
+  onAudioChange(syncMute);
+  let volTestAt = 0;
+  const preview = () => { try { sfx('buy'); } catch (_) { /* 略過 */ } };
+  volSlider.addEventListener('input', () => {
+    const v = Number(volSlider.value);
+    if (isMuted() && v > 0) setMuted(false);   // 拉大音量就等於取消靜音
+    setVolume(v / 100);
+    if (v > 0 && !volTestAt) { preview(); volTestAt = setTimeout(() => { volTestAt = 0; }, 220); }   // 拖的時候最多每 0.2 秒試聽一次
+  });
+  volSlider.addEventListener('change', () => { if (volTestAt) { clearTimeout(volTestAt); volTestAt = 0; } if (Number(volSlider.value) > 0 && !isMuted()) preview(); });
+  volMute.addEventListener('click', () => { setMuted(!isMuted()); if (!isMuted()) preview(); });
+  const placeVol = () => {
+    if (volPanel.hidden) return;
+    const b = R.mute.getBoundingClientRect(), mobile = window.matchMedia('(max-width: 1023px), (orientation: portrait)').matches;
+    volPanel.dataset.mobile = mobile ? '1' : '0';
+    if (mobile) { volPanel.style.removeProperty('--tt-vx'); volPanel.style.removeProperty('--tt-vy'); return; }
+    volPanel.style.setProperty('--tt-vy', Math.round(b.bottom + 6) + 'px');
+    volPanel.style.setProperty('--tt-vx', Math.round(Math.max(8, Math.min(window.innerWidth - 8 - volPanel.offsetWidth, b.right - volPanel.offsetWidth))) + 'px');
+  };
+  const volOutside = (e) => { if (!volPanel.contains(e.target) && !R.mute.contains(e.target)) setVolOpen(false); };
+  const volEsc = (e) => { if (e.key === 'Escape') { e.stopPropagation(); setVolOpen(false); R.mute.focus(); } };
+  function setVolOpen(on) {
+    volPanel.hidden = !on;
+    R.mute.setAttribute('aria-expanded', String(on));
+    document.removeEventListener('pointerdown', volOutside, true); document.removeEventListener('keydown', volEsc, true);
+    if (on) { placeVol(); syncMute(); setTimeout(() => document.addEventListener('pointerdown', volOutside, true), 0); document.addEventListener('keydown', volEsc, true); volSlider.focus({ preventScroll: true }); }
+  }
+  volClose.addEventListener('click', () => { setVolOpen(false); R.mute.focus(); });
+  window.addEventListener('resize', placeVol);
+  api.toggleVolume = () => setVolOpen(volPanel.hidden);
+
+  // ---- 隊伍編輯器 ----
+  mountPlanner(api);
   const call = (fn, label) => { if (panels && panels[fn]) panels[fn](api); else api.toast(label + '還沒接上'); };
   app.addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]'); if (!b) return;
     const a = b.dataset.act;
-    if (a === 'mute') { setMuted(!isMuted()); syncMute(); }
+    if (a === 'mute') setVolOpen(volPanel.hidden);
+    else if (a === 'planner') api.togglePlanner();
     else if (a === 'help') showHelp();
     else if (a === 'codex') call('showCodex', '圖鑑');
     else if (a === 'unlocks') { ui.unlockNew = false; renderUnlockBtn(); call('showUnlocks', '解鎖說明'); }

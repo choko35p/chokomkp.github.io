@@ -108,8 +108,17 @@ function cardEl(api, slot, i) {
     card.append(have);
   }
   if (slot.fresh) card.append(el('span', 'tt-fresh', {}, '新解鎖'));
+  // 隊伍編輯器裡要的、還沒達成的：金色外框＋右上角書籤
+  const PL = api.planner;
+  const wantStar = PL && api.ownedUnits && PL.wants(key, api.ownedUnits()) ? PL.starOf(key) : 0;
+  if (wantStar) {
+    card.classList.add('tt-want');
+    const bm = el('span', 'tt-wantmark', { 'aria-hidden': 'true', title: `隊伍編輯器要的（目標 ${wantStar} 星）`, 'data-star': wantStar });
+    bm.innerHTML = '<svg viewBox="0 0 24 30" focusable="false"><path d="M3 1h18a1 1 0 0 1 1 1v25.500a.8.8 0 0 1-1.300.6L12 21l-8.700 7.100A.8.8 0 0 1 2 27.500V2a1 1 0 0 1 1-1z"/></svg>';
+    card.append(bm);
+  }
   if (ms) card.classList.add('tt-merge');
-  card.setAttribute('aria-label', `商店第 ${i + 1} 格：${zhOf(DATA, key)}，${cost} 費，${cost} 金` + (slot.fresh ? '，新解鎖' : '') + (own.equiv ? `，${haveText(own)}` : '') + (ms ? `，買了可升 ${ms} 星` : ''));
+  card.setAttribute('aria-label', `商店第 ${i + 1} 格：${zhOf(DATA, key)}，${cost} 費，${cost} 金` + (slot.fresh ? '，新解鎖' : '') + (own.equiv ? `，${haveText(own)}` : '') + (ms ? `，買了可升 ${ms} 星` : '') + (wantStar ? `，隊伍編輯器要的，目標 ${wantStar} 星` : ''));
   return card;
 }
 

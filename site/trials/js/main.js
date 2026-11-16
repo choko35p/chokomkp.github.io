@@ -21,7 +21,7 @@ const REASONS = {
 const reasonText = (r) => (r && /[一-鿿]/.test(r) ? r : REASONS[r] || '這個動作現在做不到');
 
 const PICK_ZH = { mixer: '混音器', fav: '心鋼最愛', spot: '聚光燈', deal: '唱片合約', prod: '合作邀請', clone: '分身站位', inst: '沙灘樂器' };
-const SFX = { buy: 'buy', sell: 'sell', reroll: 'reroll', buyXp: 'xp', move: 'place', equip: 'equip', pickAugment: 'pick', rerollAugmentSlot: 'reroll', setFavorite: 'equip', moveFavorite: 'equip', pick: 'equip', instrument: 'equip', useRemover: 'equip', pickReward: 'pick', startBattle: 'start', mixerPreset: 'equip', mixerReset: 'equip' };
+const SFX = { buy: 'buy', sell: 'sell', reroll: 'reroll', buyXp: 'xp', move: 'place', equip: 'equip', pickAugment: 'pick', rerollAugmentSlot: 'reroll', setFavorite: 'equip', moveFavorite: 'equip', pick: 'equip', instrument: 'equip', useRemover: 'equip', pickReward: 'pick', startBattle: 'start', mixerPreset: 'equip', mixerReset: 'equip', combineItems: 'equip' };
 
 function showFatal(msg, withLink) {
   const root = document.getElementById('tt-root');
@@ -75,6 +75,7 @@ async function boot() {
     emit(evt, payload) { for (const f of (L[evt] || []).slice()) f(payload); },
     countTraits: stats ? (u, D, o) => stats.countTraits(u, D, o) : null,
     teamLimit: () => game.teamLimit(state, DATA),
+    defaultCell: (key) => game.defaultCell(state, DATA, key),
     fav: () => game.favoriteInfo(state, DATA),
     picks: () => game.pickInfo(state, DATA),
     mixer: { info: () => game.mixerInfo(state, DATA) },   // ILLBEATS 混音器（分貝、換算數值、鎖住與否）
@@ -144,6 +145,11 @@ async function boot() {
         if (rest.length) api.toast(rest.map(i => PICK_ZH[i] || i).join('、') + (rest.length === 1 && rest[0] === 'inst' ? ' 還沒擺，這場不會有效果' : ' 還沒指定，這場不會有效果'));
         if (mix) setTimeout(() => api.toast('混音器還沒分配分貝，這場 ILLBEATS 不會有加成'), rest.length ? 2300 : 0);
       }
+      // 開戰前場上超出人口：移回板凳、放不下就自動賣掉，都用提示告訴玩家
+      const zhOf = (k) => (DATA.units.byKey[k] ? DATA.units.byKey[k].zh : k);
+      const sold = (r.events || []).filter(e => e.type === 'autoSell'), benched = (r.events || []).filter(e => e.type === 'autoBench');
+      if (sold.length) api.toast('場上超出人口，已自動賣掉 ' + sold.map(e => `${zhOf(e.key)}（+${e.gold} 金）`).join('、'));
+      else if (benched.length) api.toast('場上超出人口，已把 ' + benched.map(e => zhOf(e.key)).join('、') + ' 移回板凳');
       return r;
     }
     const evs = r.events || [];
@@ -155,6 +161,9 @@ async function boot() {
         api.toast('解鎖：' + (def ? def.zh : ev.key) + '！下一次商店一定會出現');
         setTimeout(() => api.sfx('unlock'), 180);
       }
+      if (ev.type === 'autoFill') api.toast(`升級了，自動從板凳最左邊補了 ${ev.uids.length} 隻上場`);
+      else if (ev.type === 'ovBack') api.toast(`板凳有空格了，超出人口的 ${ev.uids.length} 隻跳回板凳`);
+      else if (ev.type === 'unit' && ev.onBoard) api.toast(`板凳滿了，${DATA.units.byKey[ev.key] ? DATA.units.byKey[ev.key].zh : ev.key} 先放到場上`);
       api.emit(ev.type, ev);
       if (ev.type === 'merge') { api.sfx(ev.star >= 3 ? 'star3' : 'star2'); played = true; }
       else if (ev.type === 'levelup') { api.sfx('levelup'); played = true; }

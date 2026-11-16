@@ -184,6 +184,7 @@ export function renderBoard(el_, api, view = {}) {
   }
   const ph = el('div', 'tt-half tt-p', { role: 'group', 'aria-label': '我方棋盤' });
   const sel = selUid(api);
+  let over = false; try { over = !!(api.popUsed && api.popMax && api.popUsed() > api.popMax()); } catch (_) { over = false; }   // 場上人口超出上限：標了 ov 的棋子畫「超出人口」
   const place = new Map();
   for (const u of state.board || []) if (u && u.pos) place.set(u.pos[0] + ',' + u.pos[1], u);
   // 沙灘樂器：有效的樂器相鄰 6 格淡淡標出範圍；變灰的（羈絆掉階）不標
@@ -210,6 +211,7 @@ export function renderBoard(el_, api, view = {}) {
       const tk = unitToken(DATA, u, `board:${r},${c}`, { marks: marksOf(api, u) });
       tk.setAttribute('data-tt-tap', `board:${r},${c}`);
       if (u.uid === sel) tk.classList.add('tt-sel');
+      if (u.ov && over) { tk.classList.add('tt-ovpop'); tk.title += '（超出人口，板凳有空格會自動跳回去，開戰前還超出就先移回板凳、放不下就賣掉）'; }
       cell.append(tk);
     }
     ph.append(cell);
@@ -241,7 +243,7 @@ export function renderItems(el_, api) {
   for (let i = 0; i < n; i++) {
     const k = list[i];
     if (!k) { nodes.push(el('div', 'tt-xslot', { 'aria-hidden': 'true' })); continue; }
-    const b = el('div', 'tt-xslot tt-xitem', { role: 'button', tabindex: '0', 'data-tt-tap': `item:${i}`, 'data-tt-drag': `item:${i}`, 'data-tt-tip': 'item:' + k, 'aria-label': '裝備：' + itemZh(DATA, k) });
+    const b = el('div', 'tt-xslot tt-xitem', { role: 'button', tabindex: '0', 'data-tt-tap': `item:${i}`, 'data-tt-drag': `item:${i}`, 'data-tt-drop': `item:${i}`, 'data-tt-tip': 'item:' + k, 'aria-label': '裝備：' + itemZh(DATA, k) });
     b.style.backgroundImage = `url("../icons/items/${k}.webp")`;
     if (sel && sel.kind === 'item' && sel.idx === i) b.classList.add('tt-sel');
     nodes.push(b);

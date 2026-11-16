@@ -305,6 +305,7 @@ export async function mount(root, api) {
 
   // ---- 動作（給 input.js 用的 h） ----
   const toBoardDefault = (u) => {
+    if (api.defaultCell) { const c = api.defaultCell(u.key); return c ? { zone: 'board', pos: c } : null; }   // 和升級補位同一套規則
     const front = ['Tank', 'Fighter'].includes(DATA.units.byKey[u.key]?.roleClass);
     const rows = front ? [0, 1, 2, 3] : [3, 2, 1, 0];
     const used = new Set(api.state.board.map(x => x.pos.join(',')));

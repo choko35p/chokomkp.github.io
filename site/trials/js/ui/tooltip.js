@@ -2,7 +2,7 @@
 //   bindTips(root, api)   委派：找 [data-tt-tip]，滑鼠 hover 150ms 顯示、離開收起；鍵盤 focus 也顯示；[data-tt-pin] 的元素點一下＝釘住／取消
 //   showTip(anchorEl, spec, {pin=false, placement='top', row?, full?})   spec：data-tt-tip 字串，或 {icon, title, sub, body:[節點|字串], foot:[…]}
 //   hideTip()
-// data-tt-tip 的值：ability:<unitKey>:<star>｜trait:<key>｜item:<key>｜aug:<key>｜text:<純文字>｜stat:<statKey>｜unlock:<unitKey>
+// data-tt-tip 的值：unit:<unitKey>（棋子頭像卡：名字、費用、羈絆、技能）｜ability:<unitKey>:<star>｜trait:<key>｜item:<key>｜aug:<key>｜text:<純文字>｜stat:<statKey>｜unlock:<unitKey>
 // 本檔頂層不使用 panels／traitbar 的匯出（互相 import，只在函式執行時才用）。
 import * as PN from './panels.js';
 import * as TB from './traitbar.js';
@@ -88,6 +88,28 @@ function buildAbility(api, key, star) {
   return wrap;
 }
 
+// 棋子頭像卡（羈絆面板成員、圖鑑、解鎖面板、隊伍編輯器）：名字、費用、羈絆（含圖示）、技能名與說明（星級數字 a/b/c）；沒解鎖的補一行解鎖條件
+function buildUnit(api, key) {
+  const { DATA } = api; const U = DATA.units.byKey[key];
+  if (!U) return h('div', 'tt-tip-in', h('p', 'tt-tip-p', key));
+  const ab = U.ability;
+  const tr = h('div', 'tt-tip-traits');
+  for (const k of U.traits || []) tr.append(h('span', 'tt-tip-trait', traitIconNode(DATA, k, 18), DATA.traits.byKey[k]?.zh || k));
+  const wrap = h('div', 'tt-tip-in', head(abilityIcon(DATA, key, 48), U.zh, `${U.cost} 費${U.role ? '　' + U.role : ''}`), tr);
+  if (ab) {
+    wrap.append(h('p', 'tt-tip-p tt-tip-abname', h('b', '', '技能：' + ab.name)), ...paras(ab.desc, 0));
+    const mana = U.stats?.mana;
+    const foot = [h('span', '', mana && mana[1] ? `法力 ${mana[0]}/${mana[1]}` : '不靠法力')];
+    if (ab.simplified) foot.push(badge('簡化', 'tt-simp'));
+    if (ab.guess) foot.push(badge('推測數值', 'tt-guess'));
+    wrap.append(h('div', 'tt-tip-foot', foot));
+  } else wrap.append(h('p', 'tt-tip-p', '這隻沒有技能說明。'));
+  try {
+    if (PN.isLocked && PN.isLocked(api, key)) { const n = PN.unlockTipNodes ? PN.unlockTipNodes(api, key) : null; if (n) wrap.append(h('div', 'tt-tip-lock', ...n)); }
+  } catch (_) { /* 解鎖資訊壞了不影響說明 */ }
+  return wrap;
+}
+
 function playerTraitList(api) {
   try { return PN.playerTraitsOf ? PN.playerTraitsOf(api) : []; } catch (_) { return []; }
 }
@@ -165,6 +187,7 @@ export function buildTip(spec, api = curApi) {
   const i = s.indexOf(':'); const kind = i < 0 ? 'text' : s.slice(0, i); const rest = i < 0 ? s : s.slice(i + 1);
   if (kind === 'text') return h('div', 'tt-tip-in', h('p', 'tt-tip-p', rest));
   if (!api) return h('div', 'tt-tip-in', h('p', 'tt-tip-p', rest));
+  if (kind === 'unit') return buildUnit(api, rest);
   if (kind === 'ability') { const [k, st] = rest.split(':'); return buildAbility(api, k, Number(st) || 1); }
   if (kind === 'trait') return buildTrait(api, rest);
   if (kind === 'item') return buildItem(api, rest);
@@ -270,6 +293,23 @@ export function bindTips(root, api) {
     if (e.pointerType === 'touch' && !pinned) { /* 長按由 input.js 叫 showTip */ }
     if (!pinned && tipEl && !(find(e.target) && find(e.target).hasAttribute('data-tt-pin'))) hideTip();
   }, true);
+  // 手機：長按棋子頭像卡（unit:）看說明；放開就收，這次放開不當點擊（不會誤開棋子面板）。
+  // 有 data-tt-tap／data-tt-drag 的元素（棋盤、商店）由 input.js 的長按處理，這裡不碰。
+  let lpT = 0, lpFired = 0, lpUp = 0;
+  root.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch') return;
+    const a = find(e.target);
+    if (!a || !String(a.dataset.ttTip).startsWith('unit:') || a.closest('[data-tt-tap],[data-tt-drag]')) return;
+    clearTimeout(lpT);
+    const x0 = e.clientX, y0 = e.clientY;
+    const mv = (ev) => { if (Math.hypot(ev.clientX - x0, ev.clientY - y0) > 10) { clearTimeout(lpT); off(); } };
+    const up = () => { clearTimeout(lpT); lpUp = Date.now(); off(); if (lpFired) { setTimeout(() => hideTip(), 0); } };
+    const off = () => { window.removeEventListener('pointermove', mv, true); window.removeEventListener('pointerup', up, true); window.removeEventListener('pointercancel', up, true); };
+    window.addEventListener('pointermove', mv, true); window.addEventListener('pointerup', up, true); window.addEventListener('pointercancel', up, true);
+    lpT = setTimeout(() => { lpFired = Date.now(); showTip(a, specOf(a), { placement: 'top' }); }, 400);
+  }, true);
+  root.addEventListener('click', (e) => { if (lpFired && Date.now() - lpFired < 4000 && Date.now() - lpUp < 600) { lpFired = 0; e.preventDefault(); e.stopPropagation(); } }, true);
+  root.addEventListener('contextmenu', (e) => { const a = find(e.target); if (a && String(a.dataset.ttTip).startsWith('unit:') && e.pointerType === 'touch') e.preventDefault(); });
   root.addEventListener('focusin', (e) => {
     const a = find(e.target); if (!a || pinned) return;
     let kb = true; try { kb = a.matches(':focus-visible'); } catch (_) { /* 舊瀏覽器 */ }

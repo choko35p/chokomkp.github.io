@@ -194,9 +194,25 @@ export function flashTrait(key, side = 'player') {
 
 // ---------- 懸停／長按亮起 ----------
 // 約定：棋盤格上的棋子、板凳棋子、商店卡請加 data-tt-unit="<key>"（U1/U3 負責加屬性）。
+// 滑鼠停在羈絆上（或手機長按）：該羈絆的棋子（場上、板凳、商店卡）亮起 tt-hl，其他的變暗（根節點 tt-hlmode）；
+// 商店卡上那個羈絆的小圖示加 tt-hlt。移開全部還原。純樣式，不改 pointer-events，不影響拖曳與點選。
+let activeTrait = null;
+function memberSet(key) {
+  const D = curApi?.DATA;
+  const m = new Set(D?.traits.byKey[key]?.members || []);
+  for (const u of D?.units.list || []) if ((u.traits || []).includes(key)) m.add(u.key);
+  return m;
+}
+function paintTrait(key) {
+  const m = key ? memberSet(key) : new Set();
+  document.querySelectorAll('[data-tt-unit]').forEach(n => n.classList.toggle('tt-hl', !!key && m.has(n.dataset.ttUnit)));
+  document.querySelectorAll('.tt-card .tt-ctag[data-trait]').forEach(n => n.classList.toggle('tt-hlt', !!key && n.dataset.trait === key));
+  document.querySelectorAll('.tt-trow[data-trait],.tt-tag[data-trait],.tt-etrait[data-trait],.tt-pl-trait[data-trait]').forEach(n => n.classList.toggle('tt-hl', !!key && n.dataset.trait === key));
+  document.body.classList.toggle('tt-hlmode', !!key);
+}
 export function highlightTrait(key, on) {
-  const m = new Set(curApi?.DATA.traits.byKey[key]?.members || []);
-  document.querySelectorAll('[data-tt-unit]').forEach(n => n.classList.toggle('tt-hl', !!on && m.has(n.dataset.ttUnit)));
+  activeTrait = on ? key : null;
+  paintTrait(activeTrait);
 }
 export function highlightUnit(unitKey, on) {
   const ts = new Set(curApi?.DATA.units.byKey[unitKey]?.traits || []);
@@ -208,7 +224,7 @@ function bindHover(api) {
   if (new URLSearchParams(location.search).has('seed')) window.__ttApi = api;
   if (bound) return; bound = true;
   let lp = null;
-  const traitEl = (e) => e.target.closest?.('.tt-trow[data-trait],.tt-etrait[data-trait]');
+  const traitEl = (e) => e.target.closest?.('.tt-trow[data-trait],.tt-tag[data-trait],.tt-etrait[data-trait],.tt-pl-trait[data-trait]');
   const unitEl = (e) => e.target.closest?.('[data-tt-unit]');
   document.addEventListener('pointerover', (e) => {
     if (e.pointerType === 'touch') return;
@@ -227,9 +243,12 @@ function bindHover(api) {
     clearTimeout(lp);
     lp = setTimeout(() => {
       if (t) highlightTrait(t.dataset.trait, true); else highlightUnit(u.dataset.ttUnit, true);
-      setTimeout(() => { document.querySelectorAll('.tt-hl').forEach(n => n.classList.remove('tt-hl')); }, 1500);
+      setTimeout(() => { activeTrait = null; paintTrait(null); document.querySelectorAll('.tt-hl').forEach(n => n.classList.remove('tt-hl')); }, 1500);
     }, 450);
   });
+  // 重畫（買卡、刷新、換位）後把亮起狀態補回去
+  let rq = 0;
+  if (typeof MutationObserver === 'function') new MutationObserver(() => { if (!activeTrait || rq) return; rq = requestAnimationFrame(() => { rq = 0; paintTrait(activeTrait); }); }).observe(document.body, { childList: true, subtree: true });
   const cancel = () => clearTimeout(lp);
   document.addEventListener('pointerup', cancel); document.addEventListener('pointercancel', cancel);
 }

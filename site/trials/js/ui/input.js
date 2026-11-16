@@ -111,7 +111,58 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
   }
   // 拖沙灘樂器時：游標停在哪一格，那一格相鄰的 6 格就亮起來（顯示樂器碰得到的範圍）
   const clearRange = () => { for (const n of app.querySelectorAll('.tt-rangehint')) n.classList.remove('tt-rangehint'); };
-  function onDragOver(to) {
+  // ---------- 裝備欄合成：散件拖到另一件散件上，停滿 1 秒放開＝直接合成 ----------
+  // 停上去就在旁邊顯示「會合成：成品」（圖示、名稱、一句效果），目標格繞一圈倒數；只有配得出成品的兩件才顯示。
+  // 不到 1 秒放開、或移到別處＝照舊（沒有事發生，裝備留在原位）。dnd 會先呼叫 onDragEnd 再 onDrop，所以放開前把「已停滿」記在 comboDone。
+  const COMBO_MS = 1000;
+  let combo = null, comboDone = null;
+  const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  function comboStop() {
+    if (!combo) return;
+    clearTimeout(combo.timer); cancelAnimationFrame(combo.raf);
+    combo.pop.remove();
+    combo.tgt.classList.remove('tt-combo-tgt', 'tt-ready'); combo.tgt.style.removeProperty('--p');
+    combo = null;
+  }
+  function comboRecipe(fromI, toI) {
+    const L = api.state.itemBench || [], a = L[fromI], b = L[toI];
+    if (!a || !b || fromI === toI) return null;
+    const res = DATA.items.recipes && DATA.items.recipes[[a, b].sort().join('+')];
+    return res ? { res, a, b } : null;
+  }
+  function comboStart(fromI, toI, tgt) {
+    const rc = comboRecipe(fromI, toI); if (!rc) return;
+    const it = DATA.items.byKey[rc.res] || {};
+    const nm = (k) => (DATA.items.compByKey && DATA.items.compByKey[k] ? DATA.items.compByKey[k].zh : k);
+    const eff = String(it.desc || it.simplified || '').split('。')[0];
+    const ic = document.createElement('span'); ic.className = 'tt-cp-ic'; ic.style.backgroundImage = `url("../icons/items/${rc.res}.webp")`;
+    const txt = document.createElement('div');
+    const b = document.createElement('b'); b.textContent = '會合成：' + (it.zh || rc.res);
+    const sm = document.createElement('small'); sm.textContent = eff ? eff + '。' : '';
+    const em = document.createElement('em'); em.textContent = `${nm(rc.a)} ＋ ${nm(rc.b)}　停 1 秒再放開`;
+    txt.append(b, sm, em);
+    const pop = document.createElement('div'); pop.className = 'tt-combo-pop'; pop.setAttribute('role', 'status'); pop.setAttribute('data-tt-combo', rc.res);
+    pop.append(ic, txt); document.body.append(pop);
+    const r = tgt.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight, vw = window.innerWidth;
+    const narrow = vw < 1024 || (window.matchMedia && matchMedia('(orientation: portrait)').matches);
+    let x, y;
+    if (!narrow && r.right + 8 + pw <= vw - 4) { x = r.right + 8; y = r.top + r.height / 2 - ph / 2; }
+    else { x = r.left + r.width / 2 - pw / 2; y = r.top - ph - 10; if (y < 4) y = r.bottom + 10; }
+    pop.style.left = Math.max(4, Math.min(vw - pw - 4, x)) + 'px'; pop.style.top = Math.max(4, y) + 'px';
+    tgt.classList.add('tt-combo-tgt');
+    const t0 = nowMs();
+    combo = { from: fromI, to: toI, res: rc.res, pop, tgt, ready: false, timer: 0, raf: 0 };
+    const tick = () => { if (!combo) return; tgt.style.setProperty('--p', Math.min(1, (nowMs() - t0) / COMBO_MS).toFixed(3)); if (!combo.ready) combo.raf = requestAnimationFrame(tick); };
+    combo.raf = requestAnimationFrame(tick);
+    combo.timer = setTimeout(() => { if (!combo) return; combo.ready = true; tgt.style.setProperty('--p', '1'); tgt.classList.add('tt-ready'); pop.classList.add('tt-ready'); em.textContent = '現在放開就合成'; sfx('select'); }, COMBO_MS);
+  }
+  function onDragOver(to, from) {
+    comboStop();
+    const f0 = parse(from), t0 = parse(to);
+    if (f0 && t0 && f0.k === 'item' && t0.k === 'item') {
+      const tgt = app.querySelector(`[data-tt-drop="item:${t0.i}"]`);
+      if (tgt) comboStart(f0.i, t0.i, tgt);
+    }
     clearRange();
     if (!app.dataset.instDrag) return;
     const t = parse(to);
@@ -119,6 +170,8 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
     for (const [r, c] of coverOf(t.r, t.c)) { const n = app.querySelector(`[data-tt-drop="board:${r},${c}"]`); if (n) n.classList.add('tt-rangehint'); }
   }
   function onDragEnd() {
+    comboDone = combo && combo.ready ? { from: combo.from, to: combo.to } : null;
+    comboStop();
     ui.dragUnit = null; ui.dragging = false;
     app.removeAttribute('data-dragging');
     app.removeAttribute('data-inst-drag');
@@ -126,7 +179,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
   }
   const bounce = () => { sfx('error'); render(); };
   function onDrop(from, to) {
-    if (ui.mode !== 'plan') return;
+    if (ui.mode !== 'plan') { comboDone = null; return; }
     const f = parse(from), t = parse(to);
     if (!f) return;
     if (!t) return bounce();
@@ -149,6 +202,10 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
       if (f.k !== 'sp' && f.uid === u.uid) return render();   // 標記拖回原本那隻
       if (id === 'rm') { ui.sel = null; r = api.act('useRemover', u.uid); }
       else { ui.sel = null; r = api.act('pick', id, u.uid, f.k === 'sp' ? {} : { from: f.uid }); }
+    } else if (f.k === 'item' && t.k === 'item') {
+      const cd = comboDone; comboDone = null;
+      if (!cd || cd.from !== f.i || cd.to !== t.i) return render();   // 沒停滿 1 秒、或不能合：照舊（沒事發生）
+      ui.sel = null; r = api.act('combineItems', f.i, t.i);
     } else if (f.k === 'item') {
       const u = (t.k === 'board' || t.k === 'bench') ? unitAt(t) : null;
       if (!u) return bounce();

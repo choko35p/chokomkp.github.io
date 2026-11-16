@@ -62,7 +62,7 @@ export function mountPlanner(api) {
     const locked = isLocked(api, key);
     const zh = zhOf(DATA, key), cost = costOf(DATA, key);
     const b = el('button', `tt-pl-cell tt-cost${cost}` + (sel ? ' tt-pl-unit' : '') + (star ? ' tt-in' : '') + (owned ? ' tt-done' : '') + (locked ? ' tt-locked' : ''), {
-      type: 'button', 'data-pk': key, 'data-star': star || null, title: `${zh}（${cost} 費）${locked ? '・還沒解鎖' : ''}`,
+      type: 'button', 'data-pk': key, 'data-star': star || null, 'data-tt-tip': 'unit:' + key,
       'aria-label': `${zh}，${cost} 費${locked ? '，還沒解鎖' : ''}${star ? `，已加入，目標 ${star} 星${owned ? '，已達成' : ''}` : ''}` });
     b.append(styleAvatar(el('span', 'tt-pl-av', { 'aria-hidden': 'true' }), DATA, key));
     if (star) b.append(el('span', 'tt-pl-star', { 'aria-hidden': 'true' }, starsEl(star, { label: false })));

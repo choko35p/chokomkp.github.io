@@ -159,6 +159,12 @@ export function giveItem(unit, item, DATA) {
   if (unit.items.length < DATA.rules.maxItems) { unit.items.push(item); return { r: 'added' }; }
   return { r: 'full' };
 }
+// 兩件散件在裝備欄合成：回傳成品 key，不能合（有一件不是散件、或配不出成品）回 null。順序不影響。
+export function combineResult(DATA, a, b) {
+  const { compSet, pair } = idx(DATA);
+  if (!a || !b || !compSet.has(a) || !compSet.has(b)) return null;
+  return pair[[a, b].sort().join('|')] || null;
+}
 // 放進裝備欄；滿了變 1 金。回傳轉成的金幣。
 export function addItemBench(state, item, DATA) {
   if (state.itemBench.length < DATA.rules.itemBenchSize) { state.itemBench.push(item); return 0; }
@@ -288,13 +294,17 @@ export function canReceive(state, key, DATA, star = 1) {
   for (const u of allUnits(state)) if (u.key === key && u.star === star) n++;
   return n >= 2 && star < 3;
 }
-// 送棋子（獎勵用）：放板凳＋合星；放不下就賣掉。回傳 {placed, merged, gold}
-export function receiveUnit(state, key, DATA, star = 1) {
+// 送棋子（獎勵／增幅／頭目獎勵／經濟效果用，商店購買不走這裡）：
+//   1. 板凳有空格就放板凳；2. 板凳滿但放進去會合星就直接合；
+//   3. 還是放不下：呼叫 placeOnBoard(unit)（由 game.js 傳進來，找場上空格放上去，可以超過人口上限），放得上去就算收下；
+//   4. 場上也沒位子（或沒給 placeOnBoard）才賣掉。回傳 {placed, onBoard?, merged, gold?, uid?}
+export function receiveUnit(state, key, DATA, star = 1, placeOnBoard = null) {
   const unit = makeUnit(state, key);
   unit.star = star;   // 增幅直接送 2 星：棋子池要扣 3 張，賣掉時也還 3 張
   const f = benchFree(state);
   if (f >= 0) { state.bench[f] = unit; return { placed: true, merged: tryMerge(state, DATA), uid: unit.uid }; }
   if (canReceive(state, key, DATA, star)) return { placed: true, merged: tryMerge(state, DATA, unit), uid: unit.uid };
+  if (placeOnBoard && placeOnBoard(unit)) return { placed: true, onBoard: true, merged: tryMerge(state, DATA), uid: unit.uid };
   const g = sellValue(unit, DATA);
   state.gold += g;
   if (costOf(DATA, key) !== 7) returnToPool(state, key, 3 ** (star - 1));

@@ -99,6 +99,7 @@ function setShopCards(state, DATA, keys) {
 
 export function applySetup(state, DATA, setup) {
   state.level = setup.level; state.xp = setup.xp || 0; state.gold = setup.gold;
+  state.noAutoFill = true;   // 教學關卡要讓玩家自己把棋子拖上場，不套用升級自動補位
   state.board = []; state.bench = new Array(DATA.rules.benchSize).fill(null);
   for (const u of setup.board || []) {
     const x = S.makeUnit(state, u.key); x.star = u.star || 1; x.pos = toPlayerPos(u.pos);

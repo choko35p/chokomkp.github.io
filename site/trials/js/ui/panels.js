@@ -147,7 +147,7 @@ export function showTraitPanel(key, api, opts = {}) {
     if (w.bench) marks.push(el('span', { class: 'tt-mark' }, '板凳'));
     if (w.shop) marks.push(el('span', { class: 'tt-mark tt-shop' }, '商店有'));
     const locked = isLocked(api, u.key);
-    const b = el('button', { type: 'button', class: 'tt-member' + (locked ? ' tt-locked' : ''), 'data-tt-tip': locked ? 'unlock:' + u.key : null,
+    const b = el('button', { type: 'button', class: 'tt-member' + (locked ? ' tt-locked' : ''), 'data-tt-tip': 'unit:' + u.key,
       'aria-label': `${u.zh}，${u.cost} 費` + (locked ? '，還沒解鎖' : '') + (w.board ? '，已在場上' : '') + (w.bench ? '，在板凳' : '') + (w.shop ? '，商店有' : '') },
       lockedAvatar(DATA, u.key, 40, locked), el('span', {}, u.zh, el('small', {}, `${u.cost} 費`), marks.length ? el('small', {}, marks) : null));
     b.addEventListener('click', () => showUnitPanel(u.key, api));
@@ -299,7 +299,8 @@ export function showAugmentChoice(api, pending) {
       const left = Array.isArray(p.rerollLeft) ? (p.rerollLeft[i] || 0) : 0;
       const rr = el('button', { type: 'button', class: 'tt-btn tt-ghost tt-augrr', 'data-tt': 'aug-reroll', 'data-i': i, disabled: left > 0 ? null : '', 'aria-label': left > 0 ? `重抽第 ${i + 1} 張（只換這一張，還有 ${left} 次）` : `第 ${i + 1} 張的重抽用完了` },
         left > 0 ? `重抽這張（${left}）` : '重抽用完了');
-      rr.addEventListener('click', () => { const r = api.act('rerollAugmentSlot', i); if (r && r.ok) { holder.replaceChildren(render(i)); const nb = holder.querySelector(`.tt-opt[data-i="${i}"]`); nb && nb.focus({ preventScroll: true }); } });
+      rr.addEventListener('click', () => { const r = api.act('rerollAugmentSlot', i); if (r && r.ok) { holder.replaceChildren(render(i)); const nb = holder.querySelector(`.tt-opt[data-i="${i}"]`); nb && nb.focus({ preventScroll: true }); }
+        else if (r && state.pendingChoices && state.pendingChoices.rerollLeft && state.pendingChoices.rerollLeft[i] === 0) { holder.replaceChildren(render(i)); try { api.toast(r.reason || '沒有別的增幅可以換了'); } catch (_) { /* 略過 */ } } });
       row.append(el('div', { class: 'tt-optcol' }, b, rr));
     });
     return row;
@@ -540,7 +541,8 @@ const LOCK_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
 // 頭像；沒解鎖的灰階＋右下角小鎖
 export function lockedAvatar(DATA, key, size, locked) {
   const w = el('span', { class: 'tt-lockav' + (locked ? ' tt-locked' : '') }, avatar(DATA, key, size));
-  if (locked) { const b = el('span', { class: 'tt-lockbadge', 'aria-hidden': 'true' }); b.innerHTML = LOCK_SVG; w.append(b); w.setAttribute('data-tt-tip', 'unlock:' + key); }
+  if (locked) { const b = el('span', { class: 'tt-lockbadge', 'aria-hidden': 'true' }); b.innerHTML = LOCK_SVG; w.append(b); }
+  w.setAttribute('data-tt-tip', 'unit:' + key);   // 滑鼠停上去（手機長按）就看到名字、羈絆、技能；沒解鎖的最後補解鎖條件
   return w;
 }
 function progressNodes(p) {
@@ -1049,6 +1051,13 @@ export function showHelp(opts = {}) {
         el('li', {}, '裝備欄旁邊有兩種特殊道具：黃金卸除器（每局 1 個，拖到有裝備的棋子身上，把裝備全卸回裝備欄）、心鋼最愛（心鋼之聲 3 階給 1 個、5 階再給 1 個，拖到心鋼之聲成員身上就是選他強化技能，佈陣時可以從一位拖到另一位改選）。'),
         el('li', {}, '選增幅時，每一張下面都有自己的重抽鍵，按了只換那一張。'),
         el('li', {}, '用鍵盤的話：Tab 選到棋子按 Enter 是選取，上場、下場用 ' + L('deploy') + ' 鍵。場上換格子沒有鍵盤的做法，只能用滑鼠或手指拖。'))),
+    sec('裝備合成、升級補位、人口超出',
+      el('ul', { class: 'tt-ul-plain' },
+        el('li', {}, '裝備欄裡兩件散件可以直接合：拖一件到另一件上面，旁邊會跳出「會合成：○○」，停滿 1 秒（目標格會繞一圈倒數）再放開，就合成了，成品放在你放的那一格。不到 1 秒放開就什麼都不會發生；成品或配不出來的組合不會有提示。手機一樣用手指拖著不放。'),
+        el('li', {}, '買經驗升級後，如果場上人口還沒放滿，會自動從板凳最左邊的棋子開始補上場，補到滿或板凳沒人為止。位置：坦克、鬥士放前排（從最前面一排、由中間往兩邊找空格），施法者、射手、刺客這些放後排（從最後面一排找起），查不到定位的放最前排最左邊的空格；放不下的 2 人口棋子會跳過，換下一隻。'),
+        el('li', {}, '選獎勵、增幅、頭目獎勵拿到棋子，但板凳滿了，不會直接賣掉，會先放到場上，人口可以超過上限，超出的那隻會標「超出人口」。佈陣時只要板凳空出一格（賣掉、合星、拖下場都算），超出的棋子就自動跳回板凳，最後放上去的先跳。'),
+        el('li', {}, '按「戰鬥」的時候場上還是超出人口：先試著移回板凳，板凳放不下才自動賣掉（照賣出價給錢，畫面會告訴你賣了誰）。商店買棋子還是要有板凳空格，這點沒變。三張一樣的合星，場上加板凳一起算。'),
+        el('li', {}, '滑鼠停在左邊的羈絆上，場上、板凳屬於它的棋子會亮起金框（其他的變暗），商店裡有這個羈絆的卡片也會亮、羈絆圖示發光；手機是長按羈絆。滑鼠停在羈絆面板、圖鑑、解鎖清單、隊伍編輯器裡的棋子頭像上，會直接跳出他的羈絆跟技能（手機長按），不用再點一下。'))),
     sec('ILLBEATS 混音器',
       el('p', { class: 'tt-desc' }, 'ILLBEATS 啟動後，畫面右邊（手機是敵方列右邊的「混音器」頁籤）會出現混音器，跟官方一樣有四條推桿：攻擊、法強、生命、擊殺金幣機率。'),
       el('ul', { class: 'tt-ul-plain' },

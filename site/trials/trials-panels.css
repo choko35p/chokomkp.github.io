@@ -293,3 +293,9 @@
   .tt-overlay .tt-ph { padding: 4px 6px 4px 14px; }
   .tt-overlay .tt-pf .tt-btn { min-height: 48px; flex: 1 1 auto; }
 }
+
+/* v10：棋子頭像卡的說明框（unit:<key>） */
+.tt-tip-traits { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 6px 0 2px; }
+.tt-tip-trait { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 700; color: var(--g-gold-hi, #f0e6d2); }
+.tt-tip-abname b { color: var(--g-teal, #0ac8b9); }
+.tt-tip-lock { margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--g-line, #2b4257); }

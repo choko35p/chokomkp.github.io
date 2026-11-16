@@ -92,6 +92,84 @@ export function population(state, DATA) {
 }
 const slotsOf = (DATA, u) => DATA.units.byKey[u.key].slots || 1;
 
+// ---------- 上場位置、自動補位、超出人口 ----------
+// 預設站位（升級自動補位、備戰席滿時溢出上場、快捷鍵「上場」共用）：
+//   前排定位（坦克、鬥士）放前排空格，從最前面一排找起（0 排），同一排由中間往兩邊；
+//   其他定位（施法者、射手、專家、刺客）放後排，從最後面一排找起（3 排）往前；
+//   查不到定位的棋子放最前排最左的空格。沙灘樂器佔的格子、已經有棋子的格子不放。找不到空格回 null。
+const FRONT_ROLES = ['Tank', 'Fighter'];
+const CENTER_COLS = [3, 2, 4, 1, 5, 0, 6];
+export function defaultCell(state, DATA, key) {
+  const rc = DATA.units.byKey[key] && DATA.units.byKey[key].roleClass;
+  const front = !rc || FRONT_ROLES.includes(rc);
+  const rows = front ? [0, 1, 2, 3] : [3, 2, 1, 0];
+  const cols = rc ? CENTER_COLS : [0, 1, 2, 3, 4, 5, 6];
+  const used = new Set(state.board.map(u => u.pos[0] + ',' + u.pos[1]));
+  for (const r of rows) for (const c of cols) if (!used.has(r + ',' + c) && instAt(state, r, c) < 0) return [r, c];
+  return null;
+}
+// 升級後場上人口還沒放滿：把板凳最左邊的棋子依序補上場，直到滿了或板凳空了（放不下的 2 人口棋子跳過，繼續看下一隻）。回傳補上場的 uid
+export function autoFillBoard(state, DATA) {
+  const placed = [];
+  for (let i = 0; i < state.bench.length; i++) {
+    if (population(state, DATA) >= teamLimit(state, DATA)) break;
+    const u = state.bench[i];
+    if (!u) continue;
+    if (population(state, DATA) + slotsOf(DATA, u) > teamLimit(state, DATA)) continue;
+    const cell = defaultCell(state, DATA, u.key);
+    if (!cell) break;
+    state.bench[i] = null; u.pos = cell; state.board.push(u);
+    placed.push(u.uid);
+  }
+  return placed;
+}
+// 備戰席滿了又不能合星時，收到的棋子先放場上（可以超過人口上限；超出的標 ov＝第幾個被放上來的）
+function placeOverflowFn(state, DATA) {
+  return (unit) => {
+    const cell = defaultCell(state, DATA, unit.key);
+    if (!cell) return false;
+    unit.pos = cell; state.board.push(unit);
+    if (population(state, DATA) > teamLimit(state, DATA)) unit.ov = state.ovN = (state.ovN || 0) + 1;
+    return true;
+  };
+}
+export const overUnits = (state, DATA) => (population(state, DATA) > teamLimit(state, DATA) ? state.board.filter(u => u.ov) : []);
+// 人口沒超出就把 ov 標記清掉；還超出而且板凳有空格，就讓最後放上去的先跳回板凳。回傳跳回板凳的 uid
+export function settleOverflow(state, DATA) {
+  const back = [];
+  for (let guard = 0; guard < 60; guard++) {
+    if (population(state, DATA) <= teamLimit(state, DATA)) { for (const u of state.board) delete u.ov; break; }
+    const bi = state.bench.findIndex(x => !x);
+    const cand = state.board.filter(u => u.ov).sort((a, b) => b.ov - a.ov)[0];
+    if (bi < 0 || !cand) break;
+    state.board.splice(state.board.indexOf(cand), 1);
+    delete cand.ov; cand.pos = null; state.bench[bi] = cand;
+    back.push(cand.uid);
+  }
+  return back;
+}
+function settleEvents(state, DATA, events) {
+  const back = settleOverflow(state, DATA);
+  if (back.length) events.push({ type: 'ovBack', uids: back });
+}
+// 開戰前：場上還超出人口上限就先移回板凳，板凳放不下才賣掉。順序：最後放上去的先走；沒標記的（人口上限掉了）從最新的棋子開始
+function trimToLimit(state, DATA, events) {
+  settleEvents(state, DATA, events);
+  for (let guard = 0; guard < 60 && state.board.length && population(state, DATA) > teamLimit(state, DATA); guard++) {
+    const v = state.board.filter(u => u.ov).sort((a, b) => b.ov - a.ov)[0] || state.board.slice().sort((a, b) => b.uid - a.uid)[0];
+    const bi = state.bench.findIndex(x => !x);
+    if (bi >= 0) {
+      state.board.splice(state.board.indexOf(v), 1); delete v.ov; v.pos = null; state.bench[bi] = v;
+      events.push({ type: 'autoBench', uid: v.uid, key: v.key });
+    } else {
+      const gold = S.sellValue(v, DATA);
+      S.sell(state, v.uid, DATA);
+      events.push({ type: 'autoSell', uid: v.uid, key: v.key, star: v.star, gold });
+    }
+  }
+  for (const u of state.board) delete u.ov;
+}
+
 // ---------- 抽選工具 ----------
 function rewardRng(state) { return makeRng(hashSeed(state.seed, 'reward', state.round, state.rewardN++)); }
 function giveComponent(state, DATA, events) {
@@ -129,9 +207,10 @@ function giveUnitByCost(state, DATA, cost, events, star = 1) {
   return giveUnitKey(state, DATA, key, events, star);
 }
 function giveUnitKey(state, DATA, key, events, star = 1) {
-  const r = S.receiveUnit(state, key, DATA, star);
-  events.push({ type: 'unit', key, star, placed: r.placed, ...(r.gold ? { gold: r.gold } : {}) });
+  const r = S.receiveUnit(state, key, DATA, star, placeOverflowFn(state, DATA));
+  events.push({ type: 'unit', key, star, placed: r.placed, ...(r.onBoard ? { onBoard: true } : {}), ...(r.gold ? { gold: r.gold } : {}) });
   for (const m of r.merged || []) events.push({ type: 'merge', key: m.key, star: m.star });
+  settleEvents(state, DATA, events);
   return key;
 }
 function pickEconUnit(state, DATA, spec, src) {
@@ -207,7 +286,7 @@ function makeAugmentChoice(state, DATA, slot) {
   }
   const per = ac.rerollsPerChoice ?? DEF.augmentRerolls;
   // 照官方：每一張各有自己的重抽鍵（每張各 per 次），只換那一張。rerollN[i]＝第 i 張已經換過幾次（決定性亂數用）
-  return { type: 'augment', tier, stage, slot, options, rerollLeft: options.map(() => per), rerollN: options.map(() => 0) };
+  return { type: 'augment', tier, stage, slot, options, seen: options.slice(), rerollLeft: options.map(() => per), rerollN: options.map(() => 0) };   // seen＝這次三選一出現過的所有增幅（含被重抽換掉的），重抽不會再抽到
 }
 // 舊存檔：pending 可能是 {rerolls:n}（三張一起換）或只有數字的 rerollLeft，照新格式補成每張各一個
 function normAugmentPending(p, DATA) {
@@ -219,6 +298,8 @@ function normAugmentPending(p, DATA) {
     p.rerollLeft = new Array(len).fill(old > 0 ? per : 0);
   }
   if (!Array.isArray(p.rerollN)) p.rerollN = new Array(len).fill(0);
+  if (!Array.isArray(p.seen)) p.seen = (p.options || []).slice();   // 舊存檔：只知道目前畫面上的
+  else for (const k of p.options || []) if (!p.seen.includes(k)) p.seen.push(k);
   delete p.rerolls;
   return p;
 }
@@ -369,6 +450,7 @@ export function actBuy(state, slot, DATA) {
   if (!r.ok) return r;
   const events = [{ type: 'buy', slot, uid: r.uid }];
   for (const m of r.merged) events.push({ type: 'merge', key: m.key, star: m.star });
+  settleEvents(state, DATA, events);
   runUnlocks(state, DATA, events);
   fitMixer(state, DATA);
   return ok({ events, uid: r.uid });
@@ -380,6 +462,7 @@ export function actSell(state, uid, DATA) {
   prunePicks(state, DATA);   // 賣掉的棋子身上的標記收回
   fitMixer(state, DATA);
   const events = [{ type: 'sell', uid, gold: r.gold }];
+  settleEvents(state, DATA, events);
   runUnlocks(state, DATA, events);
   return ok({ gold: r.gold, events });
 }
@@ -405,8 +488,16 @@ export function actBuyXp(state, DATA) {
   state.gold -= cost;
   const events = [{ type: 'xp', xp: r.xpPerBuy }];
   addXp(state, DATA, r.xpPerBuy, events);
+  fillAfterLevelUp(state, DATA, events);
   runUnlocks(state, DATA, events);
+  fitMixer(state, DATA);
   return ok({ events });
+}
+// 升級了而且場上人口還沒放滿：自動補位（見 autoFillBoard）
+function fillAfterLevelUp(state, DATA, events) {
+  if (state.noAutoFill || !events.some(e => e.type === 'levelup')) return;   // noAutoFill：教學頁的關卡狀態用，讓學員自己拖
+  const placed = autoFillBoard(state, DATA);
+  if (placed.length) events.push({ type: 'autoFill', uids: placed });
 }
 export function actMove(state, uid, to, DATA) {
   const g = needPlan(state); if (g) return g;
@@ -425,8 +516,9 @@ export function actMove(state, uid, to, DATA) {
       }
       state.board.splice(f.idx, 1);
       if (other) { other.pos = u.pos; state.board.push(other); }
-      state.bench[to.idx] = u; u.pos = null;
+      state.bench[to.idx] = u; u.pos = null; delete u.ov;
     } else { state.bench[f.idx] = other || null; state.bench[to.idx] = u; }
+    settleEvents(state, DATA, events);
     runUnlocks(state, DATA, events);
     fitMixer(state, DATA);
     return ok({ events });
@@ -440,16 +532,29 @@ export function actMove(state, uid, to, DATA) {
   if (f.zone === 'bench') {
     const delta = slotsOf(DATA, u) - (other ? slotsOf(DATA, other) : 0);
     if (delta > 0 && population(state, DATA) + delta > teamLimit(state, DATA)) return no('人口滿了');
-    if (other) { state.board.splice(state.board.indexOf(other), 1); other.pos = null; state.bench[f.idx] = other; }
+    if (other) { state.board.splice(state.board.indexOf(other), 1); other.pos = null; delete other.ov; state.bench[f.idx] = other; }
     else state.bench[f.idx] = null;
     u.pos = [r, c]; state.board.push(u);
   } else {
     if (other) other.pos = u.pos.slice();
     u.pos = [r, c];
   }
+  settleEvents(state, DATA, events);
   runUnlocks(state, DATA, events);
   fitMixer(state, DATA);
   return ok({ events });
+}
+// 裝備欄合成：把 from 格的散件拖到 to 格的另一件散件上（停 1 秒才會觸發，計時在介面）。成品放在 to 格，from 格的散件消失
+export function actCombineItems(state, from, to, DATA) {
+  const g = needPlan(state); if (g) return g;
+  if (from === to) return no('要拖到另一件裝備上');
+  const a = state.itemBench[from], b = state.itemBench[to];
+  if (!a || !b) return no('沒有這件裝備');
+  const res = S.combineResult(DATA, a, b);
+  if (!res) return no('這兩件合不起來');
+  state.itemBench[to] = res;
+  state.itemBench.splice(from, 1);
+  return ok({ result: res, events: [{ type: 'itemMerge', result: res, parts: [a, b] }] });
 }
 export function actEquip(state, itemIdx, uid, DATA) {
   const g = needPlan(state); if (g) return g;
@@ -838,14 +943,15 @@ export function actRerollAugmentSlot(state, idx, DATA) {
   normAugmentPending(p, DATA);
   if (!(idx >= 0 && idx < p.options.length)) return no('沒有這個選項');
   if (!(p.rerollLeft[idx] > 0)) return no('這一張的重抽用完了');
-  const pool = augPool(state, DATA, p.tier, p.stage);
-  const shown = p.options;
-  let cand = pool.filter(k => !shown.includes(k));
-  if (!cand.length) cand = pool.filter(k => !shown.some((o, i) => i !== idx && o === k));   // 池子太小：至少不跟另外兩張重複
-  if (!cand.length) return no('沒有別的增幅可以換了');
+  // 候選：沒拿過（augPool 已排除玩家擁有的）、而且這次三選一沒出現過的。同階段不夠就用同稀有度其他階段補
+  const seen = p.seen;
+  let cand = augPool(state, DATA, p.tier, p.stage).filter(k => !seen.includes(k));
+  if (!cand.length) cand = augPool(state, DATA, p.tier, null).filter(k => !seen.includes(k));
+  if (!cand.length) { p.rerollLeft[idx] = 0; return no('沒有別的增幅可以換了，這張的重抽鍵變灰'); }
   const rng = makeRng(hashSeed(state.seed, 'reward', state.round, 'augslot', p.tier, idx, p.rerollN[idx] + 1));
   const key = rng.pick(cand);
   p.options[idx] = key;
+  seen.push(key);
   p.rerollLeft[idx] -= 1;
   p.rerollN[idx] += 1;
   return ok({ events: [{ type: 'augmentReroll', idx, key }], key });
@@ -894,7 +1000,10 @@ export function actStartBattle(state, DATA) {
   const g = needPlan(state); if (g) return g;
   if (!B.buildTeam) return no('沒有戰前計算模組');
   const enemy = enemyForRound(state.round, state.seed, DATA);
+  const trimEvents = [];
+  trimToLimit(state, DATA, trimEvents);   // 場上超出人口：先移回板凳，放不下才賣
   prunePicks(state, DATA);
+  fitMixer(state, DATA);
   if (state.dealFrom == null && state.board.some(u => u.key === 'DrMundo')) state.dealFrom = state.round;   // 唱片合約每 4 回合多 1 份，從蒙多第一次上場開戰那回合算
   const bu = battleUnits(state, DATA);
   const pUnits = bu.units;
@@ -921,7 +1030,7 @@ export function actStartBattle(state, DATA) {
   }
   state.battle = { result, enemy, round: state.round, attempt: state.attempt, deferred: pTeam.deferred || [], snap, mixer: pTeam.mixer || null };
   state.phase = 'battle';
-  return ok({ result, enemy, playerTeam: pTeam, enemyTeam: eTeam, events: unset.length ? [{ type: 'pickUnset', ids: unset }] : [] });
+  return ok({ result, enemy, playerTeam: pTeam, enemyTeam: eTeam, events: trimEvents.concat(unset.length ? [{ type: 'pickUnset', ids: unset }] : []) });
 }
 
 function streakBonus(DATA, streak) {
@@ -1078,6 +1187,7 @@ export function actFinishBattle(state, DATA) {
     if (reached > claimed) { state.counters[ck] = reached; gainOne(src, e.gain, reached - claimed); }
   }
   if (advance) { addXp(state, DATA, r.xpPerRound, events); gains.push({ type: 'xp', label: '回合經驗', xp: r.xpPerRound }); }
+  if (!over && !(lastRound && (win || !retry))) { fillAfterLevelUp(state, DATA, events); settleEvents(state, DATA, events); }
   runUnlocks(state, DATA, events);
 
   if (cleared) {

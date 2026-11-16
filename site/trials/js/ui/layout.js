@@ -61,6 +61,7 @@ export async function mount(root, api) {
       <a class="tt-link" href="../?s=19" aria-label="回攻略站">← <span class="tt-hide-s">回攻略站</span></a>
       <h1>滴答克的試煉 <small>S19</small></h1>
       <button class="tt-ibtn tt-unlockbtn" type="button" data-act="unlocks" hidden></button>
+      <button class="tt-ibtn tt-lastbtn" type="button" data-act="lastresult" hidden>上回合</button>
       <button class="tt-ibtn tt-hide-m" type="button" data-act="hotkeys">快捷鍵</button>
       <button class="tt-ibtn" type="button" data-act="help" aria-label="說明">說明</button>
       <button class="tt-ibtn" type="button" data-act="mute" aria-pressed="false"></button>
@@ -95,7 +96,7 @@ export async function mount(root, api) {
     items: $(app, '.tt-xitems'), special: $(app, '.tt-xspecial'), shop: $(app, '.tt-xshop'), hud: $(app, '.tt-hud'), roundbar: $(app, '.tt-roundbar'), augs: $(app, '.tt-augs'),
     traits: $(app, '[data-tt-mount=traits]'), unitpanel: $(app, '[data-tt-mount=unitpanel]'), toast: $(app, '.tt-toast'),
     speed: $(app, '.tt-speed'), rank: $(app, '.tt-rank'), mute: $(app, '[data-act=mute]'), go: $(app, '.tt-go'),
-    unlockBtn: $(app, '.tt-unlockbtn'),
+    unlockBtn: $(app, '.tt-unlockbtn'), lastBtn: $(app, '.tt-lastbtn'),
   };
   // 站台列的「戰鬥」鍵：戰鬥階段整個收起；快捷鍵提示由 renderShop 填
 
@@ -272,6 +273,7 @@ export async function mount(root, api) {
     ui.bossShown = k;
     if (panels && panels.showBossIntro) setTimeout(() => { if (ui.mode === 'plan') panels.showBossIntro(api, curEnemy.boss, () => {}); }, 0);
   }
+  api.on('restart', () => { ui.lastResult = null; R.lastBtn.hidden = true; panels?.hideResultBanner?.(); });
   api.on('change', render);
   if (api.hotkeys && api.hotkeys.onChange) api.hotkeys.onChange(() => render());
 
@@ -338,6 +340,7 @@ export async function mount(root, api) {
     else if (a === 'codex') call('showCodex', '圖鑑');
     else if (a === 'unlocks') { ui.unlockNew = false; renderUnlockBtn(); call('showUnlocks', '解鎖說明'); }
     else if (a === 'hotkeys') call('showHotkeys', '快捷鍵設定');
+    else if (a === 'lastresult') { if (ui.lastResult && panels?.showResult) { panels.hideResultBanner?.(); panels.showResult(api, { ...ui.lastResult, review: true }); } }
     else if (a === 'odds') toggleOdds();
     else if (a === 'go') go();
   });
@@ -418,8 +421,16 @@ export async function mount(root, api) {
     const fin = api.act('finishBattle') || {};
     const win = r.result.winner === 'player';
     const data = { round: api.state.history?.length ? api.state.history[api.state.history.length - 1].round : undefined, win, result: r.result, enemy: r.enemy || curEnemy, finish: fin, state: api.state, roundScore: fin.roundScore, gains: fin.gains, gameOver: fin.gameOver, cleared: fin.cleared };
-    await showResult(data);
-    if (fin.gameOver || fin.cleared) await showOver(data);
+    data.livesAfter = api.state.lives; data.scoreAfter = api.state.score;
+    if (fin.gameOver || fin.cleared) {
+      await showResult(data);   // 結束／通關：照舊跳完整結算，按「看結果」再進結束畫面
+      await showOver(data);
+    } else {
+      // 一般回合：不擋操作，直接進下一回合佈陣，結算改成小橫幅（點一下看明細，頁首「上回合」也能再看）
+      ui.lastResult = data; R.lastBtn.hidden = false;
+      if (panels && panels.showResultBanner) panels.showResultBanner(api, data);
+      else api.toast(`${win ? '勝利' : '落敗'}，得分 +${data.roundScore ?? 0}`);
+    }
     ui.mode = 'plan'; busy = false;
     render();
   }

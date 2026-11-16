@@ -130,16 +130,26 @@ html, body { background: var(--g-bg); }
 .tt-half { position: absolute; inset: 0; }
 .tt-half.tt-e::after { content: ''; position: absolute; inset: 0; background: rgba(120,40,40,.10); pointer-events: none; }
 .tt-cell { position: absolute; left: calc(3cqw + var(--x) * var(--cw)); top: calc(7.5cqh + var(--r) * var(--rp) + var(--g, 0) * .4 * var(--rp)); width: var(--cw); height: var(--rp); display: grid; place-items: center; }
-.tt-cell::before { content: ''; position: absolute; left: 3%; right: 3%; top: -17%; bottom: -17%; background: rgba(255,255,255,.05); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); pointer-events: none; transition: background .12s; }
-.tt-shell:has(.tt-drag-src[data-tt-uid]) .tt-p .tt-cell::before, .tt-shell:has(.tt-drag-src[data-tt-drag^=shop]) .tt-p .tt-cell::before { background: rgba(255,255,255,.16); }
-.tt-p .tt-cell.tt-over::before { background: rgba(240,200,80,.55); }
+/* 格子：::before 是六角描邊（外六角挖掉內六角，evenodd），::after 是格子內稍亮的填色。
+   顏色走變數，拖曳、游標下的格子、鍵盤焦點只改變數。z-index 0，棋子（z 1）永遠在上面，血條、星級不會被蓋。 */
+.tt-cell { --hl: rgba(255,255,255,.34); --hf: rgba(255,255,255,.07); }
+.tt-p .tt-cell { --hl: rgba(255,255,255,.62); --hf: rgba(255,255,255,.13); }
+.tt-cell::before, .tt-cell::after { content: ''; position: absolute; left: 3%; right: 3%; top: -17%; bottom: -17%; pointer-events: none; z-index: 0; transition: background .12s; }
+.tt-cell::after { background: var(--hf); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.tt-cell::before { background: var(--hl);
+  clip-path: polygon(evenodd, 50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%, 50% 0,
+    50% 3.2px, calc(100% - 2.5px) calc(25% + 1.9px), calc(100% - 2.5px) calc(75% - 1.9px), 50% calc(100% - 3.2px), 2.5px calc(75% - 1.9px), 2.5px calc(25% + 1.9px), 50% 3.2px); }
+.tt-cell > .tt-unit { z-index: 1; }
+.tt-shell:has(.tt-drag-src[data-tt-uid]) .tt-p .tt-cell, .tt-shell:has(.tt-drag-src[data-tt-drag^=shop]) .tt-p .tt-cell { --hl: rgba(255,236,170,.85); --hf: rgba(255,255,255,.12); }
+.tt-shell .tt-board .tt-p .tt-cell.tt-over.tt-over.tt-over { --hl: #fff; --hf: rgba(255,150,10,.9); }   /* 比「拖曳中全場亮」的規則權重高 */
 .tt-cell.tt-over { box-shadow: none; background: none; }
-.tt-cell:focus-visible { outline: none; } .tt-cell:focus-visible::before { background: rgba(10,200,185,.35); }
+.tt-cell:focus-visible { outline: none; --hl: #5ff0e4; --hf: rgba(10,200,185,.35); }
 .tt-bcell { display: none; }
 .tt-field { position: absolute; inset: 0; --cw: calc(100cqw / 7.5); }
 .tt-board[data-mode=battle] { height: auto; max-height: none; aspect-ratio: 7.5 / 7.062; }
 .tt-board[data-mode=battle] .tt-bcell { display: block; position: absolute; left: calc(var(--x) * var(--cw)); top: calc(var(--r) * .866 * var(--cw)); width: var(--cw); height: calc(1.04 * var(--cw)); }
-.tt-board[data-mode=battle] .tt-bcell::before { top: 0; bottom: 0; }
+.tt-board[data-mode=battle] .tt-bcell::before, .tt-board[data-mode=battle] .tt-bcell::after { top: 0; bottom: 0; }
+.tt-board[data-mode=battle] .tt-bcell { --hl: rgba(255,255,255,.34); --hf: rgba(255,255,255,.08); }
 
 /* 棋子（棋盤、板凳共用） */
 .tt-unit { position: relative; width: var(--tk, 40px); height: var(--tk, 40px); touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; isolation: isolate; }

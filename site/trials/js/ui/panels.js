@@ -34,18 +34,43 @@ function openPanel({ title, titleNode, body, footer, cls = '', modal = false, on
   panel.append(head, bodyEl);
   if (footer) panel.append(el('div', { class: 'tt-pf' }, footer));
   ov.append(panel);
-  if (!modal) ov.addEventListener('pointerdown', (e) => { if (e.target === ov) closeAll(); });
+  // 點彈窗外面的暗色背景＝關閉（必須選擇的彈窗不行）。按下和放開都要在背景上，在彈窗裡拖出來不會誤關。
+  if (!modal) {
+    let downOnOv = false;
+    ov.addEventListener('pointerdown', (e) => { downOnOv = e.target === ov; });
+    ov.addEventListener('click', (e) => { if (e.target === ov && downOnOv) closeAll(); downOnOv = false; });
+  }
   const prev = stack[stack.length - 1]; if (prev) { prev.ov.hidden = true; }
   const rec = { ov, panel, opener, modal, onClose };
   stack.push(rec); document.body.append(ov);
+  syncHistory();
   const first = panel.querySelector('[data-autofocus]') || panel.querySelector('.tt-opt,.tt-btn,button') || panel;
   if (first === panel) panel.tabIndex = -1;
   first.focus({ preventScroll: true });
   return rec;
 }
+// Android 返回鍵：有可關的彈窗時，開第一個就推一筆 history，返回鍵（popstate）關最上層；全部關掉就把那筆收回。
+// 必須選擇的彈窗（modal）不推也不收，返回鍵不會關它。
+let histPushed = false, histIgnore = 0;
+const hasClosable = () => stack.some(r => !r.modal);
+function syncHistory() {
+  try {
+    if (hasClosable() && !histPushed) { history.pushState({ ttPanel: 1 }, ''); histPushed = true; }
+    else if (!hasClosable() && histPushed) { histPushed = false; histIgnore++; history.back(); }
+  } catch (_) { histPushed = false; }
+}
+window.addEventListener('popstate', () => {
+  if (histIgnore > 0) { histIgnore--; return; }
+  if (!histPushed) return;
+  histPushed = false;                       // 瀏覽器已經把那筆收掉了
+  const top = stack[stack.length - 1];
+  if (top && !top.modal) closeTop();
+  syncHistory();                            // 還有可關的就再推一筆，下一次返回鍵接著關
+});
 function closeTop() {
   const r = stack.pop(); if (!r) return;
   r.ov.remove(); r.onClose?.();
+  syncHistory();
   const prev = stack[stack.length - 1];
   if (prev) { prev.ov.hidden = false; (prev.panel.querySelector('button') || prev.panel).focus?.(); }
   else if (r.opener && document.contains(r.opener)) r.opener.focus?.({ preventScroll: true });
@@ -365,25 +390,26 @@ function traitContribution(DATA, key, s) {
   return [[tIcon(DATA, key, 18), traitZh(DATA, key)], parts.join('、') || '—'];
 }
 // info = {result, enemy, finish, onNext}；finish = actFinishBattle 的回傳 {roundScore, gains[], gameOver?, cleared?, scoreParts?[]}
-export function showResult(api, info) {
+function buildResultBody(api, info, playCoin) {
   const { DATA, state } = api; const { result, enemy, finish = {} } = info;
   const win = result.winner === 'player';
+  const lives = info.livesAfter ?? state.lives, scoreNow = info.scoreAfter ?? state.score;   // 回看時用當時的數字
   const body = [];   // 勝敗音效由 battle.js 在 end 事件播
   body.push(el('div', { class: 'tt-resbig ' + (win ? 'tt-win' : 'tt-lose') }, win ? '勝利' : '落敗',
     el('small', {}, `${enemy?.name ? 'VS ' + enemy.name + '，' : ''}${Math.round(result.seconds)} 秒，我方存活 ${result.summary.playerAlive} 隻`)));
-  if (!win) body.push(el('p', { class: 'tt-desc' }, `扣 1 條命，剩 ${state.lives} 條。敵方還剩 ${Math.round((result.summary.enemyHpPctLeft ?? 0) * 100)}% 血。`));
+  if (!win) body.push(el('p', { class: 'tt-desc' }, `扣 1 條命，剩 ${lives} 條。敵方還剩 ${Math.round((result.summary.enemyHpPctLeft ?? 0) * 100)}% 血。`));
   // 得分
   const sc = el('ul', { class: 'tt-kv' });
   for (const p of (finish.scoreParts || [])) sc.append(el('li', {}, el('span', {}, p.label), el('b', {}, '+' + fmt(p.value))));
   sc.append(el('li', {}, el('span', {}, '本回合得分'), el('b', {}, '+' + fmt(finish.roundScore ?? 0))));
   if (finish.endBonus) sc.append(el('li', {}, el('span', {}, finish.cleared ? '通關加分（通關、剩下的命、剩下的金錢）' : '剩下的金錢加分'), el('b', {}, '+' + fmt(finish.endBonus))));
-  sc.append(el('li', {}, el('span', {}, '累計分數'), el('b', {}, fmt(state.score ?? 0))));
+  sc.append(el('li', {}, el('span', {}, '累計分數'), el('b', {}, fmt(scoreNow ?? 0))));
   body.push(el('div', {}, el('h3', { class: 'tt-h' }, '得分'), sc));
   // 收入
   const gains = finish.gains || [];   // 戰鬥中的經濟效果（summary.rewards）已由 game.js 併進 gains
   const gl = el('ul', { class: 'tt-kv' });
   let coinPlayed = false;   // 金幣音效 1.35 秒：只在第一行有金幣的收入播一次，不疊
-  gains.forEach((g) => { const [a, b] = gainText(DATA, g); const li = el('li', {}, el('span', {}, a), el('b', {}, b)); gl.append(li); if (g.gold && !coinPlayed) { coinPlayed = true; sfx('coin'); } });
+  gains.forEach((g) => { const [a, b] = gainText(DATA, g); const li = el('li', {}, el('span', {}, a), el('b', {}, b)); gl.append(li); if (g.gold && !coinPlayed) { coinPlayed = true; if (playCoin) sfx('coin'); } });
   if (!gains.length) gl.append(el('li', {}, el('span', { class: 'muted' }, '這回合沒有收入'), ''));
   body.push(el('div', {}, el('h3', { class: 'tt-h' }, '收入'), gl));
   // 羈絆貢獻
@@ -407,8 +433,48 @@ export function showResult(api, info) {
       el('span', { class: 'tt-dn' }, fmt(tot))));
   }
   body.push(el('div', {}, el('h3', { class: 'tt-h' }, '傷害排行'), el('div', { class: 'tt-legend' }, el('span', {}, el('i', { style: 'background:#e8863a' }), '物理'), el('span', {}, el('i', { style: 'background:#4a86e0' }), '魔法'), el('span', {}, el('i', { style: 'background:#d8d8d8;box-shadow:inset 0 0 0 1px #888' }), '真實')), dl));
+  return body;
+}
+// 遊戲結束／通關那一場：還是跳完整結算視窗（按「看結果」才往下）。
+// info.review＝回頭看上一回合：可以關掉的普通視窗，不重播金幣音效。
+export function showResult(api, info) {
+  const { state } = api; const finish = info.finish || {};
+  const round = info.round ?? state.history?.slice(-1)[0]?.round ?? state.round;
+  if (info.review) {
+    const close = el('button', { type: 'button', class: 'tt-btn', 'data-autofocus': '', onclick: () => closeAll() }, '關閉');
+    return openPanel({ title: `第 ${round} 回合結算`, body: buildResultBody(api, info, false), footer: [close], cls: 'tt-wide tt-result' });
+  }
   const next = el('button', { type: 'button', class: 'tt-btn', 'data-autofocus': '', onclick: () => { closePanels(); info.onNext?.(); } }, finish.gameOver || finish.cleared ? '看結果' : '下一回合');
-  return openPanel({ title: `第 ${info.round ?? state.history?.slice(-1)[0]?.round ?? state.round} 回合結算`, body, footer: [next], modal: true, cls: 'tt-wide tt-result' });
+  return openPanel({ title: `第 ${round} 回合結算`, body: buildResultBody(api, info, true), footer: [next], modal: true, cls: 'tt-wide tt-result' });
+}
+
+// 一般回合打完：不擋操作的小橫幅（約 2.5 秒淡出），點一下開完整明細。金幣音效只在這裡播一次。
+let bannerEl = null, bannerT = null;
+export function hideResultBanner() { clearTimeout(bannerT); if (bannerEl) { bannerEl.remove(); bannerEl = null; } }
+export function showResultBanner(api, info) {
+  const { DATA } = api; const { result, finish = {} } = info;
+  hideResultBanner();
+  const win = result.winner === 'player';
+  const round = info.round ?? api.state.round;
+  const gains = finish.gains || [];
+  const goldTotal = gains.reduce((n, g) => n + (g.gold || 0), 0);
+  if (goldTotal > 0) sfx('coin');
+  const parts = gains.filter(g => g.gold).map(g => { const [a, b] = gainText(DATA, g); return `${a} ${b.replace(' 金', '')}`; });
+  const other = gains.filter(g => !g.gold).length;
+  const line2 = [];
+  if (!win) line2.push(`扣 1 條命，剩 ${info.livesAfter ?? api.state.lives} 條`);
+  if (goldTotal > 0) line2.push(`收入 +${goldTotal} 金（${parts.join('、')}）`);
+  if (other) line2.push(`另外拿了 ${other} 項`);
+  if (api.state.streak >= 2 && win) line2.push(`${api.state.streak} 連勝`);
+  const b = el('div', { class: 'tt-rbanner ' + (win ? 'tt-win' : 'tt-lose'), role: 'status', 'aria-live': 'polite', tabindex: '0', 'data-tt': 'result-banner', 'aria-label': '上回合結算，點一下看明細' },
+    el('div', { class: 'tt-rb-h' }, el('b', {}, win ? '勝利' : '落敗'), el('span', {}, `第 ${round} 回合・得分 +${fmt(finish.roundScore ?? 0)}`), el('em', {}, '點一下看明細')),
+    line2.length ? el('div', { class: 'tt-rb-b' }, line2.join('　')) : null);
+  const open = () => { hideResultBanner(); showResult(api, { ...info, review: true }); };
+  b.addEventListener('click', open);
+  b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+  document.body.append(b); bannerEl = b;
+  bannerT = setTimeout(() => { if (bannerEl !== b) return; b.classList.add('tt-out'); bannerT = setTimeout(() => { if (bannerEl === b) hideResultBanner(); }, 400); }, 2500);
+  return b;
 }
 
 // ---------- 遊戲結束／通關 ----------
@@ -936,6 +1002,7 @@ export function showHelp(opts = {}) {
   const hk = hotkeysOf(api);
   const L = (id) => { try { return hk.label(id); } catch (_) { return '?'; } };
   const sec = (title, ...kids) => el('div', {}, el('h3', { class: 'tt-h' }, title), ...kids);
+  const secD = (title, ...kids) => el('div', { class: 'tt-only-desktop' }, el('h3', { class: 'tt-h' }, title), ...kids);   // 手機沒有鍵盤，整段不顯示
   const body = [
     el('ol', { class: 'tt-ol' }, el('li', {}, '一共 30 回合，每 5 回合有一隻頭目（共 6 隻）。'), el('li', {}, '有 3 條命，輸一場扣 1 條，沒命就結束。'), el('li', {}, '沒有計時，準備好再按「戰鬥」。')),
     sec('操作',
@@ -947,7 +1014,7 @@ export function showHelp(opts = {}) {
         el('li', {}, '裝備欄旁邊有兩種特殊道具：黃金卸除器（每局 1 個，拖到有裝備的棋子身上，把裝備全卸回裝備欄）、心鋼最愛（心鋼之聲 3 階給 1 個、5 階再給 1 個，拖到心鋼之聲成員身上就是選他強化技能，佈陣時可以從一位拖到另一位改選）。'),
         el('li', {}, '選增幅時，每一張下面都有自己的重抽鍵，按了只換那一張。'),
         el('li', {}, '用鍵盤的話：Tab 選到棋子按 Enter 是選取，上場、下場用 ' + L('deploy') + ' 鍵。場上換格子沒有鍵盤的做法，只能用滑鼠或手指拖。'))),
-    sec('快捷鍵（桌機）', el('div', { class: 'tt-keys' },
+    secD('快捷鍵（桌機）', el('div', { class: 'tt-keys' },
       ...[[L('reroll'), '重抽'], [L('buyXp'), '購買經驗值'], [L('sell'), '賣出（滑鼠下的棋子，沒有就賣已選取的）'], [L('deploy'), '上場／回板凳'],
         [[1, 2, 3, 4, 5].map(n => L('buy' + n)).join(' '), '買商店第 1–5 格'],
         [L('fight') + '（戰鬥中：' + L('speed') + '）', '開戰；戰鬥中切換速度'], ['Esc', '關面板、取消選取']]

@@ -264,3 +264,32 @@
    讓半場本身不吃滑鼠，只有格子吃。（這條原本該在 trials.css，包 B 之後可併回去） */
 .tt-board .tt-half { pointer-events: none; }
 .tt-board .tt-half > .tt-cell { pointer-events: auto; }
+
+/* ===== 回合結算小橫幅：不擋操作，2.5 秒淡出，點一下看明細 ===== */
+.tt-rbanner { position: fixed; z-index: 60; left: 50%; top: 46px; transform: translateX(-50%); width: min(calc(100vw - 16px), 520px); box-sizing: border-box; padding: 8px 12px 9px;
+  background: linear-gradient(#16293c, #0f1b29); border: 2px solid var(--g-gold, #c8aa6e); border-left-width: 6px; color: var(--g-text, #f0e6d2); box-shadow: 0 6px 20px rgba(0,0,0,.6); cursor: pointer;
+  font: 400 14px/1.5 "Noto Sans TC", system-ui, -apple-system, "PingFang TC", "Microsoft JhengHei", sans-serif; animation: tt-rb-in .22s ease-out; transition: opacity .4s, transform .4s; }
+.tt-rbanner.tt-win { border-left-color: #4fcf68; } .tt-rbanner.tt-lose { border-left-color: #ff6b61; }
+.tt-rbanner.tt-out { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+.tt-rbanner .tt-rb-h { display: flex; align-items: baseline; gap: 10px; }
+.tt-rbanner .tt-rb-h b { font-size: 20px; letter-spacing: .05em; } .tt-rbanner.tt-win b { color: #6fe08a; } .tt-rbanner.tt-lose b { color: #ff8a80; }
+.tt-rbanner .tt-rb-h span { flex: 1; color: var(--g-gold-hi, #f0e6d2); }
+.tt-rbanner .tt-rb-h em { font-style: normal; font-size: 12px; color: var(--g-muted, #a3b3c2); }
+.tt-rbanner .tt-rb-b { margin-top: 2px; color: var(--g-text, #f0e6d2); }
+.tt-rbanner:focus-visible { outline: 3px solid var(--g-teal, #0ac8b9); outline-offset: 2px; }
+@keyframes tt-rb-in { from { opacity: 0; transform: translateX(-50%) translateY(-10px); } to { opacity: 1; transform: translateX(-50%); } }
+@media (max-width: 520px) { .tt-rbanner .tt-rb-h em { display: none; } .tt-rbanner { top: 56px; } .tt-top:has(.tt-lastbtn:not([hidden])) h1 { display: none; } }
+
+/* ===== 手機彈窗：關閉鍵固定在頂端、夠大、右上角 ✕；底部按鈕固定；高度用 dvh 才不會被網址列吃掉 ===== */
+.tt-overlay .tt-panel { max-height: min(92vh, 880px); max-height: min(92dvh, 880px); }
+.tt-overlay .tt-ph { position: relative; z-index: 2; flex: 0 0 auto; }
+.tt-overlay .tt-pf { flex: 0 0 auto; padding-bottom: max(var(--s3, 12px), env(safe-area-inset-bottom)); }
+.tt-overlay .tt-pb { min-height: 0; flex: 1 1 auto; -webkit-overflow-scrolling: touch; }
+.tt-overlay .tt-x { flex: 0 0 auto; min-width: 48px; min-height: 48px; font-size: 1.5rem; line-height: 1; border: 1px solid var(--g-gold-dim, #785a28); background: var(--g-panel-2, #12263a); color: var(--g-gold-hi, #f0e6d2); }
+.tt-overlay .tt-x:active { background: #1c3349; }
+@media (max-width: 640px) {
+  .tt-overlay { padding-top: 12dvh; }
+  .tt-overlay .tt-panel, .tt-overlay .tt-panel.tt-wide { max-height: 88vh; max-height: 88dvh; }
+  .tt-overlay .tt-ph { padding: 4px 6px 4px 14px; }
+  .tt-overlay .tt-pf .tt-btn { min-height: 48px; flex: 1 1 auto; }
+}

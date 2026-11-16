@@ -174,7 +174,12 @@ export function buildTeam(side, units, DATA, ctx = {}) {
     for (const e of effs) {
       if (e.type === 'special' && e.id === 'favorite') {
         const pool = L.filter((s) => (s.def.traits || []).includes(env.traitKey));
-        for (const st of sortedBy(pool).slice(0, e.n || 0)) {
+        // 玩家：只認自己拖上去的「心鋼最愛」標記（unit.fav = 第幾個放的，1 起算），沒放就不強化。
+        // 敵方沒有介面可選，維持自動挑裝備最多的。
+        const picked = side === 'enemy'
+          ? sortedBy(pool)
+          : pool.filter((s) => s.u.fav).sort((a, b) => a.u.fav - b.u.fav || a.i - b.i);
+        for (const st of picked.slice(0, e.n || 0)) {
           st.favorite = true;
           add(st, env.src, 'abilityAmp', S.favoriteAbilityAmp);
         }

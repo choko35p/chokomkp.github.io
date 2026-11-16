@@ -229,7 +229,7 @@ html, body { background: var(--g-bg); }
 .tt-go:hover { filter: brightness(1.15); } .tt-go .tt-hk { display: none; }
 .tt-app::after { content: ''; position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; height: 52px; background: rgba(8,17,27,.97); border-top: 1px solid var(--g-gold-dim); }
 [data-phase=battle] .tt-app::after, [data-phase=battle] .tt-go, [data-phase=battle] .tt-sleft { display: none; }
-[data-phase=battle] .tt-bench, [data-phase=battle] .tt-xitems, [data-phase=battle] .tt-hud, [data-phase=battle] .tt-xshop, [data-phase=battle] .tt-augs { display: none; }
+[data-phase=battle] .tt-bench, [data-phase=battle] .tt-xitems, [data-phase=battle] .tt-xspecial, [data-phase=battle] .tt-hud, [data-phase=battle] .tt-xshop, [data-phase=battle] .tt-augs { display: none; }
 .tt-battlebar { display: none; flex-direction: column; gap: 6px; }
 [data-phase=battle] .tt-battlebar { display: flex; }
 .tt-speed { display: flex; gap: 6px; }
@@ -276,10 +276,13 @@ html, body { background: var(--g-bg); }
   .tt-hearts img { width: 1.25cqw; height: 1.25cqw; min-width: 13px; min-height: 13px; } .tt-score { font-size: clamp(14px, 1.3cqw, 24px); }
   .tt-enemybar { left: 68%; top: .5%; width: 19%; height: 4%; min-height: 0; font-size: clamp(12px, 1cqw, 18px); }
   .tt-etrait .tt-hex { width: 1.6cqw; height: 1.8cqw; min-width: 20px; min-height: 22px; } .tt-etrait .tt-hex .tt-ticon { width: 1cqw; height: 1cqw; min-width: 12px; min-height: 12px; }
-  .tt-augs { left: 3.2%; top: 15%; width: 8%; height: 6%; align-items: center; gap: .4cqw; } .tt-aug { width: 2.4cqw; height: 2.7cqw; } .tt-aug i { width: 2cqw; height: 2cqw; }
-  .tt-xitems { left: 0; top: 24%; width: 2.8%; height: 50%; grid-template-columns: 1fr; grid-template-rows: repeat(10, 1fr); gap: .3cqw; padding: .2cqw; background: rgba(5,9,15,.75); border: 1px solid var(--g-gold-dim); border-left: 0; }
-  .tt-xslot { aspect-ratio: auto; width: 100%; height: 100%; }
-  .tt-traits { left: 3.2%; top: 23%; width: 9.5%; height: 52%; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: var(--g-gold-dim) transparent; }
+  .tt-augs { left: var(--tt-itr); top: 16.5%; width: 8%; height: 6%; align-items: center; gap: .4cqw; } .tt-aug { width: 2.4cqw; height: 2.7cqw; } .tt-aug i { width: 2cqw; height: 2cqw; }
+  .tt-stage { --tt-itx: max(24px, 2cqw); --tt-slot: max(44px, 2.8cqw); --tt-itr: calc(var(--tt-itx) + var(--tt-slot) + 1.2cqw + 10px); }
+  .tt-xitems { left: var(--tt-itx); top: 7%; width: calc(var(--tt-slot) + 10px); height: auto; grid-template-columns: 1fr; grid-template-rows: repeat(10, var(--tt-slot)); gap: 3px; padding: 4px; background: rgba(5,9,15,.75); border: 1px solid var(--g-gold-dim); border-radius: 3px; }
+  .tt-xspecial { left: var(--tt-itr); top: 8%; gap: 5px; }
+  .tt-xslot { aspect-ratio: auto; width: 100%; height: 100%; min-height: 44px; }
+  .tt-xspecial .tt-xslot { width: var(--tt-slot); height: var(--tt-slot); flex: none; }
+  .tt-traits { left: var(--tt-itr); top: 23%; width: 9.5%; height: 52%; min-height: 0; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; scrollbar-color: var(--g-gold-dim) transparent; }
   .tt-trait-list { flex-direction: column; gap: .3cqw; overflow: visible; padding-bottom: 22px; }
   .tt-traits::after { content: ''; position: sticky; bottom: 0; display: block; height: 22px; margin-top: -22px; background: linear-gradient(rgba(10,20,32,0), var(--g-bg) 85%); pointer-events: none; }
   .tt-trow { width: 100%; height: 2.7cqw; min-height: 30px; padding-right: .3cqw; background: linear-gradient(90deg, rgba(10,20,32,.9), rgba(10,20,32,.55)); border-radius: 0 3px 3px 0; gap: .15cqw; }
@@ -291,7 +294,7 @@ html, body { background: var(--g-bg); }
   .tt-tbp { font-size: clamp(12px, .95cqw, 16px); color: #6d7e8e; white-space: nowrap; font-family: "Barlow Condensed", sans-serif; font-weight: 600; }
   .tt-tbp i { font-style: normal; } .tt-tbp s { text-decoration: none; margin: 0 .15cqw; opacity: .6; } .tt-tbp i.tt-on { color: #b8c6d3; } .tt-tbp i.tt-cur { color: var(--g-gold-hi); font-weight: 800; }
   .tt-traits .tt-traitbar-empty { font-size: clamp(12px, .95cqw, 16px); }
-  .tt-codexbtn { left: 3.2%; top: 75.8%; width: 9%; height: 3.8%; min-width: 0; padding: 0; font-size: clamp(12px, 1.05cqw, 18px); }
+  .tt-codexbtn { left: var(--tt-itr); top: 75.8%; width: 9%; height: 3.8%; min-width: 0; padding: 0; font-size: clamp(12px, 1.05cqw, 18px); }
   .tt-board { left: 22%; top: 5.5%; width: 56%; height: 66%; max-height: none; }
   .tt-board[data-mode=battle] { top: 5.5%; height: 77%; width: 45.9%; left: 27.05%; aspect-ratio: auto; }
   .tt-bench { left: 22%; top: 72.5%; width: 56%; height: 7.5%; gap: .3cqw; --tk: 3.3cqw; }
@@ -490,3 +493,29 @@ button.tt-tag:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .tt-bt-u.tt-bt-boss .tt-bt-in{transform:scale(1.3)}
 .tt-bt-u.tt-bt-boss{z-index:2}
 
+
+/* ===== v3：增幅單張重抽 ===== */
+.tt-optcol { display: flex; flex-direction: column; gap: var(--s2); min-width: 0; }
+.tt-optcol .tt-opt { flex: 1; }
+.tt-augrr { min-height: 44px; width: 100%; }
+.tt-augrr[disabled] { opacity: .45; cursor: not-allowed; filter: grayscale(1); }
+@media (max-width: 640px) { .tt-opts { grid-template-columns: 1fr; } .tt-optcol { flex-direction: row; align-items: stretch; } .tt-optcol .tt-opt { min-height: 96px; } .tt-augrr { width: 96px; flex: 0 0 96px; } }
+
+/* ===== v3：特殊道具（黃金卸除器、心鋼最愛）與棋子上的最愛標記 ===== */
+.tt-xspecial { display: flex; flex-wrap: wrap; gap: 5px; order: 7; grid-column: 1 / -1; }
+.tt-xspecial[hidden] { display: none; }
+.tt-xspecial .tt-xslot { width: 44px; height: 44px; aspect-ratio: auto; flex: none; cursor: grab; border-color: var(--g-gold-dim); border-radius: 4px; }
+.tt-xsp.tt-sel { outline: 2px solid var(--g-gold); }
+.tt-sp-rm, .tt-spicon.tt-sp-rm { background-color: #2a2008; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><path d='M10 8h9v16a5 5 0 0 0 10 0V8h9v16a14 14 0 0 1-28 0z' fill='%23f2c14e' stroke='%238a5a00' stroke-width='2' stroke-linejoin='round'/><rect x='10' y='8' width='9' height='7' fill='%23e8503a'/><rect x='29' y='8' width='9' height='7' fill='%23e8503a'/><path d='M13 40l22-6' stroke='%23fff3c4' stroke-width='3' stroke-linecap='round'/></svg>"); background-size: 82%; background-position: center; background-repeat: no-repeat; }
+.tt-sp-fav, .tt-spicon.tt-sp-fav { background-color: #2a0f1c; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><path d='M24 41C8 29 5 20 5 15a9 9 0 0 1 19-3 9 9 0 0 1 19 3c0 5-3 14-19 26z' fill='%23ff5e8a' stroke='%23fff3c4' stroke-width='2.5' stroke-linejoin='round'/><path d='M13 14a5 5 0 0 1 6-3' stroke='%23fff' stroke-width='2.5' fill='none' stroke-linecap='round' opacity='.7'/></svg>"); background-size: 78%; background-position: center; background-repeat: no-repeat; }
+.tt-spicon { display: inline-block; border-radius: 4px; }
+.tt-favmark { position: absolute; right: -14%; top: -10%; z-index: 3; width: max(18px, calc(var(--tk, 40px) * .46)); height: max(18px, calc(var(--tk, 40px) * .46)); display: grid; place-items: center; font-style: normal; font-size: max(12px, calc(var(--tk, 40px) * .32)); line-height: 1; color: #fff; background: #d6336c; border: 2px solid var(--g-gold-hi, #f0e6d2); border-radius: 50%; box-shadow: 0 0 6px 2px rgba(255,94,138,.75); cursor: grab; touch-action: none; }
+.tt-favmark::after { content: ''; position: absolute; inset: -9px; }   /* 手指好按：感應範圍比看到的大 */
+.tt-favmark.tt-off { background: #55606b; box-shadow: none; cursor: default; opacity: .8; }
+.tt-unit.tt-isfav .tt-xav { box-shadow: 0 0 0 2px rgba(255,94,138,.9), 0 0 8px rgba(255,94,138,.7); }
+.tt-us-fav { margin: 4px 0 0; padding: 3px 8px; border-radius: 3px; background: rgba(214,51,108,.18); color: #ffb3c8; font-size: var(--fs-s, 13px); font-weight: 700; }
+.tt-us-fav.tt-off { background: rgba(120,130,140,.18); color: #aab4be; font-weight: 400; }
+[data-phase=battle] .tt-xspecial { display: none; }
+@media (max-width: 1023px) and (max-height: 700px), (orientation: portrait) and (max-height: 700px) {
+  .tt-stage:has(.tt-xspecial:not([hidden])) .tt-board:not([data-mode=battle]) { height: max(160px, min(70vw, calc(100dvh - 458px))); }
+}

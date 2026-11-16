@@ -6,6 +6,7 @@
 // 本檔頂層不使用 panels／traitbar 的匯出（互相 import，只在函式執行時才用）。
 import * as PN from './panels.js';
 import * as TB from './traitbar.js';
+import { SPECIAL_INFO } from './board.js';
 
 const SHOW_MS = 150;
 let tipEl = null, anchorEl = null, pinned = false, timer = 0, curApi = null, curSpec = null, curOpts = null;
@@ -166,6 +167,11 @@ export function buildTip(spec, api = curApi) {
   if (kind === 'trait') return buildTrait(api, rest);
   if (kind === 'item') return buildItem(api, rest);
   if (kind === 'aug') return buildAug(api, rest);
+  if (kind === 'sp') {
+    const I = SPECIAL_INFO[rest]; if (!I) return h('div', 'tt-tip-in', h('p', 'tt-tip-p', rest));
+    const ic = h('span', 'tt-tip-itemicon tt-spicon tt-sp-' + (rest === 'rm' ? 'rm' : 'fav'));
+    return h('div', 'tt-tip-in', head(ic, I.zh, I.sub), h('p', 'tt-tip-p', I.desc), I.hint ? h('p', 'tt-tip-p tt-tip-muted', I.hint) : null);
+  }
   if (kind === 'stat') return buildStat(api, rest);
   if (kind === 'unlock') return buildUnlock(api, rest);
   return h('div', 'tt-tip-in', h('p', 'tt-tip-p', s));

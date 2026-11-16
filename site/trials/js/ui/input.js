@@ -12,6 +12,8 @@ export const parse = (d) => {
   if (k === 'board') { const [r, c] = (rest[0] || '').split(',').map(Number); return { k, r, c }; }
   if (k === 'bench' || k === 'shop' || k === 'item') return { k, i: Number(rest[0]) };
   if (k === 'enemy') return { k, key: rest[0], star: rest[1] != null ? Number(rest[1]) : null };
+  if (k === 'sp') return { k, id: rest[0] };
+  if (k === 'fav') return { k, uid: Number(rest[0]) };
   return { k };
 };
 
@@ -34,7 +36,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
   const setSel = (s) => { if (h.setSel) h.setSel(s); else { ui.sel = s; ui.sellArm = null; render(); } };
   const toast = (m) => { try { api.toast && api.toast(m); } catch (_) { /* 略過 */ } };
 
-  const sameSel = (a, b) => (!a && !b) || (a && b && a.kind === b.kind && (a.kind === 'unit' ? a.uid === b.uid : a.kind === 'item' ? a.idx === b.idx : a.key === b.key && a.star === b.star));
+  const sameSel = (a, b) => (!a && !b) || (a && b && a.kind === b.kind && (a.kind === 'unit' ? a.uid === b.uid : a.kind === 'item' ? a.idx === b.idx : a.kind === 'sp' ? a.id === b.id : a.key === b.key && a.star === b.star));
   function select(s) {
     if (sameSel(ui.sel, s)) return;       // 點已選的同一隻＝維持選取
     setSel(s);
@@ -66,6 +68,8 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
     }
     if (d.k === 'enemy') return select(enemySel(d, el));
     if (d.k === 'item') return select({ kind: 'item', idx: d.i });
+    if (d.k === 'sp') return select({ kind: 'sp', id: d.id });
+    if (d.k === 'fav') return select({ kind: 'unit', uid: d.uid });
     if (d.k === 'board' || d.k === 'bench') {
       const u = unitAt(d);
       if (u) select({ kind: 'unit', uid: u.uid }); else clearSel();     // 空格＝取消選取，不是移動
@@ -81,11 +85,15 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
   function onDragStart(desc) {
     const d = parse(desc); if (!d) return;
     hideTip();
-    app.dataset.dragging = d.k === 'shop' ? 'shop' : d.k === 'item' ? 'item' : 'unit';
+    app.dataset.dragging = d.k === 'shop' ? 'shop' : (d.k === 'item' || d.k === 'sp' || d.k === 'fav') ? 'item' : 'unit';
     if (d.k === 'board' || d.k === 'bench') {
       const u = unitAt(d); if (!u) return;
       ui.dragUnit = u.uid;      // 包 B 的 render／syncDrag 讀這個 uid，把商店變成賣出區
       ui.sel = { kind: 'unit', uid: u.uid }; ui.sellArm = null;
+      try { PN.renderUnitSide(unitpanel(), api); } catch (_) { /* 略過 */ }
+      sfx('pickup');
+    } else if (d.k === 'sp' || d.k === 'fav') {
+      ui.sel = d.k === 'sp' ? { kind: 'sp', id: d.id } : { kind: 'unit', uid: d.uid };
       try { PN.renderUnitSide(unitpanel(), api); } catch (_) { /* 略過 */ }
       sfx('pickup');
     } else if (d.k === 'item') {
@@ -107,6 +115,12 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
     let r = null;
     if (f.k === 'shop') {
       if (t.k === 'bench' || t.k === 'board') { ui.sel = null; r = api.act('buy', f.i); } else return bounce();
+    } else if (f.k === 'sp' || f.k === 'fav') {
+      const u = (t.k === 'board' || t.k === 'bench') ? unitAt(t) : null;
+      if (!u) { toast(f.k === 'fav' || f.id === 'fav' ? '要拖到心鋼之聲成員身上' : '要拖到有裝備的棋子身上'); return bounce(); }
+      if (f.k === 'fav') { if (f.uid === u.uid) return render(); ui.sel = null; r = api.act('moveFavorite', f.uid, u.uid); }
+      else if (f.id === 'rm') { ui.sel = null; r = api.act('useRemover', u.uid); }
+      else { ui.sel = null; r = api.act('setFavorite', u.uid); }
     } else if (f.k === 'item') {
       const u = (t.k === 'board' || t.k === 'bench') ? unitAt(t) : null;
       if (!u) return bounce();
@@ -125,7 +139,15 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
   // ---------- 手機長按商店卡：跳技能說明，放開就收，這次放開不算買 ----------
   function onLongPress(desc, el) {
     if (ui.mode !== 'plan') return;
-    const d = parse(desc); if (!d || d.k !== 'shop') return;
+    const d = parse(desc); if (!d) return;
+    if (d.k === 'sp' || d.k === 'item' || d.k === 'fav') {   // 觸控長按道具＝看說明（放開就收）
+      const spec = el.dataset.ttTip; if (!spec) return;
+      showTip(el, spec, { placement: 'top' });
+      const off2 = () => { hideTip(); window.removeEventListener('pointerup', off2, true); window.removeEventListener('pointercancel', off2, true); };
+      window.addEventListener('pointerup', off2, true); window.addEventListener('pointercancel', off2, true);
+      return;
+    }
+    if (d.k !== 'shop') return;
     const slot = api.state.shop && api.state.shop[d.i]; if (!slot) return;
     showTip(el, `ability:${slot.key}:1`, { placement: 'top', row: el.parentElement, full: true });
     const off = () => { hideTip(); window.removeEventListener('pointerup', off, true); window.removeEventListener('pointercancel', off, true); };

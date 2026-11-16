@@ -6,6 +6,7 @@ import { sellValue } from '../shop.js';
 import * as TB from './traitbar.js';
 import * as AU from '../audio.js';
 import { sfx } from '../audio.js';
+import { SPECIAL_INFO } from './board.js';
 import { showTip, hideTip, richText, abilityIcon, augIconNode } from './tooltip.js';
 
 // 羈絆圖示唯一入口是 traitbar.traitIcon（包 B）。還沒有時回 null，畫面只少圖示。
@@ -250,31 +251,32 @@ export function showAugmentInfo(api, key) {
 // pending = state.pendingChoices {type:'augment', options:[key|{key}], rerollLeft?:n}
 export function showAugmentChoice(api, pending) {
   const { DATA, state } = api; pending = pending || state.pendingChoices;
-  const rec = { cur: null };
-  const render = (p) => {
+  // 每一張各有自己的重抽鍵（官方做法）：按了只換那一張，其他兩張不變。pending 是 state.pendingChoices，原地被改，這裡自己重畫。
+  const cur = () => state.pendingChoices && state.pendingChoices.type === 'augment' ? state.pendingChoices : pending;
+  const holder = el('div', {});
+  const render = (focusIdx = 0) => {
+    const p = cur();
     const row = el('div', { class: 'tt-opts' });
     p.options.forEach((o, i) => {
       const A = DATA.augments.byKey[typeof o === 'string' ? o : o.key]; if (!A) return;
       const icon = el('span', { class: 'tt-augi', 'aria-hidden': 'true' });
       icon.style.backgroundImage = 'url("../icons/aug-sprite.webp")'; icon.style.backgroundSize = '2000% 1300%';
       icon.style.backgroundPosition = `${(A.sp % 20) * 100 / 19}% ${Math.floor(A.sp / 20) * 100 / 12}%`;
-      const b = el('button', { type: 'button', class: 'tt-opt', 'data-tier': A.tier, 'data-autofocus': i === 0 ? '' : null },
+      const b = el('button', { type: 'button', class: 'tt-opt', 'data-tier': A.tier, 'data-i': i, 'data-autofocus': i === focusIdx ? '' : null },
         el('span', { class: 'tt-opt-head' }, icon, el('span', {}, el('span', { class: 'tt-tl' }, ['', '銀色', '金色', '彩色'][A.tier] || ''), el('div', { class: 'tt-on' }, A.zh))),
         el('span', {}, A.desc), A.guess ? el('span', {}, badge('推測數值', 'tt-guess')) : null);
       b.addEventListener('click', () => { sfx('pick'); closePanels(); api.act('pickAugment', i); });
-      row.append(b);
+      const left = Array.isArray(p.rerollLeft) ? (p.rerollLeft[i] || 0) : 0;
+      const rr = el('button', { type: 'button', class: 'tt-btn tt-ghost tt-augrr', 'data-tt': 'aug-reroll', 'data-i': i, disabled: left > 0 ? null : '', 'aria-label': left > 0 ? `重抽第 ${i + 1} 張（只換這一張，還有 ${left} 次）` : `第 ${i + 1} 張的重抽用完了` },
+        left > 0 ? `重抽這張（${left}）` : '重抽用完了');
+      rr.addEventListener('click', () => { const r = api.act('rerollAugmentSlot', i); if (r && r.ok) { holder.replaceChildren(render(i)); const nb = holder.querySelector(`.tt-opt[data-i="${i}"]`); nb && nb.focus({ preventScroll: true }); } });
+      row.append(el('div', { class: 'tt-optcol' }, b, rr));
     });
     return row;
   };
   const tier = DATA.augments.byKey[typeof pending.options[0] === 'string' ? pending.options[0] : pending.options[0]?.key]?.tier;
-  const holder = el('div', {});
-  holder.append(render(pending));
-  const footer = [];
-  // game.js 的欄位叫 rerolls（剩幾次免費重抽）；重抽後由 layout 依新的 pendingChoices 重開面板
-  if ((pending.rerolls ?? pending.rerollLeft ?? 0) > 0) footer.push(el('button', { type: 'button', class: 'tt-btn tt-ghost', 'data-tt': 'aug-reroll', onclick: () => {
-    closePanels(); api.act('rerollAugment');
-  } }, '免費重抽（三格一起換，一次）'));
-  return openPanel({ title: `選一個增幅${tier ? '（' + ['', '銀', '金', '彩'][tier] + '）' : ''}`, body: [el('p', { class: 'tt-desc', style: 'color:var(--muted);font-size:var(--fs-s)' }, '三選一，選了會顯示在狀態列。'), holder], footer: footer.length ? footer : null, modal: true, cls: 'tt-wide' });
+  holder.append(render());
+  return openPanel({ title: `選一個增幅${tier ? '（' + ['', '銀', '金', '彩'][tier] + '）' : ''}`, body: [el('p', { class: 'tt-desc', style: 'color:var(--muted);font-size:var(--fs-s)' }, '三選一。不喜歡哪一張，就按它下面的重抽，只會換那一張（每張可以換 1 次）。'), holder], modal: true, cls: 'tt-wide' });
 }
 
 // ---------- 獎勵 ----------
@@ -380,7 +382,8 @@ export function showResult(api, info) {
   // 收入
   const gains = finish.gains || [];   // 戰鬥中的經濟效果（summary.rewards）已由 game.js 併進 gains
   const gl = el('ul', { class: 'tt-kv' });
-  gains.forEach((g, i) => { const [a, b] = gainText(DATA, g); const li = el('li', {}, el('span', {}, a), el('b', {}, b)); gl.append(li); if (g.gold) setTimeout(() => sfx('coin'), 150 * i); });
+  let coinPlayed = false;   // 金幣音效 1.35 秒：只在第一行有金幣的收入播一次，不疊
+  gains.forEach((g) => { const [a, b] = gainText(DATA, g); const li = el('li', {}, el('span', {}, a), el('b', {}, b)); gl.append(li); if (g.gold && !coinPlayed) { coinPlayed = true; sfx('coin'); } });
   if (!gains.length) gl.append(el('li', {}, el('span', { class: 'muted' }, '這回合沒有收入'), ''));
   body.push(el('div', {}, el('h3', { class: 'tt-h' }, '收入'), gl));
   // 羈絆貢獻
@@ -512,6 +515,7 @@ function resolveSel(api) {
   const { state } = api;
   if (sel.kind === 'unit') { const u = [...(state.board || []), ...(state.bench || [])].find(x => x && x.uid === sel.uid); return u ? { kind: 'unit', unit: u } : null; }
   if (sel.kind === 'enemy') return api.DATA.units.byKey[sel.key] ? { kind: 'enemy', unit: { key: sel.key, star: sel.star || 1, items: sel.items || [] } } : null;
+  if (sel.kind === 'sp') return SPECIAL_INFO[sel.id] ? { kind: 'sp', id: sel.id } : null;
   if (sel.kind === 'item') { const k = (state.itemBench || [])[sel.idx]; return k ? { kind: 'item', key: k, idx: sel.idx } : null; }
   return null;
 }
@@ -610,6 +614,15 @@ function itemSide(api, r) {
   return wrap;
 }
 
+function spSide(api, r) {
+  const I = SPECIAL_INFO[r.id];
+  const ic = el('span', { class: 'tt-us-itemicon tt-spicon tt-sp-' + (r.id === 'rm' ? 'rm' : 'fav') });
+  const wrap = el('div', { class: 'tt-us tt-us-item' }, el('div', { class: 'tt-us-grip', 'data-tt-grip': '', 'aria-hidden': 'true' }),
+    el('div', { class: 'tt-us-itemhead' }, ic, el('div', {}, el('b', { class: 'tt-us-iname' }, I.zh), el('small', {}, I.sub))));
+  wrap.append(el('p', { class: 'tt-us-desc' }, I.desc), el('p', { class: 'tt-us-hint tt-muted' }, I.hint));
+  return wrap;
+}
+
 function unitSide(api, r) {
   const { DATA } = api; const u = r.unit; const U = DATA.units.byKey[u.key]; const star = u.star || 1;
   const enemy = r.kind === 'enemy';
@@ -630,6 +643,12 @@ function unitSide(api, r) {
   const price = enemy ? U.cost : sellValue(u, DATA);
   wrap.append(el('div', { class: 'tt-us-name' }, el('b', {}, U.zh), enemy ? badge('敵方', 'tt-enemy') : null,
     el('span', { class: 'tt-us-price', 'aria-label': (enemy ? '費用 ' : '賣價 ') + price + ' 金' }, coin(), el('span', { class: 'tt-num' }, price))));
+  // 心鋼最愛（手動選的）：棋子身上有標記就寫在這裡；是成員但沒有就提示怎麼選
+  if (!enemy && api.fav) {
+    const f = api.fav();
+    if (f.held.includes(u.uid)) wrap.append(el('p', { class: 'tt-us-fav' + (f.active.includes(u.uid) ? '' : ' tt-off') }, '♥ 最愛：', f.active.includes(u.uid) ? '技能增幅 +25%（要上場才有效）' : '羈絆掉到 3 階以下，暫時失效'));
+    else if (f.cap > 0 && (U.traits || []).includes(f.trait)) wrap.append(el('p', { class: 'tt-us-fav tt-off' }, f.free > 0 ? '把「心鋼最愛」拖到他身上，就選他強化技能' : '心鋼最愛都放完了，要換就從別位身上拖過來'));
+  }
   // 血條、法力條
   const hp = c ? c.hp : (U.stats?.hp || 0);
   wrap.append(bar('tt-hp', hp, hp, `${fmt(hp)} / ${fmt(hp)}`, `生命 ${fmt(hp)}`));
@@ -683,7 +702,7 @@ export function renderUnitSide(root, api) {
   if (ui.sel && !r && ui.mode !== 'battle') ui.sel = null;   // 選取的東西不在了
   if (!r) { root.hidden = true; root.replaceChildren(); delete root.dataset.sel; return; }
   root.hidden = false; root.dataset.sel = r.kind; root.classList.add('tt-unitside');
-  const node = r.kind === 'item' ? itemSide(api, r) : unitSide(api, r);
+  const node = r.kind === 'sp' ? spSide(api, r) : r.kind === 'item' ? itemSide(api, r) : unitSide(api, r);
   root.replaceChildren(node);
   if (!root.__ttGrip) {   // 手機抽屜：點把手或往下滑收起
     root.__ttGrip = true;
@@ -925,6 +944,8 @@ export function showHelp(opts = {}) {
         el('li', {}, '點棋子是「選取」，右邊會出現資訊。點另一隻就改選，點空白處就取消。點棋子不會換位子。'),
         el('li', {}, '要換位子只能用拖的：拖到空格是移動，拖到有棋子的格子是兩隻交換，拖到商店就是賣掉。'),
         el('li', {}, '點裝備是看說明，要裝上去也是拖到棋子身上。右鍵跟左鍵一樣，是選取。'),
+        el('li', {}, '裝備欄旁邊有兩種特殊道具：黃金卸除器（每局 1 個，拖到有裝備的棋子身上，把裝備全卸回裝備欄）、心鋼最愛（心鋼之聲 3 階給 1 個、5 階再給 1 個，拖到心鋼之聲成員身上就是選他強化技能，佈陣時可以從一位拖到另一位改選）。'),
+        el('li', {}, '選增幅時，每一張下面都有自己的重抽鍵，按了只換那一張。'),
         el('li', {}, '用鍵盤的話：Tab 選到棋子按 Enter 是選取，上場、下場用 ' + L('deploy') + ' 鍵。場上換格子沒有鍵盤的做法，只能用滑鼠或手指拖。'))),
     sec('快捷鍵（桌機）', el('div', { class: 'tt-keys' },
       ...[[L('reroll'), '重抽'], [L('buyXp'), '購買經驗值'], [L('sell'), '賣出（滑鼠下的棋子，沒有就賣已選取的）'], [L('deploy'), '上場／回板凳'],

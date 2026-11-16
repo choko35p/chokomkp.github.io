@@ -19,7 +19,7 @@ const REASONS = {
 };
 const reasonText = (r) => (r && /[一-鿿]/.test(r) ? r : REASONS[r] || '這個動作現在做不到');
 
-const SFX = { buy: 'buy', sell: 'sell', reroll: 'reroll', buyXp: 'xp', move: 'place', equip: 'equip', pickAugment: 'pick', pickReward: 'pick', startBattle: 'start' };
+const SFX = { buy: 'buy', sell: 'sell', reroll: 'reroll', buyXp: 'xp', move: 'place', equip: 'equip', pickAugment: 'pick', rerollAugmentSlot: 'reroll', setFavorite: 'equip', moveFavorite: 'equip', useRemover: 'equip', pickReward: 'pick', startBattle: 'start' };
 
 function showFatal(msg, withLink) {
   const root = document.getElementById('tt-root');
@@ -73,6 +73,7 @@ async function boot() {
     emit(evt, payload) { for (const f of (L[evt] || []).slice()) f(payload); },
     countTraits: stats ? (u, D, o) => stats.countTraits(u, D, o) : null,
     teamLimit: () => game.teamLimit(state, DATA),
+    fav: () => game.favoriteInfo(state, DATA),
     toast: () => {},
     sfx(n) { try { audio.sfx(n); } catch (_) { /* 音效壞了不影響遊戲 */ } },
     restart(seed) {

@@ -4,7 +4,7 @@
 //   [data-tt-mount=traits]  → traitbar.renderTraits(el, 我方羈絆, 敵方羈絆, api)（敵方羈絆畫在 [data-tt-enemy]）
 //   .tt-board               → board.renderBoard；戰鬥時 el.__field 交給 battle.playBattle
 //   面板：panels.showUnitPanel／showTraitPanel／showAugmentChoice／showReward／showResult／showGameOver／showHelp／showCodex
-import { renderBoard, renderBench, renderItems, el, zhOf, costOf, itemZh } from './board.js';
+import { renderBoard, renderBench, renderItems, renderSpecials, el, zhOf, costOf, itemZh } from './board.js';
 import { renderShop, renderHud } from './shopbar.js';
 import { sfx, setMuted, isMuted } from '../audio.js';
 
@@ -71,6 +71,7 @@ export async function mount(root, api) {
         <div class="tt-enemybar"></div>
         <div class="tt-augs" aria-label="增幅"></div>
         <div class="tt-xitems" aria-label="裝備欄"></div>
+        <div class="tt-xspecial" aria-label="特殊道具" hidden></div>
         <div class="tt-traits" data-tt-mount="traits"></div>
         <button class="tt-codexbtn" type="button" data-act="codex" data-tt-noclear>圖鑑</button>
         <div class="tt-board" aria-label="棋盤"></div>
@@ -91,7 +92,7 @@ export async function mount(root, api) {
 
   const R = {
     stage: $(app, '.tt-stage'), enemy: $(app, '.tt-enemybar'), board: $(app, '.tt-board'), bench: $(app, '.tt-bench'),
-    items: $(app, '.tt-xitems'), shop: $(app, '.tt-xshop'), hud: $(app, '.tt-hud'), roundbar: $(app, '.tt-roundbar'), augs: $(app, '.tt-augs'),
+    items: $(app, '.tt-xitems'), special: $(app, '.tt-xspecial'), shop: $(app, '.tt-xshop'), hud: $(app, '.tt-hud'), roundbar: $(app, '.tt-roundbar'), augs: $(app, '.tt-augs'),
     traits: $(app, '[data-tt-mount=traits]'), unitpanel: $(app, '[data-tt-mount=unitpanel]'), toast: $(app, '.tt-toast'),
     speed: $(app, '.tt-speed'), rank: $(app, '.tt-rank'), mute: $(app, '[data-act=mute]'), go: $(app, '.tt-go'),
     unlockBtn: $(app, '.tt-unlockbtn'),
@@ -236,6 +237,7 @@ export async function mount(root, api) {
     const s = ui.sel; if (!s) return;
     if (s.kind === 'unit' && !unitByUid(s.uid)) ui.sel = null;
     else if (s.kind === 'item' && !api.state.itemBench[s.idx]) ui.sel = null;
+    else if (s.kind === 'sp') { const f = api.fav ? api.fav() : { free: 0 }; if (s.id === 'rm' ? !(api.state.removers > 0) : !(f.free > 0)) ui.sel = null; }
     else if (s.kind === 'enemy' && !(curEnemy && curEnemy.units.some(u => u.key === s.key))) ui.sel = null;
   }
 
@@ -253,6 +255,7 @@ export async function mount(root, api) {
     renderBoard(R.board, api, { mode: 'plan', enemy: curEnemy });
     renderBench(R.bench, api);
     renderItems(R.items, api);
+    renderSpecials(R.special, api);
     renderShop(R.shop, api);
     syncDrag();
     fitDrawer();

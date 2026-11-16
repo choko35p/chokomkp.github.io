@@ -205,6 +205,11 @@ export function tryMerge(state, DATA, extra = null) {
     const gather = [];
     for (let i = 1; i < chosen.length; i++) {
       const o = chosen[i];
+      // 心鋼最愛標記跟著合出來的那隻走（被併掉的那隻身上有標記就轉給存活者；存活者已有就收回）
+      if (state.favs && state.favs.includes(o.u.uid)) {
+        const fi = state.favs.indexOf(o.u.uid);
+        if (state.favs.includes(survivor.uid)) state.favs.splice(fi, 1); else state.favs[fi] = survivor.uid;
+      }
       gather.push(...o.u.items);
       if (o.zone === 'board') state.board.splice(state.board.indexOf(o.u), 1);
       else state.bench[o.i] = null;

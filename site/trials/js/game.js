@@ -164,15 +164,28 @@ function addXp(state, DATA, n, events) {
 }
 
 // ---------- 選擇視窗 ----------
-function makeAugmentChoice(state, DATA, tier, rerollN, avoid = []) {
-  let pool = DATA.augments.list.filter(a => a.tier === tier && !state.augments.includes(a.key)).map(a => a.key).sort();
-  const fresh = pool.filter(k => !avoid.includes(k));
-  const rng = makeRng(hashSeed(state.seed, 'reward', state.round, 'aug', tier, rerollN));
+function makeAugmentChoice(state, DATA, tier) {
+  const pool = DATA.augments.list.filter(a => a.tier === tier && !state.augments.includes(a.key)).map(a => a.key).sort();
+  const rng = makeRng(hashSeed(state.seed, 'reward', state.round, 'aug', tier, 0));
   const ac = R(DATA).augment || {};
   const n = ac.choices ?? DEF.augmentChoices;
-  let first = rng.shuffle(fresh).slice(0, n);
-  if (first.length < n) first = first.concat(rng.shuffle(pool.filter(k => !first.includes(k))).slice(0, n - first.length));
-  return { type: 'augment', tier, options: first, rerolls: rerollN === 0 ? (ac.rerollsPerChoice ?? DEF.augmentRerolls) : 0, rerollN };
+  const options = rng.shuffle(pool).slice(0, n);
+  const per = ac.rerollsPerChoice ?? DEF.augmentRerolls;
+  // 照官方：每一張各有自己的重抽鍵（每張各 per 次），只換那一張。rerollN[i]＝第 i 張已經換過幾次（決定性亂數用）
+  return { type: 'augment', tier, options, rerollLeft: options.map(() => per), rerollN: options.map(() => 0) };
+}
+// 舊存檔：pending 可能是 {rerolls:n}（三張一起換）或只有數字的 rerollLeft，照新格式補成每張各一個
+function normAugmentPending(p, DATA) {
+  if (!p || p.type !== 'augment') return p;
+  const per = (R(DATA).augment || {}).rerollsPerChoice ?? DEF.augmentRerolls;
+  const len = (p.options || []).length;
+  if (!Array.isArray(p.rerollLeft)) {
+    const old = typeof p.rerollLeft === 'number' ? p.rerollLeft : (p.rerolls ?? per);
+    p.rerollLeft = new Array(len).fill(old > 0 ? per : 0);
+  }
+  if (!Array.isArray(p.rerollN)) p.rerollN = new Array(len).fill(0);
+  delete p.rerolls;
+  return p;
 }
 function makeRewardChoice(state, DATA, seven) {
   const br = R(DATA).bossReward || {};
@@ -223,7 +236,7 @@ function beginRound(state, DATA, events, retry = false) {
         for (let i = 0; i < (lg.components || 0); i++) giveComponent(state, DATA, events);
       }
     }
-    if (pre.augment) queue.push(makeAugmentChoice(state, DATA, pre.augment, 0));
+    if (pre.augment) queue.push(makeAugmentChoice(state, DATA, pre.augment));
     state.pendingQueue = queue;
   }
   state.freeRerolls = (state.freeRerolls || 0) + ruleSum(state, DATA, 'freeRerollPerRound');
@@ -244,6 +257,7 @@ export function newGame(seed, DATA) {
     shop: [null, null, null, null, null], pool: S.newPool(DATA), rngShop: makeRng(hashSeed(seed, 'shop')).state(),
     augments: [], pendingChoices: null, pendingQueue: [], persist: {}, history: [], attempt: 0, uidNext: 1,
     freeRerolls: 0, rewardN: 0, counters: {}, battle: null,
+    removers: 1, favs: [],   // 黃金卸除器（每局開場 1 個）、心鋼最愛標記（依放上去的順序存棋子 uid）
     unlocks: {}, unlockQueue: [], unlockAcc: {}, stats: { rerolls: 0, loseStreak: 0 },
   };
   beginRound(state, DATA, []);
@@ -266,6 +280,10 @@ export function deserialize(json, DATA) {
   if (!s.unlockQueue) s.unlockQueue = [];
   if (!s.unlockAcc) s.unlockAcc = {};
   if (!s.stats) s.stats = { rerolls: 0, loseStreak: 0 };
+  if (!Array.isArray(s.favs)) s.favs = [];
+  if (typeof s.removers !== 'number') s.removers = 1;   // 舊存檔：補 1 個卸除器
+  normAugmentPending(s.pendingChoices, DATA);
+  for (const q of s.pendingQueue) normAugmentPending(q, DATA);
   return s;
 }
 
@@ -283,6 +301,7 @@ export function actions(state, DATA) {
     canBuyXp: plan && state.level < r.maxLevel && state.gold >= Math.max(0, buyCost),
     sell: plan ? S.allUnits(state).map(u => u.uid) : [],
     pop: population(state, DATA), maxPop: teamLimit(state, DATA),
+    favorite: favoriteInfo(state, DATA), removers: state.removers || 0,
   };
 }
 
@@ -383,6 +402,78 @@ export function actEquip(state, itemIdx, uid, DATA) {
   return ok({ events });
 }
 
+// ---------- 心鋼最愛（手動選）----------
+// 羈絆（Heartsteel）3 階給 1 個、5 階給 2 個「心鋼最愛」道具，玩家拖到一位成員身上＝選他強化技能。
+// 道具不佔 3 件裝備格、不放在 itemBench 裡。標記存在 state.favs（棋子 uid，依放上去的順序）。
+// 羈絆掉到 3 階以下：標記「留在原本那位身上但暫時失效」，羈絆回來就自動生效；那位被賣掉／合掉才會收回。
+function favTrait(DATA) {
+  for (const t of DATA.traits.list) {
+    for (const eff of [...(t.always || []), ...((t.tiers || []).flat())]) if (eff.type === 'special' && eff.id === 'favorite') return t;
+  }
+  return null;
+}
+function favCap(state, DATA) {
+  const t = favTrait(DATA);
+  if (!t || !B.countTraits || !state.board.length) return 0;
+  let info;
+  try { info = B.countTraits(state.board.map(u => ({ key: u.key, star: u.star, items: u.items })), DATA, { augments: state.augments.slice() }).find(x => x.key === t.key); } catch (e) { return 0; }
+  if (!info || !info.tier) return 0;
+  let n = 0;
+  for (const e of [...(t.always || []), ...((t.tiers || [])[info.tier - 1] || [])]) if (e.type === 'special' && e.id === 'favorite') n = Math.max(n, e.n || 0);
+  return n;
+}
+const isFavMember = (DATA, key) => { const t = favTrait(DATA); return !!t && (DATA.units.byKey[key].traits || []).includes(t.key); };
+// 回傳 { cap 目前最多幾個, held 還在棋子身上的標記（含暫時失效的）, active 目前有效的 uid, free 還沒放的個數, trait 羈絆 key }
+export function favoriteInfo(state, DATA) {
+  const t = favTrait(DATA);
+  const cap = t ? favCap(state, DATA) : 0;
+  const held = (state.favs || []).filter(uid => { const f = S.findUnit(state, uid); return f && isFavMember(DATA, f.unit.key); });
+  const active = held.slice(0, cap);
+  return { trait: t ? t.key : null, cap, held, active, free: Math.max(0, cap - active.length) };
+}
+function pruneFavs(state, DATA) { state.favs = favoriteInfo(state, DATA).held; }
+
+// 把一個心鋼最愛放到某位成員身上；fromUid 有給＝從另一位身上改選過來
+export function actSetFavorite(state, uid, DATA, fromUid = null) {
+  const g = needPlan(state); if (g) return g;
+  pruneFavs(state, DATA);
+  const f = S.findUnit(state, uid);
+  if (!f) return no('找不到這隻棋子');
+  if (!isFavMember(DATA, f.unit.key)) return no('心鋼最愛只能放在心鋼之聲成員身上');
+  const info = favoriteInfo(state, DATA);
+  if (!info.cap) return no('心鋼之聲要 3 階才有心鋼最愛');
+  if (info.active.includes(uid)) return no('這位已經有心鋼最愛了，不能放兩個');
+  if (fromUid != null) {
+    const i = state.favs.indexOf(fromUid);
+    if (i < 0 || !info.active.includes(fromUid)) return no('那位身上沒有心鋼最愛');
+    state.favs[i] = uid;
+  } else {
+    if (!info.free) return no('心鋼最愛都放完了，要改選就從別位身上拖過來');
+    // 暫時失效的舊標記排在後面：新放的插在有效標記之後
+    state.favs.splice(info.active.length, 0, uid);
+  }
+  state.favs = state.favs.filter((x, i, a) => a.indexOf(x) === i);
+  return ok({ events: [{ type: 'favorite', uid, from: fromUid }] });
+}
+export function actMoveFavorite(state, fromUid, toUid, DATA) { return actSetFavorite(state, toUid, DATA, fromUid); }
+
+// 黃金卸除器：把一隻身上所有裝備卸回裝備欄，用掉就消失
+export function actUseRemover(state, uid, DATA) {
+  const g = needPlan(state); if (g) return g;
+  if (!(state.removers > 0)) return no('黃金卸除器已經用掉了');
+  const f = S.findUnit(state, uid);
+  if (!f) return no('找不到這隻棋子');
+  const items = f.unit.items;
+  if (!items.length) return no('這隻身上沒有裝備');
+  if (state.itemBench.length + items.length > R(DATA).itemBenchSize) return no('裝備欄放不下，先空出位子再用');
+  for (const it of items) state.itemBench.push(it);
+  f.unit.items = [];
+  state.removers -= 1;
+  const events = [{ type: 'remove', uid, items: items.slice() }];
+  runUnlocks(state, DATA, events);
+  return ok({ events });
+}
+
 function applyOnPick(state, DATA, on, events) {
   if (!on) return;
   if (on.gold) { state.gold += on.gold; events.push({ type: 'gold', gold: on.gold }); }
@@ -396,13 +487,6 @@ function applyOnPick(state, DATA, on, events) {
 export function actPickAugment(state, idx, DATA) {
   const p = state.pendingChoices;
   if (!p || p.type !== 'augment') return no('現在沒有增幅可選');
-  if (idx === -1 || idx === 'reroll') {
-    if (!p.rerolls) return no('不能再重抽了');
-    const np = makeAugmentChoice(state, DATA, p.tier, p.rerollN + 1, p.options);
-    np.rerolls = p.rerolls - 1;
-    setPending(state, np);
-    return ok({ events: [{ type: 'augmentReroll' }] });
-  }
   const key = p.options[idx];
   if (!key) return no('沒有這個選項');
   state.augments.push(key);
@@ -413,8 +497,25 @@ export function actPickAugment(state, idx, DATA) {
   return ok({ events });
 }
 
-// 增幅重抽（介面用；等同 actPickAugment(state, -1)）
-export function actRerollAugment(state, DATA) { return actPickAugment(state, -1, DATA); }
+// 增幅單張重抽：只換第 idx 張，其他兩張不變；新抽的不會跟畫面上另外兩張（或原本那張）重複
+export function actRerollAugmentSlot(state, idx, DATA) {
+  const p = state.pendingChoices;
+  if (!p || p.type !== 'augment') return no('現在沒有增幅可選');
+  normAugmentPending(p, DATA);
+  if (!(idx >= 0 && idx < p.options.length)) return no('沒有這個選項');
+  if (!(p.rerollLeft[idx] > 0)) return no('這一張的重抽用完了');
+  const pool = DATA.augments.list.filter(a => a.tier === p.tier && !state.augments.includes(a.key)).map(a => a.key).sort();
+  const shown = p.options;
+  let cand = pool.filter(k => !shown.includes(k));
+  if (!cand.length) cand = pool.filter(k => !shown.some((o, i) => i !== idx && o === k));   // 池子太小：至少不跟另外兩張重複
+  if (!cand.length) return no('沒有別的增幅可以換了');
+  const rng = makeRng(hashSeed(state.seed, 'reward', state.round, 'augslot', p.tier, idx, p.rerollN[idx] + 1));
+  const key = rng.pick(cand);
+  p.options[idx] = key;
+  p.rerollLeft[idx] -= 1;
+  p.rerollN[idx] += 1;
+  return ok({ events: [{ type: 'augmentReroll', idx, key }], key });
+}
 
 // sub：介面一次選完兩段時用（成品／7 費的第幾個）；不給就走兩段 'reward' → 'rewardPick'
 export function actPickReward(state, idx, DATA, maybeData) {
@@ -459,7 +560,9 @@ export function actStartBattle(state, DATA) {
   const g = needPlan(state); if (g) return g;
   if (!B.buildTeam) return no('沒有戰前計算模組');
   const enemy = enemyForRound(state.round, state.seed, DATA);
-  const pUnits = state.board.map(u => ({ key: u.key, star: u.star, items: u.items.slice(), pos: u.pos.slice() }));
+  pruneFavs(state, DATA);
+  const favAct = favoriteInfo(state, DATA).active;
+  const pUnits = state.board.map(u => ({ key: u.key, star: u.star, items: u.items.slice(), pos: u.pos.slice(), ...(favAct.includes(u.uid) ? { fav: favAct.indexOf(u.uid) + 1 } : {}) }));
   const ctx = { level: state.level, round: state.round, augments: state.augments.slice(), persist: clone(state.persist),
     rng: makeRng(hashSeed(state.seed, 'combat', state.round, state.attempt, 'items')) };   // 竊賊手套用
   const pTeam = B.buildTeam('player', pUnits, DATA, ctx);

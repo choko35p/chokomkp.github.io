@@ -111,10 +111,10 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
   }
   // 拖沙灘樂器時：游標停在哪一格，那一格相鄰的 6 格就亮起來（顯示樂器碰得到的範圍）
   const clearRange = () => { for (const n of app.querySelectorAll('.tt-rangehint')) n.classList.remove('tt-rangehint'); };
-  // ---------- 裝備欄合成：散件拖到另一件散件上，停滿 1 秒放開＝直接合成 ----------
+  // ---------- 裝備欄合成：散件拖到另一件散件上，停滿 0.5 秒放開＝直接合成 ----------
   // 停上去就在旁邊顯示「會合成：成品」（圖示、名稱、一句效果），目標格繞一圈倒數；只有配得出成品的兩件才顯示。
-  // 不到 1 秒放開、或移到別處＝照舊（沒有事發生，裝備留在原位）。dnd 會先呼叫 onDragEnd 再 onDrop，所以放開前把「已停滿」記在 comboDone。
-  const COMBO_MS = 1000;
+  // 不到 0.5 秒放開、或移到別處＝照舊（沒有事發生，裝備留在原位）。dnd 會先呼叫 onDragEnd 再 onDrop，所以放開前把「已停滿」記在 comboDone。
+  const COMBO_MS = 500;   // 站主 2026-11-16：縮短到 0.5 秒
   let combo = null, comboDone = null;
   const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
   function comboStop() {
@@ -152,7 +152,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
     const txt = document.createElement('div');
     const b = document.createElement('b'); b.textContent = '會合成：' + (it.zh || rc.res);
     const sm = document.createElement('small'); sm.textContent = eff ? eff + '。' : '';
-    const em = document.createElement('em'); em.textContent = `${nm(rc.a)} ＋ ${nm(rc.b)}　` + (hold ? '停 1 秒再放開' : '放開就合成');
+    const em = document.createElement('em'); em.textContent = `${nm(rc.a)} ＋ ${nm(rc.b)}　` + (hold ? '停 0.5 秒再放開' : '放開就合成');
     txt.append(b, sm, em);
     const pop = document.createElement('div'); pop.className = 'tt-combo-pop'; pop.setAttribute('role', 'status'); pop.setAttribute('data-tt-combo', rc.res);
     pop.append(ic, txt); document.body.append(pop);
@@ -222,7 +222,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
       else { ui.sel = null; r = api.act('pick', id, u.uid, f.k === 'sp' ? {} : { from: f.uid }); }
     } else if (f.k === 'item' && t.k === 'item') {
       const cd = comboDone; comboDone = null;
-      if (!cd || cd.from !== f.i || cd.to !== t.i) return render();   // 沒停滿 1 秒、或不能合：照舊（沒事發生）
+      if (!cd || cd.from !== f.i || cd.to !== t.i) return render();   // 沒停滿 0.5 秒、或不能合：照舊（沒事發生）
       ui.sel = null; r = api.act('combineItems', f.i, t.i);
     } else if (f.k === 'item') {
       comboDone = null;

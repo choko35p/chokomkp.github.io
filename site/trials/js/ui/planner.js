@@ -203,6 +203,31 @@ export function mountPlanner(api) {
   // 頂部按鈕
   closeBtn.addEventListener('click', () => close());
   foldBtn.addEventListener('click', () => setCollapsed(!st.collapsed));
+  // 站主 2026-11-16「隊伍編輯器要可以移動」：桌機抓標題列拖到想要的位置（記住位置；雙擊標題列回到原位）
+  const POS_KEY = 'trials19.planner.pos';
+  const isDesk = () => window.matchMedia('(min-width: 1024px) and (orientation: landscape)').matches;
+  const clampPos = (x, y) => { const w = root.offsetWidth, hh = root.offsetHeight; return [Math.max(4, Math.min(innerWidth - w - 4, x)), Math.max(4, Math.min(innerHeight - Math.min(hh, 60) - 4, y))]; };
+  function placeAt(x, y) { const [cx, cy] = clampPos(x, y); root.style.left = cx + 'px'; root.style.top = cy + 'px'; root.style.bottom = 'auto'; root.style.transform = 'none'; root.dataset.moved = '1'; }
+  function resetPos() { for (const k of ['left', 'top', 'bottom', 'transform']) root.style[k] = ''; delete root.dataset.moved; }
+  function restorePos() {
+    if (!isDesk()) { resetPos(); return; }
+    let p = null; try { p = JSON.parse(localStorage.getItem(POS_KEY) || 'null'); } catch (e) { p = null; }
+    if (p && Number.isFinite(p.x) && Number.isFinite(p.y)) placeAt(p.x, p.y); else resetPos();
+  }
+  head.addEventListener('pointerdown', (e) => {
+    if (!isDesk() || e.button !== 0 || e.target.closest('button,input,a')) return;
+    const r = root.getBoundingClientRect(), ox = e.clientX - r.left, oy = e.clientY - r.top;
+    head.setPointerCapture(e.pointerId); root.classList.add('tt-pl-dragging'); e.preventDefault();
+    const mv = (ev) => placeAt(ev.clientX - ox, ev.clientY - oy);
+    const up = () => {
+      head.removeEventListener('pointermove', mv); head.removeEventListener('pointerup', up); head.removeEventListener('pointercancel', up);
+      root.classList.remove('tt-pl-dragging');
+      if (root.dataset.moved) { const b = root.getBoundingClientRect(); try { localStorage.setItem(POS_KEY, JSON.stringify({ x: Math.round(b.left), y: Math.round(b.top) })); } catch (err) { /* 存不了就算了 */ } }
+    };
+    head.addEventListener('pointermove', mv); head.addEventListener('pointerup', up); head.addEventListener('pointercancel', up);
+  });
+  head.addEventListener('dblclick', (e) => { if (e.target.closest('button,input,a')) return; resetPos(); try { localStorage.removeItem(POS_KEY); } catch (err) { /* 略過 */ } });
+  window.addEventListener('resize', () => { if (root.hidden) return; if (!isDesk()) resetPos(); else if (root.dataset.moved) { const b = root.getBoundingClientRect(); placeAt(b.left, b.top); } });
   function setCollapsed(v) {
     st.collapsed = !!v; root.dataset.collapsed = st.collapsed ? '1' : '0';
     foldBtn.setAttribute('aria-expanded', String(!st.collapsed)); foldBtn.textContent = st.collapsed ? '▴' : '▾';
@@ -385,6 +410,7 @@ export function mountPlanner(api) {
     st.open = true; root.hidden = false; setView('main');
     root.dataset.mobile = isMobile() ? '1' : '0';
     refresh();
+    restorePos();
     document.querySelector('[data-act=planner]')?.setAttribute('aria-pressed', 'true');
     try { api.sfx('select'); } catch (_) { /* 略過 */ }
     if (isMobile()) closeBtn.focus({ preventScroll: true });

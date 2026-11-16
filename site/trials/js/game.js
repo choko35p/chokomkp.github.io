@@ -113,7 +113,7 @@ export function defaultCell(state, DATA, key) {
   for (const r of rows) for (const c of cols) if (!used.has(r + ',' + c) && instAt(state, r, c) < 0) return [r, c];
   return null;
 }
-// 升級後場上人口還沒放滿：把板凳最左邊的棋子依序補上場，直到滿了或板凳空了（放不下的 2 人口棋子跳過，繼續看下一隻）。回傳補上場的 uid
+// 開戰時場上人口還沒放滿：把板凳最左邊的棋子依序補上場，直到滿了或板凳空了（放不下的 2 人口棋子跳過，繼續看下一隻）。回傳補上場的 uid
 export function autoFillBoard(state, DATA) {
   const placed = [];
   for (let i = 0; i < state.bench.length; i++) {
@@ -500,14 +500,13 @@ export function actBuyXp(state, DATA) {
   state.gold -= cost;
   const events = [{ type: 'xp', xp: r.xpPerBuy }];
   addXp(state, DATA, r.xpPerBuy, events);
-  fillAfterLevelUp(state, DATA, events);
   runUnlocks(state, DATA, events);
   fitMixer(state, DATA);
   return ok({ events });
 }
-// 升級了而且場上人口還沒放滿：自動補位（見 autoFillBoard）
-function fillAfterLevelUp(state, DATA, events) {
-  if (state.noAutoFill || !events.some(e => e.type === 'levelup')) return;   // noAutoFill：教學頁的關卡狀態用，讓學員自己拖
+// 站主 2026-11-16「自動補要開始戰鬥，人數不夠再補」：按開戰時場上人口還沒放滿才自動補位（見 autoFillBoard）
+function fillAtBattle(state, DATA, events) {
+  if (state.noAutoFill) return;   // noAutoFill：教學頁的關卡狀態用，讓學員自己拖
   const placed = autoFillBoard(state, DATA);
   if (placed.length) events.push({ type: 'autoFill', uids: placed });
 }
@@ -556,7 +555,7 @@ export function actMove(state, uid, to, DATA) {
   fitMixer(state, DATA);
   return ok({ events });
 }
-// 裝備欄合成：把 from 格的散件拖到 to 格的另一件散件上（停 1 秒才會觸發，計時在介面）。成品放在 to 格，from 格的散件消失
+// 裝備欄合成：把 from 格的散件拖到 to 格的另一件散件上（停 0.5 秒才會觸發，計時在介面）。成品放在 to 格，from 格的散件消失
 export function actCombineItems(state, from, to, DATA) {
   const g = needPlan(state); if (g) return g;
   if (from === to) return no('要拖到另一件裝備上');
@@ -1016,6 +1015,7 @@ export function actStartBattle(state, DATA) {
   const enemy = enemyForRound(state.round, state.seed, DATA);
   const trimEvents = [];
   trimToLimit(state, DATA, trimEvents);   // 場上超出人口：先移回板凳，放不下才賣
+  fillAtBattle(state, DATA, trimEvents);   // 人數不夠：開戰前從板凳最左邊補上場
   prunePicks(state, DATA);
   fitMixer(state, DATA);
   if (state.dealFrom == null && state.board.some(u => u.key === 'DrMundo')) state.dealFrom = state.round;   // 唱片合約每 4 回合多 1 份，從蒙多第一次上場開戰那回合算
@@ -1201,7 +1201,7 @@ export function actFinishBattle(state, DATA) {
     if (reached > claimed) { state.counters[ck] = reached; gainOne(src, e.gain, reached - claimed); }
   }
   if (advance) { addXp(state, DATA, r.xpPerRound, events); gains.push({ type: 'xp', label: '回合經驗', xp: r.xpPerRound }); }
-  if (!over && !(lastRound && (win || !retry))) { fillAfterLevelUp(state, DATA, events); settleEvents(state, DATA, events); }
+  if (!over && !(lastRound && (win || !retry))) { settleEvents(state, DATA, events); }
   runUnlocks(state, DATA, events);
 
   if (cleared) {

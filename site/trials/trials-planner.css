@@ -160,3 +160,10 @@
 
 /* 窄螢幕：頁首擠不下，標題只留給讀屏（視覺上拿掉），把位置讓給按鈕 */
 @media (max-width: 430px) { .tt-top h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; flex: none; } .tt-top-in { justify-content: flex-end; } .tt-top .tt-link { margin-right: auto; } }
+
+/* 桌機可抓標題列移動（雙擊標題列回原位） */
+@media (min-width: 1024px) and (orientation: landscape) {
+  .tt-pl-head { cursor: move; user-select: none; touch-action: none; }
+  .tt-pl-head button { cursor: pointer; }
+  .tt-pl.tt-pl-dragging { opacity: .92; box-shadow: 0 0 0 2px var(--g-gold-hi, #f0e6d2), 0 18px 50px rgba(0, 0, 0, .7); }
+}

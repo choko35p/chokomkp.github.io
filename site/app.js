@@ -101,7 +101,7 @@
   function adaptLayout() {
     const ul = document.querySelector(".nav ul");
     if (ul) ul.replaceChildren(...[["#tierlist", "nav.tier", "T 度表"], ["#updates-sec", "nav.updates", "本次更新"],
-      ["#version", "nav.version", "版本主軸"], ["#picker", "nav.picker", "隨手速查"], ["#comps", "nav.comps", "陣容攻略"], ["#quiz", "nav.quiz", "新手認卡"], ["sim/", "nav.sim", "戰鬥模擬"], ["trials/", "nav.trials", "滴答克的試煉"]].filter(([href]) => !S19 || href === "#tierlist" || href === "#comps" || href === "#quiz" || href === "trials/").map(([href, k, t]) => h("li", null, h("a", { href, "data-tx": k }, t))));  // 戰鬥模擬器 2026-11-11
+      ["#version", "nav.version", "版本主軸"], ["#picker", "nav.picker", "隨手速查"], ["#learn", "nav.learn", "新手教學"], ["#comps", "nav.comps", "陣容攻略"], ["sim/", "nav.sim", "戰鬥模擬"], ["trials/", "nav.trials", "滴答克的試煉"]].filter(([href]) => !S19 || href === "#tierlist" || href === "#learn" || href === "#comps" || href === "trials/").map(([href, k, t]) => h("li", null, h("a", { href, "data-tx": k }, t))));  // 戰鬥模擬器 2026-11-11
     const up = $("#updates-sec"), tl = $("#tierlist");
     if (up && !$("#updates-fold")) {
       up.classList.add("slim");
@@ -318,7 +318,7 @@
       const said = x.steps.filter((st) => (st.cols || []).length).map((st) => `${st.at} ${KIND_TXT[st.kind]}`).join("、");
       grid.append(h("button", { type: "button", role: "tab", class: "rm-row", "aria-selected": x.cost === ROUTE_SEL ? "true" : "false", "aria-controls": "route-panel",
         "aria-label": `${x.tag}：${x.goal}。${said}`, style: `--cc:var(--c${x.cost})`,
-        onclick: () => { ROUTE_SEL = x.cost; track("route_tab", x.cost); renderRoute(); document.getElementById("route-panel")?.focus({ preventScroll: true }); } },
+        onclick: () => { ROUTE_SEL = x.cost; track("route_tab", x.cost); renderLearnView(); document.getElementById("route-panel")?.focus({ preventScroll: true }); } },
         h("span", { class: "rm-lab" }, h("b", null, x.tag.replace("核心", "")), h("span", null, tx(`route:c${x.cost}.goal`, x.goal))),
         at.map((k, i) => h("span", { class: "rm-cell" + (i >= lo && i <= hi ? " on" : "") + (i === lo ? " first" : "") + (i === hi ? " last" : "") }, k ? mark(k) : null))));
     }
@@ -340,19 +340,22 @@
   }
   function renderRoute() {
     document.querySelector('.nav a[href="#updates-sec"]')?.parentElement?.remove();  // 站主 2026-11-05：「本次更新不要顯示在最上面的索引」
+    $("#nav-route")?.remove();
+    renderLearnHub();
+    renderLearnView();
+  }
+  /* 站主 2026-11-16：定陣路線歸進新手教學（#learn-route；舊網址 #route-sec 轉過來）。畫在 #learnv 裡 */
+  const routeOk = () => !S19 && !!D.routeGuide?.routes?.length;
+  const learnBack = () => h("a", { class: "back btn ghost", href: "#learn" }, "← 回新手教學");
+  function drawRouteView(v) {
     const r = D.routeGuide;
-    let sec = $("#route-sec");
-    if (!r?.routes?.length) { sec?.remove(); $("#nav-route")?.remove(); return; }
-    if (!sec) {
-      sec = h("section", { class: "block", id: "route-sec" });
-      const pk = $("#picker");
-      if (pk) pk.after(sec); else $("#home")?.append(sec);
-      const a = document.querySelector('.nav a[href="#picker"]');
-      if (a && !$("#nav-route")) a.parentElement.after(h("li", { id: "nav-route" }, h("a", { href: "#route-sec" }, "定陣路線")));
+    if (!routeOk()) {
+      v.replaceChildren(learnBack(), h("h2", null, "定陣路線"), h("p", { class: "rlead" }, "S19 上線後補。S19 的定陣路線等正式上線、高手資料夠了再做。"));
+      return;
     }
     if (!r.routes.some((x) => x.cost === ROUTE_SEL)) ROUTE_SEL = r.routes[0].cost;
-    sec.textContent = "";
-    sec.append(...[
+    v.replaceChildren(...[
+      learnBack(),
       h("h2", null, tx("route:title", r.title)),
       r.stale ? h("p", { class: "notice small" }, `這是 ${r.patch} 的定陣建議；新版本的高手資料足夠後會重新研究。`) : null,
       h("p", { class: "rlead" }, rich("route:lead", r.lead)),
@@ -364,6 +367,166 @@
       routePanel(r),
       r.count ? h("aside", { class: "rcount small" }, h("b", null, tx("route:countTitle", r.countTitle || "怎麼數張數")), " ", rich("route:count", r.count)) : null,
     ].filter(Boolean));
+  }
+
+  /* ---------- 新手教學（站主 2026-11-16：邊玩邊學、決策實驗室、定陣路線、新手認卡歸在一起）----------
+     實驗室題庫直接內嵌在這個常數（預覽站檔案數已滿，不另開資料檔）。有 confirm 欄位的題目是站主還沒確認觀點的：
+     站主模式看得到並標「待確認」，一般讀者先不顯示；拿掉 confirm 就會出現。 */
+  const LAB = {"version":"lab-1","labels":{"ok":"推薦","dep":"看情況","bad":"不建議","pick":"站主會這樣選","flip":"什麼時候改口"},"cats":{"eco":"經濟","roll":"D 牌","level":"上人口","scout":"看場","item":"裝備"},"scenarios":[{"id":"open-streak","cat":"eco","title":"開局要拚連勝還是擺連敗？","sub":"2-1 就要決定，不要打到一半才想。","stats":{"stage":"2-1","level":4,"gold":10,"hp":100},"facts":["剛打完第一階段的野怪，手上的牌就這些。","商店有一張可以湊對子的牌。","同場八個人，還看不出誰強誰弱。"],"question":"第二階段這幾場，你打算怎麼打？","varName":"你開局拿到的牌","vars":[{"label":"兩隻二星＋一件成裝"},{"label":"全部一星、散件很散"}],"plans":[{"id":"win","label":"有對子就買，場上放滿，拚連勝"},{"id":"lose","label":"場上放少一點，故意輸，存錢吃連敗"},{"id":"none","label":"不特別想，有什麼放什麼"}],"grid":{"win":[{"g":"ok","why":"開局牌強就是該贏。連勝有錢拿、又不扣血，是最賺的開法。","flip":"連勝斷了、場上又沒升級，就不要再硬花錢追。"},{"g":"bad","why":"牌爛還硬買，錢花了還是輸，連勝沒拿到，利息也沒了。","flip":"商店連續來對子，一下子變強，才改拚贏。"}],"lose":[{"g":"bad","why":"明明能贏還故意輸，白白扣血。強的開局不拿來連勝很浪費。","flip":"幾乎沒有。除非你玩的陣容本來就是靠連敗拿東西。"},{"g":"ok","why":"反正打不贏，乾脆輸得乾淨一點，把錢存起來，選秀還能先選。","flip":"血掉太快（第二階段就掉到 60 以下）要提早收手。"}],"none":[{"g":"dep","why":"牌強的時候亂放大概也會贏，但少買一張對子可能就斷連勝。","flip":"想穩穩連勝，就認真把人口放滿、位置排好。"},{"g":"bad","why":"最容易變成贏一場輸一場。連勝連敗的錢都沒有，血照扣。","flip":"沒有。牌爛的時候一定要先選一邊。"}]},"pick":["win","lose"],"follow":{"q":"你連敗了三場，下一場的對手剛好是全場最弱的，放滿可能會贏。你怎麼做？","opts":[{"label":"繼續放少，維持連敗","good":true,"fb":"第二階段的連敗很值錢。贏這一場，前面三場的血就白扣了。除非血已經危險，不然先不要斷。"},{"label":"放滿拚這一場","good":false,"fb":"贏了連敗就斷了，下一場又輸，就變成最窮的輸輸贏贏。要贏就要有把握接下來能一直贏。"}]},"takeaway":"2-1 先選邊：牌強拚連勝，牌爛擺連敗。最怕的是不選。"},{"id":"interest-edge","cat":"eco","title":"買了會掉利息，買不買？","sub":"身上 21 金，商店有你想要的牌。","stats":{"stage":"2-3","level":4,"gold":21,"hp":92},"facts":["那張牌 2 金。買了剩 19，這回合利息少 1 金。","板凳上有一張完全用不到的一費牌。","這回合打的是玩家，不是野怪。"],"question":"這張 2 金的牌，你怎麼處理？","varName":"那張牌是什麼","vars":[{"label":"買了直接合二星，馬上能上場"},{"label":"只是第一張，之後可能用得到"}],"plans":[{"id":"buy","label":"直接買，掉到 19 沒差"},{"id":"skip","label":"不買，守住 20"},{"id":"swap","label":"先賣板凳那張沒用的，再買"}],"grid":{"buy":[{"g":"dep","why":"二星是實打實的戰力，1 金利息換一隻二星划算。但你明明可以不掉利息的。","flip":"板凳沒有東西可以賣的時候，這就是對的。"},{"g":"bad","why":"為了一張還沒用的牌掉利息，而且它還佔板凳。","flip":"那張是很難抽的高費牌、又是你這場一定會用的，才值得。"}],"skip":[{"g":"bad","why":"二星放在面前不買，為了 1 金利息少一隻二星，省小錢輸大的。","flip":"你正在擺連敗、這回合本來就不想贏。"},{"g":"ok","why":"第一張而已，不急。利息先拿，之後有對子再說。","flip":"那張牌同場沒人在拿，而且你下一回合就會超過 22 金，那下回合再買就好。"}],"swap":[{"g":"ok","why":"賣一張沒用的拿回 1 金，買完剛好 20。二星有了，利息也沒掉。","flip":"板凳那張其實之後用得到，就不要賣。"},{"g":"dep","why":"利息保住了，但你是拿一張沒用的換另一張還沒用的，板凳還是塞著。","flip":"新的這張確定在你的陣容裡，才換。"}]},"pick":["swap","skip"],"follow":{"q":"你現在 48 金，商店出了一張能湊二星的牌，3 金。買了剩 45。","opts":[{"label":"買。差 2 金而已，下回合就補回來","good":true,"fb":"二星優先。48 買完 45，利息從 4 變 4，根本沒掉。要看的是「有沒有跨過整十」，不是有沒有 50。"},{"label":"不買，等存到 50 再說","good":false,"fb":"45 跟 48 的利息一樣是 4 金。你沒有少拿任何東西，卻少了一隻二星。"}]},"takeaway":"看的是整十那條線。沒跨線就放心買，會跨線先看板凳有沒有東西可以賣。"},{"id":"carousel","cat":"item","title":"選秀要拿什麼？","sub":"轉盤上的東西很多，你只能拿一個。","stats":{"stage":"2-4","level":5,"gold":24,"hp":78},"facts":["你的主 C 差一個反曲弓就能合出核心裝。","轉盤上有一隻你有對子的牌，但它帶的散件你用不到。","也有一隻帶反曲弓的牌，那隻牌你用不到。"],"question":"輪到你的時候，你走向哪一個？","varName":"你選的順位","vars":[{"label":"血最少，第一個選"},{"label":"連勝中，最後才選"}],"plans":[{"id":"comp","label":"拿帶反曲弓的那隻（要的是裝備）"},{"id":"unit","label":"拿有對子的那隻（要的是二星）"},{"id":"any","label":"拿費用最高的那隻"}],"grid":{"comp":[{"g":"ok","why":"先選就是讓你拿最缺的散件。裝備整場都跟著你，牌之後商店還會來。","flip":"你缺的散件轉盤上有好幾個，那可以考慮先拿別的。"},{"g":"dep","why":"最後選，反曲弓八成被拿走了。要先想好第二、第三順位要什麼。","flip":"走過去發現還在，當然直接拿。"}],"unit":[{"g":"bad","why":"一費二費的對子商店自己會來。拿第一順位去換一張便宜牌，太虧。","flip":"那隻是四費以上、又是你的主 C，才值得。"},{"g":"dep","why":"要的散件沒了，拿對子湊二星也不差，至少馬上變強。","flip":"剩下的散件裡有任何一個你合得出有用的裝，還是先拿散件。"}],"any":[{"g":"bad","why":"費用高不代表你用得到。賣掉換的那幾金，比不上一個對的散件。","flip":"沒有。先選的時候不要這樣拿。"},{"g":"dep","why":"剩下的都用不到的時候，拿貴的賣錢是最後的辦法。","flip":"只要還有用得到的散件，就不要為了幾金放掉。"}]},"pick":["comp","comp"],"confirm":"站主確認：最後順位、要的散件被拿走時，站主自己會優先拿「次要散件」還是「對子」？目前寫的是先看散件。","follow":{"q":"選秀開始前的那幾秒，你應該先做什麼？","opts":[{"label":"先看自己缺哪個散件，排好第一、第二順位","good":true,"fb":"轉盤一放人就開始搶了。進場前就要知道自己要走去哪，被拿走就換第二個。"},{"label":"等放人了再看哪個離我最近","good":false,"fb":"離你近的通常不是你要的。站在原地想的那兩秒，東西就被拿走了。"}]},"takeaway":"選秀看的是散件，不是牌。進場前先排好順位。"},{"id":"slam","cat":"item","title":"散件要先合還是留著？","sub":"手上兩個散件，合得出一件能用的，但不是最想要的那件。","stats":{"stage":"2-2","level":4,"gold":14,"hp":96},"facts":["你有兩個散件，現在合出來的裝你場上的輸出用得上。","你最想要的那件，還差一個還沒看到的散件。","場上的牌普通，沒有特別強也沒有特別弱。"],"question":"這兩個散件，你怎麼處理？","varName":"你這幾回合的打算","vars":[{"label":"在拚連勝"},{"label":"在擺連敗存錢"}],"plans":[{"id":"slam","label":"現在就合，給場上的輸出"},{"id":"hold","label":"留著，等最想要的那件"},{"id":"tank","label":"拆開想：先合一件防裝給前排"}],"grid":{"slam":[{"g":"ok","why":"要連勝就要現在強。一件成裝在第二階段差很多，放在板凳上的散件是零戰力。","flip":"合出來的裝後期完全沒人能用，才考慮忍一下。"},{"g":"bad","why":"你這幾場本來就要輸，合了變強反而可能不小心贏一場，連敗就斷了。","flip":"決定要收手、開始贏的那一回合再合。"}],"hold":[{"g":"bad","why":"拚連勝還把戰力放板凳，等於少一件裝在打。等到的時候連勝可能早就斷了。","flip":"下一回合就是野怪或選秀、馬上能補到那個散件。"},{"g":"ok","why":"反正要輸，散件留著等看得更清楚再合，可以合到最適合的。","flip":"血掉到該收手了，就不要再等。"}],"tank":[{"g":"dep","why":"前排有裝也能幫你贏，但前提是那兩個散件真的合得出防裝。","flip":"合出來的是輸出裝就給輸出，不要硬塞給坦。"},{"g":"bad","why":"一樣是變強，連敗的時候不需要。","flip":"同上，要開始贏的時候再合。"}]},"pick":["slam","hold"],"follow":{"q":"已經打到第三階段了，你板凳上還有三個散件沒合。","opts":[{"label":"現在能合什麼就合什麼，先上場","good":true,"fb":"第三階段開始每一場扣血都很痛。板凳上放著三個散件，等於一件半的裝沒在用。"},{"label":"繼續等，要合就合最好的","good":false,"fb":"最好的裝合出來的時候如果你只剩 20 血，那也沒用了。能用的裝比完美的裝重要。"}]},"takeaway":"要贏的時候散件馬上合；要輸的時候才可以留。"},{"id":"streak-break","cat":"eco","title":"連敗要擺到什麼時候？","sub":"你已經連敗四場，錢存得不錯。","stats":{"stage":"2-6","level":5,"gold":38,"hp":64},"facts":["你場上故意放得很弱，板凳其實有牌可以上。","連敗的錢每回合都在拿。","同場有人已經連勝五場，打你一次扣很多。"],"question":"這一回合，你要繼續輸還是開始贏？","varName":"現在打到哪了","vars":[{"label":"2-6，下一場是野怪"},{"label":"3-3，後面連三場都是玩家"}],"plans":[{"id":"keep","label":"繼續擺，保連敗"},{"id":"stop","label":"把牌放上去、該買的買，開始贏"},{"id":"half","label":"放一半，輸少一點就好"}],"grid":{"keep":[{"g":"ok","why":"第二階段最後一場，輸了再拿一次連敗錢，接著打野怪不扣血。這一場擺完最划算。","flip":"血已經低於 50 就不要再送了。"},{"g":"bad","why":"第三階段對面都有二星了，輸一場扣十幾滴。再擺三場，錢有了，血沒了。","flip":"你玩的是專門吃連敗的陣容，而且血還很多。"}],"stop":[{"g":"dep","why":"可以，但差這一場而已，多拿一次連敗錢再開始贏會更舒服。","flip":"血已經偏低、或這場對手很強會扣很多，就現在收。"},{"g":"ok","why":"第三階段是連敗該收手的時候。把存的錢花掉、上人口、開始贏，血才撐得到後面。","flip":"你花了錢還是打不贏任何人，那問題不是連敗，是要 D 牌補強。"}],"half":[{"g":"dep","why":"輸少一點、連敗照拿，這是高手的打法。但控制不好會不小心贏。","flip":"沒把握就不要玩這個，乾脆放少一點穩穩輸。"},{"g":"bad","why":"第三階段放一半就是照樣輸、照樣扣很多血，還沒有變強。","flip":"沒有。這時候要嘛全力贏，要嘛你有很明確的理由再撐一回合。"}]},"pick":["keep","stop"],"confirm":"站主確認：連敗收手的時間點，站主平常教的是「3-1 就收」還是「看血量（例如 50 以下）」？目前寫的是第三階段開始收、血低於 50 提早收。","follow":{"q":"你決定收手開始贏了。存的 50 金怎麼用？","opts":[{"label":"先上人口、把人放滿，還打不贏再 D","good":true,"fb":"多一隻牌多一個羈絆，通常比 D 幾下穩。錢留在 50 附近利息繼續拿。"},{"label":"全部拿去 D，一次變強","good":false,"fb":"一次 D 光，之後每回合利息少 5 金，後面上人口會很慢。連敗存的錢是拿來用整場的。"}]},"takeaway":"連敗是拿血換錢。第二階段可以擺，進第三階段就要準備收。"},{"id":"lv6-timing","cat":"level","title":"大家都上 6 了，我要跟嗎？","sub":"3-2，你 5 等，身上 46 金。","stats":{"stage":"3-2","level":5,"gold":46,"hp":80},"facts":["同場大部分的人這回合都升 6 了。","你場上 5 隻放滿，板凳有一隻可以上的牌。","升 6 要花掉一筆，會掉一兩格利息。"],"question":"這回合的錢，你怎麼花？","varName":"你這場在玩什麼","vars":[{"label":"賭一費三星的陣容"},{"label":"正常上人口、玩四費主 C 的陣容"}],"plans":[{"id":"up","label":"跟著上 6，多放一隻"},{"id":"slow","label":"留在 5 等，超過 50 的錢才拿去 D"},{"id":"allin","label":"留在 5 等，現在把錢 D 光"}],"grid":{"up":[{"g":"bad","why":"一費在 5 等最好抽，升上去一費的機率就掉了。你要的三星會越來越難追。","flip":"三星已經追到了，那就可以開始往上升。"},{"g":"ok","why":"正常陣容 3-2 上 6 是標準節奏。多一隻牌、多一個羈絆，才不會在第三階段一直輸。","flip":"你在連敗而且錢很少，可以晚一回合。"}],"slow":[{"g":"ok","why":"賭牌就是這樣打：守著 50 金，每回合把多出來的拿去 D。利息照拿，牌慢慢追。","flip":"血掉太快、或同場有人跟你搶同一隻，就要 D 兇一點。"},{"g":"bad","why":"你要的是四費，5 等根本抽不到。留在 5 等 D 只是在買你不需要的低費牌。","flip":"沒有。玩四費陣容不要在 5 等 D。"}],"allin":[{"g":"dep","why":"差兩三張就三星、或血快沒了，可以一次 D 下去。不然把錢 D 光，後面就沒利息了。","flip":"還差很多張的時候，慢慢 D 才對。"},{"g":"bad","why":"在抽不到主 C 的等級把錢花光，之後連人口都上不去。這是最傷的一種。","flip":"沒有。"}]},"pick":["slow","up"],"confirm":"站主確認：站上寫賭一費留 5 等、賭二費 6 等、賭三費 7 等，這題照這個寫。賭牌「守 50 慢 D」還是「3-1／3-2 直接 D 一波」，站主的教法是哪一種？","follow":{"q":"你玩正常陣容，上了 6 等、放了第六隻，身上剩 22 金。接下來？","opts":[{"label":"不 D，開始存錢，準備下一次上人口","good":true,"fb":"6 等只是過渡。錢存回 50，到第四階段上 7、上 8 才是 D 主 C 的時候。"},{"label":"順便 D 幾下看看有沒有好牌","good":false,"fb":"「順便 D」最花錢。6 等四費很難出，你 D 掉的是之後上 8 的錢。"}]},"takeaway":"要不要跟著升，看你在找幾費的牌。賭低費留低等，玩高費就跟上。"},{"id":"bleed-out","cat":"roll","title":"一直輸，現在 D 還是再撐一下？","sub":"場上都一星，每場扣十滴以上。","stats":{"stage":"3-5","level":6,"gold":52,"hp":46},"facts":["你已經連輸好幾場，不是故意的，是真的打不贏。","板凳有兩組對子。","你原本的計畫是存到 4-1 升 7 再 D。"],"question":"這 52 金，現在怎麼用？","varName":"現在是哪一回合","vars":[{"label":"3-5，後面還有一場玩家才到野怪"},{"label":"3-7，這一場打的就是野怪"}],"plans":[{"id":"roll","label":"現在 D 一波，D 到剩 30 左右"},{"id":"wait","label":"一毛不花，照原計畫撐到 4-1"},{"id":"lvl","label":"先升 7 放人口，不 D"}],"grid":{"roll":[{"g":"ok","why":"後面還要被打兩場，照現在這樣會再掉二三十滴。先把對子 D 成二星止血，剩 30 還有利息。","flip":"板凳沒有對子的話，D 的效率很差，改成上人口。"},{"g":"bad","why":"這回合打野怪不扣血。現在 D 的錢，下回合升 7 之後 D 會好抽很多。","flip":"你連野怪都打不過會漏掉裝備，才需要先補一下。"}],"wait":[{"g":"bad","why":"46 血再輸兩場就剩二十幾。存到 4-1 是有錢了，但你只剩一次失誤的空間。","flip":"下一場的對手很弱、你有機會贏，才可以賭。"},{"g":"ok","why":"野怪回合不用戰力。錢留著拿利息，下一回合 4-1 升 7 再一次 D，最划算。","flip":"沒有，這回合就是該忍。"}],"lvl":[{"g":"dep","why":"多一隻牌有幫助，但你的問題是全場一星。光加人口，還是打不贏二星的場。","flip":"板凳剛好有一隻二星可以直接上，那升等就很值。"},{"g":"dep","why":"野怪前先升也可以，差別不大，只是少拿一回合利息。","flip":"經驗差一點點就升、不會掉利息線，就先升。"}]},"pick":["roll","wait"],"follow":{"q":"你 D 到剩 30 金，中了兩隻二星，場上好多了。商店裡還有一張對子的牌。","opts":[{"label":"買下那張，然後停手","good":true,"fb":"對子的牌幾金而已，買。但 D 就到這裡，目標是止血不是成型。剩下的錢存回去，4-1 還要升等。"},{"label":"手感正好，繼續 D 到三組都二星","good":false,"fb":"沒有「手感」這種事。你設的停損是 30，到了就停。再 D 下去 4-1 升不了等，會輸得更久。"}]},"takeaway":"扣血的回合前才花錢。打野怪的回合不要 D。"},{"id":"contested","cat":"scout","title":"有人跟我玩一樣的","sub":"按一圈看場，發現有兩家跟你拿同一隻主 C。","stats":{"stage":"3-1","level":5,"gold":34,"hp":84},"facts":["你的裝備是照這套陣容做的。","隔壁有一套陣容，主 C 吃的裝跟你差不多，沒人在玩。","現在才第三階段，還來得及換。"],"question":"這套你還要繼續玩嗎？","varName":"誰比較快","vars":[{"label":"你已經有二星主 C，他們還是一星"},{"label":"他們二星了，你只有一對"}],"plans":[{"id":"stay","label":"不管，照原本的玩"},{"id":"move","label":"換去隔壁那套，裝備照用"},{"id":"rush","label":"提早 D，搶在他們前面把牌拿完"}],"grid":{"stay":[{"g":"ok","why":"你領先，該換的是他們。二星主 C 加對的裝，繼續玩沒問題。只是三星不要想了。","flip":"你這套一定要追三星才會強，那被兩家搶就很難。"},{"g":"bad","why":"三家搶同一隻、你又最慢，牌都在別人手上。硬玩通常是三家一起第五到第八。","flip":"他們其中一家很快會被淘汰或自己換掉，才有機會。"}],"move":[{"g":"dep","why":"你領先還先讓，有點可惜。但如果隔壁那套這版本一樣強，換過去更安全。","flip":"看到對手也 D 出二星、開始追上你，就換。"},{"g":"ok","why":"裝備不浪費、牌沒人搶，越早換損失越小。這就是看場的目的。","flip":"隔壁那套的牌你一張都沒有、要從零開始，就要算一下來不來得及。"}],"rush":[{"g":"dep","why":"趁領先多拿幾張，讓他們更難追，有用。但提早 D 會傷經濟。","flip":"你這套不用三星就夠強，那就不用搶，照節奏走。"},{"g":"bad","why":"你落後還去跟領先的人搶，D 出來的機率比他們低，錢花了牌還是他們的。","flip":"沒有。落後就不要搶。"}]},"pick":["stay","move"],"follow":{"q":"你平常什麼時候看別人的場？","opts":[{"label":"每個階段開始、還有準備 D 牌之前，都按一圈","good":true,"fb":"D 之前看一圈最重要：你要找的牌被拿走幾張、有沒有人跟你同一套，D 之前就要知道。"},{"label":"輸了才去看是輸給誰","good":false,"fb":"那時候錢已經花了。看場是花錢之前做的事，不是輸了之後。"}]},"takeaway":"同一套誰快誰玩。你慢就換，越早換越便宜。"},{"id":"rolldown-stop","cat":"roll","title":"D 到剩 30，要不要停？","sub":"4-2 升 8，一口氣 D 了二十幾金。","stats":{"stage":"4-2","level":8,"gold":30,"hp":58},"facts":["你升 8 之後開始 D，現在剩 30 金。","同場有三家已經成型。","下一場打玩家。"],"question":"剩下的 30 金，繼續 D 還是停？","varName":"D 到現在的結果","vars":[{"label":"主 C 二星、主坦二星都到手了"},{"label":"只中一隻不太重要的二星"}],"plans":[{"id":"stop","label":"停手，開始存回 50"},{"id":"zero","label":"繼續 D，D 到沒錢為止"},{"id":"ten","label":"再 D 10 金，沒中就停"}],"grid":{"stop":[{"g":"ok","why":"主 C、主坦二星就是能打了。剩下的慢慢補，錢存回去準備升 9 或之後再補一波。","flip":"血已經很低、下一場輸了會出事，可以再補一點前排。"},{"g":"dep","why":"血還有 58，可以停下來存兩回合再 D 一次。但這兩回合你會繼續輸。","flip":"輸一場扣超過 15 滴，就沒有本錢停。"}],"zero":[{"g":"bad","why":"該有的都有了還 D，是在把名次往下丟。沒錢就沒利息，也升不了 9。","flip":"你只剩十幾滴血、這場輸了就出局，才 all in。"},{"g":"dep","why":"場上沒起來又停手，等於白 D。但 D 到 0 還沒中，這場就結束了。先看血夠不夠你分兩次 D。","flip":"血低於 40 就沒得選，只能 D 到中。"}],"ten":[{"g":"dep","why":"差一隻就更完整的話可以，但已經能打了，這 10 金比較像手癢。","flip":"商店剛好卡著一組對子，補得到就值得。"},{"g":"ok","why":"給自己最後一個額度，中了最好，沒中就停下來存錢，下回合再一次。比 D 到 0 安全。","flip":"D 完這 10 金還是什麼都沒有、血又低，就只能繼續。"}]},"pick":["stop","ten"],"confirm":"站主確認：沒中的時候站主會選「再 D 10 金就停」還是「血 58 直接 D 到底」？這題兩種教法都有人講。","follow":{"q":"升 8 準備 D 之前，你應該先想好什麼？","opts":[{"label":"我要找哪兩三隻、D 到剩多少停","good":true,"fb":"有目標才知道什麼時候算「中了」。有停損才不會回神發現錢是 0。"},{"label":"先 D 再說，看來什麼玩什麼","good":false,"fb":"來什麼玩什麼聽起來很靈活，實際上是每張都想買、每張都只有一星。"}]},"takeaway":"D 牌的目標是「能打」，不是「完美」。主 C 主坦二星就先停。"},{"id":"roll7-or-8","cat":"level","title":"7 等先 D 還是存到 8？","sub":"4-1，你 7 等，50 金。","stats":{"stage":"4-1","level":7,"gold":50,"hp":62},"facts":["你的主 C 是四費。7 等抽得到四費，但 8 等好抽很多。","升 8 要再存一兩回合。","同場有人這回合已經升 8 在 D 了。"],"question":"這 50 金，現在的計畫是？","varName":"你場上現在的強度","vars":[{"label":"大部分二星，最近輸贏各半、輸也扣不多"},{"label":"一堆一星，每場都輸十滴以上"}],"plans":[{"id":"save8","label":"不動，存到 4-2／4-5 升 8 再 D"},{"id":"roll7","label":"7 等現在 D 一波，D 到 20～30"},{"id":"lv8now","label":"現在硬升 8，剩多少 D 多少"}],"grid":{"save8":[{"g":"ok","why":"場上撐得住就不要急。到 8 等再 D，同樣的錢中四費的機會高很多。","flip":"突然連輸兩場大的，計畫就要改。"},{"g":"bad","why":"每場掉十幾滴，存兩回合就是少三十滴。等你升 8，可能只剩二十幾血在 D。","flip":"接下來剛好是野怪回合，可以多撐一場。"}],"roll7":[{"g":"bad","why":"你不缺戰力，卻在機率比較差的等級把錢花掉。之後升 8 會比別人慢一大截。","flip":"你的主 C 其實是三費，那 7 等就是該 D 的地方。"},{"g":"ok","why":"先在 7 等把二星補起來止血。主 C 不一定要現在中，前排二星就能少扣很多。","flip":"板凳完全沒有對子，D 的效率太差，那不如直接升 8。"}],"lv8now":[{"g":"dep","why":"升了 8 沒剩多少錢 D，多一隻人口而已。場上本來就穩的話，不差這一回合。","flip":"板凳有一隻很強的牌等著上場，那先升很值。"},{"g":"dep","why":"多一個人口有幫助，但只剩十幾金 D 不出什麼。沒中的話會卡在 8 等沒錢。","flip":"錢夠你升 8 之後還有 30 金以上可以 D，就選這個。"}]},"pick":["save8","roll7"],"follow":{"q":"你決定存到 8 等。結果下一場輸了，被扣 16 滴。","opts":[{"label":"看一下是輸給誰、接下來還會不會遇到，再決定要不要提早 D","good":true,"fb":"輸給全場最強的那家一次不算什麼。但如果是誰都打不贏，就不要再等了。"},{"label":"計畫就是計畫，照樣存到 8","good":false,"fb":"計畫是在「場上撐得住」的前提下定的。前提變了還不改，就是在硬撐。"}]},"takeaway":"撐得住就存到 8 再 D；撐不住就 7 等先止血。看的是你每場扣多少。"},{"id":"scout-position","cat":"scout","title":"站位要針對誰？","sub":"開打前還有十秒，你看了一圈。","stats":{"stage":"5-1","level":8,"gold":20,"hp":40},"facts":["全場最強的那家，主 C 放在右下角。","他有一隻會跳後排的牌，放在左邊。","你的主 C 現在也在左下角，剛好在那隻牌的對面。"],"question":"這十秒你要怎麼調？","varName":"場上還剩幾個人","vars":[{"label":"剩 3 個人，下一場八成就是打他"},{"label":"還有 6 個人，不知道會打誰"}],"plans":[{"id":"target","label":"完全針對他：主 C 換邊，離那隻跳後排的遠一點"},{"id":"safe","label":"排一個打誰都不太吃虧的位置"},{"id":"still","label":"不動，位置一直都這樣放"}],"grid":{"target":[{"g":"ok","why":"只剩三個人，對手是誰幾乎確定。針對最強的那個排，贏他就是前二。","flip":"他最後一秒也換邊，你就要跟著再調。"},{"g":"dep","why":"六個人裡只有一個是他。為了他把位置排得很極端，打到別人反而吃虧。","flip":"你剛好很久沒打到他，這場遇到的機會高，就可以針對。"}],"safe":[{"g":"dep","why":"不會錯，但剩三個人了還排通用位，等於放棄一個明顯能拿的優勢。","flip":"另一家也很強、兩家的威脅方向相反，才排通用的。"},{"g":"ok","why":"不知道打誰的時候，主 C 不要貼邊角、前排擋好，先求不被秒。","flip":"看得出下一場打誰（很久沒遇到的那家），就針對他。"}],"still":[{"g":"bad","why":"你的主 C 就站在會跳後排的那隻對面，等於送給他。十秒夠你換一個位置。","flip":"沒有。"},{"g":"bad","why":"從來不動位置，別人看一眼就知道怎麼針對你。至少主 C 要偶爾換邊。","flip":"你的陣容前排夠厚、主 C 不怕被切，才可以少動。"}]},"pick":["target","safe"],"follow":{"q":"你在倒數五秒把主 C 換到右邊，結果他最後一秒也把那隻牌換到右邊。","opts":[{"label":"下次等到最後兩三秒再換","good":true,"fb":"站位是互相看的。太早換就是告訴對方你要去哪。最後幾秒再動，他來不及跟。"},{"label":"算了，換位置沒用","good":false,"fb":"不是沒用，是換太早。後期一場就是十幾二十滴，站位是最不花錢的變強方式。"}]},"takeaway":"人少的時候針對最強的排；人多的時候排穩的。主 C 不要每場站同一格。"},{"id":"fast9","cat":"level","title":"要不要上 9？","sub":"5-1，你 8 等，60 金。","stats":{"stage":"5-1","level":8,"gold":60,"hp":55},"facts":["升 9 要花一大筆，升完剩不多。","9 等多一個人口，五費也好抽很多。","場上還剩 5 個人。"],"question":"這 60 金，你打算？","varName":"你 8 等的場","vars":[{"label":"主 C、主坦都二星，裝也齊了"},{"label":"主坦還是一星，前排一碰就倒"}],"plans":[{"id":"nine","label":"升 9，放第九隻、找五費"},{"id":"fix8","label":"留在 8 等 D，把缺的補到二星"},{"id":"bank","label":"都不做，繼續存"}],"grid":{"nine":[{"g":"ok","why":"場已經完整了，再 D 也只是小補。升 9 多一隻五費，才是從前四變前二的方法。","flip":"血不到 30，就不要把錢全壓在升等上。"},{"g":"bad","why":"前排是破的，多一隻一星五費補不起來。升完又沒錢 D，會一路輸到出局。","flip":"升 9 之後還能剩 30 金以上 D，才可以考慮。"}],"fix8":[{"g":"dep","why":"已經完整的場再 D，能進步的不多。除非你要追四費三星。","flip":"你差一兩張就四費三星、又沒人搶，那留 8 等 D 很合理。"},{"g":"ok","why":"先把主坦補到二星。前排站得住，你的主 C 才有時間打。這比升 9 急。","flip":"D 了 30 金都沒中，剩下的就留著，不要見底。"}],"bank":[{"g":"bad","why":"第五階段了，錢留著不會變成名次。60 金放在那裡，等於少一隻人口在打。","flip":"再一回合就剛好夠升 9 又能 D，可以多等一回合。"},{"g":"bad","why":"場是破的、錢是滿的，這是最常見的第五名打法。","flip":"沒有。"}]},"pick":["nine","fix8"],"confirm":"站主確認：「8 等場完整就上 9」的門檻，站主會不會加血量條件（例如 40 血以下不上）？目前寫 30。","follow":{"q":"你升了 9，商店出了一隻五費，但跟你的陣容沒有羈絆。","opts":[{"label":"看它單卡強不強、有沒有位置放，強就買來上","good":true,"fb":"五費很多是不靠羈絆、自己就很強的牌。第九個位置放一隻強的五費，常常比湊一個小羈絆好。"},{"label":"沒羈絆就不要","good":false,"fb":"後期不要被羈絆綁住。該看的是這隻上場之後，整場有沒有變強。"}]},"takeaway":"場完整了才上 9。場還是破的，先在 8 等補好。"}]};
+  const LK = "choko.learn.v1";
+  const lpGet = () => {
+    try { const o = JSON.parse(store.get(LK) || "null"); if (o && o.v === 1) { o.play ||= { done: [], last: null }; o.lab ||= { done: [], picks: {} }; o.lab.done ||= []; o.lab.picks ||= {}; return o; } } catch {}
+    return { v: 1, play: { done: [], last: null }, lab: { done: [], picks: {} } };
+  };
+  const lpSet = (o) => store.set(LK, JSON.stringify(o));
+  const labList = () => LAB.scenarios.filter((s) => !s.confirm || O.on);
+  const labDone = () => { const ids = new Set(lpGet().lab.done); return labList().filter((s) => ids.has(s.id)).length; };
+  function clearProgress(label = "清除進度") {
+    const b = h("button", { type: "button", class: "lc-clear xs", onclick: () => {
+      if (b.dataset.ask) { store.set(LK, JSON.stringify({ v: 1, play: { done: [], last: null }, lab: { done: [], picks: {} } })); LB = null; renderLearnHub(); renderLearnView(); return; }
+      b.dataset.ask = "1"; b.textContent = "再按一次確定清除"; setTimeout(() => { if (b.isConnected) { delete b.dataset.ask; b.textContent = label; } }, 4000);
+    } }, label);
+    return b;
+  }
+  function ensureLearnV() {
+    let v = $("#learnv");
+    if (!v) { v = h("article", { id: "learnv", class: "detail block", hidden: true }); ($("#quizv") || $("#detail")).after(v); }
+    return v;
+  }
+  const learnViewOf = (hsh) => (hsh === "learn-route" ? "route" : hsh.startsWith("learn-lab") ? "lab" : null);
+  function renderLearnView() {
+    const v = ensureLearnV(), hsh = location.hash.slice(1), k = learnViewOf(hsh);
+    if (!k || v.hidden) return;
+    if (k === "route") drawRouteView(v); else drawLab(v, hsh);
+  }
+  function renderLearnHub() {
+    if (!LAB) return;
+    let sec = $("#learn");
+    if (!sec) { sec = h("section", { class: "block", id: "learn" }); const pk = $("#picker") || $("#tierlist"); if (pk) pk.after(sec); else $("#home")?.append(sec); }
+    const L = labList(), P = lpGet(), nDone = labDone(), best = Math.max(0, ...QZ_MODES.map(([m]) => +(store.get(`choko.quiz.s${SEASON}.${m}`) || 0)));
+    const champs = Object.values(CH || {});
+    const byName = (zh) => champs.find((c) => c.zh === zh)?.key;
+    const face = (key) => (key ? icon("champion", key, "sm") : null);
+    const qzFaces = [1, 2, 3].map((c) => champs.find((x) => x.cost === c)?.key).filter(Boolean);
+    const card = (cls, href, pic, title, desc, prog, off) => {
+      const body = [h("span", { class: "lc-pic", "aria-hidden": "true" }, pic), h("span", { class: "lc-txt" }, h("b", { class: "lc-t" }, title), h("span", { class: "lc-d small" }, desc), prog ? h("span", { class: "lc-p xs" }, prog) : null)];
+      return off ? h("div", { class: "lcard off " + cls, "aria-disabled": "true" }, body) : h("a", { class: "lcard " + cls, href, onclick: () => track("learn", cls) }, body);
+    };
+    const S19note = S19 ? h("p", { class: "xs muted lc-note" }, "觀念每一季都一樣，示範用的是 S18 的牌。") : null;
+    sec.replaceChildren(
+      h("h2", null, tx("learn:title", "新手教學")),
+      h("p", { class: "rlead" }, tx("learn:lead", "剛開始玩先看這邊。照順序玩一輪，大概半小時。")),
+      h("div", { class: "lcards" },
+        card("play", "learn/", [face(byName("鄂爾")), face(byName("剎雅"))], tx("learn:play.t", "邊玩邊學"), tx("learn:play.d", "12 關，直接動手玩。買牌、站位、利息、D 牌一次學會。"), null, true),
+        card("lab", "#learn-lab", h("span", { class: "lc-coin" }, "？"), tx("learn:lab.t", "決策實驗室"), tx("learn:lab.d", `${L.length} 個常見狀況，這時候該存錢還是該 D？`), nDone ? `${nDone} / ${L.length} 題` : null),
+        card("route", "#learn-route", h("span", { class: "lc-bands" }, [1, 2, 3, 4, 5].map((c) => h("i", { style: `--cc:var(--c${c});width:${30 + c * 12}%` }))), tx("learn:route.t", "定陣路線"),
+          routeOk() ? tx("learn:route.d", "從 2-1 開始，什麼裝備走哪一條、幾等定下來。") : "S19 上線後補", null, !routeOk()),
+        card("quiz", "#learn-quiz", qzFaces.map((k) => face(k)), tx("learn:quiz.t", "新手認卡"), tx("learn:quiz.d", "這季的棋子幾費、什麼羈絆，用小測驗記起來。"), best ? `最佳 ${best} / 10` : null)),
+      h("div", { class: "lc-foot" }, S19note, h("span", { class: "lc-mk xs muted" }, "邊玩邊學製作中，先玩下面三個。"), (nDone || P.play.done.length) ? clearProgress() : null));
+    applyDataTx();
+  }
+
+  /* ---------- 決策實驗室 ---------- */
+  let LB = null, LB_KEYS = false;
+  const LAB_G = { ok: "ok", dep: "dep", bad: "bad" };
+  function labParse(hsh) {
+    const rest = hsh.slice("learn-lab".length);
+    if (!rest) return {};
+    if (rest[0] !== "-") return { bad: true };
+    const s = rest.slice(1), L = labList();
+    let q = L.find((x) => x.id === s);
+    if (q) return { q };
+    const m = s.match(/^(.+)-([A-Za-z0-9]+)-([01])$/);
+    if (m) { q = L.find((x) => x.id === m[1]); if (q && q.plans.some((p) => p.id === m[2])) return { q, plan: m[2], v: +m[3] }; }
+    return { bad: true };
+  }
+  function labInit(q, pa, src) {
+    const pk = lpGet().lab.picks[q.id];
+    if (pa.plan) LB = { src, id: q.id, plan: pa.plan, v: pa.v, seen: new Set(), follow: null };
+    else if (pk && q.plans.some((p) => p.id === pk.plan)) LB = { src, id: q.id, plan: pk.plan, v: pk.v ? 1 : 0, follow: pk.follow ?? null, seen: new Set(pk.follow != null ? [0, 1] : []) };
+    else LB = { src, id: q.id, plan: null, v: 0, follow: null, seen: new Set() };
+  }
+  function labSave(q) {
+    const P = lpGet();
+    P.lab.picks[q.id] = { plan: LB.plan, v: LB.v, follow: LB.follow };
+    if (LB.follow != null && !P.lab.done.includes(q.id)) { P.lab.done.push(q.id); track("lab_done", q.id); }
+    lpSet(P);
+  }
+  function drawLab(v, hsh) {
+    const pa = labParse(hsh);
+    if (pa.bad) { history.replaceState(null, "", location.pathname + location.search + "#learn-lab"); }
+    if (!pa.q) { LB = null; drawLabList(v); return; }
+    if (!LB || LB.src !== hsh) { labInit(pa.q, pa, hsh); track("lab", pa.q.id); if (pa.plan) track("lab_plan", pa.q.id + "_" + pa.plan); }
+    drawLabQ(v, pa.q);
+  }
+  let LAB_CAT = "all";
+  function drawLabList(v) {
+    const L = labList(), P = lpGet(), done = new Set(P.lab.done), nDone = labDone();
+    const cats = [["all", "全部"], ...Object.entries(LAB.cats)];
+    const shown = L.filter((s) => LAB_CAT === "all" || s.cat === LAB_CAT);
+    v.replaceChildren(...[
+      learnBack(),
+      h("div", { class: "lab-headrow" }, h("h2", null, tx("learn:lab.t", "決策實驗室")), h("span", { class: "tag" }, `${nDone} / ${L.length} 題`)),
+      h("p", { class: "rlead" }, tx("learn:lab.lead", "同一個狀況，換一個條件，答案就不一樣。每題兩三分鐘。")),
+      L.length && nDone >= L.length ? h("div", { class: "ok lab-all" }, h("b", null, `${L.length} 題都看過了。`), " ", h("a", { href: routeOk() ? "#learn-route" : "#learn-quiz" }, routeOk() ? "看定陣路線 →" : "去新手認卡 →")) : null,
+      h("div", { class: "tabs lab-cats", role: "group", "aria-label": "分類" }, cats.map(([k, t]) => h("button", { type: "button", "aria-pressed": LAB_CAT === k ? "true" : "false", "aria-selected": LAB_CAT === k ? "true" : "false", onclick: () => { LAB_CAT = k; drawLabList(v); } }, t))),
+      h("div", { class: "lab-grid" }, shown.map((s) => h("a", { class: "lab-card" + (done.has(s.id) ? " done" : ""), href: "#learn-lab-" + s.id },
+        h("span", { class: "lab-cat tag" }, LAB.cats[s.cat]), s.confirm ? h("span", { class: "tag lab-pend" }, "待確認") : null,
+        h("b", { class: "lab-ct" }, s.title), h("span", { class: "small muted" }, s.sub), done.has(s.id) ? h("span", { class: "lab-ck xs", "aria-label": "做過了" }, "✓ 做過了") : null))),
+      h("div", { class: "lc-foot" }, nDone ? clearProgress() : null)].filter(Boolean));
+  }
+  function labShare(q, btn, v) {
+    const url = location.origin + location.pathname + location.search + "#learn-lab-" + q.id + (LB.plan ? `-${LB.plan}-${LB.v}` : "");
+    const fallback = () => { const i = h("input", { class: "lab-url", readonly: true, value: url, "aria-label": "這題的網址" }); btn.after(i); i.focus(); i.select(); };
+    try { navigator.clipboard.writeText(url).then(() => { btn.textContent = "已複製"; setTimeout(() => { btn.textContent = "分享這題"; }, 2000); }, fallback); } catch { fallback(); }
+  }
+  function drawLabQ(v, q) {
+    const L = labList(), idx = L.findIndex((x) => x.id === q.id), cur = LB.plan, P = LAB.labels;
+    if (cur) LB.seen.add(LB.v);
+    const redraw = (focus) => { labSave(q); drawLabQ(v, q); if (focus) v.querySelector(focus)?.focus({ preventScroll: true }); };
+    const st = q.stats, bothSeen = LB.seen.has(0) && LB.seen.has(1);
+    const stat = (cls, k, val) => h("div", { class: "lab-st " + cls }, h("span", { class: "lab-sti", "aria-hidden": "true" }), h("span", { class: "lab-stk xs" }, k), h("b", null, val));
+    const ev = cur ? q.grid[cur][LB.v] : null;
+    const evCard = ev ? h("div", { class: "lab-ev lab-fade g-" + ev.g, role: "status" },
+      h("div", { class: "lab-evh" }, h("b", { class: "lab-lv" }, P[ev.g]), q.pick[LB.v] === cur ? h("span", { class: "lab-pick" }, P.pick) : null),
+      h("p", { class: "lab-why" }, ev.why), h("p", { class: "lab-flip small" }, h("b", null, P.flip + "："), ev.flip)) : null;
+    const allPlans = cur ? h("details", { class: "lab-all3" }, h("summary", null, "三個計畫一起看"),
+      h("div", { class: "lab-cols" }, q.plans.map((p) => { const e = q.grid[p.id][LB.v]; return h("div", { class: "lab-col g-" + e.g }, h("b", null, p.label), h("span", { class: "lab-lv xs" }, P[e.g]), h("p", { class: "small" }, e.why)); }))) : null;
+    let follow = null;
+    if (cur && !bothSeen) follow = h("p", { class: "lab-need small muted" }, "先切到另一個情境看一下，再往下。");
+    else if (cur) {
+      const f = q.follow;
+      follow = h("div", { class: "lab-follow" }, h("h3", null, "追問"), h("p", null, f.q),
+        h("div", { class: "lab-opts" }, f.opts.map((o, i) => h("button", { type: "button", class: "lab-opt" + (LB.follow === i ? " on" : ""), disabled: LB.follow != null, onclick: () => { LB.follow = i; redraw(); } }, o.label))),
+        LB.follow != null ? h("div", { class: "lab-fbs" }, f.opts.map((o) => h("div", { class: "lab-fb" + (o.good ? " good" : "") }, o.good ? h("span", { class: "lab-pick" }, "站主會這樣做") : null, h("p", { class: "small" }, o.fb)))) : null);
+    }
+    const next = L[idx + 1];
+    const take = LB.follow != null ? h("div", { class: "lab-take" }, h("p", { class: "lab-tk" }, q.takeaway),
+      h("div", { class: "lab-act" }, next ? h("a", { class: "btn", href: "#learn-lab-" + next.id }, "下一題 →") : h("a", { class: "btn", href: "#learn-lab" }, "回題目清單"),
+        h("button", { type: "button", class: "btn ghost", onclick: () => { LB.plan = null; LB.follow = null; LB.v = 0; LB.seen = new Set(); redraw(); window.scrollTo(0, 0); } }, "再玩一次"))) : null;
+    const share = h("button", { type: "button", class: "btn ghost lab-share", onclick: () => labShare(q, share, v) }, "分享這題");
+    v.replaceChildren(...[
+      h("div", { class: "lab-bar" }, h("a", { class: "back btn ghost", href: "#learn-lab" }, "← 回決策實驗室"), h("span", { class: "small muted" }, `第 ${idx + 1} / ${L.length} 題`), share),
+      h("p", null, h("span", { class: "tag" }, LAB.cats[q.cat]), q.confirm ? h("span", { class: "tag lab-pend" }, "待確認") : null),
+      h("h2", { class: "lab-title" }, q.title), h("p", { class: "rlead" }, q.sub),
+      q.confirm && O.on ? h("p", { class: "notice small lab-confirm" }, h("b", null, "待站主確認："), " ", q.confirm) : null,
+      h("div", { class: "lab-stats" }, stat("stage", "回合", st.stage), stat("lvl", "等級", st.level), stat("gold", "金幣", st.gold), stat("hp" + (st.hp <= 40 ? " low" : ""), "血量", st.hp)),
+      h("ul", { class: "list lab-facts" }, q.facts.map((x) => h("li", null, x))),
+      h("div", { class: "lab-var" }, h("span", { class: "lab-vn small" }, q.varName), h("div", { class: "lab-vb", role: "group", "aria-label": q.varName }, q.vars.map((x, i) => h("button", { type: "button", class: "lab-vbtn", "data-v": i, "aria-pressed": LB.v === i ? "true" : "false", onclick: () => { LB.v = i; redraw(`.lab-vbtn[data-v="${i}"]`); } }, x.label)))),
+      h("h3", { class: "lab-q" }, q.question),
+      h("div", { class: "lab-plans" }, q.plans.map((p, i) => h("button", { type: "button", class: "lab-plan", "data-p": p.id, "aria-pressed": cur === p.id ? "true" : "false", onclick: () => { if (LB.plan !== p.id && LB.follow != null) LB.follow = null; LB.plan = p.id; track("lab_plan", q.id + "_" + p.id); redraw(`.lab-plan[data-p="${p.id}"]`); } }, h("kbd", null, "ABC"[i]), h("span", null, p.label)))),
+      evCard, cur ? h("p", { class: "lab-hint small muted" }, "換一下上面的情境看看 ↑") : null, allPlans, follow, take].filter(Boolean));
+    if (!LB_KEYS) {
+      LB_KEYS = true;
+      addEventListener("keydown", (e) => {
+        const vv = $("#learnv"), hs = location.hash.slice(1);
+        if (!vv || vv.hidden || !LB || !hs.startsWith("learn-lab-") || e.ctrlKey || e.metaKey || e.altKey || e.target.closest?.("input, textarea")) return;
+        const qq = labList().find((x) => x.id === LB.id); if (!qq) return;
+        if (/^[1-3]$/.test(e.key) && qq.plans[+e.key - 1]) { LB.plan = qq.plans[+e.key - 1].id; labSave(qq); drawLabQ(vv, qq); e.preventDefault(); }
+        else if (e.key === "ArrowLeft" || e.key === "ArrowRight") { LB.v = e.key === "ArrowLeft" ? 0 : 1; labSave(qq); drawLabQ(vv, qq); e.preventDefault(); }
+        else if (e.key === "Enter" && LB.follow != null) { const nx = labList()[labList().findIndex((x) => x.id === LB.id) + 1]; location.hash = nx ? "learn-lab-" + nx.id : "learn-lab"; e.preventDefault(); }
+      });
+    }
   }
 
   /* ---------- T 度表 ---------- */
@@ -2178,7 +2341,7 @@
     let v = $("#quizv");
     if (!v) {
       v = h("article", { id: "quizv", class: "detail block" },
-        h("a", { class: "back btn ghost", href: "#tierlist" }, "← 回首頁"),
+        h("a", { class: "back btn ghost", href: "#learn" }, "← 回新手教學"),
         h("h2", null, `新手認卡${S19 ? "（S19 預測）" : `（S${SEASON}）`}`),
         h("p", { class: "rlead" }, S19 ? "S19 的棋子費用、羈絆一次記起來。名稱是暫譯，PBE 開了以後照官方繁中更新。鍵盤可以按 1～7 選答案、Enter 下一題。" : "這季的棋子費用、羈絆一次記起來。鍵盤可以按 1～7 選答案、Enter 下一題。"),
         h("div", { class: "qz-body" }));
@@ -2193,7 +2356,7 @@
     }
     v.hidden = false;
     track("quiz", "open");
-    drawQuiz();
+    if (!QZ.q && WK.d) qzStart(); else drawQuiz();  // 小百科資料已經載好時（從首頁點進來）直接出題
     loadWiki().then(() => { QZ.loaded = true; if (!QZ.q && WK.d) qzStart(); else drawQuiz(); });
   }
 
@@ -2201,13 +2364,18 @@
     // 站主 2026-11-10「就是一樣的」：被併掉的陣容舊網址（例：#c-xayah）轉到併入的那套
     const al = Object.entries(D.aliases || {}).find(([from]) => slug(from) === location.hash.slice(1));
     if (al) { history.replaceState(null, "", "#" + slug(al[1])); }
-    const hsh = location.hash.slice(1);
+    let hsh = location.hash.slice(1);
+    if (hsh === "route-sec") { history.replaceState(null, "", location.pathname + location.search + "#learn-route"); hsh = "learn-route"; }  // 舊網址
     const c = D.comps.find((x) => slug(x.id) === hsh) || (O.on ? O.custom.map(customToComp).find((x) => slug(x.id) === hsh) : null);
-    const fromDetail = !$("#detail").hidden || !!$("#quizv")?.isConnected && !$("#quizv").hidden;
-    const quiz = hsh === "quiz";
-    $("#home").hidden = !!c || quiz; $("#detail").hidden = !c;
+    const fromDetail = !$("#detail").hidden || !!$("#quizv")?.isConnected && !$("#quizv").hidden || !!$("#learnv")?.isConnected && !$("#learnv").hidden;
+    const quiz = hsh === "quiz" || hsh === "learn-quiz";
+    const lv = !c && !quiz ? learnViewOf(hsh) : null;
+    $("#home").hidden = !!c || quiz || !!lv; $("#detail").hidden = !c;
     if ($("#quizv")) $("#quizv").hidden = !quiz;
+    if (lv || $("#learnv")) ensureLearnV().hidden = !lv;
+    if (!lv) LB = null;
     if (quiz) { floatBack(false); renderQuiz(); window.scrollTo(0, 0); return; }
+    if (lv) { floatBack(false); renderLearnView(); window.scrollTo(0, 0); return; }
     if (!c) {
       floatBack(false); homeSpy(); navH();
       // 站主 2026-11-07：在陣容詳細頁點最上面的「T 度表」會先跳出去、要再按一次才到 → 首頁顯示出來後直接捲到那一區
@@ -3328,7 +3496,7 @@
     adaptLayout();
     if (S19) {  // S19 預測版：沒有高手資料，本次更新、版本主軸、隨手速查、定陣路線、高手 RP 都不放
       for (const id of ["#updates-sec", "#version", "#picker"]) $(id)?.remove();
-      renderTop(); renderTiers(); renderCompList(); renderResearch(); renderWiki(); applyDataTx();
+      renderTop(); renderTiers(); renderLearnHub(); renderCompList(); renderResearch(); renderWiki(); applyDataTx();
     } else {
       renderTop(); renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderPicker(); renderRoute(); renderCompList(); renderResearch(); renderRp(); renderWiki(); applyDataTx();
     }

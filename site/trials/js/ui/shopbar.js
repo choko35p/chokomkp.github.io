@@ -30,7 +30,7 @@ export function upgradeSet(api, key) {
   const board = (state.board || []).filter(Boolean);
   if (board.some(u => u.key === key)) return new Set();
   try {
-    const opts = { augments: state.augments || [] };
+    const opts = api.traitOpts ? api.traitOpts() : { augments: state.augments || [] };
     const before = Object.fromEntries(api.countTraits(board, DATA, opts).map(t => [t.key, t.tier]));
     const after = api.countTraits([...board, { key, star: 1, items: [] }], DATA, opts);
     return new Set(after.filter(t => t.tier > (before[t.key] || 0)).map(t => t.key));

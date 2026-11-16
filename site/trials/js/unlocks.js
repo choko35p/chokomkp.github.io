@@ -5,6 +5,9 @@ import { countTraits as defaultCount } from './stats.js';
 let counter = defaultCount;
 // 測試／機器人可換掉羈絆計算（game.js 的 setBackend 會轉過來）
 export function setCounter(fn) { counter = fn || defaultCount; }
+// 玩家羈絆要帶的參數（製作人的選擇等），由 game.js 掛上；沒掛就只帶增幅
+let optsFn = null;
+export function setTraitOpts(fn) { optsFn = fn || null; }
 
 const ROOT = '_';
 
@@ -25,7 +28,7 @@ function boardTraits(ctx) {
   if (!ctx._traits) {
     const { state, DATA } = ctx;
     try {
-      ctx._traits = counter(state.board.map(u => ({ key: u.key, star: u.star, items: u.items })), DATA, { augments: (state.augments || []).slice() });
+      ctx._traits = counter(state.board.map(u => ({ key: u.key, star: u.star, items: u.items })), DATA, optsFn ? optsFn(state, DATA) : { augments: (state.augments || []).slice() });
     } catch (e) { ctx._traits = []; }
   }
   return ctx._traits;

@@ -98,7 +98,9 @@ function buildTrait(api, key) {
   const star = T.countMode === 'stars' || key === 'KDA';
   const unit = star ? '星' : '隻';
   const KIND = { origin: '起源', class: '職業', unique: '獨特' };
-  const wrap = h('div', 'tt-tip-in', head(traitIconNode(DATA, key, 40), T.zh, KIND[T.kind] || ''), ...paras(T.desc, 0, 2));
+  let unset = false;   // 經紀人／唱片大亨／製作人啟動了、但還沒指定對象
+  try { const PK = api.picks && api.picks(); const id = { Manager: 'spot', RecordMogul: 'deal', Producer: 'prod' }[key]; unset = !!(PK && id && PK[id].cap > 0 && !PK[id].active.length); } catch (_) { unset = false; }
+  const wrap = h('div', 'tt-tip-in', head(traitIconNode(DATA, key, 40), T.zh, KIND[T.kind] || ''), unset ? h('p', 'tt-tip-p tt-tip-warn', '還沒指定，要把裝備欄旁邊的道具拖到棋子身上才有效果') : null, ...paras(T.desc, 0, 2));
   const bps = T.breakpoints || [];
   const ul = h('ul', 'tt-tip-tiers');
   bps.forEach((b, i) => ul.append(h('li', (cur.tier === i + 1 ? 'tt-cur ' : '') + (cur.count >= b ? 'tt-reached' : ''), h('b', '', b), h('span', '', T.levelsText?.[i] || ''))));
@@ -169,7 +171,7 @@ export function buildTip(spec, api = curApi) {
   if (kind === 'aug') return buildAug(api, rest);
   if (kind === 'sp') {
     const I = SPECIAL_INFO[rest]; if (!I) return h('div', 'tt-tip-in', h('p', 'tt-tip-p', rest));
-    const ic = h('span', 'tt-tip-itemicon tt-spicon tt-sp-' + (rest === 'rm' ? 'rm' : 'fav'));
+    const ic = h('span', 'tt-tip-itemicon tt-spicon tt-sp-' + rest.replace(/(mark|off)$/, ''));
     return h('div', 'tt-tip-in', head(ic, I.zh, I.sub), h('p', 'tt-tip-p', I.desc), I.hint ? h('p', 'tt-tip-p tt-tip-muted', I.hint) : null);
   }
   if (kind === 'stat') return buildStat(api, rest);

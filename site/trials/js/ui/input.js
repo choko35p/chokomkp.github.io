@@ -14,9 +14,11 @@ export const parse = (d) => {
   if (k === 'enemy') return { k, key: rest[0], star: rest[1] != null ? Number(rest[1]) : null };
   if (k === 'sp') return { k, id: rest[0] };
   if (k === 'fav') return { k, uid: Number(rest[0]) };
+  if (k === 'mk') return { k, id: rest[0], uid: Number(rest[1]) };   // 棋子身上的標記：mk:<道具>:<棋子 uid>
   return { k };
 };
 
+const DROP_HINT = { rm: '要拖到有裝備的棋子身上', fav: '要拖到心鋼之聲成員身上', spot: '要拖到你要捧的那隻棋子身上', deal: '要拖到你要簽的那隻棋子身上', prod: '要拖到有樂團羈絆的棋子身上', clone: '要拖到一隻棋子身上' };
 const tag = (n) => (n && n.tagName ? n.tagName : '');
 
 export function bindInput({ app, api, R = {}, render, h = {} }) {
@@ -69,7 +71,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
     if (d.k === 'enemy') return select(enemySel(d, el));
     if (d.k === 'item') return select({ kind: 'item', idx: d.i });
     if (d.k === 'sp') return select({ kind: 'sp', id: d.id });
-    if (d.k === 'fav') return select({ kind: 'unit', uid: d.uid });
+    if (d.k === 'fav' || d.k === 'mk') return select({ kind: 'unit', uid: d.uid });
     if (d.k === 'board' || d.k === 'bench') {
       const u = unitAt(d);
       if (u) select({ kind: 'unit', uid: u.uid }); else clearSel();     // 空格＝取消選取，不是移動
@@ -85,14 +87,14 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
   function onDragStart(desc) {
     const d = parse(desc); if (!d) return;
     hideTip();
-    app.dataset.dragging = d.k === 'shop' ? 'shop' : (d.k === 'item' || d.k === 'sp' || d.k === 'fav') ? 'item' : 'unit';
+    app.dataset.dragging = d.k === 'shop' ? 'shop' : (d.k === 'item' || d.k === 'sp' || d.k === 'fav' || d.k === 'mk') ? 'item' : 'unit';
     if (d.k === 'board' || d.k === 'bench') {
       const u = unitAt(d); if (!u) return;
       ui.dragUnit = u.uid;      // 包 B 的 render／syncDrag 讀這個 uid，把商店變成賣出區
       ui.sel = { kind: 'unit', uid: u.uid }; ui.sellArm = null;
       try { PN.renderUnitSide(unitpanel(), api); } catch (_) { /* 略過 */ }
       sfx('pickup');
-    } else if (d.k === 'sp' || d.k === 'fav') {
+    } else if (d.k === 'sp' || d.k === 'fav' || d.k === 'mk') {
       ui.sel = d.k === 'sp' ? { kind: 'sp', id: d.id } : { kind: 'unit', uid: d.uid };
       try { PN.renderUnitSide(unitpanel(), api); } catch (_) { /* 略過 */ }
       sfx('pickup');
@@ -115,12 +117,13 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
     let r = null;
     if (f.k === 'shop') {
       if (t.k === 'bench' || t.k === 'board') { ui.sel = null; r = api.act('buy', f.i); } else return bounce();
-    } else if (f.k === 'sp' || f.k === 'fav') {
+    } else if (f.k === 'sp' || f.k === 'fav' || f.k === 'mk') {
+      const id = f.k === 'fav' ? 'fav' : f.id;
       const u = (t.k === 'board' || t.k === 'bench') ? unitAt(t) : null;
-      if (!u) { toast(f.k === 'fav' || f.id === 'fav' ? '要拖到心鋼之聲成員身上' : '要拖到有裝備的棋子身上'); return bounce(); }
-      if (f.k === 'fav') { if (f.uid === u.uid) return render(); ui.sel = null; r = api.act('moveFavorite', f.uid, u.uid); }
-      else if (f.id === 'rm') { ui.sel = null; r = api.act('useRemover', u.uid); }
-      else { ui.sel = null; r = api.act('setFavorite', u.uid); }
+      if (!u) { toast(DROP_HINT[id] || '要拖到棋子身上'); return bounce(); }
+      if (f.k !== 'sp' && f.uid === u.uid) return render();   // 標記拖回原本那隻
+      if (id === 'rm') { ui.sel = null; r = api.act('useRemover', u.uid); }
+      else { ui.sel = null; r = api.act('pick', id, u.uid, f.k === 'sp' ? {} : { from: f.uid }); }
     } else if (f.k === 'item') {
       const u = (t.k === 'board' || t.k === 'bench') ? unitAt(t) : null;
       if (!u) return bounce();
@@ -140,7 +143,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
   function onLongPress(desc, el) {
     if (ui.mode !== 'plan') return;
     const d = parse(desc); if (!d) return;
-    if (d.k === 'sp' || d.k === 'item' || d.k === 'fav') {   // 觸控長按道具＝看說明（放開就收）
+    if (d.k === 'sp' || d.k === 'item' || d.k === 'fav' || d.k === 'mk') {   // 觸控長按道具＝看說明（放開就收）
       const spec = el.dataset.ttTip; if (!spec) return;
       showTip(el, spec, { placement: 'top' });
       const off2 = () => { hideTip(); window.removeEventListener('pointerup', off2, true); window.removeEventListener('pointercancel', off2, true); };

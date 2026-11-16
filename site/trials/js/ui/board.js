@@ -2,6 +2,7 @@
 // 戰鬥階段：renderBoard(el, api, {mode:'battle'}) 只畫 8 排空格的 .tt-field（el.__field），棋子由 battle.js 疊上去。
 // 戰鬥：座標約定（和 battle.js 一致）：格子中心 x = (col + 0.5*(row&1) + 0.5)*w，y = (row*0.866 + 0.5)*w，w = 棋盤寬/7.5。
 // 佈陣：8 排等大、縱向壓扁的六角（官方視角），位置全用 CSS 變數 --x（欄＋奇數排半格）、--r（0–7 排）、--g（我方半場 1）。
+import { traitIcon } from './traitbar.js';
 export const COLS = 7;
 const ROW_H = 0.866;
 
@@ -36,16 +37,26 @@ export function avatarEl(DATA, key, size) {
 }
 
 // 棋子 token（棋盤與板凳共用）。頭上：星級小方塊＋血條（官方樣式）。
-export function unitToken(DATA, u, desc, { enemy = false, fav = null } = {}) {
+// marks＝身上的指定道具標記：[{ id: 'fav'|'spot'|'deal'|'prod'|'clone', on: 有沒有效, extra: 合作邀請選到的羈絆 key }]，從右上角往下排。
+export function unitToken(DATA, u, desc, { enemy = false, marks = null } = {}) {
   const cost = costOf(DATA, u.key);
   const t = el('div', 'tt-unit tt-cost' + cost, { 'data-tt-drag': desc, 'data-tt-uid': u.uid, 'data-tt-unit': u.key, 'data-tt-star': u.star, title: `${zhOf(DATA, u.key)} ${u.star}星` });
   t.append(styleAvatar(el('span', 'tt-xav'), DATA, u.key));
   t.append(el('span', 'tt-hpb' + (enemy ? ' tt-e' : '') + (u.star >= 2 ? ' tt-s' + u.star : ''), { 'aria-hidden': 'true' }, el('i', 'tt-sq', {}, u.star), el('span', 'tt-hpf')));
-  if (fav) {   // 心鋼最愛標記：on＝有效（可以拖去改選）、off＝羈絆掉階暫時失效
-    const on = fav === 'on';
-    t.append(el('i', 'tt-favmark' + (on ? '' : ' tt-off'), { 'data-tt-tip': on ? 'sp:favmark' : 'sp:favoff', 'aria-label': on ? '心鋼最愛' : '心鋼最愛（暫時失效）', ...(on ? { 'data-tt-drag': 'fav:' + u.uid, 'data-tt-tap': 'fav:' + u.uid } : {}) }, '♥'));
-    t.classList.add('tt-isfav');
-  }
+  (marks || []).forEach((m, i) => {
+    const on = !!m.on, zh = PICK_ZH[m.id] || m.id;
+    const tip = 'sp:' + m.id + (on ? 'mark' : 'off');
+    const aria = zh + (on ? '' : '（暫時失效）');
+    if (m.id === 'fav') {   // 心鋼最愛：愛心標記（有效的可以抓去拖到另一位改選）
+      t.append(el('i', 'tt-favmark' + (on ? '' : ' tt-off'), { 'data-tt-tip': tip, 'aria-label': aria, style: `--mi:${i}`, 'data-tt-drag': 'fav:' + u.uid, 'data-tt-tap': 'fav:' + u.uid }, '♥'));
+      t.classList.add('tt-isfav');
+      return;
+    }
+    const mk = el('i', `tt-pickmark tt-pm-${m.id}` + (on ? '' : ' tt-off'), { 'data-tt-tip': tip, 'aria-label': aria, style: `--mi:${i}`, 'data-tt-drag': `mk:${m.id}:${u.uid}`, 'data-tt-tap': `mk:${m.id}:${u.uid}` });
+    if (m.id === 'prod' && m.extra) mk.append(traitIcon(DATA, m.extra, 14));
+    t.append(mk);
+    if (m.id === 'spot') t.classList.add(on ? 'tt-isspot' : 'tt-isspot-off');
+  });
   if (u.items && u.items.length) {
     const box = el('span', 'tt-it', { 'aria-hidden': 'true' });
     for (const k of u.items) { const i = el('i'); i.style.backgroundImage = `url("../icons/items/${k}.webp")`; box.append(i); }
@@ -64,32 +75,68 @@ function cellEl(row, col, extra, mine) {
   return c;
 }
 
-const favOf = (api, u) => {
-  try { const f = api.fav && api.fav(); if (!f || !f.held.includes(u.uid)) return null; return f.active.includes(u.uid) ? 'on' : 'off'; } catch (_) { return null; }
+const PICK_ZH = { fav: '心鋼最愛', spot: '聚光燈', deal: '唱片合約', prod: '合作邀請', clone: '分身站位' };
+const PICK_ORDER = ['fav', 'spot', 'deal', 'prod', 'clone'];
+// 這隻棋子身上有哪些指定道具標記（含暫時失效的）
+const marksOf = (api, u) => {
+  try {
+    const p = api.picks && api.picks(); if (!p) return null;
+    const out = [];
+    for (const id of PICK_ORDER) { const f = p[id]; if (f && f.held.includes(u.uid)) out.push({ id, on: f.active.includes(u.uid), extra: id === 'prod' ? f.trait : null }); }
+    return out.length ? out : null;
+  } catch (_) { return null; }
 };
 
-// 特殊道具（不佔 3 件裝備格、也不佔裝備欄的 10 格）：黃金卸除器、心鋼最愛
+// 特殊道具（不佔 3 件裝備格、也不佔裝備欄的 10 格）：黃金卸除器，加上羈絆給的指定道具。都可以一直重複用、可以重選。
 export const SPECIAL_INFO = {
-  rm: { zh: '黃金卸除器', sub: '消耗品・每局開場送 1 個', desc: '拖到有裝備的棋子身上，會把他身上的裝備全部拆下來放回裝備欄。用完就沒了，想清楚再用。裝備欄放不下就不能用。', hint: '要用就把它拖到有裝備的棋子身上。' },
-  fav: { zh: '心鋼最愛', sub: '心鋼之聲 3 階給 1 個、5 階再給 1 個', desc: '拖到一位心鋼之聲成員身上，就是選他當最愛，他的技能會變強（技能增幅 +25%）。只能放在心鋼之聲成員身上，同一位不能放兩個。佈陣時可以從一位身上拖到另一位改選。羈絆掉到 3 階以下，標記會先失效，湊回來就自動回到原本那位。沒放的話就不強化。', hint: '要選他強化，就把它拖到心鋼之聲成員身上。' },
+  rm: { zh: '黃金卸除器', sub: '每局都有，可以一直用', desc: '拖到有裝備的棋子身上，把他的裝備全部拆回裝備欄。可以重複用，不用省。裝備欄放不下就不能用。', hint: '要用就把它拖到有裝備的棋子身上。' },
+  fav: { zh: '心鋼最愛', sub: '心鋼之聲 3 階給 1 個、5 階給 2 個', desc: '拖到一位心鋼之聲成員身上，就是選他當最愛，他的技能會變強（技能增幅 +25%）。可以一直重複用：想改選就再拖到另一位身上，或直接把他身上的愛心拖過去；拖到已經是最愛的那位就是取消。沒放就沒有效果。', hint: '要選他強化，就把它拖到心鋼之聲成員身上。' },
+  spot: { zh: '聚光燈', sub: '經紀人 2 階給 1 盞', desc: '拖到你要捧的那隻身上。開場和每 5 秒他都拿一次加成，可以疊。想換人就再拖一次。', hint: '不一定要拖給經紀人，場上誰都可以。' },
+  deal: { zh: '唱片合約', sub: '蒙多在場就有，每 4 回合多 1 份', desc: '拖到你要簽的那隻身上：他傷害增幅 +5%，他每殺一個，蒙多永久 +25 生命。簽錯了再拖一次就能改。', hint: '蒙多自己也可以簽，同一隻只能簽 1 份。' },
+  prod: { zh: '合作邀請', sub: '索娜在場就有', desc: '拖到一隻棋子身上，索娜就跟他的樂團合作，那個羈絆多算 1 人。想換樂團就拖到別隻身上。', hint: '要拖給有起源羈絆的棋子，歐拉夫有兩個樂團，連拖兩次可以換。' },
+  clone: { zh: '分身站位', sub: '銳空在場就有', desc: '拖到一隻棋子身上，銳空的分身開場就站在他旁邊。沒拖就站在銳空旁邊。', hint: '' },
   favmark: { zh: '心鋼最愛', sub: '', desc: '這位是你選的最愛，技能變強（技能增幅 +25%）。把這個標記拖到另一位心鋼之聲成員身上就能改選。要上場才有效。', hint: '' },
-  favoff: { zh: '心鋼最愛（暫時失效）', sub: '', desc: '心鋼之聲掉到 3 階以下了，標記先留在這位身上沒效果。羈絆湊回來就自動生效。', hint: '' },
+  favoff: { zh: '心鋼最愛（暫時失效）', sub: '', desc: '心鋼之聲掉階了，或他在板凳上，先沒有效果。湊回來、上場就自動恢復。', hint: '' },
+  spotmark: { zh: '聚光燈', sub: '', desc: '這隻是你捧的人，開場和每 5 秒都拿一次傷害增幅。把這個標記拖到另一隻身上就能換人。要上場才有效。', hint: '' },
+  spotoff: { zh: '聚光燈（暫時失效）', sub: '', desc: '經紀人湊不到 2 階，或他在板凳上，先沒有效果。湊回來、上場就自動恢復。', hint: '' },
+  dealmark: { zh: '唱片合約', sub: '', desc: '他簽了合約：傷害增幅 +5%，他每殺一個，蒙多永久 +25 生命。把這個標記拖到別隻身上就能改簽。要上場才有效。', hint: '' },
+  dealoff: { zh: '唱片合約（暫時失效）', sub: '', desc: '蒙多不在場、他在板凳上，或合約份數不夠，先沒有效果。回來就自動恢復。', hint: '' },
+  prodmark: { zh: '合作邀請', sub: '', desc: '索娜跟他的樂團合作，標記上的那個羈絆多算 1 人。把這個標記拖到別隻身上就能換樂團。要上場才有效。', hint: '' },
+  prodoff: { zh: '合作邀請（暫時失效）', sub: '', desc: '索娜不在場，或他在板凳上，先沒有效果。回來就自動恢復。', hint: '' },
+  clonemark: { zh: '分身站位', sub: '', desc: '銳空的分身開場會站在這隻旁邊。把這個標記拖到別隻身上就能換位置。要上場才有效。', hint: '' },
+  cloneoff: { zh: '分身站位（暫時失效）', sub: '', desc: '銳空不在場，或他在板凳上，先沒有效果，分身就站在銳空旁邊。', hint: '' },
+};
+const SP_LABEL = {
+  rm: '黃金卸除器，拖到有裝備的棋子身上，把裝備全部卸回裝備欄，可以一直用',
+  fav: '心鋼最愛，拖到一位心鋼之聲成員身上，選他強化技能，可以重選',
+  spot: '聚光燈，拖到你要捧的那隻身上，可以重選',
+  deal: '唱片合約，拖到你要簽的那隻身上，可以重選',
+  prod: '合作邀請，拖到一隻棋子身上，選他的樂團多算 1 人，可以重選',
+  clone: '分身站位，拖到一隻棋子身上，分身開場站在他旁邊，可以重選',
 };
 
 export function renderSpecials(el_, api) {
-  const { state } = api;
-  const f = api.fav ? api.fav() : { free: 0 };
   const sel = api.ui.sel && api.ui.sel.kind === 'sp' ? api.ui.sel.id : null;
+  const p = api.picks ? api.picks() : {};
   const nodes = [];
-  const mk = (id, cls, label) => {
-    const b = el('div', 'tt-xslot tt-xsp ' + cls, { role: 'button', tabindex: '0', 'data-tt-tap': 'sp:' + id, 'data-tt-drag': 'sp:' + id, 'data-tt-tip': 'sp:' + id, 'aria-label': label });
+  const mk = (id, n) => {
+    const b = el('div', `tt-xslot tt-xsp tt-sp-${id}`, { role: 'button', tabindex: '0', 'data-tt-tap': 'sp:' + id, 'data-tt-drag': 'sp:' + id, 'data-tt-tip': 'sp:' + id, 'aria-label': SP_LABEL[id] + (n != null ? `，還有 ${n} 個沒放` : '') });
     if (sel === id) b.classList.add('tt-sel');
+    if (n != null) {
+      b.append(el('i', 'tt-sp-n', { 'aria-hidden': 'true' }, n));   // 右下角：還沒放的數量（放完是 0，圖示不消失）
+      if (n > 0 && id !== 'clone') b.classList.add('tt-pulse');
+    }
     return b;
   };
-  if ((state.removers || 0) > 0) nodes.push(mk('rm', 'tt-sp-rm', '黃金卸除器，拖到有裝備的棋子身上，把裝備全部卸回裝備欄'));
-  for (let i = 0; i < (f.free || 0); i++) nodes.push(mk('fav', 'tt-sp-fav', '心鋼最愛，拖到一位心鋼之聲成員身上，選他強化技能'));
+  nodes.push(mk('rm', null));   // 黃金卸除器每局都在、無限用
+  for (const id of PICK_ORDER) { const f = p[id]; if (f && f.cap > 0) nodes.push(mk(id, f.free)); }
   el_.replaceChildren(...nodes);
   el_.hidden = !nodes.length;
+  // 桌機版：道具排成幾列由寬度決定，把高度記在舞台上，讓下面的增幅列、羈絆欄跟著往下讓
+  const stage = el_.closest && el_.closest('.tt-stage');
+  const sync = () => { const h = el_.offsetHeight; if (stage && h > 0) stage.style.setProperty('--tt-xh', h + 'px'); };
+  sync();
+  if (!el_.__ro && typeof ResizeObserver !== 'undefined') { el_.__ro = new ResizeObserver(sync); el_.__ro.observe(el_); }
 }
 
 export function selUid(api) { const s = api.ui && api.ui.sel; return s && s.kind === 'unit' ? s.uid : null; }
@@ -131,7 +178,7 @@ export function renderBoard(el_, api, view = {}) {
     const label = `我方 ${'ABCD'[r]}${c + 1}` + (u ? `：${zhOf(DATA, u.key)} ${u.star} 星` : '：空格');
     const cell = cellEl(4 + r, c, { role: 'button', tabindex: '0', 'aria-label': label, 'data-tt-drop': `board:${r},${c}` }, true);
     if (u) {
-      const tk = unitToken(DATA, u, `board:${r},${c}`, { fav: favOf(api, u) });
+      const tk = unitToken(DATA, u, `board:${r},${c}`, { marks: marksOf(api, u) });
       tk.setAttribute('data-tt-tap', `board:${r},${c}`);
       if (u.uid === sel) tk.classList.add('tt-sel');
       cell.append(tk);
@@ -149,7 +196,7 @@ export function renderBench(el_, api) {
     const u = (state.bench || [])[i];
     const s = el('div', 'tt-bslot', { role: 'button', tabindex: '0', 'data-tt-drop': `bench:${i}`,
       'aria-label': `板凳 ${i + 1}` + (u ? `：${zhOf(DATA, u.key)} ${u.star} 星` : '：空') });
-    if (u) { const tk = unitToken(DATA, u, `bench:${i}`, { fav: favOf(api, u) }); tk.setAttribute('data-tt-tap', `bench:${i}`); if (u.uid === sel) tk.classList.add('tt-sel'); s.append(tk); }
+    if (u) { const tk = unitToken(DATA, u, `bench:${i}`, { marks: marksOf(api, u) }); tk.setAttribute('data-tt-tap', `bench:${i}`); if (u.uid === sel) tk.classList.add('tt-sel'); s.append(tk); }
     slots.push(s);
   }
   el_.replaceChildren(...slots);

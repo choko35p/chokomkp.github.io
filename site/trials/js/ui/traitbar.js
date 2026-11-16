@@ -45,7 +45,7 @@ export function avatar(DATA, key, size = 40) {
 export function boardUnits(state) { return (state.board || []).filter(Boolean); }
 export function playerTraits(api) {
   const { state, DATA } = api;
-  return countTraits(boardUnits(state), DATA, { augments: state.augments || [] });
+  return countTraits(boardUnits(state), DATA, api.traitOpts ? api.traitOpts() : { augments: state.augments || [] });
 }
 
 // 買／上場這隻會讓哪些羈絆升階（回傳 key 集合）。已在場上同 key 不算（同 key 只算一次）。
@@ -54,7 +54,7 @@ export function upgradeTraits(api, unitKey) {
   if (!api.countTraits) return new Set();
   const board = boardUnits(state);
   if (board.some(u => u.key === unitKey)) return new Set();
-  const opts = { augments: state.augments || [] };
+  const opts = api.traitOpts ? api.traitOpts() : { augments: state.augments || [] };
   const before = Object.fromEntries(countTraits(board, DATA, opts).map(t => [t.key, t.tier]));
   const after = countTraits([...board, { key: unitKey, star: 1, items: [] }], DATA, opts);
   return new Set(after.filter(t => t.tier > (before[t.key] || 0)).map(t => t.key));
@@ -129,6 +129,10 @@ export function traitCard(t, api, { side = 'player', list } = {}) {
     bp.append(el('i', { class: (t.tier === i + 1 ? 'tt-cur' : '') + (t.count >= b ? ' tt-on' : '') }, b));
   });
   else bp.append(el('i', { class: 'tt-cur' }, `${t.count} / ${bps[0] ?? t.next ?? '?'}`));
+  let pk = null;
+  try { pk = side === 'player' && api.picks ? api.picks() : null; } catch (_) { pk = null; }
+  const withSona = !!(pk && pk.prod.active.length && pk.prod.trait === t.key);   // 製作人選到的羈絆：加「+索娜」
+  if (withSona) bp.append(el('small', { class: 'tt-plus' }, '+索娜'));
   const btn = el('button', {
     type: 'button', class: 'tt-trow' + (t.active ? ' tt-active' : ' tt-inactive'), 'data-trait': t.key, 'data-kind': kindOf(DATA, t.key),
     'data-tt-tip': 'trait:' + t.key, 'data-tt-noclear': '',

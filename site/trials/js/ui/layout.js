@@ -207,7 +207,7 @@ export async function mount(root, api) {
   let lastTe = [];
   function renderTraitsMount(enemy) {
     const s = api.state;
-    const tp = api.countTraits ? api.countTraits(s.board.filter(Boolean), DATA, { augments: s.augments || [] }) : [];
+    const tp = api.countTraits ? api.countTraits(s.board.filter(Boolean), DATA, api.traitOpts ? api.traitOpts() : { augments: s.augments || [] }) : [];
     let te = enemy?.traitsPreview;
     if ((!te || !te.length) && enemy && api.countTraits) te = api.countTraits(enemy.units.map(u => ({ key: u.key, star: u.star, items: u.items || [] })), DATA, { augments: [] });
     lastTe = te || [];
@@ -238,7 +238,7 @@ export async function mount(root, api) {
     const s = ui.sel; if (!s) return;
     if (s.kind === 'unit' && !unitByUid(s.uid)) ui.sel = null;
     else if (s.kind === 'item' && !api.state.itemBench[s.idx]) ui.sel = null;
-    else if (s.kind === 'sp') { const f = api.fav ? api.fav() : { free: 0 }; if (s.id === 'rm' ? !(api.state.removers > 0) : !(f.free > 0)) ui.sel = null; }
+    else if (s.kind === 'sp') { const p = api.picks ? api.picks() : null; if (s.id !== 'rm' && !(p && p[s.id] && p[s.id].cap > 0)) ui.sel = null; }   // 黃金卸除器一直都在；其他道具羈絆關掉就消失
     else if (s.kind === 'enemy' && !(curEnemy && curEnemy.units.some(u => u.key === s.key))) ui.sel = null;
   }
 

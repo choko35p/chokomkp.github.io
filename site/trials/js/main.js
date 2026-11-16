@@ -19,7 +19,8 @@ const REASONS = {
 };
 const reasonText = (r) => (r && /[一-鿿]/.test(r) ? r : REASONS[r] || '這個動作現在做不到');
 
-const SFX = { buy: 'buy', sell: 'sell', reroll: 'reroll', buyXp: 'xp', move: 'place', equip: 'equip', pickAugment: 'pick', rerollAugmentSlot: 'reroll', setFavorite: 'equip', moveFavorite: 'equip', useRemover: 'equip', pickReward: 'pick', startBattle: 'start' };
+const PICK_ZH = { fav: '心鋼最愛', spot: '聚光燈', deal: '唱片合約', prod: '合作邀請', clone: '分身站位' };
+const SFX = { buy: 'buy', sell: 'sell', reroll: 'reroll', buyXp: 'xp', move: 'place', equip: 'equip', pickAugment: 'pick', rerollAugmentSlot: 'reroll', setFavorite: 'equip', moveFavorite: 'equip', pick: 'equip', useRemover: 'equip', pickReward: 'pick', startBattle: 'start' };
 
 function showFatal(msg, withLink) {
   const root = document.getElementById('tt-root');
@@ -74,6 +75,9 @@ async function boot() {
     countTraits: stats ? (u, D, o) => stats.countTraits(u, D, o) : null,
     teamLimit: () => game.teamLimit(state, DATA),
     fav: () => game.favoriteInfo(state, DATA),
+    picks: () => game.pickInfo(state, DATA),
+    traitOpts: () => game.traitOpts(state, DATA),
+    battleUnits: () => game.battleUnits(state, DATA),
     toast: () => {},
     sfx(n) { try { audio.sfx(n); } catch (_) { /* 音效壞了不影響遊戲 */ } },
     restart(seed) {
@@ -102,7 +106,7 @@ async function boot() {
   };
   // 這場啟動過的羈絆（最高階）給結算畫面用
   let best = {};
-  const track = () => { if (!api.countTraits) return; try { for (const t of api.countTraits(state.board.filter(Boolean), DATA, { augments: state.augments || [] })) if (t.tier > (best[t.key] || 0)) best[t.key] = t.tier; } catch (_) { /* 略過 */ } };
+  const track = () => { if (!api.countTraits) return; try { for (const t of api.countTraits(state.board.filter(Boolean), DATA, game.traitOpts(state, DATA))) if (t.tier > (best[t.key] || 0)) best[t.key] = t.tier; } catch (_) { /* 略過 */ } };
   api.bestTraits = () => Object.entries(best).map(([key, tier]) => ({ key, tier })).sort((a, b) => b.tier - a.tier);
 
   // 對手（同回合同重打次數只算一次）
@@ -116,7 +120,7 @@ async function boot() {
     return cache.v;
   };
 
-  const tiers = () => { if (!api.countTraits) return null; try { return Object.fromEntries(api.countTraits(state.board.filter(Boolean), DATA, { augments: state.augments || [] }).map(t => [t.key, t.tier])); } catch (_) { return null; } };
+  const tiers = () => { if (!api.countTraits) return null; try { return Object.fromEntries(api.countTraits(state.board.filter(Boolean), DATA, game.traitOpts(state, DATA)).map(t => [t.key, t.tier])); } catch (_) { return null; } };
 
   api.act = (name, ...args) => {
     if (name === 'restart') { api.restart(...args); return { ok: true }; }
@@ -128,7 +132,11 @@ async function boot() {
       if (name !== 'finishBattle') { api.toast(reasonText(r.reason)); api.sfx('error'); }
       return r;
     }
-    if (name === 'startBattle') { api.sfx('start'); return r; }
+    if (name === 'startBattle') {
+      api.sfx('start');
+      for (const ev of r.events || []) if (ev.type === 'pickUnset') api.toast(ev.ids.map(i => PICK_ZH[i] || i).join('、') + ' 還沒指定，這場不會有效果');
+      return r;
+    }
     const evs = r.events || [];
     for (const m of r.merged || []) if (!evs.some(e => e.type === 'merge' && e.key === m.key && e.star === m.star)) evs.push({ type: 'merge', key: m.key, star: m.star });
     let played = false;

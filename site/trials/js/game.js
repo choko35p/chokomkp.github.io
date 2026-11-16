@@ -72,7 +72,7 @@ function traitTeamSize(state, DATA) {
   if (!B.countTraits || !state.board.length) return 0;
   let n = 0;
   try {
-    const list = B.countTraits(state.board.map(u => ({ key: u.key, star: u.star, items: u.items })), DATA, { augments: state.augments.slice() });
+    const list = B.countTraits(state.board.map(u => ({ key: u.key, star: u.star, items: u.items })), DATA, traitOpts(state, DATA));
     for (const t of list) {
       if (!t.tier) continue;
       const def = DATA.traits.byKey[t.key];
@@ -257,7 +257,8 @@ export function newGame(seed, DATA) {
     shop: [null, null, null, null, null], pool: S.newPool(DATA), rngShop: makeRng(hashSeed(seed, 'shop')).state(),
     augments: [], pendingChoices: null, pendingQueue: [], persist: {}, history: [], attempt: 0, uidNext: 1,
     freeRerolls: 0, rewardN: 0, counters: {}, battle: null,
-    removers: 1, favs: [],   // 黃金卸除器（每局開場 1 個）、心鋼最愛標記（依放上去的順序存棋子 uid）
+    picks: { fav: [], spot: [], deal: [], prod: [], clone: [] },   // 指定道具的標記：各道具的棋子 uid，最早放的在前
+    prodTrait: null, dealFrom: null,   // 合作邀請選到的起源；蒙多第一次上場開戰的回合（唱片合約的份數從這裡算）
     unlocks: {}, unlockQueue: [], unlockAcc: {}, stats: { rerolls: 0, loseStreak: 0 },
   };
   beginRound(state, DATA, []);
@@ -280,8 +281,15 @@ export function deserialize(json, DATA) {
   if (!s.unlockQueue) s.unlockQueue = [];
   if (!s.unlockAcc) s.unlockAcc = {};
   if (!s.stats) s.stats = { rerolls: 0, loseStreak: 0 };
-  if (!Array.isArray(s.favs)) s.favs = [];
-  if (typeof s.removers !== 'number') s.removers = 1;   // 舊存檔：補 1 個卸除器
+  if (!s.picks) {   // 舊存檔：心鋼最愛標記搬進 picks；聚光燈、合約、製作人照原本自動選的結果補上，不會突然沒效果
+    s.picks = { fav: Array.isArray(s.favs) ? s.favs : [], spot: [], deal: [], prod: [], clone: [] };
+    delete s.favs; delete s.removers;
+    s.prodTrait = null; s.dealFrom = null;
+    autoPicks(s, DATA, { only: ['spot', 'deal', 'prod'] });
+  }
+  for (const id of PICK_IDS) if (!Array.isArray(s.picks[id])) s.picks[id] = [];
+  if (s.prodTrait === undefined) s.prodTrait = null;
+  if (s.dealFrom === undefined) s.dealFrom = null;
   normAugmentPending(s.pendingChoices, DATA);
   for (const q of s.pendingQueue) normAugmentPending(q, DATA);
   return s;
@@ -301,7 +309,7 @@ export function actions(state, DATA) {
     canBuyXp: plan && state.level < r.maxLevel && state.gold >= Math.max(0, buyCost),
     sell: plan ? S.allUnits(state).map(u => u.uid) : [],
     pop: population(state, DATA), maxPop: teamLimit(state, DATA),
-    favorite: favoriteInfo(state, DATA), removers: state.removers || 0,
+    favorite: favoriteInfo(state, DATA), picks: pickInfo(state, DATA),
   };
 }
 
@@ -318,6 +326,7 @@ export function actSell(state, uid, DATA) {
   const g = needPlan(state); if (g) return g;
   const r = S.sell(state, uid, DATA);
   if (!r.ok) return r;
+  prunePicks(state, DATA);   // 賣掉的棋子身上的標記收回
   const events = [{ type: 'sell', uid, gold: r.gold }];
   runUnlocks(state, DATA, events);
   return ok({ gold: r.gold, events });
@@ -402,65 +411,191 @@ export function actEquip(state, itemIdx, uid, DATA) {
   return ok({ events });
 }
 
-// ---------- 心鋼最愛（手動選）----------
-// 羈絆（Heartsteel）3 階給 1 個、5 階給 2 個「心鋼最愛」道具，玩家拖到一位成員身上＝選他強化技能。
-// 道具不佔 3 件裝備格、不放在 itemBench 裡。標記存在 state.favs（棋子 uid，依放上去的順序）。
-// 羈絆掉到 3 階以下：標記「留在原本那位身上但暫時失效」，羈絆回來就自動生效；那位被賣掉／合掉才會收回。
-function favTrait(DATA) {
-  for (const t of DATA.traits.list) {
-    for (const eff of [...(t.always || []), ...((t.tiers || []).flat())]) if (eff.type === 'special' && eff.id === 'favorite') return t;
-  }
-  return null;
-}
-function favCap(state, DATA) {
-  const t = favTrait(DATA);
-  if (!t || !B.countTraits || !state.board.length) return 0;
-  let info;
-  try { info = B.countTraits(state.board.map(u => ({ key: u.key, star: u.star, items: u.items })), DATA, { augments: state.augments.slice() }).find(x => x.key === t.key); } catch (e) { return 0; }
-  if (!info || !info.tier) return 0;
-  let n = 0;
-  for (const e of [...(t.always || []), ...((t.tiers || [])[info.tier - 1] || [])]) if (e.type === 'special' && e.id === 'favorite') n = Math.max(n, e.n || 0);
+// ---------- 指定道具（裝備欄旁邊那一排，可重複用、可重選）----------
+// 心鋼最愛、聚光燈、唱片合約、合作邀請、分身站位：羈絆有啟動才有，標記存在 state.picks[id]（棋子 uid，最早放的在前）。
+// 道具不佔 3 件裝備格、也不放在 itemBench 裡。羈絆掉階或棋子下場：標記留著但暫時失效，回來自動恢復。
+// 沒放就沒效果，不會偷偷幫玩家自動選（autoPicks 只給機器人和舊存檔遷移用）。
+export const PICK_IDS = ['fav', 'spot', 'deal', 'prod', 'clone'];
+const unitKeyTraits = (DATA, key) => (DATA.units.byKey[key] && DATA.units.byKey[key].traits) || [];
+const originsOf = (DATA, key) => unitKeyTraits(DATA, key).filter(k => DATA.traits.byKey[k] && DATA.traits.byKey[k].kind === 'origin');
+const heartsteelN = (DATA, tier) => {
+  const t = DATA.traits.byKey.Heartsteel; let n = 0;
+  if (!t) return 0;
+  for (const e of [...(t.always || []), ...((t.tiers || [])[tier - 1] || [])]) if (e.type === 'special' && e.id === 'favorite') n = Math.max(n, e.n || 0);
   return n;
-}
-const isFavMember = (DATA, key) => { const t = favTrait(DATA); return !!t && (DATA.units.byKey[key].traits || []).includes(t.key); };
-// 回傳 { cap 目前最多幾個, held 還在棋子身上的標記（含暫時失效的）, active 目前有效的 uid, free 還沒放的個數, trait 羈絆 key }
-export function favoriteInfo(state, DATA) {
-  const t = favTrait(DATA);
-  const cap = t ? favCap(state, DATA) : 0;
-  const held = (state.favs || []).filter(uid => { const f = S.findUnit(state, uid); return f && isFavMember(DATA, f.unit.key); });
-  const active = held.slice(0, cap);
-  return { trait: t ? t.key : null, cap, held, active, free: Math.max(0, cap - active.length) };
-}
-function pruneFavs(state, DATA) { state.favs = favoriteInfo(state, DATA).held; }
+};
+export const PICKS = {
+  fav: {
+    trait: 'Heartsteel',
+    cap: (state, DATA, tr) => (tr.Heartsteel && tr.Heartsteel.tier ? heartsteelN(DATA, tr.Heartsteel.tier) : 0),
+    okUnit: (DATA, u) => (unitKeyTraits(DATA, u.key).includes('Heartsteel') ? null : '心鋼最愛只能放在心鋼之聲成員身上'),
+    off: '心鋼之聲要 3 階才有心鋼最愛',
+  },
+  spot: {
+    trait: 'Manager',
+    cap: (state, DATA, tr) => (tr.Manager && tr.Manager.tier ? 1 : 0),
+    okUnit: () => null,
+    off: '經紀人要 2 階才有聚光燈',
+  },
+  deal: {
+    trait: 'RecordMogul',
+    cap: (state, DATA, tr) => (tr.RecordMogul && tr.RecordMogul.tier ? 1 + (state.dealFrom == null ? 0 : Math.max(0, Math.floor((state.round - state.dealFrom) / 4))) : 0),
+    okUnit: () => null,
+    off: '蒙多醫生要在場上才有唱片合約',
+  },
+  prod: {
+    trait: 'Producer',
+    cap: (state, DATA, tr) => (tr.Producer && tr.Producer.tier ? 1 : 0),
+    okUnit: (DATA, u) => (!unitKeyTraits(DATA, u.key).includes('Producer') && originsOf(DATA, u.key).length ? null : '他沒有樂團可以合作'),
+    off: '索娜要在場上才有合作邀請',
+  },
+  clone: {
+    trait: 'BoyBand',
+    cap: (state, DATA, tr) => (tr.BoyBand && tr.BoyBand.tier ? 1 : 0),
+    okUnit: () => null,
+    off: '銳空要在場上才有分身站位',
+  },
+};
 
-// 把一個心鋼最愛放到某位成員身上；fromUid 有給＝從另一位身上改選過來
-export function actSetFavorite(state, uid, DATA, fromUid = null) {
+// 合作邀請目前有效的起源（標記那隻在場上、而且真的有這個起源）；沒有就 null
+function prodEffective(state, DATA) {
+  const uid = ((state.picks && state.picks.prod) || []).find(x => { const f = S.findUnit(state, x); return f && f.zone === 'board'; });
+  if (uid == null || !state.prodTrait) return null;
+  const f = S.findUnit(state, uid);
+  return unitKeyTraits(DATA, f.unit.key).includes(state.prodTrait) ? state.prodTrait : null;
+}
+// 算「玩家羈絆」時要帶的參數：所有玩家方的 countTraits 都要用這個，羈絆列才會和實戰一致
+export function traitOpts(state, DATA) {
+  return { augments: (state.augments || []).slice(), producerPick: prodEffective(state, DATA), manual: true };
+}
+U.setTraitOpts(traitOpts);
+const boardTraitMap = (state, DATA) => {
+  const tr = {};
+  if (!B.countTraits || !state.board.length) return tr;
+  try { for (const t of B.countTraits(state.board.map(u => ({ key: u.key, star: u.star, items: u.items })), DATA, traitOpts(state, DATA))) tr[t.key] = t; } catch (e) { /* 算不出來就當沒有 */ }
+  return tr;
+};
+
+// 回傳 { fav:{cap, held, active, free, trait}, spot, deal, prod:{…, trait 選到的起源}, clone }
+//   cap＝目前數量（羈絆沒開＝0）、held＝還在棋子身上的全部標記、active＝held 裡「棋子在場上」的前 cap 個、free＝cap − active 的個數
+export function pickInfo(state, DATA) {
+  const tr = boardTraitMap(state, DATA);
+  const out = {};
+  for (const id of PICK_IDS) {
+    const P = PICKS[id];
+    const cap = P.cap(state, DATA, tr);
+    const held = ((state.picks && state.picks[id]) || []).filter((uid, i, a) => a.indexOf(uid) === i && S.findUnit(state, uid));
+    const active = held.filter(uid => S.findUnit(state, uid).zone === 'board').slice(0, cap);
+    out[id] = { cap, held, active, free: Math.max(0, cap - active.length), trait: id === 'fav' ? 'Heartsteel' : id === 'prod' ? (state.prodTrait || null) : null };
+  }
+  return out;
+}
+export function prunePicks(state, DATA) {
+  if (!state.picks) state.picks = {};
+  for (const id of PICK_IDS) {
+    state.picks[id] = (state.picks[id] || []).filter((uid, i, a) => a.indexOf(uid) === i && S.findUnit(state, uid)
+      && (id !== 'fav' || !PICKS.fav.okUnit(DATA, S.findUnit(state, uid).unit)));
+  }
+  if (!state.picks.prod.length) state.prodTrait = null;
+}
+
+// 放／取消／重選一個指定道具。
+//   actPick(state, id, uid, DATA, opts)；opts.from＝從哪隻身上的標記拖過來（api.act 會把 DATA 放在最後，所以兩種順序都收）
+export function actPick(state, id, uid, a, b) {
+  const DATA = a && a.traits ? a : b;
+  const opts = (a && a.traits ? b : a) || {};
   const g = needPlan(state); if (g) return g;
-  pruneFavs(state, DATA);
+  const P = PICKS[id]; if (!P) return no('沒有這種道具');
+  prunePicks(state, DATA);
   const f = S.findUnit(state, uid);
   if (!f) return no('找不到這隻棋子');
-  if (!isFavMember(DATA, f.unit.key)) return no('心鋼最愛只能放在心鋼之聲成員身上');
-  const info = favoriteInfo(state, DATA);
-  if (!info.cap) return no('心鋼之聲要 3 階才有心鋼最愛');
-  if (info.active.includes(uid)) return no('這位已經有心鋼最愛了，不能放兩個');
-  if (fromUid != null) {
-    const i = state.favs.indexOf(fromUid);
-    if (i < 0 || !info.active.includes(fromUid)) return no('那位身上沒有心鋼最愛');
-    state.favs[i] = uid;
-  } else {
-    if (!info.free) return no('心鋼最愛都放完了，要改選就從別位身上拖過來');
-    // 暫時失效的舊標記排在後面：新放的插在有效標記之後
-    state.favs.splice(info.active.length, 0, uid);
+  const info = pickInfo(state, DATA)[id];
+  if (!info.cap) return no(P.off);
+  const bad = P.okUnit(DATA, f.unit); if (bad) return no(bad);
+  const list = state.picks[id];
+  const events = [{ type: 'pick', id, uid, from: opts.from != null ? opts.from : null }];
+  const pickTrait = (unit) => { state.prodTrait = originsOf(DATA, unit.key)[0] || null; };
+  if (opts.from != null) {   // 把棋子身上的標記拖到另一隻
+    const i = list.indexOf(opts.from);
+    if (i < 0) return no('那隻身上沒有這個標記');
+    if (opts.from === uid) return ok({ events: [] });
+    if (list.includes(uid)) return no('他身上已經有了');
+    list[i] = uid;
+    if (id === 'prod') pickTrait(f.unit);
+    return ok({ events });
   }
-  state.favs = state.favs.filter((x, i, a) => a.indexOf(x) === i);
-  return ok({ events: [{ type: 'favorite', uid, from: fromUid }] });
+  if (list.includes(uid)) {
+    if (id === 'prod') {   // 合作邀請：拖到已標記的那隻＝換成他的下一個起源
+      const os = originsOf(DATA, f.unit.key);
+      const k = os.indexOf(state.prodTrait);
+      state.prodTrait = os[(k + 1) % os.length];
+      return ok({ events });
+    }
+    list.splice(list.indexOf(uid), 1);   // 已經有這個標記＝取消
+    events[0].type = 'unpick';
+    return ok({ events });
+  }
+  if (info.free <= 0) {   // 都放完了：最早放的那個自動取消，改放到這隻
+    const oldest = info.active[0];
+    if (oldest != null) list.splice(list.indexOf(oldest), 1);
+  }
+  list.push(uid);
+  if (id === 'prod') pickTrait(f.unit);
+  return ok({ events });
 }
-export function actMoveFavorite(state, fromUid, toUid, DATA) { return actSetFavorite(state, toUid, DATA, fromUid); }
 
-// 黃金卸除器：把一隻身上所有裝備卸回裝備欄，用掉就消失
+// 心鋼最愛：舊介面留著當包裝（機器人、舊測試用）
+export function favoriteInfo(state, DATA) { return pickInfo(state, DATA).fav; }
+export function actSetFavorite(state, uid, DATA, fromUid = null) { return actPick(state, 'fav', uid, DATA, fromUid != null ? { from: fromUid } : {}); }
+export function actMoveFavorite(state, fromUid, toUid, DATA) { return actPick(state, 'fav', toUid, DATA, { from: fromUid }); }
+
+// 開戰用的玩家棋子與 buildTeam 參數：actStartBattle 和棋子面板的數值預覽共用，面板數字才會跟實戰一致
+export function battleUnits(state, DATA) {
+  const info = pickInfo(state, DATA);
+  const units = state.board.map(u => {
+    const o = { key: u.key, star: u.star, items: u.items.slice(), pos: u.pos.slice() };
+    const fi = info.fav.active.indexOf(u.uid);
+    if (fi >= 0) o.fav = fi + 1;
+    if (info.spot.active.includes(u.uid)) o.spot = true;
+    if (info.deal.active.includes(u.uid)) o.deal = true;
+    if (info.clone.active.includes(u.uid)) o.cloneAt = true;
+    return o;
+  });
+  return { units, ctx: { producerPick: info.prod.active.length ? prodEffective(state, DATA) : null, manual: true } };
+}
+
+// 自動選法（機器人、舊存檔遷移）：fav／spot／deal＝場上裝備最多的前幾隻（同數取費用高、key 字母序）；
+// prod＝場上人數最多的起源；clone 不放。
+export function autoPicks(state, DATA, opts = {}) {
+  const only = opts.only || ['prod', 'fav', 'spot', 'deal'];
+  if (!state.picks) state.picks = { fav: [], spot: [], deal: [], prod: [], clone: [] };
+  const rank = (a, b) => b.items.length - a.items.length || DATA.units.byKey[b.key].cost - DATA.units.byKey[a.key].cost
+    || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0) || a.uid - b.uid;
+  for (const id of ['prod', 'fav', 'spot', 'deal']) {
+    if (!only.includes(id)) continue;
+    const cap = pickInfo(state, DATA)[id].cap;
+    if (!cap) continue;
+    if (id === 'prod') {
+      const cnt = {};
+      const seen = new Set();
+      for (const u of state.board) { if (seen.has(u.key)) continue; seen.add(u.key); for (const k of originsOf(DATA, u.key)) cnt[k] = (cnt[k] || 0) + 1; }
+      let best = null, bn = -1;
+      for (const k of Object.keys(cnt).sort()) if (cnt[k] > bn) { bn = cnt[k]; best = k; }
+      if (!best) continue;
+      const m = state.board.filter(u => unitKeyTraits(DATA, u.key).includes(best) && !unitKeyTraits(DATA, u.key).includes('Producer')).sort(rank)[0];
+      if (!m) continue;
+      state.picks.prod = [m.uid]; state.prodTrait = best;
+      continue;
+    }
+    const pool = state.board.filter(u => id !== 'fav' || !PICKS.fav.okUnit(DATA, u)).sort(rank);
+    state.picks[id] = pool.slice(0, cap).map(u => u.uid);
+  }
+  return state;
+}
+
+// 黃金卸除器：把一隻身上所有裝備卸回裝備欄；每局都有、可以一直用
 export function actUseRemover(state, uid, DATA) {
   const g = needPlan(state); if (g) return g;
-  if (!(state.removers > 0)) return no('黃金卸除器已經用掉了');
   const f = S.findUnit(state, uid);
   if (!f) return no('找不到這隻棋子');
   const items = f.unit.items;
@@ -468,7 +603,6 @@ export function actUseRemover(state, uid, DATA) {
   if (state.itemBench.length + items.length > R(DATA).itemBenchSize) return no('裝備欄放不下，先空出位子再用');
   for (const it of items) state.itemBench.push(it);
   f.unit.items = [];
-  state.removers -= 1;
   const events = [{ type: 'remove', uid, items: items.slice() }];
   runUnlocks(state, DATA, events);
   return ok({ events });
@@ -560,10 +694,13 @@ export function actStartBattle(state, DATA) {
   const g = needPlan(state); if (g) return g;
   if (!B.buildTeam) return no('沒有戰前計算模組');
   const enemy = enemyForRound(state.round, state.seed, DATA);
-  pruneFavs(state, DATA);
-  const favAct = favoriteInfo(state, DATA).active;
-  const pUnits = state.board.map(u => ({ key: u.key, star: u.star, items: u.items.slice(), pos: u.pos.slice(), ...(favAct.includes(u.uid) ? { fav: favAct.indexOf(u.uid) + 1 } : {}) }));
-  const ctx = { level: state.level, round: state.round, augments: state.augments.slice(), persist: clone(state.persist),
+  prunePicks(state, DATA);
+  if (state.dealFrom == null && state.board.some(u => u.key === 'DrMundo')) state.dealFrom = state.round;   // 唱片合約每 4 回合多 1 份，從蒙多第一次上場開戰那回合算
+  const bu = battleUnits(state, DATA);
+  const pUnits = bu.units;
+  const pinfo = pickInfo(state, DATA);
+  const unset = ['fav', 'spot', 'deal', 'prod'].filter(id => pinfo[id].cap > 0 && !pinfo[id].active.length);
+  const ctx = { level: state.level, round: state.round, augments: state.augments.slice(), persist: clone(state.persist), ...bu.ctx,
     rng: makeRng(hashSeed(state.seed, 'combat', state.round, state.attempt, 'items')) };   // 竊賊手套用
   const pTeam = B.buildTeam('player', pUnits, DATA, ctx);
   const eTeam = B.buildTeam('enemy', enemy.units, DATA, { level: enemy.units.length, round: state.round, augments: [], persist: {}, mods: enemy.mods });
@@ -577,12 +714,12 @@ export function actStartBattle(state, DATA) {
   let snap = null;
   if (U.enabled(DATA)) {
     let traits = [];
-    try { if (B.countTraits && pUnits.length) traits = B.countTraits(pUnits.map(u => ({ key: u.key, star: u.star, items: u.items })), DATA, { augments: state.augments.slice() }); } catch (e) { traits = []; }
+    try { if (B.countTraits && pUnits.length) traits = B.countTraits(pUnits.map(u => ({ key: u.key, star: u.star, items: u.items })), DATA, traitOpts(state, DATA)); } catch (e) { traits = []; }
     snap = { board: pUnits, traits };
   }
   state.battle = { result, enemy, round: state.round, attempt: state.attempt, deferred: pTeam.deferred || [], snap };
   state.phase = 'battle';
-  return ok({ result, enemy, playerTeam: pTeam, enemyTeam: eTeam });
+  return ok({ result, enemy, playerTeam: pTeam, enemyTeam: eTeam, events: unset.length ? [{ type: 'pickUnset', ids: unset }] : [] });
 }
 
 function streakBonus(DATA, streak) {

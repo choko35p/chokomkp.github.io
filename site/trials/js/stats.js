@@ -46,7 +46,7 @@ export function countTraits(units, DATA, opts = {}) {
   const producerOn = DATA.traits.list.some((t) => raw[t.key] && hasProducer(t));
   if (producerOn) {
     let pick = opts.producerPick && raw[opts.producerPick] ? opts.producerPick : null;
-    if (!pick) {
+    if (!pick && !opts.manual) {   // manual：玩家自己拖「合作邀請」選，沒選就不加；沒給 manual（敵方、舊測試）維持自動挑
       const origins = Object.keys(raw).filter((k) => DATA.traits.byKey[k].kind === 'origin').sort(keyCmp);
       let best = -1;
       for (const k of origins) if (raw[k].count > best) { best = raw[k].count; pick = k; }
@@ -133,7 +133,7 @@ export function buildTeam(side, units, DATA, ctx = {}) {
     }
   }
 
-  const traits = countTraits(units, DATA, { augments: ctx.augments, producerPick: ctx.producerPick });
+  const traits = countTraits(units, DATA, { augments: ctx.augments, producerPick: ctx.producerPick, manual: !!ctx.manual });
   const activeNonUnique = traits.filter((t) => t.active && t.kind !== 'unique').length;
 
   const sortedBy = (arr) => arr.slice().sort((a, b) =>
@@ -147,6 +147,11 @@ export function buildTeam(side, units, DATA, ctx = {}) {
     if (who === 'frontRows') return L.filter((s) => s.pos && s.pos[0] < S.frontRowMax);
     if (who === 'backRows') return L.filter((s) => s.pos && s.pos[0] >= S.frontRowMax);
     if (who === 'mostItemsAlly') return sortedBy(L).slice(0, 1);
+    if (who === 'spotlight' || who === 'contract') {
+      // 玩家自己拖上去的標記（聚光燈／唱片合約）才算；敵方沒有介面，維持自動給裝備最多的
+      if (side === 'player' && ctx.manual) return L.filter((s) => (who === 'spotlight' ? s.u.spot : s.u.deal));
+      return sortedBy(L).slice(0, 1);
+    }
     if (who === 'favorites') return L.filter((s) => s.favorite);
     if (typeof who === 'object') {
       if (who.unit) {
@@ -333,7 +338,7 @@ export function buildTeam(side, units, DATA, ctx = {}) {
       passives: (st.def.passives || []).map((p) => ({ ...p, src: p.src || 'unit' })).concat(st.passives),
       traits: (st.def.traits || []).slice(), items: st.items.slice(), sources,
       // 擴充欄位（引擎／介面可用）
-      baseHp, baseAd, abilityDr: r1(g('abilityDr')), startShieldDur, favorite: st.favorite,
+      baseHp, baseAd, abilityDr: r1(g('abilityDr')), startShieldDur, favorite: st.favorite, cloneAnchor: !!st.u.cloneAt,
       missingHpScales: st.scales, missingHp: st.scales.length ? st.scales.map((m) => ({ stat: m.stat, min: m.min, max: m.max })) : null,
       bounce: st.bounce, trueDmgPct: r1(g('trueDmgPct')),
     };

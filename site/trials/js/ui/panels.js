@@ -176,7 +176,11 @@ export function combatantFor(api, unit) {
   const idx = unit.uid != null ? board.findIndex(u => u.uid === unit.uid) : -1;
   try {
     if (idx >= 0) {
-      const team = buildTeam('player', board.map(u => ({ ...u, pos: u.pos || [3, 3] })), DATA, ctx);
+      // 跟實戰用同一份棋子與標記（心鋼最愛、聚光燈、唱片合約…），面板數字才會和打起來一樣
+      const bu = api.battleUnits ? api.battleUnits() : null;
+      const team = bu && bu.units.length === board.length
+        ? buildTeam('player', bu.units, DATA, { ...ctx, ...bu.ctx })
+        : buildTeam('player', board.map(u => ({ ...u, pos: u.pos || [3, 3] })), DATA, ctx);
       return { c: team.combatants[idx] || team.combatants.find(x => x.key === unit.key), onBoard: true };
     }
     const team = buildTeam('player', [{ key: unit.key, star: unit.star || 1, items: unit.items || [], pos: [3, 3] }], DATA, ctx);
@@ -680,9 +684,10 @@ function itemSide(api, r) {
   return wrap;
 }
 
+const PICK_ORIGIN = (api, key) => { const t = api.DATA.units.byKey[key]?.traits || []; return t.includes('Producer') ? null : (t.find(k => api.DATA.traits.byKey[k]?.kind === 'origin') || null); };
 function spSide(api, r) {
   const I = SPECIAL_INFO[r.id];
-  const ic = el('span', { class: 'tt-us-itemicon tt-spicon tt-sp-' + (r.id === 'rm' ? 'rm' : 'fav') });
+  const ic = el('span', { class: 'tt-us-itemicon tt-spicon tt-sp-' + r.id });
   const wrap = el('div', { class: 'tt-us tt-us-item' }, el('div', { class: 'tt-us-grip', 'data-tt-grip': '', 'aria-hidden': 'true' }),
     el('div', { class: 'tt-us-itemhead' }, ic, el('div', {}, el('b', { class: 'tt-us-iname' }, I.zh), el('small', {}, I.sub))));
   wrap.append(el('p', { class: 'tt-us-desc' }, I.desc), el('p', { class: 'tt-us-hint tt-muted' }, I.hint));
@@ -709,11 +714,28 @@ function unitSide(api, r) {
   const price = enemy ? U.cost : sellValue(u, DATA);
   wrap.append(el('div', { class: 'tt-us-name' }, el('b', {}, U.zh), enemy ? badge('敵方', 'tt-enemy') : null,
     el('span', { class: 'tt-us-price', 'aria-label': (enemy ? '費用 ' : '賣價 ') + price + ' 金' }, coin(), el('span', { class: 'tt-num' }, price))));
-  // 心鋼最愛（手動選的）：棋子身上有標記就寫在這裡；是成員但沒有就提示怎麼選
-  if (!enemy && api.fav) {
-    const f = api.fav();
-    if (f.held.includes(u.uid)) wrap.append(el('p', { class: 'tt-us-fav' + (f.active.includes(u.uid) ? '' : ' tt-off') }, '♥ 最愛：', f.active.includes(u.uid) ? '技能增幅 +25%（要上場才有效）' : '羈絆掉到 3 階以下，暫時失效'));
-    else if (f.cap > 0 && (U.traits || []).includes(f.trait)) wrap.append(el('p', { class: 'tt-us-fav tt-off' }, f.free > 0 ? '把「心鋼最愛」拖到他身上，就選他強化技能' : '心鋼最愛都放完了，要換就從別位身上拖過來'));
+  // 指定道具（心鋼最愛、聚光燈、唱片合約、合作邀請、分身站位）：棋子身上有標記就寫在這裡；能放但還沒放就提示怎麼放
+  if (!enemy && api.picks) {
+    try {
+      const pk = api.picks();
+      const inb = !!(api.state.board || []).find(x => x && x.uid === u.uid);
+      const lines = [];
+      for (const [id, ico] of [['fav', '♥ 最愛：'], ['spot', '聚光燈：'], ['deal', '唱片合約：'], ['prod', '合作邀請：'], ['clone', '分身站位：']]) {
+        const f = pk[id]; if (!f || !f.cap) continue;
+        const held = f.held.includes(u.uid), on = f.active.includes(u.uid);
+        if (held) {
+          const txt = !on ? (inb ? '羈絆掉階了或數量不夠，暫時失效' : '在板凳上，要上場才有效')
+            : id === 'fav' ? '技能增幅 +25%' : id === 'spot' ? '開場和每 5 秒都拿一次傷害增幅' : id === 'deal' ? '傷害增幅 +5%，他每殺一個蒙多永久 +25 生命'
+              : id === 'prod' ? `${traitZh(api.DATA, f.trait)} 多算 1 人` : '分身開場站在他旁邊';
+          lines.push(el('p', { class: 'tt-us-fav' + (on ? '' : ' tt-off') }, ico, txt));
+        } else if (f.free > 0 && (id === 'fav' ? (U.traits || []).includes('Heartsteel') : id === 'prod' ? !!(PICK_ORIGIN(api, u.key)) : true)) {
+          const hint = { fav: '拖「心鋼最愛」到他身上，就選他強化技能', spot: '想捧他就把聚光燈拖到他身上', deal: '要簽他就把唱片合約拖到他身上',
+            prod: `拖「合作邀請」到他身上，${traitZh(api.DATA, PICK_ORIGIN(api, u.key) || '')} 就多算 1 人`, clone: '拖「分身站位」到他身上，分身就站他旁邊' }[id];
+          lines.push(el('p', { class: 'tt-us-fav tt-off' }, hint));
+        }
+      }
+      wrap.append(...lines);
+    } catch (_) { /* 說明少一行沒關係 */ }
   }
   // 血條、法力條
   const hp = c ? c.hp : (U.stats?.hp || 0);

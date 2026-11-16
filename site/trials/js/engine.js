@@ -119,7 +119,7 @@ export function simulate(setup) {
       dmgAmp: c.dmgAmp || 0, dr: c.dr || 0, omnivamp: c.omnivamp || 0, abilityAmp: c.abilityAmp || 0,
       abilityCrit: !!c.abilityCrit, abilityDr: c.abilityDr || 0,
       ability: c.ability || null, passives: c.passives || [], traits: c.traits || [], items: c.items || [],
-      favorite: !!c.favorite, bounce: c.bounce || null, missingHp: c.missingHp || null,
+      favorite: !!c.favorite, cloneAnchor: !!c.cloneAnchor, bounce: c.bounce || null, missingHp: c.missingHp || null,
       trueDmgPct: c.trueDmgPct || 0, startShield: c.startShield || 0, startShieldDur: c.startShieldDur || C.START_SHIELD_SEC,
       asBase: 0, summon: !!summon, ccCap: c.ccCap || 0, boss: !!c.boss, stackGains: {},
       ord: numOf(c.id) * 2 + (c.side === 'enemy' ? 1 : 0),
@@ -839,7 +839,8 @@ export function simulate(setup) {
       case 'clone': {
         const u = findUnit(side, p.unit || 'Rakan');
         if (!u) break;
-        const hex = freeNear(u.hex);
+        const anchor = units.find((x) => x.side === side && x.cloneAnchor && !x.summon && x.alive) || u;   // 玩家可以指定分身站在誰旁邊
+        const hex = freeNear(anchor.hex);
         const cl = spawnUnit(side, {
           zh: u.zh + '分身', key: u.key, hp: u.hpMax * (p.hpPct != null ? p.hpPct : C.CLONE.hpPct),
           ad: u.ad * (p.dmgMult != null ? p.dmgMult : C.CLONE.dmgMult), as: u.as, armor: u.armor, mr: u.mr, range: u.range, items: u.items.slice(),

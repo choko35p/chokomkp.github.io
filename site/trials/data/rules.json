@@ -4,7 +4,7 @@
   "enemy": "count 人數；maxCost 最高費用；star.base 預設星級；star.costStar{費用:星級} 覆寫該費用星級；star.lowestStar2＝費用最低的 n 隻 2★；star.halfStar2＝一半的棋子 2★（費用高的優先）；items＝全隊合計裝備件數（先給 prio 小的）；componentOnly 由 enemyItemComponentUntil 決定；hpMult／dmgMult＝難度旋鈕。",
   "boss": "頭目回合 enemy 為 null，改看 bosses[boss-1]。boss.bossHp／bossDmg 乘在頭目本體；minions 正常；extraPassives 掛在頭目本體（on/ops 格式同 SPEC 2.4 Passive）；expectTraits 只是檢查用。pos＝[r,c]，r 0 是敵方前排，c 0–6。",
   "augment": "enabled＝增幅總開關（false＝整個關閉：不跳三選一、不抽稀有度、已選的增幅不生效；改回 true 就恢復）；tierCombos 每列＝[第 1 次, 第 2 次, 第 3 次, 份數]（1 銀 2 金 3 彩；份數總和 109）；stages＝三次增幅對應的正式遊戲回合；每個增幅的 stages 欄位決定它會在哪幾次出現",
-  "economy": "v11：站主說裝備很難合、錢不夠，所以放寬經濟。start.gold 4→8；start.components 1→3（開局 3 件散件）；income.base 5→7；rounds 第 2、4、8、13、18、23、28 回合各多送 1 件散件（原本是單數回合送，現在更早更密）；bossReward.winComponents＝打贏頭目的獎勵之外再多給的散件數。　難度：增幅關掉後變難、錢和散件變多又變簡單，兩邊一起算後，第 10 回合起的一般回合敵人 hpMult／dmgMult 全部 ×1.10（第 1–9 回合不動，頭目不動）。"
+  "economy": "v11：站主說裝備很難合、錢不夠，所以放寬經濟。start.gold 4→8；start.components 1→3（開局 3 件散件）；income.base 5→7；rounds 第 2、4、8、13、18、23、28 回合各多送 1 件散件（原本是單數回合送，現在更早更密）；bossReward.winComponents＝打贏頭目的獎勵之外再多給的散件數。　難度：增幅關掉後變難、錢和散件變多又變簡單，兩邊一起算後，第 10 回合起的一般回合敵人 hpMult／dmgMult 全部 ×1.10（第 1–9 回合不動，頭目不動）。　v12：站主「多點自選的散件，不要一堆垃圾合不起來」→ componentChoice:true，開局、回合送、頭目送的散件都變「自選散件」（點開挑），教學頁關掉；變簡單了，第 10 回合起一般回合敵人再 ×1.06（basic bot 57.3%→46.3%）。"
  },
  "shopOdds": {
   "1": [
@@ -130,6 +130,7 @@
   ]
  },
  "benchSize": 9,
+ "componentChoice": true,
  "itemBenchSize": 10,
  "maxItems": 3,
  "sellPrice": {
@@ -470,8 +471,8 @@
      }
     },
     "items": 2,
-    "hpMult": 0.773,
-    "dmgMult": 0.773
+    "hpMult": 0.819,
+    "dmgMult": 0.819
    }
   },
   {
@@ -490,8 +491,8 @@
      }
     },
     "items": 3,
-    "hpMult": 0.749,
-    "dmgMult": 0.749
+    "hpMult": 0.794,
+    "dmgMult": 0.794
    }
   },
   {
@@ -507,8 +508,8 @@
      "base": 2
     },
     "items": 3,
-    "hpMult": 0.611,
-    "dmgMult": 0.611
+    "hpMult": 0.648,
+    "dmgMult": 0.648
    }
   },
   {
@@ -524,8 +525,8 @@
      "base": 2
     },
     "items": 3,
-    "hpMult": 0.574,
-    "dmgMult": 0.574
+    "hpMult": 0.608,
+    "dmgMult": 0.608
    }
   },
   {
@@ -551,8 +552,8 @@
      }
     },
     "items": 4,
-    "hpMult": 0.562,
-    "dmgMult": 0.562
+    "hpMult": 0.596,
+    "dmgMult": 0.596
    }
   },
   {
@@ -571,8 +572,8 @@
      }
     },
     "items": 5,
-    "hpMult": 0.586,
-    "dmgMult": 0.549
+    "hpMult": 0.621,
+    "dmgMult": 0.582
    }
   },
   {
@@ -588,8 +589,8 @@
      "base": 2
     },
     "items": 5,
-    "hpMult": 0.486,
-    "dmgMult": 0.462
+    "hpMult": 0.515,
+    "dmgMult": 0.49
    }
   },
   {
@@ -605,8 +606,8 @@
      "base": 2
     },
     "items": 6,
-    "hpMult": 0.562,
-    "dmgMult": 0.499
+    "hpMult": 0.596,
+    "dmgMult": 0.529
    }
   },
   {
@@ -630,8 +631,8 @@
      "base": 2
     },
     "items": 6,
-    "hpMult": 0.624,
-    "dmgMult": 0.537
+    "hpMult": 0.661,
+    "dmgMult": 0.569
    }
   },
   {
@@ -647,8 +648,8 @@
      "base": 2
     },
     "items": 6,
-    "hpMult": 0.574,
-    "dmgMult": 0.462
+    "hpMult": 0.608,
+    "dmgMult": 0.49
    }
   },
   {
@@ -664,8 +665,8 @@
      "base": 2
     },
     "items": 7,
-    "hpMult": 0.562,
-    "dmgMult": 0.449
+    "hpMult": 0.596,
+    "dmgMult": 0.476
    }
   },
   {
@@ -681,8 +682,8 @@
      "base": 2
     },
     "items": 8,
-    "hpMult": 0.574,
-    "dmgMult": 0.449
+    "hpMult": 0.608,
+    "dmgMult": 0.476
    }
   },
   {
@@ -709,8 +710,8 @@
      }
     },
     "items": 9,
-    "hpMult": 0.549,
-    "dmgMult": 0.436
+    "hpMult": 0.582,
+    "dmgMult": 0.462
    }
   },
   {
@@ -730,8 +731,8 @@
      }
     },
     "items": 9,
-    "hpMult": 0.6,
-    "dmgMult": 0.436
+    "hpMult": 0.636,
+    "dmgMult": 0.462
    }
   },
   {
@@ -751,8 +752,8 @@
      }
     },
     "items": 9,
-    "hpMult": 0.637,
-    "dmgMult": 0.436
+    "hpMult": 0.675,
+    "dmgMult": 0.462
    }
   },
   {
@@ -772,8 +773,8 @@
      }
     },
     "items": 9,
-    "hpMult": 0.699,
-    "dmgMult": 0.436
+    "hpMult": 0.741,
+    "dmgMult": 0.462
    }
   },
   {

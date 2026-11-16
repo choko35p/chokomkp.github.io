@@ -293,6 +293,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
   const ACT = {
     reroll: () => api.act('reroll'),
     buyXp: () => api.act('buyXp'),
+    levelUp: () => api.act('levelUp'),
     sell: () => { const u = target(); if (u) { ui.hoverUid = null; PN.sellUnit(api, u); } },
     deploy: doDeploy,
     fight: () => h.go && h.go(),

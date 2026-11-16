@@ -2,6 +2,7 @@
 // 買、刷新等動作一律走 api.act；卡片點擊與拖曳由 input.js／dnd.js 接（desc：shop:<slot>）。
 import { el, avatarEl, styleAvatar, zhOf, costOf, starsEl } from './board.js';
 import { traitIcon, traitZh } from './traitbar.js';
+import { levelUpCost } from '../game.js';
 
 const COST_NAMES = ['1費', '2費', '3費', '4費', '5費'];
 const SHAPES = ['●', '■', '▲', '◆', '⬟'];   // 形狀不同，不只靠顏色
@@ -76,7 +77,19 @@ export function renderHud(root, api) {
   const used = api.popUsed ? api.popUsed() : 0, max = api.popMax ? api.popMax() : s.level;
   const pop = el('div', 'tt-hud-pop' + (used >= max ? ' tt-full' : ''), { 'data-tt-tip': 'text:人口：場上棋子數／上限。升等會增加上限。', 'aria-label': `人口 ${used}/${max}` },
     el('img', 'tt-popic', { src: 'img/ui/population.webp', alt: '', 'aria-hidden': 'true', draggable: 'false' }), el('b', 'tt-num', {}, `${used}/${max}`));
-  root.replaceChildren(lvl, odds, gold, streak, pop);
+  // 站主 2026-11-16「加個一鍵升等的功能」：一次買到升下一級（錢不夠升一級就不買）
+  let lvup = null;
+  const lc = maxed ? null : levelUpCost(s, DATA);
+  if (lc) {
+    const poor = s.gold < lc.gold, key = hk(api, 'levelUp', '');
+    lvup = el('button', 'tt-hud-lvup' + (poor ? ' tt-poor' : ''), {
+      type: 'button', 'data-tt-noclear': '',
+      'data-tt-tip': 'text:' + `一鍵升到 ${lc.to} 級：連買 ${lc.buys} 次經驗，共 ${lc.gold} 金` + (poor ? `（還差 ${lc.gold - s.gold} 金）` : '') + (key && key !== '未設定' ? `。快捷鍵 ${key}` : '。快捷鍵可以在設定裡指定'),
+      'aria-label': `一鍵升到 ${lc.to} 級，${lc.gold} 金`,
+    }, el('span', 'tt-lvup-ar', { 'aria-hidden': 'true' }, '⏫'), el('b', '', {}, `升 ${lc.to} 級`), coin('tt-sm'), el('span', 'tt-num', {}, lc.gold));
+    lvup.addEventListener('click', () => api.act('levelUp'));
+  }
+  root.replaceChildren(...[lvl, lvup, odds, gold, streak, pop].filter(Boolean));
 }
 
 // ---------- 商店本體 ----------

@@ -3,7 +3,7 @@
 import { starsEl } from './stars.js';
 import { el, fmt, avatar, kindOf, traitZh, unitZh, isStars, ensureStyle, traitTags, boardUnits, playerTraits } from './traitbar.js';
 import { countTraits, buildTeam } from '../stats.js';
-import { sellValue } from '../shop.js';
+import { sellValue, CHOICE } from '../shop.js';
 import * as TB from './traitbar.js';
 import * as AU from '../audio.js';
 import { sfx } from '../audio.js';
@@ -667,8 +667,31 @@ function bar(cls, cur, max, text, label) {
   return b;
 }
 
+// 自選散件：列出全部散件，每件寫出「跟裝備欄裡的哪件能合成什麼」，點一件就換上（站主 2026-11-16）
+function choiceSide(api, r) {
+  const { DATA } = api;
+  const bench = api.state.itemBench || [];
+  const wrap = el('div', { class: 'tt-us tt-us-item tt-us-choice' }, el('div', { class: 'tt-us-grip', 'data-tt-grip': '', 'aria-hidden': 'true' }),
+    el('div', { class: 'tt-us-itemhead' }, el('span', { class: 'tt-us-itemicon tt-xchoice' }, el('span', { class: 'tt-xch-q' }, '?')), el('div', {}, el('b', { class: 'tt-us-iname' }, '自選散件'), el('small', {}, '挑一件你要的散件'))));
+  const grid = el('div', { class: 'tt-us-chgrid', role: 'group', 'aria-label': '挑散件' });
+  const comps = (DATA.items.components || []).map(x => (typeof x === 'string' ? x : x.key));
+  for (const k of comps) {
+    const zh = DATA.items.compByKey?.[k]?.zh || k;
+    const makes = [];
+    bench.forEach((o, j) => { if (j === r.idx || o === CHOICE) return; const res = DATA.items.recipes && DATA.items.recipes[[k, o].sort().join('+')]; if (res && !makes.includes(res)) makes.push(res); });
+    const ic = el('span', { class: 'tt-us-itemicon tt-us-mini' }); ic.style.backgroundImage = `url("../icons/items/${k}.webp")`;
+    const b = el('button', { type: 'button', class: 'tt-us-chbtn' + (makes.length ? ' tt-can' : ''), 'data-tt': 'choose-comp', 'data-key': k,
+      'aria-label': `挑${zh}` + (makes.length ? `，可以合成${makes.map(x => DATA.items.byKey[x]?.zh || x).join('、')}` : '') },
+      ic, el('span', { class: 'tt-us-chtxt' }, el('b', {}, zh), makes.length ? el('small', {}, '可合：' + makes.map(x => DATA.items.byKey[x]?.zh || x).join('、')) : null));
+    b.addEventListener('click', (e) => { e.stopPropagation(); if (api.ui) api.ui.sel = null; api.act('chooseComponent', r.idx, k); });
+    grid.append(b);
+  }
+  wrap.append(grid, el('p', { class: 'tt-us-hint tt-muted' }, '亮起來的那幾件，跟你裝備欄裡現有的散件可以直接合成。'));
+  return wrap;
+}
 function itemSide(api, r) {
   const { DATA } = api; const k = r.key;
+  if (k === CHOICE) return choiceSide(api, r);
   const I = DATA.items?.byKey?.[k] || DATA.items?.compByKey?.[k];
   const isComp = !!DATA.items?.compByKey?.[k];
   const ic = el('span', { class: 'tt-us-itemicon' }); ic.style.backgroundImage = `url("../icons/items/${k}.webp")`;
@@ -922,6 +945,7 @@ const FIXED_KEY = /^(Escape|Tab|Enter|NumpadEnter|F\d{1,2}|Control(Left|Right)|A
 const HK_ACTIONS = [
   { id: 'reroll', zh: '重抽', phase: 'plan', official: true, def: 'KeyD' },
   { id: 'buyXp', zh: '購買經驗值', phase: 'plan', official: true, def: 'KeyF' },
+  { id: 'levelUp', zh: '一鍵升級（買到升下一級）', phase: 'plan', official: false, def: null },
   { id: 'sell', zh: '賣出（滑鼠指著棋子按）', phase: 'plan', official: true, def: 'KeyE' },
   { id: 'deploy', zh: '上場／回板凳（同上）', phase: 'plan', official: true, def: 'KeyW' },
   { id: 'fight', zh: '戰鬥', phase: 'plan', official: false, def: 'Space' },
@@ -1073,7 +1097,7 @@ export function showHelp(opts = {}) {
         el('li', {}, '按開戰的時候，如果場上人口還沒放滿，會自動從板凳最左邊的棋子開始補上場，補到滿或板凳沒人為止（升級當下不會動你的棋子）。位置：坦克、鬥士放前排（從最前面一排、由中間往兩邊找空格），施法者、射手、刺客這些放後排（從最後面一排找起），查不到定位的放最前排最左邊的空格；放不下的 2 人口棋子會跳過，換下一隻。'),
         el('li', {}, (augOnOf(api) ? '選獎勵、增幅、頭目獎勵' : '選獎勵、頭目獎勵') + '拿到棋子，但板凳滿了，不會直接賣掉，會先放到場上，人口可以超過上限，超出的那隻會標「超出人口」。佈陣時只要板凳空出一格（賣掉、合星、拖下場都算），超出的棋子就自動跳回板凳，最後放上去的先跳。'),
         el('li', {}, '按「戰鬥」的時候場上還是超出人口：先試著移回板凳，板凳放不下才自動賣掉（照賣出價給錢，畫面會告訴你賣了誰）。商店買棋子還是要有板凳空格，這點沒變。三張一樣的合星，場上加板凳一起算。'),
-        el('li', {}, '滑鼠停在左邊的羈絆上，場上、板凳屬於它的棋子會亮起金框（其他的變暗），商店裡有這個羈絆的卡片也會亮、羈絆圖示發光；手機是長按羈絆。滑鼠停在羈絆面板、圖鑑、解鎖清單、隊伍編輯器裡的棋子頭像上，會直接跳出他的羈絆跟技能（手機長按），不用再點一下。'))),
+        el('li', {}, '滑鼠停在左邊的羈絆上，場上、板凳屬於它的棋子會亮起金框（其他的變暗），商店裡有這個羈絆的卡片也會亮、羈絆圖示發光。點羈絆的文字會固定亮著（手機也一樣，再點一次或點空白處取消）；點左邊的圖示才是羈絆說明。滑鼠停在羈絆面板、圖鑑、解鎖清單、隊伍編輯器裡的棋子頭像上，會直接跳出他的羈絆跟技能（手機長按），不用再點一下。'))),
     sec('ILLBEATS 混音器',
       el('p', { class: 'tt-desc' }, 'ILLBEATS 啟動後，畫面右邊（手機是敵方列右邊的「混音器」頁籤）會出現混音器，跟官方一樣有四條推桿：攻擊、法強、生命、擊殺金幣機率。'),
       el('ul', { class: 'tt-ul-plain' },
@@ -1092,7 +1116,7 @@ export function showHelp(opts = {}) {
     sec('音效',
       el('p', { class: 'tt-desc' }, '頁首的「音效」鍵點開可以調音量、靜音，快捷鍵面板裡的滑桿是同一個。')),
     secD('快捷鍵（桌機）', el('div', { class: 'tt-keys' },
-      ...[[L('reroll'), '重抽'], [L('buyXp'), '購買經驗值'], [L('sell'), '滑鼠指著棋子按，賣掉那一隻'], [L('deploy'), '滑鼠指著棋子按，上場／回板凳'],
+      ...[[L('reroll'), '重抽'], [L('buyXp'), '購買經驗值'], [L('levelUp'), '一鍵升級（等級旁邊的「升 N 級」鍵；預設沒綁，可以自己設）'], [L('sell'), '滑鼠指著棋子按，賣掉那一隻'], [L('deploy'), '滑鼠指著棋子按，上場／回板凳'],
         [[1, 2, 3, 4, 5].map(n => L('buy' + n)).join(' '), '買商店第 1–5 格'],
         [L('fight') + '（戰鬥中：' + L('speed') + '）', '開戰；戰鬥中切換速度'], [L('planner'), '開關隊伍編輯器'], ['Esc', '關面板、取消選取']]
         .flatMap(([k, d]) => [el('kbd', {}, k), el('span', {}, d)])),

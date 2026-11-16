@@ -177,7 +177,12 @@ function trimToLimit(state, DATA, events) {
 
 // ---------- 抽選工具 ----------
 function rewardRng(state) { return makeRng(hashSeed(state.seed, 'reward', state.round, state.rewardN++)); }
-function giveComponent(state, DATA, events) {
+function giveComponent(state, DATA, events, choice = false) {
+  if (choice && R(DATA).componentChoice) {   // 自選散件（rules.componentChoice；教學頁關掉）
+    const g = S.addItemBench(state, S.CHOICE, DATA);
+    events.push({ type: 'item', key: S.CHOICE, ...(g ? { overflowGold: g } : {}) });
+    return S.CHOICE;
+  }
   const { compKeys } = S.itemIndex(DATA);
   const k = rewardRng(state).pick(compKeys);
   const g = S.addItemBench(state, k, DATA);
@@ -344,19 +349,19 @@ function beginRound(state, DATA, events, retry = false) {
     const pre = rd.pre || {};
     if (pre.startGift) {
       giveUnitByCost(state, DATA, st.freeUnitCost, events);
-      for (let i = 0; i < st.components; i++) giveComponent(state, DATA, events);
+      for (let i = 0; i < st.components; i++) giveComponent(state, DATA, events, true);
     }
-    for (let i = 0; i < (pre.components || 0); i++) giveComponent(state, DATA, events);
+    for (let i = 0; i < (pre.components || 0); i++) giveComponent(state, DATA, events, true);
     const queue = [];
     if (pre.bossReward) {
       const prev = state.history.length ? state.history[state.history.length - 1] : null;
       if (prev && prev.round === state.round - 1 && prev.win) {
         const seven = ((R(DATA).bossReward || {}).sevenCostBosses || []).includes(pre.bossReward);
         queue.push(makeRewardChoice(state, DATA, seven));
-        for (let i = 0; i < ((R(DATA).bossReward || {}).winComponents || 0); i++) giveComponent(state, DATA, events);   // 贏頭目：獎勵之外再多給散件
+        for (let i = 0; i < ((R(DATA).bossReward || {}).winComponents || 0); i++) giveComponent(state, DATA, events, true);   // 贏頭目：獎勵之外再多給散件
       } else {
         const lg = (R(DATA).bossReward || {}).loseGain || { components: 1 };
-        for (let i = 0; i < (lg.components || 0); i++) giveComponent(state, DATA, events);
+        for (let i = 0; i < (lg.components || 0); i++) giveComponent(state, DATA, events, true);
       }
     }
     if (pre.augment && augmentsOn(DATA)) queue.push(makeAugmentChoice(state, DATA, pre.augment));
@@ -504,6 +509,31 @@ export function actBuyXp(state, DATA) {
   fitMixer(state, DATA);
   return ok({ events });
 }
+// 站主 2026-11-16「加個一鍵升等的功能」：一次把經驗買到升下一級；錢不夠升一級就整個不買
+export function levelUpCost(state, DATA) {
+  const r = R(DATA);
+  if (state.level >= r.maxLevel) return null;
+  const cost = Math.max(0, r.xpCost + ruleSum(state, DATA, 'xpCostDelta'));
+  const need = Math.max(0, r.xpToNext[String(state.level)] - state.xp);
+  const buys = Math.max(1, Math.ceil(need / (r.xpPerBuy || 4)));
+  // 買完實際會到幾級（經驗溢出可能連升兩級，例如 1 級買一次就到 3 級）
+  let to = state.level, xp = state.xp + buys * (r.xpPerBuy || 4);
+  while (to < r.maxLevel && xp >= r.xpToNext[String(to)]) { xp -= r.xpToNext[String(to)]; to++; }
+  return { buys, gold: buys * cost, to };
+}
+export function actLevelUp(state, DATA) {
+  const g = needPlan(state); if (g) return g;
+  const c = levelUpCost(state, DATA);
+  if (!c) return no('已經滿級了');
+  if (state.gold < c.gold) return no(`升到 ${c.to} 級要 ${c.gold} 金，還差 ${c.gold - state.gold} 金`);
+  const events = [];
+  for (let i = 0; i < c.buys; i++) {
+    const res = actBuyXp(state, DATA);
+    if (!res.ok) break;
+    events.push(...(res.events || []));
+  }
+  return ok({ events });
+}
 // 站主 2026-11-16「自動補要開始戰鬥，人數不夠再補」：按開戰時場上人口還沒放滿才自動補位（見 autoFillBoard）
 function fillAtBattle(state, DATA, events) {
   if (state.noAutoFill) return;   // noAutoFill：教學頁的關卡狀態用，讓學員自己拖
@@ -561,16 +591,41 @@ export function actCombineItems(state, from, to, DATA) {
   if (from === to) return no('要拖到另一件裝備上');
   const a = state.itemBench[from], b = state.itemBench[to];
   if (!a || !b) return no('沒有這件裝備');
+  if (S.isChoice(a) || S.isChoice(b)) return no('自選散件要先點開挑一件');
   const res = S.combineResult(DATA, a, b);
   if (!res) return no('這兩件合不起來');
   state.itemBench[to] = res;
   state.itemBench.splice(from, 1);
   return ok({ result: res, events: [{ type: 'itemMerge', result: res, parts: [a, b] }] });
 }
+// 自選散件：把裝備欄第 idx 格的自選散件換成指定的散件
+export function actChooseComponent(state, idx, key, DATA) {
+  if (state.phase === 'over') return no('遊戲已結束');
+  if (!S.isChoice(state.itemBench[idx])) return no('這格不是自選散件');
+  if (!S.itemIndex(DATA).compSet.has(key)) return no('只能挑散件');
+  state.itemBench[idx] = key;
+  return ok({ events: [{ type: 'chooseComponent', idx, key }] });
+}
+// 自動挑（機器人、或之後想加「全部自動」用）：先挑能跟裝備欄落單散件合成的，沒有就照固定順序輪流給
+export function autoChooseComponents(state, DATA) {
+  const { compKeys } = S.itemIndex(DATA);
+  const basic = compKeys.filter(k => !/Spatula|FryingPan/i.test(k));
+  let n = 0;
+  for (let i = 0; i < state.itemBench.length; i++) {
+    if (!S.isChoice(state.itemBench[i])) continue;
+    const lone = state.itemBench.find((k, j) => j !== i && !S.isChoice(k) && S.itemIndex(DATA).compSet.has(k));
+    let pick = null;
+    if (lone) pick = basic.find(k => S.combineResult(DATA, lone, k));
+    if (!pick) pick = basic[(state.round + i + n) % basic.length];
+    state.itemBench[i] = pick; n++;
+  }
+  return n;
+}
 export function actEquip(state, itemIdx, uid, DATA) {
   const g = needPlan(state); if (g) return g;
   const item = state.itemBench[itemIdx];
   if (!item) return no('沒有這件裝備');
+  if (S.isChoice(item)) return no('自選散件要先點開挑一件');
   const f = S.findUnit(state, uid);
   if (!f) return no('找不到這隻棋子');
   const r = S.giveItem(f.unit, item, DATA);
@@ -981,7 +1036,7 @@ export function actPickReward(state, idx, DATA, maybeData) {
   const events = [];
   if (p.type === 'reward') {
     if (o.kind === 'gold') { state.gold += o.gold; events.push({ type: 'gold', gold: o.gold }); }
-    else if (o.kind === 'unit') { if (state.pool[o.key] > 0) state.pool[o.key] -= 1; giveUnitKey(state, DATA, o.key, events); giveComponent(state, DATA, events); }
+    else if (o.kind === 'unit') { if (state.pool[o.key] > 0) state.pool[o.key] -= 1; giveUnitKey(state, DATA, o.key, events); giveComponent(state, DATA, events, true); }
     else { // completed／seven：再選一次（介面給了 sub 就直接拿）
       if (sub != null && o.choices[sub]) {
         if (o.kind === 'completed') giveCompleted(state, DATA, events, o.choices[sub]);

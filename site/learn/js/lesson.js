@@ -79,7 +79,7 @@ export function lessonData(BASE, lesson) {
     }
     rounds.push({ n: i, type: 'normal', enemy });
   }
-  return { ...BASE, rules: { ...BASE.rules, rounds } };
+  return { ...BASE, rules: { ...BASE.rules, rounds, componentChoice: false } };   // 教學關卡的散件照關卡設定，不出自選
 }
 
 // ---------- 開局 ----------

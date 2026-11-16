@@ -166,6 +166,9 @@ export function combineResult(DATA, a, b) {
   return pair[[a, b].sort().join('|')] || null;
 }
 // 放進裝備欄；滿了變 1 金。回傳轉成的金幣。
+// 站主 2026-11-16「多點自選的散件，不要一堆垃圾合不起來」：自選散件放在裝備欄，點開挑一件你要的散件
+export const CHOICE = 'ChoiceComponent';
+export const isChoice = (k) => k === CHOICE;
 export function addItemBench(state, item, DATA) {
   if (state.itemBench.length < DATA.rules.itemBenchSize) { state.itemBench.push(item); return 0; }
   state.gold += 1;

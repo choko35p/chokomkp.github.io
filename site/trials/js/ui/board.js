@@ -5,6 +5,7 @@
 import { traitIcon } from './traitbar.js';
 import { starsEl } from './stars.js';
 import { neighbors } from '../hex.js';
+import { CHOICE } from '../shop.js';
 export { starsEl };
 export const COLS = 7;
 const ROW_H = 0.866;
@@ -243,6 +244,12 @@ export function renderItems(el_, api) {
   for (let i = 0; i < n; i++) {
     const k = list[i];
     if (!k) { nodes.push(el('div', 'tt-xslot', { 'aria-hidden': 'true' })); continue; }
+    if (k === CHOICE) {   // 自選散件：點開挑一件（站主 2026-11-16）
+      const c = el('div', 'tt-xslot tt-xitem tt-xchoice', { role: 'button', tabindex: '0', 'data-tt-tap': `item:${i}`, 'data-tt-drop': `item:${i}`, 'data-tt-tip': 'text:自選散件：點一下，挑一件你要的散件', 'aria-label': '自選散件，點一下挑散件' },
+        el('span', 'tt-xch-q', { 'aria-hidden': 'true' }, '?'), el('span', 'tt-xch-t', {}, '自選'));
+      if (sel && sel.kind === 'item' && sel.idx === i) c.classList.add('tt-sel');
+      nodes.push(c); continue;
+    }
     const b = el('div', 'tt-xslot tt-xitem', { role: 'button', tabindex: '0', 'data-tt-tap': `item:${i}`, 'data-tt-drag': `item:${i}`, 'data-tt-drop': `item:${i}`, 'data-tt-tip': 'item:' + k, 'aria-label': '裝備：' + itemZh(DATA, k) });
     b.style.backgroundImage = `url("../icons/items/${k}.webp")`;
     if (sel && sel.kind === 'item' && sel.idx === i) b.classList.add('tt-sel');

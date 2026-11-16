@@ -145,10 +145,15 @@ export function traitCard(t, api, { side = 'player', list } = {}) {
   const btn = el('button', {
     type: 'button', class: 'tt-trow' + (t.active ? ' tt-active' : ' tt-inactive'), 'data-trait': t.key, 'data-kind': kindOf(DATA, t.key),
     'data-tt-tip': 'trait:' + t.key, 'data-tt-noclear': '',
-    'aria-label': `${name}，${t.count}${isStars(DATA, t.key) ? ' 星' : ' 隻'}，${statusText(t, DATA)}`,
+    'aria-label': `${name}，${t.count}${isStars(DATA, t.key) ? ' 星' : ' 隻'}，${statusText(t, DATA)}。點圖示看說明，點文字標出相關棋子`,
   }, traitHex(DATA, t, 18), el('span', { class: 'tt-tcnt tt-num' }, t.count),
     el('span', { class: 'tt-tinfo' }, el('b', {}, name), bp));
-  btn.addEventListener('click', () => showTraitPanel(t.key, api, { side, traits: list }));
+  // 站主 2026-11-16：點左邊的圖示＝詳細說明；點文字＝像滑鼠移上去一樣把相關棋子標出來（再點一次或點空白取消）
+  btn.addEventListener('click', (e) => {
+    if (side !== 'player' || e.detail === 0 || e.target.closest?.('.tt-hex')) { showTraitPanel(t.key, api, { side, traits: list }); return; }
+    if (Date.now() - lpAt < 800) return;   // 剛長按亮過，放開時不要再切換
+    pinTrait(t.key);
+  });
   return btn;
 }
 
@@ -163,6 +168,10 @@ export function renderTraits(root, traitsPlayer, traitsEnemy, api) {
   const sx = prev?.scrollLeft || 0, sy = prev?.scrollTop || root.scrollTop || 0;
   root.replaceChildren(ul);
   ul.scrollLeft = sx; root.scrollTop = sy;
+  if (pinnedTrait) {
+    if (['battle', 'over'].includes(api.state?.phase) || !list.some(t => t.key === pinnedTrait)) clearPinnedTrait();
+    else ul.querySelectorAll(`.tt-trow[data-trait="${pinnedTrait}"]`).forEach(n => n.classList.add('tt-pin', 'tt-hl'));
+  }
   const eroot = document.querySelector('[data-tt-enemy]');
   if (eroot && traitsEnemy) renderEnemyTraits(eroot, traitsEnemy, api);
 }
@@ -210,13 +219,25 @@ function paintTrait(key) {
   document.querySelectorAll('.tt-trow[data-trait],.tt-tag[data-trait],.tt-etrait[data-trait],.tt-pl-trait[data-trait]').forEach(n => n.classList.toggle('tt-hl', !!key && n.dataset.trait === key));
   document.body.classList.toggle('tt-hlmode', !!key);
 }
+// 點文字固定亮起的羈絆（pinnedTrait）：滑鼠移開不會熄，再點一次、點別的羈絆文字、點空白、Esc、開戰才會換掉或熄掉
+let pinnedTrait = null, lpAt = 0;
+export function pinTrait(key) {
+  pinnedTrait = pinnedTrait === key ? null : (key || null);
+  activeTrait = pinnedTrait;
+  paintTrait(activeTrait);
+  document.querySelectorAll('.tt-trow[data-trait]').forEach(n => n.classList.toggle('tt-pin', !!pinnedTrait && n.dataset.trait === pinnedTrait));
+  return pinnedTrait;
+}
+export function clearPinnedTrait() { if (pinnedTrait) pinTrait(pinnedTrait); }
+export const pinnedTraitKey = () => pinnedTrait;
 export function highlightTrait(key, on) {
-  activeTrait = on ? key : null;
+  activeTrait = on ? key : pinnedTrait;
   paintTrait(activeTrait);
 }
 export function highlightUnit(unitKey, on) {
   const ts = new Set(curApi?.DATA.units.byKey[unitKey]?.traits || []);
   document.querySelectorAll('.tt-trow[data-trait]').forEach(n => n.classList.toggle('tt-hl', !!on && ts.has(n.dataset.trait)));
+  if (!on && activeTrait) paintTrait(activeTrait);
 }
 let bound = false, curApi = null;
 function bindHover(api) {
@@ -242,13 +263,20 @@ function bindHover(api) {
     const t = traitEl(e), u = unitEl(e); if (!t && !u) return;
     clearTimeout(lp);
     lp = setTimeout(() => {
-      if (t) highlightTrait(t.dataset.trait, true); else highlightUnit(u.dataset.ttUnit, true);
-      setTimeout(() => { activeTrait = null; paintTrait(null); document.querySelectorAll('.tt-hl').forEach(n => n.classList.remove('tt-hl')); }, 1500);
+      if (t) { highlightTrait(t.dataset.trait, true); lpAt = Date.now(); } else highlightUnit(u.dataset.ttUnit, true);
+      setTimeout(() => { activeTrait = pinnedTrait; document.querySelectorAll('.tt-hl').forEach(n => n.classList.remove('tt-hl')); paintTrait(activeTrait); }, 1500);
     }, 450);
   });
   // 重畫（買卡、刷新、換位）後把亮起狀態補回去
   let rq = 0;
   if (typeof MutationObserver === 'function') new MutationObserver(() => { if (!activeTrait || rq) return; rq = requestAnimationFrame(() => { rq = 0; paintTrait(activeTrait); }); }).observe(document.body, { childList: true, subtree: true });
+  // 點空白處（不是按鈕、棋子、商店卡、羈絆）或按 Esc：取消固定亮起
+  document.addEventListener('click', (e) => {
+    if (!pinnedTrait) return;
+    if (e.target.closest?.('button, a, input, select, label, [data-tt-unit], [data-tt-uid], .tt-card, .tt-trow, .tt-overlay, [role=dialog]')) return;
+    clearPinnedTrait();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && pinnedTrait) clearPinnedTrait(); });
   const cancel = () => clearTimeout(lp);
   document.addEventListener('pointerup', cancel); document.addEventListener('pointercancel', cancel);
 }

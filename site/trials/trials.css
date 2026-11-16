@@ -168,9 +168,7 @@ html, body { background: var(--g-bg); }
 .tt-stars-ic svg { width: var(--ss, 1em); height: var(--ss, 1em); flex: 0 0 auto; fill: var(--sc); stroke: #1b1308; stroke-width: 2.4; stroke-linejoin: round; paint-order: stroke fill; filter: drop-shadow(0 1px 0 rgba(0,0,0,.55)); }
 .tt-stars-ic svg + svg { margin-left: calc(var(--ss, 1em) * -.08); }
 .tt-st1 { --sc: #d4894a; } .tt-st2 { --sc: #e3ecf6; } .tt-st3 { --sc: #ffd93b; }
-/* 頭像外框跟星級：2 星銀框、3 星金框（1 星維持費用色） */
-.tt-unit.tt-star2 .tt-xav { border-color: #e3ecf6; box-shadow: 0 0 0 1px #6c8097, 0 0 7px rgba(214,230,248,.7); }
-.tt-unit.tt-star3 .tt-xav { border-color: #ffd93b; box-shadow: 0 0 0 1px #8a5c05, 0 0 9px rgba(255,206,50,.9); }
+/* 站主 2026-11-16「三費二星的圈變白色了應該要是藍色的」：頭像外框一律是費用色，星級只看頭上的星星 */
 .tt-hpb.tt-e .tt-hpf { background: var(--g-bad); }
 .tt-unit .tt-it { position: absolute; left: 50%; bottom: -4%; transform: translateX(-50%); display: flex; gap: 1px; z-index: 2; }
 .tt-unit .tt-it i { width: max(9px, calc(var(--tk) * .27)); height: max(9px, calc(var(--tk) * .27)); border-radius: 2px; background: #000 center / cover no-repeat; border: 1px solid #000; display: block; }
@@ -618,3 +616,28 @@ button.tt-tag:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .tt-combo-pop b { display: block; font-size: 14px; color: #ffd93b; }
 .tt-combo-pop small { display: block; font-size: 12px; line-height: 1.35; color: #d8d2c4; }
 .tt-combo-pop em { display: block; font-style: normal; font-size: 11px; color: #9fb4c8; margin-top: 2px; }
+
+/* 站主 2026-11-16：一鍵升級鍵（等級旁邊） */
+.tt-hud-lvup { all: unset; box-sizing: border-box; cursor: pointer; flex: 0 0 auto; display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; background: linear-gradient(#1b3a55, #10243a); border: 1px solid var(--g-teal, #3fc7c0); color: var(--g-gold-hi); font-size: 13px; white-space: nowrap; }
+.tt-hud-lvup b { font-weight: 700; } .tt-hud-lvup .tt-num { color: var(--g-gold-hi); }
+.tt-hud-lvup:hover { filter: brightness(1.25); } .tt-hud-lvup:focus-visible { outline: 2px solid var(--g-gold); }
+.tt-hud-lvup.tt-poor { filter: brightness(.55) saturate(.5); }
+.tt-lvup-ar { font-size: .9em; }
+@media (min-width: 1024px) and (orientation: landscape) {
+  .tt-hud-lvup { position: absolute; left: 64.6%; top: 0; bottom: 0; width: 13%; justify-content: center; gap: .3cqw; padding: 0 .4cqw; font-size: clamp(12px, .95cqw, 18px); border-width: 1px 1px 0 1px; }
+}
+/* 站主 2026-11-16：點羈絆文字固定亮起 */
+.tt-trow.tt-pin { box-shadow: inset 3px 0 0 #ffd93b; } .tt-trow.tt-pin .tt-tinfo b { color: #ffd93b; }
+.tt-trow .tt-hex { cursor: help; }
+@media (max-width: 520px) { .tt-lvup-ar { display: none; } .tt-hud-lvup { padding: 2px 5px; gap: 2px; font-size: 12px; } }
+/* 站主 2026-11-16：自選散件 */
+.tt-xchoice { display: grid; place-items: center; background: radial-gradient(circle at 50% 40%, #2f5f86, #13263a 70%); border: 1px solid var(--g-gold, #c8aa6e) !important; color: #ffe9a8; cursor: pointer; position: relative; overflow: hidden; }
+.tt-xchoice .tt-xch-q { font-weight: 800; font-size: 1.25em; line-height: 1; text-shadow: 0 0 6px rgba(255,214,100,.8); }
+.tt-xchoice .tt-xch-t { position: absolute; left: 0; right: 0; bottom: 1px; text-align: center; font-size: 10px; font-weight: 700; background: rgba(0,0,0,.55); line-height: 1.3; }
+.tt-xchoice.tt-sel { box-shadow: 0 0 0 2px var(--g-gold, #c8aa6e), 0 0 10px rgba(255,214,100,.7); }
+.tt-us-chgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; margin: 8px 0; }
+.tt-us-chbtn { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 5px 6px; border: 1px solid var(--g-line, #2a3a4c); background: #0f1b29; border-radius: 3px; min-height: 40px; }
+.tt-us-chbtn:hover, .tt-us-chbtn:focus-visible { border-color: var(--g-gold, #c8aa6e); filter: brightness(1.15); }
+.tt-us-chbtn.tt-can { border-color: #ffd93b; box-shadow: inset 0 0 0 1px rgba(255,217,59,.35); }
+.tt-us-chtxt { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; } .tt-us-chtxt b { font-size: 13px; } .tt-us-chtxt small { font-size: 11px; color: #ffd93b; white-space: normal; }
+.tt-us-itemicon.tt-xchoice { display: grid; place-items: center; }

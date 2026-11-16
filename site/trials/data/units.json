@@ -14,7 +14,7 @@
   ]
  },
  "sprite": {
-  "src": "../icons/s19/champions.webp",
+  "src": "../icons/s19/champions.webp?v=1116",
   "cols": 10,
   "rows": 10,
   "cell": 64,

@@ -8,6 +8,7 @@ import { renderBoard, renderBench, renderItems, renderSpecials, el, zhOf, costOf
 import { renderShop, renderHud } from './shopbar.js';
 import { sfx, setMuted, isMuted, setVolume, getVolume, onAudioChange } from '../audio.js';
 import { mountPlanner } from './planner.js';
+import { mountMixer } from './mixer.js';
 
 let traitbar = null, panels = null, battle = null, inputMod = null;
 const FRONT_COLS = [3, 2, 4, 1, 5, 0, 6];
@@ -75,6 +76,7 @@ export async function mount(root, api) {
         <div class="tt-augs" aria-label="增幅"></div>
         <div class="tt-xitems" aria-label="裝備欄"></div>
         <div class="tt-xspecial" aria-label="特殊道具" hidden></div>
+        <aside class="tt-mix" aria-label="ILLBEATS 混音器" hidden></aside>
         <div class="tt-traits" data-tt-mount="traits"></div>
         <button class="tt-codexbtn" type="button" data-act="codex" data-tt-noclear>圖鑑</button>
         <div class="tt-board" aria-label="棋盤"></div>
@@ -98,8 +100,9 @@ export async function mount(root, api) {
     items: $(app, '.tt-xitems'), special: $(app, '.tt-xspecial'), shop: $(app, '.tt-xshop'), hud: $(app, '.tt-hud'), roundbar: $(app, '.tt-roundbar'), augs: $(app, '.tt-augs'),
     traits: $(app, '[data-tt-mount=traits]'), unitpanel: $(app, '[data-tt-mount=unitpanel]'), toast: $(app, '.tt-toast'),
     speed: $(app, '.tt-speed'), rank: $(app, '.tt-rank'), mute: $(app, '[data-act=mute]'), go: $(app, '.tt-go'),
-    unlockBtn: $(app, '.tt-unlockbtn'), lastBtn: $(app, '.tt-lastbtn'),
+    unlockBtn: $(app, '.tt-unlockbtn'), lastBtn: $(app, '.tt-lastbtn'), mix: $(app, '.tt-mix'),
   };
+  const mixer = mountMixer(R.mix, api);
   // 站台列的「戰鬥」鍵：戰鬥階段整個收起；快捷鍵提示由 renderShop 填
 
   // 手機抽屜最高不能蓋到板凳（SPEC：抽屜不蓋棋盤與板凳）
@@ -108,6 +111,8 @@ export async function mount(root, api) {
       const b = R.bench.getBoundingClientRect();
       const room = window.innerHeight - b.bottom - 4;
       R.unitpanel.style.setProperty('--tt-drawer-max', Math.max(150, room) + 'px');
+      const bb = R.board.getBoundingClientRect();   // 混音器抽屜可以蓋住板凳，但不蓋棋盤
+      R.mix.style.setProperty('--tt-drawer-max', Math.max(200, window.innerHeight - bb.bottom - 4) + 'px');
     } catch (_) { /* 略過 */ }
   };
   window.addEventListener('resize', fitDrawer);
@@ -251,6 +256,7 @@ export async function mount(root, api) {
     validateSel();
     renderRoundbar(); renderAugs(); renderUnlockBtn();
     renderHud(R.hud, api);
+    mixer.update();   // 戰鬥中也要更新（鎖住狀態）
     if (ui.mode === 'battle') return;
     const s = api.state;
     renderEnemyBar(curEnemy);
@@ -275,7 +281,7 @@ export async function mount(root, api) {
     ui.bossShown = k;
     if (panels && panels.showBossIntro) setTimeout(() => { if (ui.mode === 'plan') panels.showBossIntro(api, curEnemy.boss, () => {}); }, 0);
   }
-  api.on('restart', () => { ui.lastResult = null; R.lastBtn.hidden = true; panels?.hideResultBanner?.(); });
+  api.on('restart', () => { ui.mixSeen = false; ui.mixOpen = false; ui.lastResult = null; R.lastBtn.hidden = true; panels?.hideResultBanner?.(); });
   api.on('change', render);
   if (api.hotkeys && api.hotkeys.onChange) api.hotkeys.onChange(() => render());
 
@@ -465,6 +471,7 @@ export async function mount(root, api) {
     syncDrag();
     R.rank.replaceChildren();
     renderSpeed(); renderHud(R.hud, api); renderRoundbar();
+    mixer.update();   // 戰鬥中鎖住推桿
     abortCtl = new AbortController();
     const onEvent = trackRank(r.result);
     const opts = {

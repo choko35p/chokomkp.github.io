@@ -1,0 +1,106 @@
+/* ILLBEATS 混音器面板（官方風格）。桌機：舞台右側、可收成小頁籤；手機：頁籤在敵方列右邊、展開是底部抽屜。class 一律 tt-mix 開頭。 */
+.tt-shell .tt-mix[hidden] { display: none !important; }
+.tt-mix { order: 4; grid-column: 2; align-self: center; justify-self: end; }
+.tt-stage:has(.tt-mix:not([hidden])) .tt-enemybar { grid-column: 1; }
+
+/* 頁籤（收起時只剩這個；手機展開後也用它收合） */
+.tt-mixtab { display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 10px; border: 2px solid #f28a1c; border-radius: 7px; background: linear-gradient(#2b1a0c, #130b06); color: #ffd9a0; cursor: pointer; font-size: 14px; font-weight: 700; white-space: nowrap; box-shadow: 0 0 0 1px #3a2412, inset 0 0 0 1px rgba(255, 190, 110, .25); }
+.tt-mixtab:hover { background: linear-gradient(#3a2412, #1a0f08); border-color: #ffa840; }
+.tt-mixtab-ic { display: inline-flex; width: 16px; height: 16px; color: #ff9f1c; } .tt-mixtab-ic svg { width: 100%; height: 100%; }
+.tt-mixtab .tt-num { font-size: 18px; color: #fff; letter-spacing: .02em; }
+.tt-mixtab-u { font-size: 12px; color: #d8a868; margin-left: -2px; }
+.tt-mixtab.tt-mixempty .tt-num { color: #ffb347; animation: tt-mixpulse 1.6s ease-in-out infinite; }
+@keyframes tt-mixpulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+.tt-mix[data-open="1"] .tt-mixtab { background: linear-gradient(#f28a1c, #c9620e); color: #1a0d04; }
+.tt-mix[data-open="1"] .tt-mixtab .tt-num, .tt-mix[data-open="1"] .tt-mixtab-ic { color: #1a0d04; }
+
+/* 面板本體 */
+.tt-mixbody { display: none; }
+.tt-mix[data-open="1"] .tt-mixbody { display: block; --mx-h: 124px; position: fixed; left: 0; right: 0; bottom: 0; z-index: 62; max-height: min(72dvh, var(--tt-drawer-max, 72dvh)); overflow: auto; }
+.tt-mixbody { box-sizing: border-box; padding: 8px 10px 10px; color: #f4e6d0; background: #0d0b0a; border: 4px solid #f58a1f; border-radius: 14px; box-shadow: inset 0 0 0 2px #ffc26b, inset 0 0 0 5px #1b2a2a, 0 8px 22px rgba(0, 0, 0, .65); font-size: 13px; }
+.tt-mixbody .tt-mixpre { color: #2b2b2b; }
+.tt-mixhead { display: flex; align-items: baseline; gap: 6px; margin-bottom: 4px; }
+.tt-mixhead b { font-size: 15px; color: #ffb347; letter-spacing: .04em; } .tt-mixhead small { font-size: 12px; color: #9fb0b0; }
+.tt-mixclose { margin-left: auto; height: 26px; padding: 0 9px; border: 1px solid #f28a1c; border-radius: 5px; background: #1c120a; color: #ffd9a0; cursor: pointer; font-size: 12px; font-weight: 700; }
+.tt-mixclose:hover { background: #3a2412; }
+.tt-mixlcd { display: flex; align-items: center; gap: 6px; min-height: 24px; padding: 2px 8px; margin-bottom: 6px; background: #120808; border: 1px solid #5a2a1a; border-radius: 3px; box-shadow: inset 0 0 8px rgba(255, 70, 20, .18); font-size: 12px; color: #ff9a6a; line-height: 1.25; }
+.tt-mixlcd-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: #ff5a2a; box-shadow: 0 0 6px #ff5a2a; }
+.tt-mix.tt-locked .tt-mixlcd-dot { background: #6b7d90; box-shadow: none; }
+.tt-mix.tt-locked .tt-mixlcd { color: #9fb0b0; border-color: #2b4257; }
+
+.tt-mixmain { display: flex; gap: 8px; align-items: stretch; padding: 6px 4px 6px 6px; background: #0b0908; border: 1px solid #243434; border-radius: 8px; }
+.tt-mixbank { flex: 1; min-width: 0; display: flex; gap: 2px; justify-content: space-between; }
+.tt-mixch { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.tt-mixpct { display: flex; flex-direction: column; align-items: center; gap: 1px; width: 100%; max-width: 54px; padding: 3px 1px 2px; background: #080606; border: 1px solid #1d2b2b; border-radius: 4px; font-size: 12px; font-weight: 700; color: #cfc6b8; font-variant-numeric: tabular-nums; }
+.tt-mixch.tt-on .tt-mixpct { color: #fff3dc; border-color: #5a4a2a; }
+.tt-mixic { display: inline-flex; width: 17px; height: 17px; } .tt-mixic svg { width: 100%; height: 100%; }
+.tt-mixtrack { position: relative; width: 34px; height: var(--mx-h); touch-action: none; cursor: ns-resize; user-select: none; -webkit-user-select: none; border-radius: 15px; outline-offset: 3px; }
+.tt-mixrail { position: absolute; left: 50%; top: 14px; bottom: 14px; width: 18px; transform: translateX(-50%); background: linear-gradient(90deg, #0b1818, #12292b 50%, #0b1818); border: 2px solid #4d7a7a; border-radius: 9px; }
+.tt-mixtrack::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 26px; transform: translateX(-50%); border-radius: 14px; border: 2px solid #3d6666; background: linear-gradient(90deg, #0a1414, #17302f 50%, #0a1414); }
+.tt-mixfill { position: absolute; left: 1px; right: 1px; bottom: 0; background: linear-gradient(90deg, #f08a12, #ffc43a 50%, #f08a12); border-radius: 0 0 7px 7px; pointer-events: none; }
+.tt-mixknob { position: absolute; left: 50%; width: 32px; height: 16px; margin-bottom: -8px; transform: translateX(-50%); background: linear-gradient(#e9e4da, #9d968a 55%, #6e675c); border: 2px solid #3b362e; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, .7), inset 0 1px 0 #fff; pointer-events: none; z-index: 2; }
+.tt-mixknob::after { content: ''; position: absolute; left: 4px; right: 4px; top: 50%; height: 2px; margin-top: -1px; background: #2a251d; border-radius: 1px; }
+.tt-mixtick { position: absolute; width: 5px; height: 2px; margin-bottom: -1px; background: #5f8f8f; pointer-events: none; opacity: .8; }
+.tt-mixtick { left: -9px; } .tt-mixtick.tt-major { width: 9px; left: -13px; background: #8fbcbc; }
+.tt-mixtrack.tt-drag .tt-mixknob { background: linear-gradient(#fff3d2, #e6b255 55%, #a8741f); box-shadow: 0 0 0 3px rgba(255, 170, 40, .55), 0 1px 3px rgba(0, 0, 0, .7); }
+.tt-mixtrack:focus-visible { outline: 2px solid #0ac8b9; }
+.tt-mixdb { font-size: 12px; color: #d8a868; white-space: nowrap; padding: 1px 5px; background: #0a0807; border: 1px solid #1d2b2b; border-radius: 3px; }
+.tt-mixdb b { font-size: 18px; color: #fff3dc; }
+.tt-mixdb small { font-size: 12px; }
+.tt-mix.tt-locked .tt-mixtrack { cursor: not-allowed; opacity: .6; }
+
+.tt-mixside { flex: 0 0 52px; display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+.tt-mixreset { height: 28px; border: 2px solid #ffb347; border-radius: 4px; background: linear-gradient(#ff8a1f, #c9500a); color: #fff3dc; font-weight: 800; font-size: 13px; letter-spacing: .03em; cursor: pointer; box-shadow: 0 2px 0 #5a2a08; }
+.tt-mixreset:hover:not(:disabled) { background: linear-gradient(#ffa040, #d9600f); }
+.tt-mixreset:disabled { opacity: .4; cursor: default; }
+.tt-mixmeter { flex: 1; min-height: 90px; display: flex; flex-direction: column; gap: 2px; padding: 3px; background: #080606; border: 1px solid #1d2b2b; border-radius: 4px; }
+.tt-mixmeter i { flex: 1; background: #1a1412; border-radius: 2px; }
+.tt-mixmeter i.tt-lit { background: linear-gradient(#ffb02e, #f07a10); box-shadow: 0 0 4px rgba(255, 150, 30, .55); }
+.tt-mixtot { text-align: center; padding: 2px 0; background: #0a0807; border: 1px solid #1d2b2b; border-radius: 3px; color: #d8a868; font-size: 12px; white-space: nowrap; }
+.tt-mixtot b { font-size: 17px; color: #fff3dc; }
+
+.tt-mixpresets { display: flex; gap: 10px; margin-top: 8px; }
+.tt-mixgroup { flex: 1; min-width: 0; padding-top: 2px; border-top: 2px solid #2b4040; }
+.tt-mixgroup h4 { margin: 0 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .06em; color: #8fb0b0; white-space: nowrap; }
+.tt-mixprow { display: flex; gap: 5px; }
+.tt-mixpre { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; align-content: center; gap: 1px 2px; min-height: 44px; padding: 3px 2px; border: 1px solid #6a5a45; border-radius: 4px; background: linear-gradient(#f2efe9, #b9b2a6 60%, #9b9488); color: #2b2b2b; cursor: pointer; box-shadow: 0 2px 0 #3a3126; }
+.tt-mixpre:hover:not(:disabled) { background: linear-gradient(#fff8e8, #d2c8b4 60%, #b0a692); }
+.tt-mixpre:active:not(:disabled) { transform: translateY(1px); box-shadow: 0 1px 0 #3a3126; }
+.tt-mixpre:disabled { opacity: .45; cursor: default; }
+.tt-mixpre svg { width: 15px; height: 15px; display: block; } .tt-mixplus { font-size: 12px; line-height: 1; }
+.tt-mixpre-t { flex-basis: 100%; text-align: center; font-size: 12px; font-weight: 700; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tt-mixnote { margin: 8px 0 0; font-size: 12px; line-height: 1.4; color: #9fb0b0; }
+
+/* 手機：頁籤在敵方列右邊；展開是底部抽屜（上面 .tt-mix[data-open="1"] .tt-mixbody 已設 fixed 在底）。窄螢幕推桿和總量計擠一點 */
+@media (max-width: 1023px), (orientation: portrait) {
+  .tt-mixbody { border-radius: 14px 14px 0 0; border-bottom-width: 0; }
+  .tt-mix[data-open="1"] .tt-mixbody { --mx-h: 96px; }
+}
+@media (max-width: 1023px) { .tt-mixnote { display: none; } }
+@media (max-width: 400px) { .tt-mixpct { font-size: 11px; } .tt-mixtrack { width: 30px; } .tt-mixtrack::before { width: 24px; } }
+/* 手機矮螢幕：推桿再矮一點，抽屜整個進得了畫面 */
+@media (max-height: 700px) { .tt-mix[data-open="1"] .tt-mixbody { --mx-h: 92px; } }
+
+/* 桌機：≥1024px 且橫式。右欄（棋盤右邊到舞台邊）。收起＝右上一個小頁籤；展開＝整塊面板。選了棋子（右側資訊欄）會自動收起 */
+@media (min-width: 1024px) and (orientation: landscape) {
+  .tt-mix { position: absolute; z-index: 30; left: 87.4%; top: 6.4%; width: 12.3%; justify-self: auto; align-self: auto; }
+  .tt-mixtab { width: 100%; justify-content: center; height: 30px; padding: 0 4px; gap: 3px; font-size: clamp(12px, 1.05cqw, 15px); }
+  .tt-mixtab .tt-num { font-size: clamp(15px, 1.4cqw, 20px); }
+  .tt-mix[data-open="1"] { left: 78.4%; top: 4.6%; width: 21.2%; }
+  .tt-mix[data-open="1"] .tt-mixtab { display: none; }
+  .tt-mix[data-open="1"] .tt-mixbody { position: static; max-height: none; overflow: visible; --mx-h: clamp(92px, 10.5cqw, 170px); padding: 6px 7px 8px; border-radius: 14px; border-bottom-width: 4px; }
+  .tt-mixmain { gap: 5px; padding: 5px 3px 5px 4px; }
+  .tt-mixside { flex-basis: 44px; }
+  .tt-mixreset { font-size: 12px; height: 26px; }
+  .tt-mixpresets { flex-direction: column; gap: 4px; margin-top: 6px; }
+  .tt-mixpre { flex-direction: row; flex-wrap: nowrap; min-height: 36px; gap: 2px; padding: 2px 4px; }
+  .tt-mixpre-t { flex: 0 1 auto; font-size: 12px; }
+  .tt-mixpre svg { width: 13px; height: 13px; } .tt-mixpre .tt-mixplus { display: none; }
+  .tt-mixgroup { padding-top: 1px; } .tt-mixgroup h4 { margin-bottom: 2px; }
+  .tt-mixnote { margin-top: 5px; }
+  .tt-mixlcd { margin-bottom: 4px; }
+  .tt-mixch { gap: 3px; }
+  .tt-mixdb small { display: none; } .tt-mixdb { padding: 1px 2px; }
+  @container (max-width: 1199px) { .tt-mixpre svg { display: none; } .tt-mixpctv { font-size: 11px; letter-spacing: -.02em; } }
+}
+@media (prefers-reduced-motion: reduce) { .tt-mixtab.tt-mixempty .tt-num { animation: none; } }

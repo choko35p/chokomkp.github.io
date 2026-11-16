@@ -20,8 +20,8 @@ const REASONS = {
 };
 const reasonText = (r) => (r && /[一-鿿]/.test(r) ? r : REASONS[r] || '這個動作現在做不到');
 
-const PICK_ZH = { fav: '心鋼最愛', spot: '聚光燈', deal: '唱片合約', prod: '合作邀請', clone: '分身站位', inst: '沙灘樂器' };
-const SFX = { buy: 'buy', sell: 'sell', reroll: 'reroll', buyXp: 'xp', move: 'place', equip: 'equip', pickAugment: 'pick', rerollAugmentSlot: 'reroll', setFavorite: 'equip', moveFavorite: 'equip', pick: 'equip', instrument: 'equip', useRemover: 'equip', pickReward: 'pick', startBattle: 'start' };
+const PICK_ZH = { mixer: '混音器', fav: '心鋼最愛', spot: '聚光燈', deal: '唱片合約', prod: '合作邀請', clone: '分身站位', inst: '沙灘樂器' };
+const SFX = { buy: 'buy', sell: 'sell', reroll: 'reroll', buyXp: 'xp', move: 'place', equip: 'equip', pickAugment: 'pick', rerollAugmentSlot: 'reroll', setFavorite: 'equip', moveFavorite: 'equip', pick: 'equip', instrument: 'equip', useRemover: 'equip', pickReward: 'pick', startBattle: 'start', mixerPreset: 'equip', mixerReset: 'equip' };
 
 function showFatal(msg, withLink) {
   const root = document.getElementById('tt-root');
@@ -77,6 +77,7 @@ async function boot() {
     teamLimit: () => game.teamLimit(state, DATA),
     fav: () => game.favoriteInfo(state, DATA),
     picks: () => game.pickInfo(state, DATA),
+    mixer: { info: () => game.mixerInfo(state, DATA) },   // ILLBEATS 混音器（分貝、換算數值、鎖住與否）
     traitOpts: () => game.traitOpts(state, DATA),
     battleUnits: () => game.battleUnits(state, DATA),
     toast: () => {},
@@ -138,7 +139,11 @@ async function boot() {
     }
     if (name === 'startBattle') {
       api.sfx('start');
-      for (const ev of r.events || []) if (ev.type === 'pickUnset') api.toast(ev.ids.map(i => PICK_ZH[i] || i).join('、') + (ev.ids.length === 1 && ev.ids[0] === 'inst' ? ' 還沒擺，這場不會有效果' : ' 還沒指定，這場不會有效果'));
+      for (const ev of r.events || []) if (ev.type === 'pickUnset') {
+        const mix = ev.ids.includes('mixer'), rest = ev.ids.filter(i => i !== 'mixer');
+        if (rest.length) api.toast(rest.map(i => PICK_ZH[i] || i).join('、') + (rest.length === 1 && rest[0] === 'inst' ? ' 還沒擺，這場不會有效果' : ' 還沒指定，這場不會有效果'));
+        if (mix) setTimeout(() => api.toast('混音器還沒分配分貝，這場 ILLBEATS 不會有加成'), rest.length ? 2300 : 0);
+      }
       return r;
     }
     const evs = r.events || [];

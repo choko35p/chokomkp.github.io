@@ -128,10 +128,21 @@ function bossEnemy(round, DATA) {
   };
 }
 
+// 固定敵人（教學 /learn/ 用）：回合定義 enemy.fixed = [{key, star, items, pos}]，pos 跟普通敵人一樣（敵方半場座標）。
+// 可選 enemy.name、enemy.hpMult／dmgMult（整隊）、enemy.boss（{key, hpMult, dmgMult, ccCap, slotsScale}，只套頭目本體）。沒有 fixed 就走原本的隨機挑選。
+function fixedEnemy(rd) {
+  const cfg = rd.enemy;
+  const units = clone(cfg.fixed).map(u => ({ key: u.key, star: u.star || 1, items: u.items || [], pos: u.pos.slice(), ...(u.boss ? { boss: true } : {}) }));
+  return {
+    name: cfg.name || '對手', units,
+    mods: { hpMult: cfg.hpMult ?? 1, dmgMult: cfg.dmgMult ?? 1, extraPassives: [], ...(cfg.boss ? { boss: clone(cfg.boss) } : {}) },
+  };
+}
+
 export function enemyForRound(round, seed, DATA) {
   const rd = roundDef(DATA, round);
   if (!rd) throw new Error('沒有第 ' + round + ' 回合');
-  const out = rd.type === 'boss' ? bossEnemy(round, DATA) : normalEnemy(round, seed, DATA, rd);
+  const out = rd.enemy && rd.enemy.fixed ? fixedEnemy(rd) : rd.type === 'boss' ? bossEnemy(round, DATA) : normalEnemy(round, seed, DATA, rd);
   let prev = [];
   if (countTraitsFn) {
     try { prev = countTraitsFn(out.units.map(u => ({ key: u.key, star: u.star, items: u.items })), DATA, { augments: [] }); } catch (e) { prev = []; }

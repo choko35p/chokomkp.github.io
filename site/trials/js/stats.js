@@ -8,6 +8,7 @@ export const S = {
 };
 
 import { neighbors, playerToBoard } from './hex.js';
+import * as MX from './mixer.js';
 
 const r1 = (x) => Math.round(x * 1000) / 1000;
 const keyCmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
@@ -218,7 +219,7 @@ export function buildTeam(side, units, DATA, ctx = {}) {
   const effectsOf = (t, info) => [].concat(t.always || [], (t.tiers || [])[info.tier - 1] || []);
   const envs = traits.filter((t) => t.active).map((info) => {
     const t = DATA.traits.byKey[info.key];
-    return { info, effs: effectsOf(t, info), env: { src: 'trait:' + info.key, traitKey: info.key } };
+    return { info, effs: effectsOf(t, info), env: { src: 'trait:' + info.key, traitKey: info.key, tier: info.tier } };
   });
   const augEnvs = ((ctx.augments) || []).map((k) => DATA.augments.byKey[k]).filter(Boolean)
     .map((a) => ({ effs: a.effects || [], env: { src: 'aug:' + a.key, traitKey: null } }));
@@ -260,6 +261,26 @@ export function buildTeam(side, units, DATA, ctx = {}) {
     return true;
   };
 
+  // ---- ILLBEATS 混音器 ----
+  // 玩家：ctx.mixer＝[攻擊, 法強, 生命, 金幣] 分貝（玩家自己在混音器推的）；敵方、舊測試沒給就用預設分法（攻擊／法強／生命平分）。
+  // 成員拿全額，其他隊友拿 teamShare 成；4 階整個混音再乘 boost。金幣推桿換成「我方擊殺時拿 1 金的機率」，由 game.js 在戰後結算。
+  let mixerOut = null;
+  const applyMixer = (e, env) => {
+    const P = { caps: e.caps || [10, 14, 18], boost: e.boost || [1, 1, 1.5], teamShare: e.teamShare != null ? e.teamShare : 0.5, per: { ad: 0.0216, ap: 2, hp: 0.0176, gold: 0.02, ...(e.per || {}) } };
+    const tier = env.tier || 1, cap = MX.mixerCap(P, tier);
+    const mix = { db: Array.isArray(ctx.mixer) ? ctx.mixer.slice(0, 4) : MX.defaultMix(cap).db, last: [] };
+    MX.fitMix(mix, cap);
+    const v = MX.mixerValues(P, tier, mix.db);
+    const isM = (st) => (st.def.traits || []).includes(env.traitKey);
+    for (const st of L) {
+      const share = isM(st) ? 1 : P.teamShare;
+      add(st, env.src, 'hpPct', r1(v.hp * share));
+      add(st, env.src, 'adPct', r1(v.ad * share));
+      add(st, env.src, 'ap', Math.round(v.ap * share * 10) / 10);
+    }
+    mixerOut = { tier, cap, db: mix.db.slice(), values: v, members: L.filter(isM).map((st) => st.id),
+      gold: { member: Math.min(1, v.gold), other: Math.min(1, v.gold * P.teamShare) } };
+  };
   const SPECIALS = ['soulLink', 'executeSummon', 'clone', 'untargetableStart', 'classical'];
   const applyEffect = (e, env) => {
     const mult0 = e.perPersist ? (persist[e.perPersist] || 0) : 1;
@@ -318,7 +339,8 @@ export function buildTeam(side, units, DATA, ctx = {}) {
         deferred.push({ src: env.src, effect: e }); // 給 game.js
         break;
       case 'special': {
-        if (SPECIALS.includes(e.id)) {
+        if (e.id === 'mixer') applyMixer(e, env);
+        else if (SPECIALS.includes(e.id)) {
           const { type, id, ...params } = e;
           // 整合決定：參數同時放頂層（引擎讀這裡）與 params（相容 E2 測試）
           teamPassives.push({ ...params, on: 'special', id: e.id, params, src: env.src, text: e.text || '' });
@@ -397,5 +419,5 @@ export function buildTeam(side, units, DATA, ctx = {}) {
     if (isBoss) { c.boss = true; c.ccCap = mods.boss.ccCap != null ? mods.boss.ccCap : 0.5; c.slotsScale = mods.boss.slotsScale || 1.3; }
     return c;
   });
-  return { combatants, teamPassives, traits, notes, deferred, instruments };
+  return { combatants, teamPassives, traits, notes, deferred, instruments, mixer: mixerOut };
 }

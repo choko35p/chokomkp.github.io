@@ -417,12 +417,12 @@
       h("h2", null, tx("learn:title", "新手教學")),
       h("p", { class: "rlead" }, tx("learn:lead", "剛開始玩先看這邊。照順序玩一輪，大概半小時。")),
       h("div", { class: "lcards" },
-        card("play", "learn/", [face(byName("鄂爾")), face(byName("剎雅"))], tx("learn:play.t", "邊玩邊學"), tx("learn:play.d", "12 關，直接動手玩。買牌、站位、利息、D 牌一次學會。"), null, true),
+        card("play", "learn/", [face(byName("鄂爾")), face(byName("剎雅"))], tx("learn:play.t", "邊玩邊學"), tx("learn:play.d", "12 關，直接動手玩。買牌、站位、利息、D 牌一次學會。"), P.play.done.length ? `${P.play.done.length} / 12 關` : null),
         card("lab", "#learn-lab", h("span", { class: "lc-coin" }, "？"), tx("learn:lab.t", "決策實驗室"), tx("learn:lab.d", `${L.length} 個常見狀況，這時候該存錢還是該 D？`), nDone ? `${nDone} / ${L.length} 題` : null),
         card("route", "#learn-route", h("span", { class: "lc-bands" }, [1, 2, 3, 4, 5].map((c) => h("i", { style: `--cc:var(--c${c});width:${30 + c * 12}%` }))), tx("learn:route.t", "定陣路線"),
           routeOk() ? tx("learn:route.d", "從 2-1 開始，什麼裝備走哪一條、幾等定下來。") : "S19 上線後補", null, !routeOk()),
         card("quiz", "#learn-quiz", qzFaces.map((k) => face(k)), tx("learn:quiz.t", "新手認卡"), tx("learn:quiz.d", "這季的棋子幾費、什麼羈絆，用小測驗記起來。"), best ? `最佳 ${best} / 10` : null)),
-      h("div", { class: "lc-foot" }, S19note, h("span", { class: "lc-mk xs muted" }, "邊玩邊學製作中，先玩下面三個。"), (nDone || P.play.done.length) ? clearProgress() : null));
+      h("div", { class: "lc-foot" }, S19note, (nDone || P.play.done.length) ? clearProgress() : null));
     applyDataTx();
   }
 

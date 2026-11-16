@@ -1,0 +1,678 @@
+{
+ "version": "learn-s18-1",
+ "note": "邊玩邊學用的 S18 小棋池（14 隻）。技能與數值為教學簡化。",
+ "starMult": {
+  "hp": [
+   1,
+   1.8,
+   3.24
+  ],
+  "ad": [
+   1,
+   1.5,
+   2.25
+  ]
+ },
+ "sprite": {
+  "src": "img/units.webp",
+  "cols": 10,
+  "rows": 10,
+  "cell": 96,
+  "map": {
+   "Ornn": 0,
+   "Leona": 1,
+   "Rakan": 2,
+   "Kobuko": 3,
+   "Xayah": 4,
+   "Varus": 5,
+   "Shen": 6,
+   "Elise": 7,
+   "Alistar": 8,
+   "Kayle": 9,
+   "LeBlanc": 10,
+   "Rammus": 11,
+   "Hecarim": 12,
+   "MamaBeak": 13
+  }
+ },
+ "units": [
+  {
+   "key": "Ornn",
+   "zh": "鄂爾",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "Defender"
+   ],
+   "role": "坦克",
+   "roleClass": "Tank",
+   "dmgType": "physical",
+   "lr": "tank",
+   "stats": {
+    "hp": 700,
+    "ad": 40,
+    "as": 0.6,
+    "armor": 40,
+    "mr": 40,
+    "range": 1,
+    "mana": [
+     40,
+     100
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "ability": {
+    "name": "熾焰吹息",
+    "castTime": 0.5,
+    "desc": "滿魔時，給自己一層護盾，大小是最大生命的 20%，持續 3 秒。（教學簡化）",
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "selfMaxHp": 0.2
+      },
+      "dur": 3
+     }
+    ],
+    "simplified": "教學版只做「給自己一層護盾」。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Leona",
+   "zh": "雷歐娜",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "Defender"
+   ],
+   "role": "坦克",
+   "roleClass": "Tank",
+   "dmgType": "physical",
+   "lr": "tank",
+   "stats": {
+    "hp": 750,
+    "ad": 50,
+    "as": 0.65,
+    "armor": 40,
+    "mr": 40,
+    "range": 1,
+    "mana": [
+     30,
+     90
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "ability": {
+    "name": "盾擊",
+    "castTime": 0.5,
+    "desc": "滿魔時，給自己一層護盾，大小是最大生命的 20%，持續 3 秒。（教學簡化）",
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "selfMaxHp": 0.2
+      },
+      "dur": 3
+     }
+    ],
+    "simplified": "教學版只做「給自己一層護盾」。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Rakan",
+   "zh": "銳空",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "Vanguard"
+   ],
+   "role": "坦克",
+   "roleClass": "Tank",
+   "dmgType": "physical",
+   "lr": "tank",
+   "stats": {
+    "hp": 700,
+    "ad": 45,
+    "as": 0.6,
+    "armor": 35,
+    "mr": 35,
+    "range": 1,
+    "mana": [
+     35,
+     105
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "ability": {
+    "name": "迷人舞踏",
+    "castTime": 0.5,
+    "desc": "滿魔時，給自己一層護盾，大小是最大生命的 20%，持續 3 秒。（教學簡化）",
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "selfMaxHp": 0.2
+      },
+      "dur": 3
+     }
+    ],
+    "simplified": "教學版只做「給自己一層護盾」。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Kobuko",
+   "zh": "柯布柯",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "Brawler"
+   ],
+   "role": "坦克",
+   "roleClass": "Tank",
+   "dmgType": "physical",
+   "lr": "tank",
+   "stats": {
+    "hp": 700,
+    "ad": 55,
+    "as": 0.65,
+    "armor": 40,
+    "mr": 40,
+    "range": 1,
+    "mana": [
+     30,
+     90
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "ability": {
+    "name": "生命之舞",
+    "castTime": 0.5,
+    "desc": "滿魔時，給自己一層護盾，大小是最大生命的 20%，持續 3 秒。（教學簡化）",
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "selfMaxHp": 0.2
+      },
+      "dur": 3
+     }
+    ],
+    "simplified": "教學版只做「給自己一層護盾」。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Xayah",
+   "zh": "剎雅",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "Rapidfire"
+   ],
+   "role": "射手",
+   "roleClass": "Marksman",
+   "dmgType": "physical",
+   "lr": "carry",
+   "stats": {
+    "hp": 450,
+    "ad": 45,
+    "as": 0.7,
+    "armor": 25,
+    "mr": 25,
+    "range": 4,
+    "mana": [
+     0,
+     50
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "ability": {
+    "name": "奪命疾翼",
+    "castTime": 0.5,
+    "desc": "滿魔時，對目前目標造成 99/148/223 物理傷害（約攻擊力 2.2 倍）。（教學簡化）",
+    "steps": [
+     {
+      "op": "damage",
+      "to": "current",
+      "type": "physical",
+      "value": {
+       "ad": [
+        99,
+        148,
+        223
+       ]
+      }
+     }
+    ],
+    "simplified": "教學版只做「對目前目標打一發重傷害」。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Varus",
+   "zh": "法洛士",
+   "cost": 1,
+   "slots": 1,
+   "traits": [
+    "Rapidfire"
+   ],
+   "role": "法師",
+   "roleClass": "Marksman",
+   "dmgType": "physical",
+   "lr": "carry",
+   "stats": {
+    "hp": 500,
+    "ad": 40,
+    "as": 0.75,
+    "armor": 25,
+    "mr": 25,
+    "range": 4,
+    "mana": [
+     20,
+     110
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "ability": {
+    "name": "破甲箭",
+    "castTime": 0.5,
+    "desc": "滿魔時，對目前目標造成 88/132/198 物理傷害（約攻擊力 2.2 倍）。（教學簡化）",
+    "steps": [
+     {
+      "op": "damage",
+      "to": "current",
+      "type": "physical",
+      "value": {
+       "ad": [
+        88,
+        132,
+        198
+       ]
+      }
+     }
+    ],
+    "simplified": "教學版只做「對目前目標打一發重傷害」。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Shen",
+   "zh": "慎",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "Defender"
+   ],
+   "role": "坦克",
+   "roleClass": "Tank",
+   "dmgType": "physical",
+   "lr": "tank",
+   "stats": {
+    "hp": 900,
+    "ad": 50,
+    "as": 0.65,
+    "armor": 45,
+    "mr": 45,
+    "range": 1,
+    "mana": [
+     30,
+     90
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "ability": {
+    "name": "凝氣盾",
+    "castTime": 0.5,
+    "desc": "滿魔時，給自己一層護盾，大小是最大生命的 20%，持續 3 秒。（教學簡化）",
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "selfMaxHp": 0.2
+      },
+      "dur": 3
+     }
+    ],
+    "simplified": "教學版只做「給自己一層護盾」。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Elise",
+   "zh": "伊莉絲",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "Vanguard"
+   ],
+   "role": "坦克",
+   "roleClass": "Tank",
+   "dmgType": "physical",
+   "lr": "tank",
+   "stats": {
+    "hp": 900,
+    "ad": 20,
+    "as": 0.65,
+    "armor": 45,
+    "mr": 45,
+    "range": 1,
+    "mana": [
+     20,
+     70
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "ability": {
+    "name": "蜘蛛女王",
+    "castTime": 0.5,
+    "desc": "滿魔時，給自己一層護盾，大小是最大生命的 20%，持續 3 秒。（教學簡化）",
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "selfMaxHp": 0.2
+      },
+      "dur": 3
+     }
+    ],
+    "simplified": "教學版只做「給自己一層護盾」。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Alistar",
+   "zh": "亞歷斯塔",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "Brawler"
+   ],
+   "role": "坦克",
+   "roleClass": "Tank",
+   "dmgType": "physical",
+   "lr": "tank",
+   "stats": {
+    "hp": 950,
+    "ad": 50,
+    "as": 0.6,
+    "armor": 45,
+    "mr": 45,
+    "range": 1,
+    "mana": [
+     30,
+     90
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "ability": {
+    "name": "勝利怒吼",
+    "castTime": 0.5,
+    "desc": "滿魔時，給自己一層護盾，大小是最大生命的 20%，持續 3 秒。（教學簡化）",
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "selfMaxHp": 0.2
+      },
+      "dur": 3
+     }
+    ],
+    "simplified": "教學版只做「給自己一層護盾」。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Kayle",
+   "zh": "凱爾",
+   "cost": 2,
+   "slots": 1,
+   "traits": [
+    "Rapidfire"
+   ],
+   "role": "特殊",
+   "roleClass": "Marksman",
+   "dmgType": "physical",
+   "lr": "carry",
+   "stats": {
+    "hp": 550,
+    "ad": 10,
+    "as": 0.75,
+    "armor": 30,
+    "mr": 30,
+    "range": 4,
+    "mana": [
+     0,
+     0
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "ability": {
+    "name": "日輝審判",
+    "castTime": 0,
+    "steps": [],
+    "desc": "被動：普攻額外造成 65/97/110 魔法傷害。（教學簡化，只做第一次飛昇）",
+    "simplified": "教學版只留普攻額外傷害，其他飛昇效果沒做。"
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "damage",
+       "to": "current",
+       "type": "magic",
+       "value": [
+        65,
+        97,
+        110
+       ]
+      }
+     ],
+     "src": "unit"
+    }
+   ]
+  },
+  {
+   "key": "LeBlanc",
+   "zh": "勒布朗",
+   "cost": 2,
+   "slots": 1,
+   "traits": [],
+   "role": "法師",
+   "roleClass": "Caster",
+   "dmgType": "magic",
+   "lr": "carry",
+   "stats": {
+    "hp": 550,
+    "ad": 30,
+    "as": 0.7,
+    "armor": 30,
+    "mr": 30,
+    "range": 4,
+    "mana": [
+     0,
+     40
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "ability": {
+    "name": "鏡像",
+    "castTime": 0.5,
+    "desc": "滿魔時，對目前目標造成 66/99/148 魔法傷害（約攻擊力 2.2 倍）。（教學簡化）",
+    "steps": [
+     {
+      "op": "damage",
+      "to": "current",
+      "type": "magic",
+      "value": {
+       "ad": [
+        66,
+        99,
+        148
+       ]
+      }
+     }
+    ],
+    "simplified": "教學版只做「對目前目標打一發重傷害」。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Rammus",
+   "zh": "拉姆斯",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "Defender"
+   ],
+   "role": "坦克",
+   "roleClass": "Tank",
+   "dmgType": "physical",
+   "lr": "tank",
+   "stats": {
+    "hp": 1100,
+    "ad": 50,
+    "as": 0.6,
+    "armor": 50,
+    "mr": 50,
+    "range": 1,
+    "mana": [
+     30,
+     80
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "ability": {
+    "name": "尖刺防禦",
+    "castTime": 0.5,
+    "desc": "滿魔時，給自己一層護盾，大小是最大生命的 20%，持續 3 秒。（教學簡化）",
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "selfMaxHp": 0.2
+      },
+      "dur": 3
+     }
+    ],
+    "simplified": "教學版只做「給自己一層護盾」。"
+   },
+   "passives": []
+  },
+  {
+   "key": "Hecarim",
+   "zh": "赫克林",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "Vanguard"
+   ],
+   "role": "坦克",
+   "roleClass": "Tank",
+   "dmgType": "physical",
+   "lr": "tank",
+   "stats": {
+    "hp": 1100,
+    "ad": 50,
+    "as": 0.65,
+    "armor": 50,
+    "mr": 50,
+    "range": 1,
+    "mana": [
+     50,
+     110
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "ability": {
+    "name": "靈魂恐懼",
+    "castTime": 0.5,
+    "desc": "滿魔時，給自己一層護盾，大小是最大生命的 20%，持續 3 秒。（教學簡化）",
+    "steps": [
+     {
+      "op": "shield",
+      "to": "self",
+      "value": {
+       "selfMaxHp": 0.2
+      },
+      "dur": 3
+     }
+    ],
+    "simplified": "教學版只做「給自己一層護盾」。"
+   },
+   "passives": []
+  },
+  {
+   "key": "MamaBeak",
+   "zh": "巨喙鳥媽媽",
+   "cost": 3,
+   "slots": 1,
+   "traits": [
+    "Rapidfire"
+   ],
+   "role": "射手",
+   "roleClass": "Marksman",
+   "dmgType": "physical",
+   "lr": "carry",
+   "stats": {
+    "hp": 650,
+    "ad": 60,
+    "as": 0.75,
+    "armor": 35,
+    "mr": 35,
+    "range": 4,
+    "mana": [
+     20,
+     60
+    ],
+    "crit": 0.25,
+    "critDmg": 1.4
+   },
+   "ability": {
+    "name": "飛禽家族",
+    "castTime": 0.5,
+    "desc": "滿魔時，對目前目標造成 132/198/297 物理傷害（約攻擊力 2.2 倍）。（教學簡化）",
+    "steps": [
+     {
+      "op": "damage",
+      "to": "current",
+      "type": "physical",
+      "value": {
+       "ad": [
+        132,
+        198,
+        297
+       ]
+      }
+     }
+    ],
+    "simplified": "教學版只做「對目前目標打一發重傷害」。"
+   },
+   "passives": []
+  }
+ ]
+}

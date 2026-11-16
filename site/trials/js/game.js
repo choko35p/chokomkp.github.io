@@ -4,6 +4,7 @@ import * as S from './shop.js';
 import { enemyForRound, setCountTraits } from './enemies.js';
 import * as U from './unlocks.js';
 import * as H from './hex.js';
+import * as MX from './mixer.js';
 
 let B = { simulate: null, buildTeam: null, countTraits: null };
 try { const m = await import('./engine.js'); B.simulate = m.simulate; } catch (e) { /* 引擎還沒有 */ }
@@ -296,6 +297,7 @@ export function newGame(seed, DATA) {
     augments: [], pendingChoices: null, pendingQueue: [], persist: {}, history: [], attempt: 0, uidNext: 1,
     freeRerolls: 0, rewardN: 0, counters: {}, battle: null,
     picks: { fav: [], spot: [], deal: [], prod: [], clone: [], inst: [] },   // 指定道具的標記：各道具的棋子 uid，最早放的在前；inst（沙灘樂器）存的是格子 [r,c]，不是棋子
+    mixer: MX.emptyMix(),   // ILLBEATS 混音器：db＝[攻擊, 法強, 生命, 金幣] 分貝，last＝最近調過的通道（掉階時從最後調的那條扣回）
     prodTrait: null, dealFrom: null,   // 合作邀請選到的起源；蒙多第一次上場開戰的回合（唱片合約的份數從這裡算）
     unlocks: {}, unlockQueue: [], unlockAcc: {}, stats: { rerolls: 0, loseStreak: 0 },
     augTiers: rollAugTiers(seed, DATA),   // 三次增幅的稀有度（1 銀 2 金 3 彩），開局抽好
@@ -333,6 +335,10 @@ export function deserialize(json, DATA) {
     autoPicks(s, DATA, { only: ['inst'] });
   }
   if (s.prodTrait === undefined) s.prodTrait = null;
+  if (!s.mixer || !Array.isArray(s.mixer.db)) {   // 舊存檔沒有混音器：ILLBEATS 有啟動就照預設分法補上，不會突然沒效果
+    s.mixer = MX.emptyMix();
+    autoMixer(s, DATA);
+  } else fitMixer(s, DATA);
   if (s.dealFrom === undefined) s.dealFrom = null;
   normAugmentPending(s.pendingChoices, DATA);
   for (const q of s.pendingQueue) normAugmentPending(q, DATA);
@@ -364,6 +370,7 @@ export function actBuy(state, slot, DATA) {
   const events = [{ type: 'buy', slot, uid: r.uid }];
   for (const m of r.merged) events.push({ type: 'merge', key: m.key, star: m.star });
   runUnlocks(state, DATA, events);
+  fitMixer(state, DATA);
   return ok({ events, uid: r.uid });
 }
 export function actSell(state, uid, DATA) {
@@ -371,6 +378,7 @@ export function actSell(state, uid, DATA) {
   const r = S.sell(state, uid, DATA);
   if (!r.ok) return r;
   prunePicks(state, DATA);   // 賣掉的棋子身上的標記收回
+  fitMixer(state, DATA);
   const events = [{ type: 'sell', uid, gold: r.gold }];
   runUnlocks(state, DATA, events);
   return ok({ gold: r.gold, events });
@@ -420,6 +428,7 @@ export function actMove(state, uid, to, DATA) {
       state.bench[to.idx] = u; u.pos = null;
     } else { state.bench[f.idx] = other || null; state.bench[to.idx] = u; }
     runUnlocks(state, DATA, events);
+    fitMixer(state, DATA);
     return ok({ events });
   }
   if (to.zone !== 'board' || !to.pos) return no('目標不對');
@@ -439,6 +448,7 @@ export function actMove(state, uid, to, DATA) {
     u.pos = [r, c];
   }
   runUnlocks(state, DATA, events);
+  fitMixer(state, DATA);
   return ok({ events });
 }
 export function actEquip(state, itemIdx, uid, DATA) {
@@ -638,7 +648,67 @@ export function actPick(state, id, uid, a, b) {
   }
   list.push(uid);
   if (id === 'prod') pickTrait(f.unit);
+  fitMixer(state, DATA);
   return ok({ events });
+}
+
+// ---------- ILLBEATS 混音器 ----------
+// 回傳 { active, tier, cap, used, free, db:[攻擊,法強,生命,金幣], last, locked, per, values, teamShare, boost }
+//   per＝成員每 1 分貝的數值（已含 4 階強化）；values＝目前這組分貝換成的成員數值（隊友拿 teamShare 成）
+export function mixerInfo(state, DATA) {
+  const P = MX.mixerParams(DATA);
+  const t = boardTraitMap(state, DATA).ILLBEATS;
+  const tier = t ? t.tier : 0, cap = MX.mixerCap(P, tier);
+  const m = state.mixer && Array.isArray(state.mixer.db) ? { db: state.mixer.db.slice(), last: (state.mixer.last || []).slice() } : MX.emptyMix();
+  if (tier > 0) MX.fitMix(m, cap); else m.db = MX.CH.map((_, i) => Math.max(0, Math.floor(m.db[i] || 0)));
+  const used = tier > 0 ? MX.sumDb(m.db) : 0;
+  const per = {}; for (const ch of MX.CH) per[ch] = MX.mixerPer(P, tier || 1, ch);
+  return { active: tier > 0, tier, cap, used, free: cap - used, db: tier > 0 ? m.db : [0, 0, 0, 0], last: m.last, locked: state.phase !== 'plan' || !!state.pendingChoices,
+    per, values: MX.mixerValues(P, tier || 1, tier > 0 ? m.db : [0, 0, 0, 0]), bp: t ? t.breakpoints[tier - 1] : 0, teamShare: P.teamShare, boost: MX.mixerBoost(P, tier), presets: MX.PRESETS };
+}
+// 戰前計算用的分貝陣列（ILLBEATS 沒啟動就不給，stats 會當沒有）
+export function mixerDb(state, DATA) { const i = mixerInfo(state, DATA); return i.active ? i.db.slice() : undefined; }
+// 階數掉了、上限變小：多的分貝從最後調的那條扣回（階數 0 的時候不動，羈絆回來還在）
+export function fitMixer(state, DATA) {
+  if (!state.mixer) state.mixer = MX.emptyMix();
+  const i = mixerInfo(state, DATA);
+  if (i.active) { state.mixer.db = i.db.slice(); state.mixer.last = i.last.filter(k => MX.CH.includes(k)); }
+  return state;
+}
+// 沒人調的自動分法（機器人、舊存檔）：攻擊／法強／生命平分
+export function autoMixer(state, DATA) {
+  const i = mixerInfo(state, DATA);
+  state.mixer = i.active ? MX.defaultMix(i.cap) : (state.mixer || MX.emptyMix());
+  return state;
+}
+const mixerGuard = (state, DATA) => {
+  if (state.phase === 'battle' || state.phase === 'result') return no('戰鬥中混音器鎖住，下一回合佈陣再調');
+  const g = needPlan(state); if (g) return g;
+  const i = mixerInfo(state, DATA);
+  return i.active ? null : no('ILLBEATS 還沒啟動，沒有混音器');
+};
+// 把某條推桿推到 v 分貝（整數）；最多推到「還沒用的分貝」為止。ch：'ad'|'ap'|'hp'|'gold'
+export function actSetMixer(state, ch, v, DATA) {
+  const g = mixerGuard(state, DATA); if (g) return g;
+  if (!MX.CH.includes(ch)) return no('沒有這條推桿');
+  if (!Number.isFinite(Number(v))) return no('分貝要是數字');
+  fitMixer(state, DATA);
+  const i = mixerInfo(state, DATA);
+  const before = state.mixer.db.slice();
+  const nv = MX.setChannel(state.mixer, ch, Number(v), i.cap);
+  return ok({ events: [{ type: 'mixer', ch, db: nv, changed: before[MX.CH.indexOf(ch)] !== nv }] });
+}
+export function actMixerPreset(state, id, DATA) {
+  const g = mixerGuard(state, DATA); if (g) return g;
+  const m = MX.presetMix(id, mixerInfo(state, DATA).cap);
+  if (!m) return no('沒有這個預設');
+  state.mixer = m;
+  return ok({ events: [{ type: 'mixer', preset: id }] });
+}
+export function actMixerReset(state, DATA) {
+  const g = mixerGuard(state, DATA); if (g) return g;
+  state.mixer = MX.emptyMix();
+  return ok({ events: [{ type: 'mixer', reset: true }] });
 }
 
 // 心鋼最愛：舊介面留著當包裝（機器人、舊測試用）
@@ -658,15 +728,16 @@ export function battleUnits(state, DATA) {
     if (info.clone.active.includes(u.uid)) o.cloneAt = true;
     return o;
   });
-  return { units, ctx: { producerPick: info.prod.active.length ? prodEffective(state, DATA) : null, manual: true, instruments: info.inst.active.map(p => p.slice()) } };
+  return { units, ctx: { producerPick: info.prod.active.length ? prodEffective(state, DATA) : null, manual: true, instruments: info.inst.active.map(p => p.slice()), mixer: mixerDb(state, DATA) } };
 }
 
 // 自動選法（機器人、舊存檔遷移）：fav／spot／deal＝場上裝備最多的前幾隻（同數取費用高、key 字母序）；
 // prod＝場上人數最多的起源；clone 不放。
 export function autoPicks(state, DATA, opts = {}) {
-  const only = opts.only || ['prod', 'fav', 'spot', 'deal', 'inst'];
+  const only = opts.only || ['prod', 'fav', 'spot', 'deal', 'inst', 'mixer'];
   if (!state.picks) state.picks = { fav: [], spot: [], deal: [], prod: [], clone: [], inst: [] };
   if (only.includes('inst')) autoInstruments(state, DATA);
+  if (only.includes('mixer')) autoMixer(state, DATA);
   const rank = (a, b) => b.items.length - a.items.length || DATA.units.byKey[b.key].cost - DATA.units.byKey[a.key].cost
     || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0) || a.uid - b.uid;
   for (const id of ['prod', 'fav', 'spot', 'deal']) {
@@ -829,6 +900,8 @@ export function actStartBattle(state, DATA) {
   const pUnits = bu.units;
   const pinfo = pickInfo(state, DATA);
   const unset = ['fav', 'spot', 'deal', 'prod', 'inst'].filter(id => pinfo[id].cap > 0 && !pinfo[id].active.length);
+  const mx = mixerInfo(state, DATA);
+  if (mx.active && mx.used === 0) unset.push('mixer');
   const ctx = { level: state.level, round: state.round, augments: state.augments.slice(), persist: clone(state.persist), ...bu.ctx,
     rng: makeRng(hashSeed(state.seed, 'combat', state.round, state.attempt, 'items')) };   // 竊賊手套用
   const pTeam = B.buildTeam('player', pUnits, DATA, ctx);
@@ -846,7 +919,7 @@ export function actStartBattle(state, DATA) {
     try { if (B.countTraits && pUnits.length) traits = B.countTraits(pUnits.map(u => ({ key: u.key, star: u.star, items: u.items })), DATA, traitOpts(state, DATA)); } catch (e) { traits = []; }
     snap = { board: pUnits, traits };
   }
-  state.battle = { result, enemy, round: state.round, attempt: state.attempt, deferred: pTeam.deferred || [], snap };
+  state.battle = { result, enemy, round: state.round, attempt: state.attempt, deferred: pTeam.deferred || [], snap, mixer: pTeam.mixer || null };
   state.phase = 'battle';
   return ok({ result, enemy, playerTeam: pTeam, enemyTeam: eTeam, events: unset.length ? [{ type: 'pickUnset', ids: unset }] : [] });
 }
@@ -912,6 +985,18 @@ export function actFinishBattle(state, DATA) {
   const ihp = ruleSum(state, DATA, 'interestHp');   // 投資策略：每賺 1 點利息，全隊永久 +生命
   if (ihp && interest > 0) state.persist.interestHp = (state.persist.interestHp || 0) + interest * ihp;
   if (win) { add('win', '勝利', r.income.win); add('streak', '連勝', streakBonus(DATA, state.streak)); }
+  // 混音器的金幣推桿：我方棋子每擊殺一隻敵人，依機率拿 1 金（官方是「參與擊殺」，這裡只算最後一擊，推測）
+  const mxg = state.battle.mixer;
+  if (mxg && mxg.gold && (mxg.gold.member > 0 || mxg.gold.other > 0)) {
+    const grng = makeRng(hashSeed(state.seed, 'mixerGold', round, state.attempt || 0));
+    let got = 0;
+    for (const ev of result.events || []) {
+      if (ev.e !== 'death' || !ev.killer || String(ev.id)[0] !== 'e' || String(ev.killer)[0] !== 'p') continue;
+      const p = mxg.members.includes(ev.killer) ? mxg.gold.member : mxg.gold.other;
+      if (p > 0 && grng.next() < p) got += 1;
+    }
+    add('trait', 'ILLBEATS 混音器', got);
+  }
   const label = src => {
     const m = /^(trait|aug|item):(.+)$/.exec(src || '');
     if (!m) return src || '效果';

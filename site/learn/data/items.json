@@ -1,0 +1,96 @@
+{
+ "components": [
+  {
+   "key": "RecurveBow",
+   "zh": "反曲弓",
+   "stats": {
+    "asPct": 0.1
+   }
+  },
+  {
+   "key": "BFSword",
+   "zh": "暴風之劍",
+   "stats": {
+    "adPct": 0.1
+   }
+  },
+  {
+   "key": "ChainVest",
+   "zh": "鎖子甲",
+   "stats": {
+    "armor": 20
+   }
+  },
+  {
+   "key": "GiantsBelt",
+   "zh": "巨人腰帶",
+   "stats": {
+    "hp": 150
+   }
+  }
+ ],
+ "items": [
+  {
+   "key": "GiantSlayer",
+   "zh": "巨人殺手",
+   "recipe": [
+    "RecurveBow",
+    "BFSword"
+   ],
+   "stats": {
+    "adPct": 0.25,
+    "asPct": 0.1
+   },
+   "passives": [
+    {
+     "on": "start",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "dmgAmp",
+       "value": 0.2
+      }
+     ],
+     "src": "item:GiantSlayer",
+     "text": "巨人殺手"
+    }
+   ],
+   "desc": "攻擊 +25%、攻速 +10%。傷害增幅 +20%。",
+   "simplified": "原版是打血多的敵人才多傷害，教學版簡化成全程 +20%。"
+  },
+  {
+   "key": "SunfireCape",
+   "zh": "日炎斗篷",
+   "recipe": [
+    "ChainVest",
+    "GiantsBelt"
+   ],
+   "stats": {
+    "hp": 300,
+    "armor": 20
+   },
+   "passives": [
+    {
+     "on": "every",
+     "ops": [
+      {
+       "op": "status",
+       "to": {
+        "adjacent": "enemy"
+       },
+       "kind": "burn",
+       "dur": 3,
+       "value": 0.01
+      }
+     ],
+     "src": "item:SunfireCape",
+     "text": "灼燒",
+     "n": 2
+    }
+   ],
+   "desc": "生命 +300、護甲 +20。每 2 秒，燒旁邊的敵人（每秒 1% 最大生命），3 秒。",
+   "simplified": ""
+  }
+ ]
+}

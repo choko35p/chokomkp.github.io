@@ -1,0 +1,273 @@
+{
+ "version": "learn-s18-1",
+ "sprite": {
+  "src": "../icons/traits_s18.webp",
+  "cols": 8,
+  "size": 32,
+  "count": 35,
+  "index": {
+   "Vanguard": 15,
+   "Defender": 17,
+   "Brawler": 18,
+   "Rapidfire": 23
+  }
+ },
+ "traits": [
+  {
+   "key": "Defender",
+   "zh": "捍衛者",
+   "kind": "class",
+   "breakpoints": [
+    2,
+    4
+   ],
+   "desc": "我方隊伍增加12雙防。捍衛者增加更多。",
+   "levelsText": [
+    "全隊雙防 +12；捍衛者雙防 +25。",
+    "全隊雙防 +12；捍衛者雙防 +60。"
+   ],
+   "members": [
+    "Ornn",
+    "Leona",
+    "Shen",
+    "Rammus"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "team",
+      "stats": {
+       "armor": 12,
+       "mr": 12
+      }
+     },
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "armor": 25,
+       "mr": 25
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "team",
+      "stats": {
+       "armor": 12,
+       "mr": 12
+      }
+     },
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "armor": 60,
+       "mr": 60
+      }
+     }
+    ]
+   ],
+   "simplified": true
+  },
+  {
+   "key": "Rapidfire",
+   "zh": "速射",
+   "kind": "class",
+   "breakpoints": [
+    2,
+    3,
+    4
+   ],
+   "desc": "我方隊伍增加10%攻速。速射英雄每次普攻都會獲得更多攻速，最多可累加10層。",
+   "levelsText": [
+    "全隊攻速 +10%；速射每次普攻再 +3% 攻速（最多 10 層）。",
+    "全隊攻速 +10%；速射每次普攻再 +5%。",
+    "全隊攻速 +10%；速射每次普攻再 +7%。"
+   ],
+   "members": [
+    "Xayah",
+    "Varus",
+    "Kayle",
+    "MamaBeak"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "team",
+      "stats": {
+       "asPct": 0.1
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "attack",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.03,
+         "stackKey": "rapidfire",
+         "maxStacks": 10
+        }
+       ],
+       "src": "trait:Rapidfire",
+       "text": "越打越快"
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "team",
+      "stats": {
+       "asPct": 0.1
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "attack",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.05,
+         "stackKey": "rapidfire",
+         "maxStacks": 10
+        }
+       ],
+       "src": "trait:Rapidfire",
+       "text": "越打越快"
+      }
+     }
+    ],
+    [
+     {
+      "type": "stat",
+      "who": "team",
+      "stats": {
+       "asPct": 0.1
+      }
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "attack",
+       "ops": [
+        {
+         "op": "buff",
+         "to": "self",
+         "stat": "asPct",
+         "value": 0.07,
+         "stackKey": "rapidfire",
+         "maxStacks": 10
+        }
+       ],
+       "src": "trait:Rapidfire",
+       "text": "越打越快"
+      }
+     }
+    ]
+   ],
+   "simplified": true
+  },
+  {
+   "key": "Vanguard",
+   "zh": "先鋒戰士",
+   "kind": "class",
+   "breakpoints": [
+    2
+   ],
+   "desc": "戰鬥開始以及生命降至50%時，先鋒戰士獲得最大生命護盾，持續10秒。",
+   "levelsText": [
+    "開場和生命掉到一半時，先鋒戰士拿 18% 最大生命的護盾，10 秒。"
+   ],
+   "members": [
+    "Rakan",
+    "Elise",
+    "Hecarim"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "startShield",
+      "who": "members",
+      "hpPct": 0.18,
+      "dur": 10
+     },
+     {
+      "type": "passive",
+      "who": "members",
+      "passive": {
+       "on": "hpBelow",
+       "ops": [
+        {
+         "op": "shield",
+         "to": "self",
+         "value": {
+          "selfMaxHp": 0.18
+         },
+         "dur": 10
+        }
+       ],
+       "src": "trait:Vanguard",
+       "text": "先鋒護盾",
+       "n": 0.5,
+       "limit": 1
+      }
+     }
+    ]
+   ],
+   "simplified": true
+  },
+  {
+   "key": "Brawler",
+   "zh": "武鬥家",
+   "kind": "class",
+   "breakpoints": [
+    2
+   ],
+   "desc": "我方隊伍增加120最大生命。武鬥家增加更多。",
+   "levelsText": [
+    "全隊最大生命 +120；武鬥家最大生命再 +25%。"
+   ],
+   "members": [
+    "Kobuko",
+    "Alistar"
+   ],
+   "always": [],
+   "tiers": [
+    [
+     {
+      "type": "stat",
+      "who": "team",
+      "stats": {
+       "hp": 120
+      }
+     },
+     {
+      "type": "stat",
+      "who": "members",
+      "stats": {
+       "hpPct": 0.25
+      }
+     }
+    ]
+   ],
+   "simplified": true
+  }
+ ]
+}

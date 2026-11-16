@@ -1,0 +1,1585 @@
+{
+ "version": "learn-1",
+ "lessons": [
+  {
+   "id": "first-fight",
+   "n": 1,
+   "title": "先打一場再說",
+   "topic": "介面",
+   "intro": "聯盟戰棋是八個人各排各的陣，棋子自己打。你能做的事只有開打前：買牌、放牌、調位置。",
+   "task": "把板凳上的鄂爾跟剎雅拖到場上，按「開戰」。",
+   "hints": [
+    "下面那排是板凳，板凳上的牌不會打架。",
+    "場上靠上面是前排、靠下面是後排。鄂爾耐打放前面，剎雅放後面。"
+   ],
+   "done": "開打以後你就不能動了。會不會贏，開打前就決定了。",
+   "setup": {
+    "level": 2,
+    "gold": 0,
+    "hp": 100,
+    "bench": [
+     {
+      "key": "Ornn"
+     },
+     {
+      "key": "Xayah"
+     }
+    ],
+    "board": [],
+    "shop": "off",
+    "items": []
+   },
+   "enemy": [
+    {
+     "key": "Kobuko",
+     "star": 1,
+     "pos": [
+      3,
+      3
+     ]
+    }
+   ],
+   "pass": {
+    "all": [
+     {
+      "battles": 1
+     },
+     {
+      "boardAtStart": 2
+     }
+    ]
+   }
+  },
+  {
+   "id": "buy-merge",
+   "n": 2,
+   "title": "三張一樣的，合成二星",
+   "topic": "買牌",
+   "intro": "牌是用金幣在商店買的。三張一樣的一星會自動合成一隻二星，二星比一星強很多。",
+   "task": "你已經有兩隻剎雅了。把商店那張也買下來，合出二星剎雅。",
+   "hints": [
+    "牌上的數字是價錢。一費 1 金。",
+    "買錯沒關係，把牌拖回商店就是賣掉。一星一費賣掉拿回 1 金。"
+   ],
+   "done": "場上有對子（兩張一樣的）就記著。之後商店看到第三張，先買再說。",
+   "setup": {
+    "level": 3,
+    "gold": 6,
+    "hp": 100,
+    "board": [
+     {
+      "key": "Ornn",
+      "pos": [
+       4,
+       3
+      ]
+     },
+     {
+      "key": "Xayah",
+      "pos": [
+       7,
+       3
+      ]
+     }
+    ],
+    "bench": [
+     {
+      "key": "Xayah"
+     }
+    ],
+    "shop": [
+     "Xayah",
+     "Leona",
+     "Varus",
+     "Kobuko",
+     "Rakan"
+    ],
+    "reroll": "off",
+    "buyXp": "off"
+   },
+   "enemy": [
+    {
+     "key": "Kobuko",
+     "star": 1,
+     "pos": [
+      3,
+      2
+     ]
+    },
+    {
+     "key": "Varus",
+     "star": 1,
+     "pos": [
+      0,
+      4
+     ]
+    }
+   ],
+   "pass": {
+    "all": [
+     {
+      "anyStar": 2
+     }
+    ]
+   }
+  },
+  {
+   "id": "level-up",
+   "n": 3,
+   "title": "等級就是人口",
+   "topic": "上人口",
+   "intro": "你幾等，場上就能放幾隻。等級不夠，牌再多也只能坐板凳。花 4 金可以買 4 點經驗。",
+   "task": "買一次經驗升到 4 等，把板凳上的法洛士放上場，再開戰。",
+   "hints": [
+    "經驗條滿了就升等。現在差 4 點，買一次剛好。",
+    "左上角會寫「場上 3/3」。升等之後變 3/4，就是還能再放一隻。"
+   ],
+   "done": "場上沒放滿就是在浪費。每回合開打前看一眼人口有沒有滿。",
+   "setup": {
+    "level": 3,
+    "xp": 2,
+    "gold": 10,
+    "hp": 100,
+    "board": [
+     {
+      "key": "Ornn",
+      "pos": [
+       4,
+       2
+      ]
+     },
+     {
+      "key": "Leona",
+      "pos": [
+       4,
+       4
+      ]
+     },
+     {
+      "key": "Xayah",
+      "star": 2,
+      "pos": [
+       7,
+       3
+      ]
+     }
+    ],
+    "bench": [
+     {
+      "key": "Varus"
+     }
+    ],
+    "shop": [
+     "Kobuko",
+     "Rakan",
+     "Shen",
+     "Leona",
+     "Elise"
+    ],
+    "reroll": "off"
+   },
+   "enemy": [
+    {
+     "key": "Rakan",
+     "star": 1,
+     "pos": [
+      3,
+      2
+     ]
+    },
+    {
+     "key": "Kobuko",
+     "star": 1,
+     "pos": [
+      3,
+      4
+     ]
+    },
+    {
+     "key": "Varus",
+     "star": 1,
+     "pos": [
+      0,
+      3
+     ]
+    },
+    {
+     "key": "Xayah",
+     "star": 1,
+     "pos": [
+      0,
+      5
+     ]
+    }
+   ],
+   "pass": {
+    "all": [
+     {
+      "level": 4
+     },
+     {
+      "boardAtStart": 4
+     },
+     {
+      "battles": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "front-back",
+   "n": 4,
+   "title": "坦站前面，輸出站後面",
+   "topic": "站位",
+   "intro": "這關的位置是故意排錯的：會打的剎雅站最前面，耐打的鄂爾、雷歐娜躲在後面。",
+   "task": "先直接開戰看一次怎麼輸的。再把位置換過來，打贏而且剎雅要活著。",
+   "hints": [
+    "敵人三隻都是近戰，會先打離他最近的。",
+    "鄂爾、雷歐娜放第一排擋，剎雅、法洛士放最後一排。",
+    "輸了按「再排一次」，位置會回到開打前，不扣東西。"
+   ],
+   "done": "主 C 死了就沒人打傷害。排完陣問自己一句：對面第一下會打到誰？",
+   "setup": {
+    "level": 4,
+    "gold": 0,
+    "hp": 100,
+    "board": [
+     {
+      "key": "Xayah",
+      "star": 2,
+      "pos": [
+       4,
+       3
+      ]
+     },
+     {
+      "key": "Varus",
+      "pos": [
+       4,
+       4
+      ]
+     },
+     {
+      "key": "Ornn",
+      "pos": [
+       7,
+       2
+      ]
+     },
+     {
+      "key": "Leona",
+      "pos": [
+       7,
+       5
+      ]
+     }
+    ],
+    "bench": [],
+    "shop": "off"
+   },
+   "enemy": [
+    {
+     "key": "Kobuko",
+     "star": 2,
+     "pos": [
+      3,
+      3
+     ]
+    },
+    {
+     "key": "Alistar",
+     "star": 1,
+     "pos": [
+      3,
+      2
+     ]
+    },
+    {
+     "key": "Rakan",
+     "star": 1,
+     "pos": [
+      3,
+      4
+     ]
+    }
+   ],
+   "pass": {
+    "all": [
+     {
+      "win": true
+     },
+     {
+      "aliveAtEnd": "Xayah"
+     },
+     {
+      "battles": 2
+     }
+    ]
+   }
+  },
+  {
+   "id": "traits",
+   "n": 5,
+   "title": "湊羈絆",
+   "topic": "羈絆",
+   "intro": "每隻牌都有羈絆。同一個羈絆湊到數量就有加成。這關用兩個：捍衛者（2 隻，全隊變硬）、速射（2 隻，越打越快）。",
+   "task": "從板凳挑 4 隻上場，讓「捍衛者 2」跟「速射 2」同時亮起來。",
+   "hints": [
+    "左邊的羈絆欄，亮起來才算有開。",
+    "板凳上有兩隻鄂爾。同一隻牌放兩隻只算一隻，羈絆不會多。",
+    "捍衛者：鄂爾、雷歐娜。速射：剎雅、法洛士。"
+   ],
+   "done": "羈絆算的是「不同的牌」。同一隻放兩隻只是佔人口。",
+   "setup": {
+    "level": 4,
+    "gold": 0,
+    "hp": 100,
+    "board": [],
+    "bench": [
+     {
+      "key": "Ornn"
+     },
+     {
+      "key": "Ornn"
+     },
+     {
+      "key": "Leona"
+     },
+     {
+      "key": "Xayah"
+     },
+     {
+      "key": "Varus"
+     },
+     {
+      "key": "Kobuko"
+     }
+    ],
+    "shop": "off"
+   },
+   "enemy": [
+    {
+     "key": "Rakan",
+     "star": 1,
+     "pos": [
+      3,
+      2
+     ]
+    },
+    {
+     "key": "Elise",
+     "star": 1,
+     "pos": [
+      3,
+      4
+     ]
+    },
+    {
+     "key": "LeBlanc",
+     "star": 1,
+     "pos": [
+      0,
+      3
+     ]
+    }
+   ],
+   "pass": {
+    "all": [
+     {
+      "traitAtStart": {
+       "Defender": 2
+      }
+     },
+     {
+      "traitAtStart": {
+       "Rapidfire": 2
+      }
+     },
+     {
+      "battles": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "items",
+   "n": 6,
+   "title": "裝備給對的人",
+   "topic": "裝備",
+   "intro": "兩個散件放在同一隻牌身上，就會合成一件成裝。打人的裝給主 C，扛傷害的裝給坦。",
+   "task": "反曲弓＋暴風之劍給剎雅（合成巨人殺手），鎖子甲＋巨人腰帶給鄂爾（合成日炎斗篷），然後開戰。",
+   "hints": [
+    "把散件拖到牌身上就是裝上去。第二個散件拖到同一隻，會直接合成。",
+    "裝上去就拿不下來，除非把那隻牌賣掉。所以拖之前看清楚。",
+    "滑鼠移到散件上（手機長按）可以看它能合成什麼。"
+   ],
+   "done": "一隻牌最多三件。先把主 C 跟主坦各做一件出來，比散件放著等強太多。",
+   "setup": {
+    "level": 4,
+    "gold": 0,
+    "hp": 100,
+    "board": [
+     {
+      "key": "Ornn",
+      "pos": [
+       4,
+       2
+      ]
+     },
+     {
+      "key": "Leona",
+      "pos": [
+       4,
+       4
+      ]
+     },
+     {
+      "key": "Xayah",
+      "star": 2,
+      "pos": [
+       7,
+       3
+      ]
+     },
+     {
+      "key": "Varus",
+      "pos": [
+       7,
+       5
+      ]
+     }
+    ],
+    "bench": [],
+    "shop": "off",
+    "items": [
+     "RecurveBow",
+     "BFSword",
+     "ChainVest",
+     "GiantsBelt"
+    ]
+   },
+   "enemy": [
+    {
+     "key": "Kobuko",
+     "star": 2,
+     "pos": [
+      3,
+      3
+     ]
+    },
+    {
+     "key": "Alistar",
+     "star": 1,
+     "pos": [
+      3,
+      2
+     ]
+    },
+    {
+     "key": "Elise",
+     "star": 1,
+     "pos": [
+      3,
+      4
+     ]
+    },
+    {
+     "key": "Varus",
+     "star": 1,
+     "pos": [
+      0,
+      3
+     ]
+    }
+   ],
+   "pass": {
+    "all": [
+     {
+      "itemOn": {
+       "item": "GiantSlayer",
+       "role": "carry"
+      }
+     },
+     {
+      "itemOn": {
+       "item": "SunfireCape",
+       "role": "tank"
+      }
+     },
+     {
+      "battles": 1
+     }
+    ]
+   },
+   "wrongItemMsg": "這件是打人的，給坦用很浪費。按「重來這關」再試一次。"
+  },
+  {
+   "id": "interest",
+   "n": 7,
+   "title": "利息：只花零頭",
+   "topic": "經濟",
+   "intro": "每回合結束，你身上每 10 金多拿 1 金利息，最多 5 金（存到 50）。你現在有 23 金，商店剛好有想買的牌。",
+   "task": "買牌可以，但開戰的時候身上要剩 20 金以上。",
+   "hints": [
+    "23 金＝利息 2 金。掉到 19 金就只剩 1 金。",
+    "超過整十的那 3 金才是「可以花的錢」。",
+    "雷歐娜 1 金，買了剛好湊二星，還剩 22。"
+   ],
+   "done": "花錢之前先看會不會掉到下一個整十。20、30、40、50，這四條線盡量不要破。",
+   "setup": {
+    "level": 4,
+    "gold": 23,
+    "hp": 100,
+    "board": [
+     {
+      "key": "Ornn",
+      "pos": [
+       4,
+       2
+      ]
+     },
+     {
+      "key": "Leona",
+      "pos": [
+       4,
+       4
+      ]
+     },
+     {
+      "key": "Xayah",
+      "star": 2,
+      "pos": [
+       7,
+       3
+      ]
+     },
+     {
+      "key": "Varus",
+      "pos": [
+       7,
+       5
+      ]
+     }
+    ],
+    "bench": [
+     {
+      "key": "Leona"
+     }
+    ],
+    "shop": [
+     "Leona",
+     "Shen",
+     "Kayle",
+     "Kobuko",
+     "Rakan"
+    ],
+    "reroll": "off",
+    "buyXp": "off",
+    "showInterest": true
+   },
+   "enemy": [
+    {
+     "key": "Rakan",
+     "star": 1,
+     "pos": [
+      3,
+      2
+     ]
+    },
+    {
+     "key": "Elise",
+     "star": 1,
+     "pos": [
+      3,
+      4
+     ]
+    },
+    {
+     "key": "LeBlanc",
+     "star": 1,
+     "pos": [
+      0,
+      3
+     ]
+    }
+   ],
+   "pass": {
+    "all": [
+     {
+      "bought": 1
+     },
+     {
+      "goldAtStart": 20
+     },
+     {
+      "battles": 1
+     }
+    ]
+   },
+   "fail": {
+    "when": {
+     "goldAtStartBelow": 20
+    },
+    "msg": "掉到 20 以下了，利息少 1 金。按「重來這關」。"
+   }
+  },
+  {
+   "id": "streak",
+   "n": 8,
+   "title": "連勝、連敗都有錢",
+   "topic": "經濟",
+   "intro": "連贏或連輸好幾場，每回合會多拿金幣。最虧的是贏一場輸一場，什麼都沒有。",
+   "task": "連打三場。三場全贏，或三場全輸，都算過關。",
+   "hints": [
+    "想贏：場上放滿，前排後排排好。",
+    "想輸：把牌拖回板凳，場上空的就一定輸。真的對局裡這叫賣血。",
+    "每場打完看「這回合收入」那一格，連勝連敗的錢會多一行。"
+   ],
+   "done": "開局先決定這幾回合要贏還是要輸。輸輸贏贏最窮。但連敗是拿血換錢，血不是無限的。",
+   "setup": {
+    "level": 4,
+    "gold": 10,
+    "hp": 100,
+    "rounds": 3,
+    "board": [
+     {
+      "key": "Ornn",
+      "pos": [
+       4,
+       2
+      ]
+     },
+     {
+      "key": "Leona",
+      "star": 2,
+      "pos": [
+       4,
+       4
+      ]
+     },
+     {
+      "key": "Xayah",
+      "star": 2,
+      "pos": [
+       7,
+       3
+      ]
+     },
+     {
+      "key": "Varus",
+      "pos": [
+       7,
+       5
+      ]
+     }
+    ],
+    "bench": [],
+    "shop": "random",
+    "showIncome": true,
+    "showStreak": true
+   },
+   "enemies": [
+    [
+     {
+      "key": "Rakan",
+      "star": 1,
+      "pos": [
+       3,
+       2
+      ]
+     },
+     {
+      "key": "Elise",
+      "star": 1,
+      "pos": [
+       3,
+       4
+      ]
+     },
+     {
+      "key": "Varus",
+      "star": 1,
+      "pos": [
+       0,
+       3
+      ]
+     }
+    ],
+    [
+     {
+      "key": "Kobuko",
+      "star": 1,
+      "pos": [
+       3,
+       3
+      ]
+     },
+     {
+      "key": "Alistar",
+      "star": 1,
+      "pos": [
+       3,
+       2
+      ]
+     },
+     {
+      "key": "Kayle",
+      "star": 1,
+      "pos": [
+       0,
+       3
+      ]
+     },
+     {
+      "key": "Varus",
+      "star": 1,
+      "pos": [
+       0,
+       5
+      ]
+     }
+    ],
+    [
+     {
+      "key": "Shen",
+      "star": 1,
+      "pos": [
+       3,
+       3
+      ]
+     },
+     {
+      "key": "Rakan",
+      "star": 1,
+      "pos": [
+       3,
+       2
+      ]
+     },
+     {
+      "key": "Kayle",
+      "star": 1,
+      "pos": [
+       0,
+       3
+      ]
+     },
+     {
+      "key": "LeBlanc",
+      "star": 1,
+      "pos": [
+       0,
+       5
+      ]
+     }
+    ]
+   ],
+   "pass": {
+    "all": [
+     {
+      "battles": 3
+     },
+     {
+      "streakAbs": 3
+     }
+    ]
+   },
+   "fail": {
+    "when": {
+     "battles": 3
+    },
+    "msg": "有贏有輸，連勝連敗的錢都沒拿到。按「重來這關」再試。"
+   }
+  },
+  {
+   "id": "roll-stop",
+   "n": 9,
+   "title": "D 牌要設停損",
+   "topic": "D 牌",
+   "intro": "D 牌就是花 2 金重抽商店。你現在 30 金、血剩 40，場上都一星，但板凳有三組對子。這時候 D 很值得。",
+   "task": "D 牌做出至少兩隻二星，而且開戰時身上還有 10 金以上。",
+   "hints": [
+    "對子越多，每 D 一次中的機會越高。沒有對子的時候亂 D 最虧。",
+    "D 之前先講好「D 到剩 10 金就停」。",
+    "不是對子的牌不要買，那是在亂花錢。"
+   ],
+   "done": "D 牌前先講好兩件事：我在找什麼、D 到剩多少停。講不出來就不要 D。",
+   "setup": {
+    "level": 5,
+    "gold": 30,
+    "hp": 40,
+    "board": [
+     {
+      "key": "Ornn",
+      "pos": [
+       4,
+       2
+      ]
+     },
+     {
+      "key": "Shen",
+      "pos": [
+       4,
+       4
+      ]
+     },
+     {
+      "key": "Leona",
+      "pos": [
+       4,
+       3
+      ]
+     },
+     {
+      "key": "Xayah",
+      "pos": [
+       7,
+       3
+      ]
+     },
+     {
+      "key": "Varus",
+      "pos": [
+       7,
+       5
+      ]
+     }
+    ],
+    "bench": [
+     {
+      "key": "Ornn"
+     },
+     {
+      "key": "Shen"
+     },
+     {
+      "key": "Xayah"
+     }
+    ],
+    "shop": "seeded",
+    "seed": "roll-stop-5",
+    "buyXp": "off"
+   },
+   "enemy": [
+    {
+     "key": "Kobuko",
+     "star": 2,
+     "pos": [
+      3,
+      3
+     ]
+    },
+    {
+     "key": "Alistar",
+     "star": 1,
+     "pos": [
+      3,
+      2
+     ]
+    },
+    {
+     "key": "Elise",
+     "star": 1,
+     "pos": [
+      3,
+      4
+     ]
+    },
+    {
+     "key": "Kayle",
+     "star": 1,
+     "pos": [
+      0,
+      3
+     ]
+    },
+    {
+     "key": "LeBlanc",
+     "star": 1,
+     "pos": [
+      0,
+      5
+     ]
+    }
+   ],
+   "pass": {
+    "all": [
+     {
+      "starCount": {
+       "star": 2,
+       "n": 2
+      }
+     },
+     {
+      "goldAtStart": 10
+     },
+     {
+      "battles": 1
+     }
+    ]
+   },
+   "fail": {
+    "when": {
+     "goldBelow": 10
+    },
+    "msg": "已經低於 10 金了，這就是 D 過頭。按「重來這關」。"
+   }
+  },
+  {
+   "id": "level-odds",
+   "n": 10,
+   "title": "要找幾費，先上到幾等",
+   "topic": "上人口",
+   "intro": "商店出幾費的牌是看等級的。你想找三費的拉姆斯湊捍衛者 4，但你才 6 等，三費不好出。",
+   "task": "先買經驗升到 7 等，再 D 牌，找到一張三費牌買下來。",
+   "hints": [
+    "商店上面那排數字是每種費用的機率。升等之後看它怎麼變。",
+    "6 等三費 25%，7 等 40%。同樣 D 一次，7 等多中很多。",
+    "還差 8 點經驗，買兩次就到。"
+   ],
+   "done": "找一二費在低等 D，找三費以上先上人口再 D。在機率低的等級 D，錢是丟水裡。",
+   "setup": {
+    "level": 6,
+    "xp": 28,
+    "gold": 30,
+    "hp": 60,
+    "board": [
+     {
+      "key": "Ornn",
+      "star": 2,
+      "pos": [
+       4,
+       2
+      ]
+     },
+     {
+      "key": "Leona",
+      "star": 2,
+      "pos": [
+       4,
+       4
+      ]
+     },
+     {
+      "key": "Shen",
+      "pos": [
+       4,
+       3
+      ]
+     },
+     {
+      "key": "Xayah",
+      "star": 2,
+      "pos": [
+       7,
+       3
+      ]
+     },
+     {
+      "key": "Varus",
+      "star": 2,
+      "pos": [
+       7,
+       5
+      ]
+     },
+     {
+      "key": "Kayle",
+      "pos": [
+       7,
+       1
+      ]
+     }
+    ],
+    "bench": [],
+    "shop": "seeded",
+    "seed": "level-odds-1736",
+    "showOdds": true,
+    "script": [
+     {
+      "when": "firstRerollAtLevel7",
+      "shop": [
+       "Rammus",
+       "Shen",
+       "Kayle",
+       "Hecarim",
+       "Leona"
+      ]
+     }
+    ]
+   },
+   "enemy": [
+    {
+     "key": "Rakan",
+     "star": 2,
+     "pos": [
+      3,
+      2
+     ]
+    },
+    {
+     "key": "Elise",
+     "star": 2,
+     "pos": [
+      3,
+      4
+     ]
+    },
+    {
+     "key": "Alistar",
+     "star": 2,
+     "pos": [
+      3,
+      3
+     ]
+    },
+    {
+     "key": "Kayle",
+     "star": 2,
+     "pos": [
+      0,
+      3
+     ]
+    },
+    {
+     "key": "LeBlanc",
+     "star": 2,
+     "pos": [
+      0,
+      5
+     ]
+    },
+    {
+     "key": "Varus",
+     "star": 2,
+     "pos": [
+      0,
+      1
+     ]
+    }
+   ],
+   "pass": {
+    "all": [
+     {
+      "level": 7
+     },
+     {
+      "ownCost": 3
+     },
+     {
+      "battles": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "scout",
+   "n": 11,
+   "title": "看別人在玩什麼",
+   "topic": "看場",
+   "intro": "牌是八個人共用同一池的。別人拿走越多，你越難抽到。你手上有兩組對子：剎雅、法洛士。",
+   "task": "先按「看對手」看另外兩家的場，再決定要追哪一組，做出一隻二星。",
+   "hints": [
+    "對手場上有哪些牌、幾星，就是他拿走了幾張。二星＝3 張。",
+    "剎雅兩家都在玩，池子已經被抽乾了。法洛士沒人要。",
+    "商店卡片右上角會寫這張牌池子裡還剩幾張（教學才有，真的遊戲要自己算）。"
+   ],
+   "done": "D 牌之前先看一圈別人的場。兩家以上跟你搶同一張，就換目標，不要硬追。",
+   "setup": {
+    "level": 5,
+    "gold": 20,
+    "hp": 60,
+    "board": [
+     {
+      "key": "Ornn",
+      "star": 2,
+      "pos": [
+       4,
+       2
+      ]
+     },
+     {
+      "key": "Leona",
+      "pos": [
+       4,
+       4
+      ]
+     },
+     {
+      "key": "Shen",
+      "pos": [
+       4,
+       3
+      ]
+     },
+     {
+      "key": "Xayah",
+      "pos": [
+       7,
+       3
+      ]
+     },
+     {
+      "key": "Varus",
+      "pos": [
+       7,
+       5
+      ]
+     }
+    ],
+    "bench": [
+     {
+      "key": "Xayah"
+     },
+     {
+      "key": "Varus"
+     }
+    ],
+    "shop": "seeded",
+    "seed": "scout-10",
+    "buyXp": "off",
+    "showPoolLeft": true,
+    "pool": {
+     "Xayah": 0,
+     "Varus": 10
+    },
+    "rivals": [
+     {
+      "name": "對手 A",
+      "board": [
+       {
+        "key": "Xayah",
+        "star": 2
+       },
+       {
+        "key": "Rakan",
+        "star": 2
+       },
+       {
+        "key": "Elise",
+        "star": 1
+       },
+       {
+        "key": "Kayle",
+        "star": 1
+       }
+      ],
+      "bench": [
+       {
+        "key": "Xayah"
+       },
+       {
+        "key": "Xayah"
+       }
+      ]
+     },
+     {
+      "name": "對手 B",
+      "board": [
+       {
+        "key": "Xayah",
+        "star": 2
+       },
+       {
+        "key": "Ornn",
+        "star": 1
+       },
+       {
+        "key": "Alistar",
+        "star": 2
+       },
+       {
+        "key": "LeBlanc",
+        "star": 1
+       }
+      ],
+      "bench": [
+       {
+        "key": "Xayah"
+       },
+       {
+        "key": "Xayah"
+       }
+      ]
+     }
+    ]
+   },
+   "enemy": [
+    {
+     "key": "Rakan",
+     "star": 2,
+     "pos": [
+      3,
+      2
+     ]
+    },
+    {
+     "key": "Elise",
+     "star": 1,
+     "pos": [
+      3,
+      4
+     ]
+    },
+    {
+     "key": "Xayah",
+     "star": 2,
+     "pos": [
+      0,
+      3
+     ]
+    },
+    {
+     "key": "Kayle",
+     "star": 1,
+     "pos": [
+      0,
+      5
+     ]
+    }
+   ],
+   "pass": {
+    "all": [
+     {
+      "scouted": 1
+     },
+     {
+      "unitStar": {
+       "key": "Varus",
+       "star": 2
+      }
+     },
+     {
+      "battles": 1
+     }
+    ]
+   },
+   "fail": {
+    "when": {
+     "goldBelow": 2
+    },
+    "msg": "錢 D 完了還沒中。剎雅池子是空的，怎麼 D 都不會有。按「重來這關」。"
+   }
+  },
+  {
+   "id": "final",
+   "n": 12,
+   "title": "畢業考：賭牌還是上人口",
+   "topic": "綜合",
+   "intro": "最後一關自己打五回合，第五回合是頭目。開始前先選一條路：留在 5 等把一費追三星（賭牌），或是一路上人口找三費（上人口）。兩條都能過。",
+   "task": "五回合打完血還沒歸零，就畢業。",
+   "hints": [
+    "賭牌路線：留 5 等，每回合把 50 金以上的錢拿去 D，追剎雅、鄂爾三星。",
+    "上人口路線：先存錢，升 6、升 7，再 D 三費的拉姆斯、赫克林。",
+    "不管哪條路：人口放滿、對子先買、花錢前看利息線。",
+    "輸一場扣的血＝4＋對面剩幾隻 ×2。"
+   ],
+   "done": "賭牌跟上人口沒有哪個比較強，看你手上的牌適合哪一個。選了就走到底，兩邊都做一半最慘。",
+   "setup": {
+    "level": 5,
+    "xp": 0,
+    "gold": 30,
+    "hp": 30,
+    "rounds": 5,
+    "board": [
+     {
+      "key": "Ornn",
+      "star": 2,
+      "pos": [
+       4,
+       2
+      ]
+     },
+     {
+      "key": "Leona",
+      "pos": [
+       4,
+       4
+      ]
+     },
+     {
+      "key": "Shen",
+      "pos": [
+       4,
+       3
+      ]
+     },
+     {
+      "key": "Xayah",
+      "star": 2,
+      "pos": [
+       7,
+       3
+      ]
+     },
+     {
+      "key": "Varus",
+      "pos": [
+       7,
+       5
+      ]
+     }
+    ],
+    "bench": [
+     {
+      "key": "Xayah"
+     },
+     {
+      "key": "Ornn"
+     }
+    ],
+    "shop": "random",
+    "items": [
+     "RecurveBow",
+     "BFSword",
+     "ChainVest",
+     "GiantsBelt"
+    ],
+    "showIncome": true,
+    "showStreak": true,
+    "showOdds": true,
+    "routeChoice": [
+     {
+      "id": "reroll",
+      "label": "賭牌：留 5 等追三星",
+      "note": "一費在 5 等最好抽"
+     },
+     {
+      "id": "level",
+      "label": "上人口：升 7 等找三費",
+      "note": "三費要 7 等才好抽"
+     }
+    ]
+   },
+   "enemies": "generated",
+   "enemyPlan": [
+    {
+     "count": 5,
+     "maxCost": 2,
+     "star2": 2,
+     "hpMult": 0.8,
+     "dmgMult": 0.8
+    },
+    {
+     "count": 5,
+     "maxCost": 2,
+     "star2": 3,
+     "hpMult": 0.9,
+     "dmgMult": 0.9
+    },
+    {
+     "count": 6,
+     "maxCost": 3,
+     "star2": 3,
+     "hpMult": 0.9,
+     "dmgMult": 0.9
+    },
+    {
+     "count": 6,
+     "maxCost": 3,
+     "star2": 4,
+     "items": 1,
+     "hpMult": 0.75,
+     "dmgMult": 0.75
+    },
+    {
+     "boss": true,
+     "count": 6,
+     "maxCost": 3,
+     "star2": 5,
+     "items": 2,
+     "bossKey": "Rammus",
+     "bossStar": 2,
+     "bossHpMult": 1.6,
+     "hpMult": 0.7,
+     "dmgMult": 0.75
+    }
+   ],
+   "pass": {
+    "all": [
+     {
+      "battles": 5
+     },
+     {
+      "hpAbove": 0
+     }
+    ]
+   },
+   "fail": {
+    "when": {
+     "hpAtMost": 0
+    },
+    "msg": "血歸零了。按「重來這關」，換另一條路試試。"
+   },
+   "recap": [
+    "這五回合利息一共拿了 {interest} 金",
+    "有 {emptyRounds} 回合人口沒放滿",
+    "最長連勝 {bestWin}、最長連敗 {bestLose}",
+    "你走的是「{route}」"
+   ]
+  }
+ ],
+ "units": {
+  "list": [
+   {
+    "key": "Ornn",
+    "cost": 1,
+    "role": "tank",
+    "traits": [
+     "Defender"
+    ]
+   },
+   {
+    "key": "Leona",
+    "cost": 1,
+    "role": "tank",
+    "traits": [
+     "Defender"
+    ]
+   },
+   {
+    "key": "Rakan",
+    "cost": 1,
+    "role": "tank",
+    "traits": [
+     "Vanguard"
+    ]
+   },
+   {
+    "key": "Kobuko",
+    "cost": 1,
+    "role": "tank",
+    "traits": [
+     "Brawler"
+    ]
+   },
+   {
+    "key": "Xayah",
+    "cost": 1,
+    "role": "carry",
+    "traits": [
+     "Rapidfire"
+    ]
+   },
+   {
+    "key": "Varus",
+    "cost": 1,
+    "role": "carry",
+    "traits": [
+     "Rapidfire"
+    ]
+   },
+   {
+    "key": "Shen",
+    "cost": 2,
+    "role": "tank",
+    "traits": [
+     "Defender"
+    ]
+   },
+   {
+    "key": "Elise",
+    "cost": 2,
+    "role": "tank",
+    "traits": [
+     "Vanguard"
+    ]
+   },
+   {
+    "key": "Alistar",
+    "cost": 2,
+    "role": "tank",
+    "traits": [
+     "Brawler"
+    ]
+   },
+   {
+    "key": "Kayle",
+    "cost": 2,
+    "role": "carry",
+    "traits": [
+     "Rapidfire"
+    ]
+   },
+   {
+    "key": "LeBlanc",
+    "cost": 2,
+    "role": "carry",
+    "traits": []
+   },
+   {
+    "key": "Rammus",
+    "cost": 3,
+    "role": "tank",
+    "traits": [
+     "Defender"
+    ]
+   },
+   {
+    "key": "Hecarim",
+    "cost": 3,
+    "role": "tank",
+    "traits": [
+     "Vanguard"
+    ]
+   },
+   {
+    "key": "MamaBeak",
+    "cost": 3,
+    "role": "carry",
+    "traits": [
+     "Rapidfire"
+    ]
+   }
+  ],
+  "traits": [
+   {
+    "key": "Defender",
+    "zh": "捍衛者",
+    "bp": [
+     2,
+     4
+    ],
+    "teach": "全隊加雙防，捍衛者加更多（數字照 codex_s18：全隊 12，2 隻 25、4 隻 60）"
+   },
+   {
+    "key": "Rapidfire",
+    "zh": "速射",
+    "bp": [
+     2,
+     3,
+     4
+    ],
+    "teach": "全隊 10% 攻速；速射成員每次普攻再疊攻速（2 隻 3%、3 隻 5%、4 隻 7%，最多 10 層）"
+   },
+   {
+    "key": "Vanguard",
+    "zh": "先鋒戰士",
+    "bp": [
+     2
+    ],
+    "teach": "開場跟血量掉到一半時拿護盾（2 隻＝18% 最大生命，10 秒）"
+   },
+   {
+    "key": "Brawler",
+    "zh": "武鬥家",
+    "bp": [
+     2
+    ],
+    "teach": "全隊 +120 生命；武鬥家 +25% 生命"
+   }
+  ],
+  "items": {
+   "components": [
+    "RecurveBow",
+    "BFSword",
+    "ChainVest",
+    "GiantsBelt"
+   ],
+   "completed": [
+    "GiantSlayer",
+    "SunfireCape"
+   ]
+  }
+ }
+}

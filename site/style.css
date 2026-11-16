@@ -1347,3 +1347,8 @@ a.lcard:hover { border-color: var(--accent); }
 @media (prefers-color-scheme: dark) { .lab-take { color: var(--text); } .lab-pick { color: var(--text); } }
 
 .lc-pic .ico { width: 2rem; }
+
+/* 點左上的圖或站名回首頁 */
+.top .brand.brand-home{cursor:pointer}
+.top .brand.brand-home:hover h1{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px}
+.top .brand.brand-home:focus-visible{outline:2px solid var(--accent,#e2694a);outline-offset:4px;border-radius:8px}

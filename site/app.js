@@ -167,6 +167,14 @@
       onclick: () => track("season", s) }, h("b", null, label), h("small", null, sub));
     const sw = h("div", { id: "ssw", class: "ssw", role: "group", "aria-label": "切換賽季" }, mk(18, "S18", "現行"), mk(19, "S19", "預測"));
     $(".top .brand")?.after(sw);
+    // 觀眾 2026-11-16：點左上的圖或站名就回首頁
+    const br = $(".top .brand");
+    if (br && !br.dataset.home) {
+      br.dataset.home = "1"; br.classList.add("brand-home"); br.setAttribute("role", "link"); br.setAttribute("tabindex", "0"); br.title = "回首頁";
+      const goHome = (e) => { if (e.target.closest("a,button,.ssw")) return; e.preventDefault(); if (location.hash) { history.pushState(null, "", location.pathname + location.search); route(); } window.scrollTo({ top: 0, behavior: "smooth" }); track("brand", "home"); };
+      br.addEventListener("click", goHome);
+      br.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") goHome(e); });
+    }
     if (S19) {
       document.documentElement.classList.add("s19");
       const n = D.seasonNote || {};

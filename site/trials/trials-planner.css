@@ -167,3 +167,31 @@
   .tt-pl-head button { cursor: pointer; }
   .tt-pl.tt-pl-dragging { opacity: .92; box-shadow: 0 0 0 2px var(--g-gold-hi, #f0e6d2), 0 18px 50px rgba(0, 0, 0, .7); }
 }
+
+/* 站主 2026-11-16：網站陣容清單 */
+.tt-cmp-tabs { flex: 0 0 auto; }
+.tt-cmp-list { display: flex; flex-direction: column; gap: 6px; }
+.tt-cmp-row { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--g-line, #2a3a4c); border-radius: 6px; background: #0f1b29; flex-wrap: wrap; }
+.tt-cmp-row:hover, .tt-cmp-row:focus-visible { border-color: var(--g-gold, #c8aa6e); background: #142538; }
+.tt-cmp-row.tt-arm { border-color: #ffd93b; }
+.tt-cmp-tier { flex: 0 0 28px; height: 28px; display: grid; place-items: center; border-radius: 4px; font-weight: 800; color: #10151c; background: #8a96a3; }
+.tt-cmp-tier.tt-tier-S { background: #ff7f7f; } .tt-cmp-tier.tt-tier-A { background: #ffbf7f; } .tt-cmp-tier.tt-tier-B { background: #ffdf7f; } .tt-cmp-tier.tt-tier-C { background: #bfff7f; }
+.tt-cmp-main { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.tt-cmp-name { font-weight: 700; color: var(--g-gold-hi, #f0e6d2); font-size: 15px; } .tt-cmp-name small { color: #8fa3b8; font-weight: 400; font-size: 12px; }
+.tt-cmp-avs { display: flex; flex-wrap: wrap; gap: 3px; }
+.tt-cmp-av { position: relative; width: 30px; height: 30px; border-radius: 4px; border: 2px solid var(--tt-cc, #808080); box-sizing: border-box; background-size: cover; }
+.tt-cmp-3 { position: absolute; right: -3px; bottom: -3px; font-style: normal; font-size: 10px; font-weight: 800; line-height: 13px; width: 13px; text-align: center; border-radius: 50%; background: #ffd93b; color: #2a1d00; }
+.tt-cmp-ask { flex: 1 0 100%; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: #ffd93b; }
+@media (max-width: 520px) { .tt-pl-tools { display: grid; grid-template-columns: 1fr 1fr; } .tt-pl-tool span { white-space: nowrap; } }
+/* 站主 2026-11-16：推薦裝備、點羈絆篩選 */
+.tt-pl-items { position: absolute; left: 2px; right: 2px; bottom: 2px; display: flex; justify-content: center; gap: 1px; pointer-events: none; }
+.tt-pl-it { width: 31%; aspect-ratio: 1; background-size: cover; background-position: center; border: 1px solid rgba(0,0,0,.85); border-radius: 2px; box-sizing: border-box; }
+.tt-cmp-u { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; }
+.tt-cmp-its { display: flex; gap: 1px; } .tt-cmp-its .tt-pl-it { width: 10px; height: 10px; border-radius: 1px; border: 0; }
+button.tt-pl-trait { all: unset; display: inline-flex; align-items: center; gap: 3px; opacity: .62; cursor: pointer; padding: 1px 3px; border: 1px solid transparent; border-radius: 4px; }
+button.tt-pl-trait.tt-on { opacity: 1; }
+button.tt-pl-trait:hover, button.tt-pl-trait:focus-visible { border-color: var(--g-gold, #c8aa6e); }
+button.tt-pl-trait.tt-pl-tsel { opacity: 1; border-color: #ffd93b; background: rgba(255, 217, 59, .14); box-shadow: 0 0 6px rgba(255, 217, 59, .45); }
+.tt-pl-tfilter { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 6px; width: 100%; margin-bottom: 8px; padding: 6px 10px; border: 1px solid #ffd93b; border-radius: 6px; background: rgba(255, 217, 59, .1); color: #ffd93b; font-size: 14px; }
+.tt-pl-tfilter > span:not(.tt-ticon) { flex: 1 1 auto; } .tt-pl-tfilter > .tt-ticon { flex: 0 0 auto; } .tt-pl-tfilter b { font-size: 14px; }
+.tt-pl-tfilter:hover { background: rgba(255, 217, 59, .18); }

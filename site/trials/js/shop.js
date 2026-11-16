@@ -44,7 +44,13 @@ export function returnToPool(state, key, n) {
 }
 
 // 沒解鎖的棋子不進商店（沒列在 unlocks.json 的一開始就可抽）
-export function available(state, DATA, key) { return isUnlocked(state, DATA, key); }
+// 站主 2026-11-16「三星了之後就不要再出現在商店」：已經有這隻 3 星就不再抽到（跟正式服一樣）
+export function hasThreeStar(state, key) {
+  for (const u of state.board) if (u.key === key && u.star >= 3) return true;
+  for (const u of state.bench) if (u && u.key === key && u.star >= 3) return true;
+  return false;
+}
+export function available(state, DATA, key) { return isUnlocked(state, DATA, key) && !hasThreeStar(state, key); }
 
 function oddsFor(state, DATA) {
   const t = DATA.rules.shopOdds;
@@ -104,7 +110,7 @@ export function rollShop(state, DATA, opts = {}) {
   const queue = state.unlockQueue || [];
   const mode = (DATA.unlocks && DATA.unlocks.rule && DATA.unlocks.rule.guarantee) || 'nextShop';
   if (queue.length && (mode !== 'nextRound' || opts.roundStart)) {
-    const q = queue.filter(k => costOf(DATA, k) === 7 || (state.pool[k] || 0) > 0);   // 池裡沒牌的移除，不卡住
+    const q = queue.filter(k => (costOf(DATA, k) === 7 || (state.pool[k] || 0) > 0) && !hasThreeStar(state, k));   // 池裡沒牌的、已經 3 星的移除，不卡住
     const take = q.slice(0, 5);
     take.forEach((k, i) => {
       const c = costOf(DATA, k);

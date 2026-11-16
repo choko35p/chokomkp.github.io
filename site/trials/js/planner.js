@@ -46,7 +46,8 @@ export function createPlanner(opts = {}) {
         const key = Array.isArray(it) ? it[0] : null, star = Array.isArray(it) ? it[1] : null;
         if (typeof key !== 'string' || seen.has(key) || !valid(key)) continue;
         seen.add(key);
-        list.push({ key, star: star === 3 ? 3 : 2 });
+        const items = Array.isArray(it[2]) ? it[2].filter(x => typeof x === 'string').slice(0, 3) : null;
+        list.push(items && items.length ? { key, star: star === 3 ? 3 : 2, items } : { key, star: star === 3 ? 3 : 2 });
         if (list.length >= MAX) break;
       }
     } catch (_) { list = []; }
@@ -54,7 +55,7 @@ export function createPlanner(opts = {}) {
   function save() {
     if (!persist) return;
     try {
-      if (list.length) storage.setItem(STORE_KEY, JSON.stringify({ v: 1, list: list.map(e => [e.key, e.star]) }));
+      if (list.length) storage.setItem(STORE_KEY, JSON.stringify({ v: 1, list: list.map(e => (e.items && e.items.length ? [e.key, e.star, e.items] : [e.key, e.star])) }));
       else storage.removeItem(STORE_KEY);
     } catch (_) { /* 滿了或無痕模式：這次還是有效 */ }
   }
@@ -64,7 +65,8 @@ export function createPlanner(opts = {}) {
   const indexOf = (key) => list.findIndex(e => e.key === key);
   const api = {
     MAX,
-    list: () => list.map(e => ({ ...e })),
+    list: () => list.map(e => ({ ...e, ...(e.items ? { items: e.items.slice() } : {}) })),
+    itemsOf: (key) => { const i = indexOf(key); return i < 0 ? [] : (list[i].items || []).slice(); },
     size: () => list.length,
     full: () => list.length >= MAX,
     has: (key) => indexOf(key) >= 0,
@@ -99,7 +101,8 @@ export function createPlanner(opts = {}) {
         const key = typeof it === 'string' ? it : it.key;
         if (indexOf(key) >= 0) { dup++; continue; }
         if (!valid(key) || list.length >= MAX) { skipped++; continue; }
-        list.push({ key, star: it && it.star === 3 ? 3 : 2 }); added++;
+        const items = it && Array.isArray(it.items) ? it.items.filter(x => typeof x === 'string').slice(0, 3) : null;   // 推薦裝備（網站陣容帶進來的）
+        list.push(items && items.length ? { key, star: it.star === 3 ? 3 : 2, items } : { key, star: it && it.star === 3 ? 3 : 2 }); added++;
       }
       if (added) { save(); emit(); }
       return { added, dup, skipped };

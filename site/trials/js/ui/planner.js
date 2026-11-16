@@ -15,6 +15,7 @@ const ICONS = {
   cam: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 4l-1.600 2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3.400L15 4H9zm3 4.500a4.500 4.500 0 1 1 0 9 4.500 4.500 0 0 1 0-9zm0 2a2.500 2.500 0 1 0 0 5 2.500 2.500 0 0 0 0-5z"/></svg>',
   copy: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 2h6l1 2h3a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3l1-2zm0 2v2h6V4H9zm-3 3v13h12V7H6zm2 3h8v2H8v-2zm0 4h8v2H8v-2z"/></svg>',
 };
+ICONS.list = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 5h3v3H4V5zm5 .500h11v2H9v-2zM4 10.500h3v3H4v-3zm5 .500h11v2H9v-2zM4 16h3v3H4v-3zm5 .500h11v2H9v-2z"/></svg>';
 const iconEl = (k) => { const s = el('span', 'tt-pl-ic', { 'aria-hidden': 'true' }); s.innerHTML = ICONS[k]; return s; };
 const MOBILE_Q = '(max-width: 1023px), (orientation: portrait)';
 
@@ -43,7 +44,9 @@ export function mountPlanner(api) {
   const clearBtn = el('button', 'tt-pl-tool', { type: 'button', 'data-pl': 'clear' }, iconEl('trash'), el('span', '', {}, '清空'));
   const impBtn = el('button', 'tt-pl-tool', { type: 'button', 'data-pl': 'import' }, iconEl('cam'), el('span', '', {}, '看圖匯入'));
   const copyBtn = el('button', 'tt-pl-tool', { type: 'button', 'data-pl': 'copy' }, iconEl('copy'), el('span', '', {}, '複製文字'));
-  const tools = el('div', 'tt-pl-tools', {}, clearBtn, impBtn, copyBtn);
+  // 站主 2026-11-16「隊伍編輯器裡面就能選網站裡面有的陣容」
+  const compsBtn = el('button', 'tt-pl-tool', { type: 'button', 'data-pl': 'comps' }, iconEl('list'), el('span', '', {}, '網站陣容'));
+  const tools = el('div', 'tt-pl-tools', {}, compsBtn, clearBtn, impBtn, copyBtn);
   const search = el('input', 'tt-pl-search', { type: 'search', placeholder: '搜尋棋子或羈絆', 'aria-label': '搜尋棋子或羈絆', autocomplete: 'off', enterkeyhint: 'search' });
   const SORTS = [['cost', '費用'], ['name', '名稱'], ['origin', '起源'], ['class', '職業']];
   const sortBox = el('div', 'tt-pl-sorts', { role: 'tablist', 'aria-label': '排序' });
@@ -68,7 +71,17 @@ export function mountPlanner(api) {
     if (star) b.append(el('span', 'tt-pl-star', { 'aria-hidden': 'true' }, starsEl(star, { label: false })));
     if (owned) { const c = el('span', 'tt-pl-check', { 'aria-hidden': 'true' }); c.innerHTML = CHECK_SVG; b.append(c); }
     if (locked) { const l = el('span', 'tt-pl-lock', { 'aria-hidden': 'true' }); l.innerHTML = LOCK_SVG; b.append(l); }
+    if (sel) {   // 推薦裝備（站主 2026-11-16「把推薦裝備也顯示出來」）
+      const its = PL.itemsOf ? PL.itemsOf(key) : [];
+      if (its.length) { b.append(itemsRow(its, 'tt-pl-items')); b.setAttribute('aria-label', b.getAttribute('aria-label') + '，推薦裝備：' + its.map(k => itemName(k)).join('、')); }
+    }
     return b;
+  }
+  const itemName = (k) => (DATA.items.byKey && DATA.items.byKey[k] && DATA.items.byKey[k].zh) || k;
+  function itemsRow(its, cls) {
+    const r = el('span', cls, { 'aria-hidden': 'true' });
+    for (const k of its) { const i = el('span', 'tt-pl-it', { 'data-tt-tip': 'item:' + k, title: itemName(k) }); i.style.backgroundImage = `url("../icons/items/${k}.webp")`; r.append(i); }
+    return r;
   }
 
   // ---------- 已選列＋羈絆 ----------
@@ -88,8 +101,10 @@ export function mountPlanner(api) {
     if (!shown.length) { traitBox.replaceChildren(el('span', 'tt-pl-tnone', {}, '加棋子進來，羈絆就會統計在這裡')); return; }
     traitBox.replaceChildren(...shown.map(t => {
       const name = traitZh(DATA, t.key);
-      const n = el('span', 'tt-pl-trait' + (t.active ? ' tt-on' : ''), { 'data-trait': t.key, 'data-tt-tip': 'trait:' + t.key, title: `${name} ${t.count}`, 'aria-label': `${name} ${t.count}${t.active ? '，啟動' : ''}` },
+      const on = st.traitFilter === t.key;
+      const n = el('button', 'tt-pl-trait' + (t.active ? ' tt-on' : '') + (on ? ' tt-pl-tsel' : ''), { type: 'button', 'data-trait': t.key, 'data-tt-tip': 'trait:' + t.key, title: `${name} ${t.count}：點一下只看這個羈絆的棋子`, 'aria-pressed': String(on), 'aria-label': `${name} ${t.count}${t.active ? '，啟動' : ''}，點一下只看這個羈絆的棋子` },
         traitHex(DATA, t, 20), el('b', 'tt-num', {}, t.count));
+      n.addEventListener('click', () => setTraitFilter(on ? null : t.key));   // 站主 2026-11-16「點編輯器這個羈絆的時候會把符合條件的篩選出來」
       return n;
     }));
   }
@@ -104,11 +119,22 @@ export function mountPlanner(api) {
   function groupHead(t, n) {
     return el('h3', 'tt-pl-gh', {}, traitIcon(DATA, t.key, 18), t.zh, el('small', '', {}, String(n)));
   }
+  function setTraitFilter(k) {
+    st.traitFilter = k || null;
+    renderSel(); renderGrid();
+    if (k) grid.scrollTop = 0;
+  }
   function renderGrid() {
     const q = st.q.trim().toLowerCase();
-    const list = units.filter(u => matches(u, q));
+    const tf = st.traitFilter;
+    const list = units.filter(u => matches(u, q) && (!tf || (u.traits || []).includes(tf)));
     const out = [];
-    if (!list.length) out.push(el('p', 'tt-pl-none', {}, '找不到符合的棋子'));
+    if (tf) {
+      const x = el('button', 'tt-pl-tfilter', { type: 'button', 'aria-label': `取消篩選：${traitZh(DATA, tf)}` }, traitIcon(DATA, tf, 16), el('span', '', {}, `只看「${traitZh(DATA, tf)}」${list.length} 隻`), el('b', '', { 'aria-hidden': 'true' }, '✕'));
+      x.addEventListener('click', () => setTraitFilter(null));
+      out.push(x);
+    }
+    if (!list.length) out.push(el('p', 'tt-pl-none', {}, tf ? '這個羈絆沒有符合搜尋的棋子' : '找不到符合的棋子'));
     else if (st.sort === 'cost' || st.sort === 'name') {
       const sorted = list.slice().sort(st.sort === 'cost' ? ((a, b) => (a.cost - b.cost) || zhSort(a, b)) : zhSort);
       out.push(el('div', 'tt-pl-cells', {}, sorted.map(u => cellEl(u.key))));
@@ -260,6 +286,90 @@ export function mountPlanner(api) {
     toast(ok ? `複製了 ${PL.size()} 隻` : '複製失敗，瀏覽器不讓寫剪貼簿');
   });
   impBtn.addEventListener('click', () => showImport());
+
+  // ---------- 網站陣容（攻略站 S19 陣容頁的最終站位，一鍵帶進編輯器）----------
+  const COMPS_URL = (api.compsUrl !== undefined) ? api.compsUrl : '../data/s19/site-data.json';
+  let compsCache = null;
+  async function loadComps() {
+    if (compsCache) return compsCache;
+    const r = await fetch(COMPS_URL, { cache: 'no-cache' });
+    if (!r.ok) throw new Error('讀不到陣容資料（' + r.status + '）');
+    const d = await r.json();
+    const order = { S: 0, A: 1, B: 2, C: 3, D: 4 };
+    const lv = (b) => Number(String(b).replace(/\D/g, '')) || 0;
+    compsCache = (d.comps || []).filter(c => c.status !== 'custom').map((c) => {
+      const keys = Object.keys(c.boards || {}).filter(k => c.boards[k] && (c.boards[k].units || []).length).sort((a, b) => lv(b) - lv(a));
+      const bd = keys.length ? c.boards[keys[0]] : null;
+      const units = (bd ? bd.units : []).filter(u => DATA.units.byKey[u.key]).map(u => ({ key: u.key, star: u.star === 3 ? 3 : 2, items: (u.items || []).filter(x => typeof x === 'string').slice(0, 3) }));
+      return { id: c.id, name: c.name, tier: c.tier || '', lane: c.lane || 'normal', carrier: c.carrier, lv: bd ? lv(keys[0]) : 0, units };
+    }).filter(c => c.units.length).sort((a, b) => (order[a.tier] ?? 9) - (order[b.tier] ?? 9));
+    return compsCache;
+  }
+  const LANES = [['normal', '普通局'], ['highroll', '九等五費'], ['conditional', '條件陣容']];
+  let compLane = 'normal';
+  async function showComps() {
+    if (abortCtl) { try { abortCtl.abort(); } catch (_) { /* 略過 */ } abortCtl = null; }
+    setView('imp');
+    imp.replaceChildren(impHead('網站陣容', backToMain), el('div', 'tt-imp-body', {}, el('p', 'tt-imp-sub', {}, '讀取中…')));
+    let comps;
+    try { comps = await loadComps(); } catch (err) {
+      imp.replaceChildren(impHead('網站陣容', backToMain), el('div', 'tt-imp-body', {}, el('p', 'tt-imp-big', {}, '讀不到網站的陣容'), el('p', 'tt-imp-sub', {}, String(err && err.message || err))));
+      return;
+    }
+    if (st.view !== 'imp') return;
+    const tabs = el('div', 'tt-pl-sorts tt-cmp-tabs', { role: 'tablist', 'aria-label': '陣容分類' });
+    const listBox = el('div', 'tt-cmp-list', { role: 'list' });
+    const draw = () => {
+      tabs.replaceChildren(...LANES.map(([k, zh]) => {
+        const n = comps.filter(c => c.lane === k).length;
+        const b = el('button', 'tt-pl-sort', { type: 'button', role: 'tab', 'aria-selected': String(k === compLane) }, `${zh} ${n}`);
+        b.addEventListener('click', () => { compLane = k; draw(); });
+        return b;
+      }));
+      const rows = comps.filter(c => c.lane === compLane).map((c) => {
+        const av = el('span', 'tt-cmp-avs', { 'aria-hidden': 'true' });
+        for (const u of c.units) {
+          const a = styleAvatar(el('span', `tt-cmp-av tt-cost${costOf(DATA, u.key)}`), DATA, u.key);
+          if (u.star === 3) a.append(el('i', 'tt-cmp-3', {}, '3'));
+          av.append(u.items.length ? el('span', 'tt-cmp-u', {}, a, itemsRow(u.items, 'tt-cmp-its')) : el('span', 'tt-cmp-u', {}, a));
+        }
+        const go = el('button', 'tt-cmp-row', { type: 'button', role: 'listitem', 'aria-label': `${c.name}，${c.tier ? c.tier + ' 級，' : ''}${c.lv} 等站位 ${c.units.length} 隻：${c.units.map(u => zhOf(DATA, u.key) + (u.star === 3 ? '三星' : '')).join('、')}` },
+          c.tier ? el('b', `tt-cmp-tier tt-tier-${c.tier}`, {}, c.tier) : el('b', 'tt-cmp-tier', {}, '–'),
+          el('span', 'tt-cmp-main', {}, el('span', 'tt-cmp-name', {}, c.name, el('small', '', {}, ` ${c.lv} 等`)), av));
+        go.addEventListener('click', () => applyComp(c, go));
+        return go;
+      });
+      listBox.replaceChildren(...(rows.length ? rows : [el('p', 'tt-imp-sub', {}, '這一類目前沒有陣容。')]));
+    };
+    draw();
+    imp.replaceChildren(impHead('網站陣容', backToMain), el('div', 'tt-imp-body', {},
+      el('p', 'tt-imp-sub', {}, '點一個陣容，就把它最終站位的棋子和推薦裝備放進編輯器（三星的會標三星）。'), tabs, listBox));
+  }
+  function applyComp(c, row) {
+    const n = PL.size();
+    const same = n === c.units.length && c.units.every(u => PL.starOf(u.key) === u.star);
+    if (same) { toast(`「${c.name}」已經在編輯器裡了`); backToMain(); return; }
+    if (n && !row.classList.contains('tt-arm')) {   // 編輯器裡有東西：先問一次，避免誤蓋
+      listArmClear();
+      row.classList.add('tt-arm');
+      const box = el('span', 'tt-cmp-ask', {},
+        el('span', '', {}, `編輯器裡已經有 ${n} 隻：`),
+        (() => { const b = el('button', 'tt-pl-btn tt-primary', { type: 'button' }, '換掉'); b.addEventListener('click', (e) => { e.stopPropagation(); doApply(c, true); }); return b; })(),
+        (() => { const b = el('button', 'tt-pl-btn', { type: 'button' }, '加進去'); b.addEventListener('click', (e) => { e.stopPropagation(); doApply(c, false); }); return b; })());
+      row.append(box);
+      return;
+    }
+    doApply(c, true);
+  }
+  function listArmClear() { imp.querySelectorAll('.tt-cmp-row.tt-arm').forEach((r) => { r.classList.remove('tt-arm'); r.querySelector('.tt-cmp-ask')?.remove(); }); }
+  function doApply(c, replace) {
+    if (replace) PL.clear();
+    const r = PL.addMany(c.units);
+    try { api.sfx('select'); } catch (_) { /* 略過 */ }
+    toast(replace ? `編輯器換成「${c.name}」（${r.added} 隻）` : `「${c.name}」加進 ${r.added} 隻` + (r.skipped ? `，${r.skipped} 隻放不下` : ''));
+    backToMain();
+  }
+  compsBtn.addEventListener('click', () => showComps());
 
   // ---------- 看圖匯入 ----------
   const fileIn = el('input', '', { type: 'file', accept: 'image/*', hidden: true, 'data-pl': 'file', 'aria-label': '選擇截圖' });

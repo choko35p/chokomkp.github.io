@@ -7,6 +7,7 @@
 import { renderBoard, renderBench, renderItems, renderSpecials, el, zhOf, costOf, itemZh } from './board.js';
 import { renderShop, renderHud } from './shopbar.js';
 import { sfx, setMuted, isMuted, setVolume, getVolume, onAudioChange } from '../audio.js';
+import { getShake, setShake, getQuality, setQuality, onFxSettings, reducedMotion } from './fx/settings.js';
 import { mountPlanner } from './planner.js';
 import { mountMixer } from './mixer.js';
 
@@ -365,7 +366,20 @@ export async function mount(root, api, opts = {}) {
   const volOut = el('b', 'tt-num tt-vol-out', {});
   const volMute = el('button', 'tt-vol-mute', { type: 'button', 'aria-pressed': 'false' });
   const volClose = el('button', 'tt-vol-close', { type: 'button', 'aria-label': '關閉音效設定' }, '完成');
-  volPanel.append(el('div', 'tt-vol-row', {}, el('label', 'tt-vol-lab', { for: 'tt-vol-range' }, '音量'), volSlider, volOut), el('div', 'tt-vol-row tt-vol-act', {}, volMute, volClose));
+  // 畫面設定（跟音效放同一個面板）：畫面震動、特效品質；存在這台裝置上
+  const fxShake = el('button', 'tt-vol-fxbtn tt-fx-shake', { type: 'button', 'aria-pressed': 'false' });
+  const fxQual = el('button', 'tt-vol-fxbtn tt-fx-qual', { type: 'button' });
+  const syncFx = () => {
+    const rm = reducedMotion(), sh = getShake() && !rm, q = getQuality();
+    fxShake.textContent = rm ? '畫面震動：關（系統設定減少動態）' : sh ? '畫面震動：開' : '畫面震動：關';
+    fxShake.setAttribute('aria-pressed', String(sh)); fxShake.disabled = rm;
+    fxQual.textContent = q === 'low' ? '特效品質：低（省電）' : '特效品質：高';
+    fxQual.setAttribute('aria-label', `特效品質，目前${q === 'low' ? '低' : '高'}，按一下切換`);
+  };
+  fxShake.addEventListener('click', () => setShake(!getShake()));
+  fxQual.addEventListener('click', () => setQuality(getQuality() === 'low' ? 'high' : 'low'));
+  onFxSettings(syncFx); syncFx();
+  volPanel.append(el('div', 'tt-vol-row', {}, el('label', 'tt-vol-lab', { for: 'tt-vol-range' }, '音量'), volSlider, volOut), el('div', 'tt-vol-row tt-vol-act', {}, volMute, volClose), el('div', 'tt-vol-row tt-vol-fx', {}, fxShake, fxQual));
   volSlider.id = 'tt-vol-range';
   app.append(volPanel);
   const syncMute = () => {

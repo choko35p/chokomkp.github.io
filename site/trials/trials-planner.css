@@ -149,6 +149,10 @@
 .tt-vol.tt-muted .tt-vol-range { opacity: .5; }
 .tt-vol-out { flex: 0 0 auto; min-width: 44px; text-align: right; font-size: 20px; color: var(--g-gold, #c8aa6e); }
 .tt-vol-act { justify-content: space-between; }
+.tt-vol-fx { flex-wrap: wrap; }
+.tt-vol-fxbtn { flex: 1 1 130px; min-height: 40px; padding: 6px 10px; border: 1px solid var(--g-gold-dim, #785a28); border-radius: 6px; background: #13263a; color: var(--g-gold-hi, #f0e6d2); font-size: 14px; line-height: 1.3; cursor: pointer; }
+.tt-vol-fxbtn[disabled] { opacity: .55; cursor: not-allowed; }
+@media (max-width: 1023px), (orientation: portrait) { .tt-vol-fxbtn { min-height: 46px; } }
 .tt-vol-mute, .tt-vol-close { height: 40px; padding: 0 16px; border: 1px solid var(--g-gold-dim, #785a28); border-radius: 6px; background: #13263a; color: var(--g-gold-hi, #f0e6d2); font-size: 15px; cursor: pointer; }
 .tt-vol-mute[aria-pressed=true] { background: #5a1d1d; border-color: #ff8a80; color: #fff; }
 .tt-vol-close { background: linear-gradient(#e3b84a, #b98a1f); color: #1b1405; border-color: #ffe08a; font-weight: 800; }

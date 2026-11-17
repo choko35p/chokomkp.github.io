@@ -253,7 +253,7 @@ export function simulate(setup) {
     for (let i = ss.length - 1; i >= 0; i--) if (ss[i].amt <= 0) ss.splice(i, 1);
     tgt.hp -= rem;
     if (tgt.hp < 0) tgt.hp = 0;
-    emit({ e: 'dmg', id: tgt.id, src: src ? src.id : null, amt, type: TYPE_CH[type] || 'p', crit: !!o.crit, hp: tgt.hp, shield: shieldTotal(tgt), tag: o.tag || 'ability' });
+    emit({ e: 'dmg', id: tgt.id, src: src ? src.id : null, from: src ? { row: src.hex.row, col: src.hex.col } : undefined, amt, type: TYPE_CH[type] || 'p', crit: !!o.crit, hp: tgt.hp, shield: shieldTotal(tgt), tag: o.tag || 'ability' });
     const bt2 = byUnit[tgt.id];
     bt2.taken += amt;
     if (src) {
@@ -570,11 +570,12 @@ export function simulate(setup) {
       if (d < bd) { bd = d; best = h; }
     }
     if (!best) return;
+    const dashFrom = { row: u.hex.row, col: u.hex.col };   // 純畫面：拖尾的起點
     occ[cell(u.hex)] = null;
     u.hex = best;
     occ[cell(best)] = u;
     u.target = tgt;
-    emit({ e: 'move', id: u.id, to: { row: best.row, col: best.col }, dur: C.DASH_TICKS });
+    emit({ e: 'move', id: u.id, to: { row: best.row, col: best.col }, dur: C.DASH_TICKS, style: 'dash', from: dashFrom });
   }
 
   function addZone(z) {
@@ -664,6 +665,7 @@ export function simulate(setup) {
         if ((ab.altEvery > 0 && u.castCount % ab.altEvery === 0)) steps = ab.altSteps;
         else if (ab.altCond && condHolds(u, ab.altCond)) steps = ab.altSteps;
       }
+      emit({ e: 'fire', id: u.id, tgt: u.target ? u.target.id : undefined, alt: steps !== (ab.steps || []) });   // 純畫面：技能效果實際生效的那一刻
       runOps(sim, steps, u, { src: 'ability', current: u.target });
     });
   }

@@ -1,11 +1,13 @@
 // 輸入處理（SPEC_UI2 4.2–4.4、5.2）：選取、拖曳、右鍵、長按、鍵盤。layout.js 只管骨架與 render，輸入全在這裡。
 //   bindInput({ app, api, R, render, h })
 //   h = { unitByUid, unitAt, sellPrice, doSell, go, cycleSpeed, skipBattle, toBoardDefault, modalOpen, setSel }
-// 規則：左鍵點＝選取（點另一隻＝改選、點空白＝取消）；換位子、上下場、賣出、買（拖）只能用拖的；點不會移動任何東西。
+// 規則：左鍵點＝選取（點另一隻＝改選、點空白＝取消）；換位子、上下場、賣出、買（拖）只能用拖的；點不會移動任何棋子。
+// 例外（站主 2026-11-17）：先點裝備／黃金卸除器／道具選起來，再點棋子＝裝上去（跟拖過去一樣）；選了沙灘樂器再點我方空格＝擺上去。
 import { enableDnd } from './dnd.js';
 import { bindTips, showTip, hideTip, isTipPinned } from './tooltip.js';
 import * as PN from './panels.js';
 import { coverOf } from './board.js';
+import { CHOICE, isAnvil } from '../shop.js';
 
 export const parse = (d) => {
   if (!d) return null;
@@ -41,7 +43,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
   const setSel = (s) => { if (h.setSel) h.setSel(s); else { ui.sel = s; ui.sellArm = null; render(); } };
   const toast = (m) => { try { api.toast && api.toast(m); } catch (_) { /* 略過 */ } };
 
-  const sameSel = (a, b) => (!a && !b) || (a && b && a.kind === b.kind && (a.kind === 'unit' ? a.uid === b.uid : a.kind === 'item' ? a.idx === b.idx : a.kind === 'sp' ? a.id === b.id : a.key === b.key && a.star === b.star));
+  const sameSel = (a, b) => (!a && !b) || (a && b && a.kind === b.kind && (a.kind === 'unit' ? a.uid === b.uid : a.kind === 'item' ? a.idx === b.idx : a.kind === 'sp' ? a.id === b.id && String(a.from || '') === String(b.from || '') : a.key === b.key && a.star === b.star));
   function select(s) {
     if (sameSel(ui.sel, s)) return;       // 點已選的同一隻＝維持選取
     setSel(s);
@@ -74,16 +76,47 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
     if (d.k === 'enemy') return select(enemySel(d, el));
     if (d.k === 'item') return select({ kind: 'item', idx: d.i });
     if (d.k === 'sp') return select({ kind: 'sp', id: d.id });
-    if (d.k === 'inst') return select({ kind: 'sp', id: 'inst' });
-    if (d.k === 'fav' || d.k === 'mk') return select({ kind: 'unit', uid: d.uid });
+    if (d.k === 'inst') return select({ kind: 'sp', id: 'inst', from: [d.r, d.c] });   // 點已擺好的樂器：選起來，再點空格＝搬過去
+    if (d.k === 'fav' || d.k === 'mk') {
+      const u = unitByUid(d.uid);
+      if (ev.button === 0 && u && applySel(u)) return;
+      return select({ kind: 'unit', uid: d.uid });
+    }
     if (d.k === 'board' || d.k === 'bench') {
       const u = unitAt(d);
+      if (u && ev.button === 0 && applySel(u)) return;
       if (u) select({ kind: 'unit', uid: u.uid }); else clearSel();     // 空格＝取消選取，不是移動
     }
   }
-  function onTapEmpty() {
+  // 點選裝上去：手上選著裝備／道具時點棋子＝跟拖過去一樣。裝不上（滿了、不能給他）就跳原因、保持選著，可以改點別隻。
+  // 回傳 true＝這一下已經處理掉了（不要再當成選棋子）。
+  function applySel(u) {
+    const s = ui.sel; if (!s || isAnvil(u)) return false;
+    let r;
+    if (s.kind === 'item') {
+      const k = (api.state.itemBench || [])[s.idx];
+      if (!k || k === CHOICE) return false;
+      hideTip(); ui.sel = null; r = api.act('equip', s.idx, u.uid);
+    } else if (s.kind === 'sp') {
+      if (s.id === 'inst') return false;   // 樂器只能擺空格；點棋子＝改選那隻
+      hideTip(); ui.sel = null; r = s.id === 'rm' ? api.act('useRemover', u.uid) : api.act('pick', s.id, u.uid, {});
+    } else return false;
+    if (!r || r.ok === false) { ui.sel = s; render(); }
+    return true;
+  }
+  function onTapEmpty(ev) {
     if (ui.mode !== 'plan' || modalOpen()) return;
     if (isTipPinned()) hideTip();
+    const s = ui.sel, tg = ev && ev.originalEvent && ev.originalEvent.target;
+    if (s && s.kind === 'sp' && s.id === 'inst' && ev.button === 0 && tg && tg.closest) {   // 選著樂器點我方空格＝擺上去
+      const cell = tg.closest('[data-tt-drop^="board:"]'), t = cell ? parse(cell.dataset.ttDrop) : null;
+      if (t && !unitAt(t)) {
+        if (s.from && s.from[0] === t.r && s.from[1] === t.c) return clearSel();
+        ui.sel = null; const r = api.act('instrument', { from: s.from || null, to: [t.r, t.c] });
+        if (!r || r.ok === false) { ui.sel = s; render(); }
+        return;
+      }
+    }
     clearSel();
   }
 

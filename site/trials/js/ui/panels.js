@@ -729,7 +729,7 @@ function itemSide(api, r) {
     }
     if (ul.children.length) wrap.append(el('details', { class: 'tt-us-alldet' }, el('summary', { class: 'tt-us-h' }, '全部可以合成的'), ul));   // 完整配方表收起來放後面：先看到能直接按的合成鍵，手機抽屜也不會長到蓋住裝備欄
   }
-  wrap.append(el('p', { class: 'tt-us-hint tt-muted' }, '要裝備就把它拖到棋子身上；棋子身上已有 1 件散件，拖上去會直接合成。'));
+  wrap.append(el('p', { class: 'tt-us-hint tt-muted' }, '選著它再點一隻棋子就裝上去（用拖的也可以）；棋子身上已有 1 件散件，會直接合成。'));
   return wrap;
 }
 
@@ -739,7 +739,8 @@ function spSide(api, r) {
   const ic = el('span', { class: 'tt-us-itemicon tt-spicon tt-sp-' + r.id });
   const wrap = el('div', { class: 'tt-us tt-us-item' }, el('div', { class: 'tt-us-grip', 'data-tt-grip': '', 'aria-hidden': 'true' }),
     el('div', { class: 'tt-us-itemhead' }, ic, el('div', {}, el('b', { class: 'tt-us-iname' }, I.zh), el('small', {}, I.sub))));
-  wrap.append(el('p', { class: 'tt-us-desc' }, I.desc), el('p', { class: 'tt-us-hint tt-muted' }, I.hint));
+  const tapHint = r.id === 'inst' ? '選著它再點我方棋盤的空格就擺上去（用拖的也可以）。' : r.id === 'favmark' ? '' : '選著它再點一隻棋子就用上去（用拖的也可以）。';
+  wrap.append(...[el('p', { class: 'tt-us-desc' }, I.desc), tapHint && el('p', { class: 'tt-us-hint' }, tapHint), I.hint && el('p', { class: 'tt-us-hint tt-muted' }, I.hint)].filter(Boolean));
   return wrap;
 }
 
@@ -1095,7 +1096,7 @@ export function showHelp(opts = {}) {
         el('li', {}, '點商店卡就買；滑鼠停在卡片上會跳出技能說明（手機是長按，放開不會買）。'),
         el('li', {}, '點棋子是「選取」，右邊會出現資訊。點另一隻就改選，點空白處就取消。點棋子不會換位子。'),
         el('li', {}, '要換位子只能用拖的：拖到空格是移動，拖到有棋子的格子是兩隻交換，拖到商店就是賣掉。'),
-        el('li', {}, '點裝備是看說明，要裝上去也是拖到棋子身上。右鍵跟左鍵一樣，是選取。'),
+        el('li', {}, '點裝備會選起來、右邊出現說明，這時再點一隻棋子就裝上去；用拖的也可以。黃金卸除器和其他道具一樣，點一下再點棋子。右鍵跟左鍵一樣，是選取。'),
         el('li', {}, '裝備欄旁邊有兩種特殊道具：黃金卸除器（每局 1 個，拖到有裝備的棋子身上，把裝備全卸回裝備欄）、心鋼最愛（心鋼之聲 3 階給 1 個、5 階再給 1 個，拖到心鋼之聲成員身上就是選他強化技能，佈陣時可以從一位拖到另一位改選）。'),
         augOnOf(api) ? el('li', {}, '選增幅時，每一張下面都有自己的重抽鍵，按了只換那一張。') : null,
         el('li', {}, '用鍵盤的話：Tab 選到棋子按 Enter 是選取，賣出用 ' + L('sell') + '、上場／下場用 ' + L('deploy') + '，這兩個都是滑鼠指著那隻棋子按，跟選取的是誰無關；手機沒有游標，賣出請按右側面板裡的「賣出」鍵。場上換格子沒有鍵盤的做法，只能用滑鼠或手指拖。'))),

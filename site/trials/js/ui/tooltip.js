@@ -272,9 +272,26 @@ export function bindTips(root, api) {
   const specOf = (a) => a.dataset.ttTip;
 
   root.addEventListener('pointermove', (e) => { lastPt = { x: e.clientX, y: e.clientY }; }, { passive: true });
+  // 點了裝備／道具選起來之後，右邊面板已經在講同一件事：游標還停在那格就不要再跳說明框
+  // （以前是按下去收、重畫完又跳回來，一收一跳，站主說畫面會晃一下很不舒服 2026-11-17）。移出那格就恢復。
+  // 重畫時舊格子被換掉，不能靠 pointerout 判斷「移出」：記下按下那格的範圍，游標離開範圍才恢復。
+  let quiet = null, quietBox = null;
+  root.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch') return;
+    const a = find(e.target);
+    quiet = a && !a.hasAttribute('data-tt-pin') && a.closest('[data-tt-tap]') ? specOf(a) : null;
+    quietBox = quiet ? a.getBoundingClientRect() : null;
+  }, true);
+  root.addEventListener('pointermove', (e) => {
+    if (!quiet || !quietBox) return;
+    const b = quietBox;
+    if (e.clientX < b.left || e.clientX > b.right || e.clientY < b.top || e.clientY > b.bottom) { quiet = null; quietBox = null; }
+  }, { passive: true });
   root.addEventListener('pointerover', (e) => {
     if (e.pointerType === 'touch') return;
     const a = find(e.target); if (!a) return;
+    if (quiet && specOf(a) === quiet) return;
+    quiet = null; quietBox = null;
     if (a === anchorEl && tipEl) return;
     if (pinned) return;
     clearTimeout(timer);
@@ -341,7 +358,7 @@ export function bindTips(root, api) {
     let next = null;
     if (typeof spec === 'string') {
       if (pinned) next = [...root.querySelectorAll('[data-tt-tip]')].find(n => n.dataset.ttTip === spec && n.hasAttribute('data-tt-pin'));
-      else { const n = document.elementFromPoint(lastPt.x, lastPt.y); const a = find(n); if (a && a.dataset.ttTip === spec) next = a; }
+      else if (spec !== quiet) { const n = document.elementFromPoint(lastPt.x, lastPt.y); const a = find(n); if (a && a.dataset.ttTip === spec) next = a; }
     }
     if (next) showTip(next, spec, { pin: pinned, placement: o?.placement, row: o?.row && o.row.isConnected ? o.row : null, full: o?.full });
     else hideTip();

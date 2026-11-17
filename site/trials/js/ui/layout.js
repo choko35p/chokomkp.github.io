@@ -264,6 +264,7 @@ export async function mount(root, api, opts = {}) {
     else if (s.kind === 'item' && !api.state.itemBench[s.idx]) ui.sel = null;
     else if (s.kind === 'sp') { const p = api.picks ? api.picks() : null; if (s.id !== 'rm' && !(p && p[s.id] && p[s.id].cap > 0)) ui.sel = null; }   // 黃金卸除器一直都在；其他道具羈絆關掉就消失
     else if (s.kind === 'enemy' && !(curEnemy && curEnemy.units.some(u => u.key === s.key))) ui.sel = null;
+    if (ui.sel && ui.sel.kind === 'sp' && ui.sel.from) { const p = api.picks ? api.picks().inst : null; if (!(p && p.held.some(q => q[0] === s.from[0] && q[1] === s.from[1]))) ui.sel = { kind: 'sp', id: 'inst' }; }
   }
 
   // ---- 主要 render ----
@@ -272,6 +273,9 @@ export async function mount(root, api, opts = {}) {
   function renderCore() {
     curEnemy = api.enemy();
     validateSel();
+    // 手上選著裝備／道具：棋子上的游標換成「放上去」，提示可以直接點棋子裝
+    const arm = ui.sel && (ui.sel.kind === 'item' || ui.sel.kind === 'sp') ? (ui.sel.id === 'inst' ? 'inst' : 'unit') : '';
+    if (arm) app.dataset.arm = arm; else delete app.dataset.arm;
     if (!hide.has('roundbar')) renderRoundbar();
     renderAugs(); renderUnlockBtn();
     renderHud(R.hud, api);

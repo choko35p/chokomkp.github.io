@@ -671,3 +671,6 @@ button.tt-tag:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 }
 /* 站主 2026-11-17：聖光成裝 */
 .tt-xitem.tt-radiant { box-shadow: 0 0 0 2px #ffe27a, 0 0 10px rgba(255, 226, 122, .75); }
+/* 手上選著裝備／道具：指到自己的棋子會變成「放上去」游標（點一下就裝）；選著樂器指到我方格子也是 */
+.tt-shell[data-arm=unit] .tt-unit[data-tt-tap^="board:"]:not(.tt-anvil), .tt-shell[data-arm=unit] .tt-unit[data-tt-tap^="bench:"]:not(.tt-anvil) { cursor: copy; }
+.tt-shell[data-arm=inst] .tt-p .tt-cell { cursor: copy; }

@@ -664,12 +664,13 @@
           h("span", { class: "brchg " + (chg == null ? "" : chg < 0 ? "good" : chg > 0 ? "bad" : "") }, "名次 ", fmtChg(chg)));
       })) : null,
       O.tmode ? ownerTierCtl(c, pool) : null);
+    const cp = tierCopyBtn(c, el); if (cp) el.append(cp);
     return el;
   }
   // 「研究中」卡片：還沒有下限／上限，改列均名、前四率和場數（站主 2026-11-06）
   function wcard(c) {
     const w = c.watch;
-    return h("div", { class: "tc wc" + (O.tmode ? "" : " tc-click"), "data-id": c.id, onclick: cardClick(c.id) },
+    const el = h("div", { class: "tc wc" + (O.tmode ? "" : " tc-click"), "data-id": c.id, onclick: cardClick(c.id) },
       h("button", { class: "tc-main", type: "button", onclick: () => go(c.id) },
         icon("champion", compIcon(c), "sm"),
         h("span", { class: "tc-txt" },
@@ -678,6 +679,8 @@
           h("span", { class: "tc-sub" }, c.range?.floor ? [lvPill("下限", c.range.floor), lvPill("上限", c.range.ceil)] : null,
             h("span", { class: "tag few" }, `樣本少：${w.n} 場・${w.players} 位`)),
           c.lane === "conditional" && c.required?.length ? h("span", { class: "tc-req", title: reqText(c.required) }, "需要：", reqText(c.required)) : null)));
+    const cp = tierCopyBtn(c, el); if (cp) el.append(cp);
+    return el;
   }
   let TB_LANE = "normal";  // T 度表目前的分頁（站主 2026-11-06：三個分區各自一頁）
   function renderTiers() {
@@ -1275,6 +1278,59 @@
     draw();
     if (!PL.d) loadPlanner().then(draw);
     return row;
+  }
+  /* ---------- T 表一鍵複製分享碼（站主 2026-11-17：「把陣容複製碼弄到T度表上面讓人可以很方便就使用」；設計 Fable 5.2）
+     卡片右邊一條複製鈕（只放圖示），複製「成形盤」＝主圖和 8 等取大的那張，沒有就往下找最近的；分支小按鈕不加、研究中卡片照加；
+     S19 沒有官方代碼、站主調 T 表時都不顯示。代碼表 T 表畫完後先預載，載好才露出按鈕（按了才抓檔，Safari 會擋剪貼簿）。 ---------- */
+  function tierBoardLv(c) {
+    const M = mainLevel(c); if (!M) return null;
+    const want = Math.max(M, 8);
+    for (let lv = want; lv >= 5; lv--) if (boardOk(c, lv)) return lv;
+    for (let lv = want + 1; lv <= 10; lv++) if (boardOk(c, lv)) return lv;
+    return null;
+  }
+  const tierCode = (c) => { const lv = PL.d ? tierBoardLv(c) : null; const r = lv ? plannerCode(c.boards["lv" + lv].units) : null; return r ? { lv, code: r.code } : null; };
+  function tpToast(msg, code) {
+    let n = $("#tp-toast");
+    if (!n) { n = h("div", { id: "tp-toast", class: "tp-toast", role: "status", "aria-live": "polite" }); document.body.append(n); }
+    n.textContent = ""; n.append(h("span", null, msg));
+    if (code) n.append(h("code", { class: "tp-code" }, code));
+    n.classList.toggle("stay", !!code); n.hidden = false;
+    clearTimeout(n._t); document.removeEventListener("pointerdown", n._off, true);
+    if (!code) { n._t = setTimeout(() => { n.hidden = true; }, 3500); return; }
+    // 被擋時代碼要留著讓人慢慢長按複製：點提示框外面才收起來
+    n._off = (ev) => { if (!n.contains(ev.target)) { n.hidden = true; document.removeEventListener("pointerdown", n._off, true); } };
+    setTimeout(() => document.addEventListener("pointerdown", n._off, true), 0);
+    const r = document.createRange(); r.selectNodeContents(n.querySelector("code")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  }
+  const CP_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>';
+  const OK_SVG = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  // 首頁就有 T 表：等瀏覽器閒下來才抓代碼表，不跟首頁搶頻寬
+  const idlePlanner = () => (PL.ip ||= new Promise((res) => (window.requestIdleCallback ? requestIdleCallback(() => res(), { timeout: 2500 }) : setTimeout(res, 400))).then(loadPlanner));
+  function tierCopyBtn(c, card) {
+    if (S19 || O.tmode || (PL.d && !tierCode(c))) return null;  // 代碼表已載好卻算不出代碼（沒有棋盤的待補陣容等）就不放
+    const btn = h("button", { type: "button", class: "tc-cp", hidden: true, "aria-label": `複製「${c.name}」的戰術規劃分享碼` });
+    btn.innerHTML = CP_SVG;
+    const show = () => {
+      const r = tierCode(c);
+      if (!r) { btn.remove(); return; }  // 按鈕這時已掛在卡片上（代碼表是非同步載入的）
+      btn.title = `複製 ${r.lv} 等盤的分享碼，到遊戲「戰術規劃」按匯入貼上`;
+      btn.hidden = false; card.classList.add("has-cp");
+    };
+    btn.addEventListener("click", async (ev) => {
+      ev.stopPropagation(); ev.preventDefault();
+      const r = tierCode(c); if (!r) return;
+      track("planner", `tier:${c.id}:lv${r.lv}`);
+      const ok = await copyText(r.code, null);
+      if (ok) {
+        btn.innerHTML = OK_SVG; btn.classList.add("done"); clearTimeout(btn._t);
+        btn._t = setTimeout(() => { btn.innerHTML = CP_SVG; btn.classList.remove("done"); }, 1500);
+        tpToast(`複製好了（${c.name}・${r.lv} 等盤）！進遊戲開「戰術規劃」按匯入貼上。`);
+      } else tpToast("瀏覽器擋住複製了，下面這串長按（電腦按 Ctrl+C）複製：", r.code);
+    });
+    btn.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") ev.stopPropagation(); });
+    if (PL.d) show(); else idlePlanner().then(show);
+    return btn;
   }
   const champsOnly = (units) => (units || []).filter((u) => !isPlant(u));
   const traitN = (units, t) => {

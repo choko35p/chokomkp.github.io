@@ -1352,3 +1352,18 @@ a.lcard:hover { border-color: var(--accent); }
 .top .brand.brand-home{cursor:pointer}
 .top .brand.brand-home:hover h1{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px}
 .top .brand.brand-home:focus-visible{outline:2px solid var(--accent,#e2694a);outline-offset:4px;border-radius:8px}
+
+/* T 表一鍵複製分享碼（2026-11-17）：卡片右上角一顆複製鈕，只佔陣容名那一行的右邊空位（直條會把頻率擠到第二行、T 表變高） */
+.tc.has-cp { position: relative; }
+.tc.has-cp .tc-nm { padding-right: 30px; }
+.tc-cp { position: absolute; top: 5px; right: 5px; width: 26px; height: 22px; display: flex; align-items: center; justify-content: center; padding: 0; margin: 0;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); color: var(--muted); cursor: copy; font: inherit; z-index: 1; transition: background .15s, color .15s, border-color .15s; }
+.tc-cp[hidden] { display: none; }
+.tc-cp:hover { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.tc-cp:focus-visible { outline: 2px solid var(--focus, var(--accent)); outline-offset: 1px; }
+.tc-cp.done { background: color-mix(in srgb, #2e8b57 16%, var(--surface)); color: #2e8b57; border-color: #2e8b57; }
+@media (pointer: coarse) { .tc-cp { width: 34px; height: 24px; top: 4px; right: 4px; } .tc.has-cp .tc-nm { padding-right: 36px; } }
+.tp-toast { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 60; width: max-content; max-width: min(92vw, 520px);
+  display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--text); color: var(--bg); font-size: var(--fs-s, .9rem); line-height: 1.5; box-shadow: 0 6px 24px rgba(0,0,0,.25); }
+.tp-toast[hidden] { display: none; }
+.tp-toast .tp-code { display: block; padding: 6px 8px; border-radius: 8px; background: var(--bg); color: var(--text); font-size: .8rem; word-break: break-all; user-select: all; -webkit-user-select: all; }

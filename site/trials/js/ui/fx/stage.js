@@ -132,6 +132,7 @@ export function createStage(root, env) {
     fxs.length = 0; objs.length = 0; projs.length = 0; timers.length = 0;
     cu.clearRect(0, 0, W, H); co.clearRect(0, 0, W, H); drewLast = false;
   };
+  S.projN = () => projs.length;
   S.busy = () => fxs.length + objs.length + projs.length + pLive + timers.length;
 
   // ---------- 逐幀 ----------

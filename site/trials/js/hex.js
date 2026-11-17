@@ -82,5 +82,46 @@ export function lineThrough(a, b, len) {
   return out;
 }
 
+// ---- 位移／投射物用的幾何（階段二）----
+export const DIR6 = [[1, 0], [0.5, H], [-0.5, H], [-1, 0], [-0.5, -H], [0.5, -H]];   // E, SE, SW, W, NW, NE（格中心座標下的單位方向）
+export function cellKey(h) { return h.row * COLS + h.col; }
+export function same(a, b) { return !!a && !!b && a.row === b.row && a.col === b.col; }
+// 從 a 沿 (dx,dy) 方向的直線上的格子（不含 a），最多 len 格、出界即止
+export function ray(a, dx, dy, len) {
+  const ca = center(a), m = Math.sqrt(dx * dx + dy * dy);
+  if (m === 0 || len <= 0) return [];
+  dx /= m; dy /= m;
+  const out = [];
+  let last = a;
+  for (let s = 1; s <= len * 4 + 4 && out.length < len; s++) {
+    const k = s * 0.25;
+    const c = nearestCell(ca.x + dx * k + 1e-6, ca.y + dy * k + 7e-7);
+    if (!inBoard(c)) break;
+    if (c.row === last.row && c.col === last.col) continue;
+    out.push(c);
+    last = c;
+  }
+  return out;
+}
+export function rayDir(a, i, len) { return ray(a, DIR6[i][0], DIR6[i][1], len); }
+// 棋盤上每一條直線（三個軸向各自的所有線），每條線是由頭到尾的格子陣列
+export function allLines() {
+  const lines = [];
+  const seen = new Set();
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const a = { row: r, col: c };
+    for (const i of [0, 1, 2]) {   // E、SE、SW 三個軸向；起點必須是這條線的頭（反方向沒有格子）
+      const back = rayDir(a, i + 3, 1);
+      if (back.length) continue;
+      const cells = [a, ...rayDir(a, i, 20)];
+      const key = i + ':' + cellKey(a);
+      if (!seen.has(key)) { seen.add(key); lines.push(cells); }
+    }
+  }
+  return lines;
+}
+export const LINES = allLines();
+export function boardCenterHex() { return { row: 3, col: 3 }; }
+
 export function playerToBoard(pos) { return { row: 4 + pos[0], col: pos[1] }; }
 export function enemyToBoard(pos) { return { row: 3 - pos[0], col: 6 - pos[1] }; }

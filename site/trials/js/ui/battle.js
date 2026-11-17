@@ -62,12 +62,21 @@ export function playBattle(boardEl, result, opts = {}) {
     if (!u.mv) return to;
     const k = Math.min(1, Math.max(0, (nowMs() - u.mv.t0) / u.mv.dur));
     if (k >= 1) { u.mv = null; return to; }
-    const f = hexXY(u.mv.from);
-    return { x: f.x + (to.x - f.x) * k, y: f.y + (to.y - f.y) * k };
+    const m = u.mv;
+    if (m.pts) {   // 沿引擎給的路徑一格一格走
+      const L = m.cum[m.cum.length - 1] * k; let i = 1;
+      while (i < m.cum.length - 1 && m.cum[i] < L) i++;
+      const seg = m.cum[i] - m.cum[i - 1] || 1, f = Math.min(1, Math.max(0, (L - m.cum[i - 1]) / seg));
+      return { x: m.pts[i - 1].x + (m.pts[i].x - m.pts[i - 1].x) * f, y: m.pts[i - 1].y + (m.pts[i].y - m.pts[i - 1].y) * f };
+    }
+    const f = hexXY(m.from);
+    return { x: f.x + (to.x - f.x) * k, y: f.y + (to.y - f.y) * k - (m.arc ? Math.sin(Math.PI * k) * w * m.arc : 0) };
   };
   const fxEnv = {
     W: () => W, H: () => w * (7 * ROW_H + 1), w: () => w, speed: () => speed,
     pos: (id) => { const u = U.get(id); if (!u) return null; const p = basePosOf(u); return { x: p.x + (u.ox || 0), y: p.y + (u.oy || 0) }; },
+    hexPt: (h) => hexXY(h),
+    xy: (p) => ({ x: p.x * w + w / 2, y: p.y * w + w / 2 }),   // 引擎世界座標（格寬為 1）→ 畫面
     basePos: (id) => { const u = U.get(id); return u ? basePosOf(u) : null; },
     unit: (id) => U.get(id) || null,
     units: () => Array.from(U.values()),
@@ -217,10 +226,10 @@ export function playBattle(boardEl, result, opts = {}) {
       if (k === 'stun') { const s = el('span', 'tt-bt-st-stun', u.stbox); s.textContent = '◌'; }
       else if (k === 'charm') { const s = el('span', 'tt-bt-st-charm', u.stbox); s.textContent = '♥'; }
       else if (k === 'untargetable' || k === 'ccImmune') continue;
-      else if (!reduced) { const s = el('span', 'tt-bt-st-misc', u.stbox); s.textContent = STNAME[k] || k; }
+      else if (!reduced && STNAME[k]) { const s = el('span', 'tt-bt-st-misc', u.stbox); s.textContent = STNAME[k]; }
     }
   }
-  const STNAME = { burn: '燃', wound: '傷', shred: '裂', sunder: '破', chill: '凍', weaken: '弱', vulnerable: '易' };
+  const STNAME = { burn: '燃', wound: '傷', shred: '裂', sunder: '破', chill: '凍', weaken: '弱', vulnerable: '易', paint: '染', taunt: '嘲', silence: '默', root: '縛', slow: '緩' };
   const TYPE_CLS = { p: 'tt-bt-n-p', m: 'tt-bt-n-m', t: 'tt-bt-n-t' };
 
   // ---------- 事件 ----------
@@ -233,11 +242,29 @@ export function playBattle(boardEl, result, opts = {}) {
         if (u) {
           const from = { row: u.hex.row, col: u.hex.col };
           u.prevHex = from;
-          const cur = fast ? null : basePosOf(u);   // 還在滑的話，從目前位置接著走
           u.hex = { row: ev.to.row, col: ev.to.col };
-          place(u, fast ? 0 : (ev.dur || 0) * TICK_MS / speed);
+          const st = ev.style || 'walk', ms = fast ? 0 : (ev.dur || 0) * TICK_MS / speed;
+          if (!fast && !reduced && st === 'blink') {
+            place(u, 0);
+            if (u.node.animate) u.node.animate([{ opacity: 0.15 }, { opacity: 1 }], { duration: 220, easing: 'ease-out' });
+          } else if (!fast && !reduced && ev.path && ev.path.length > 1 && ms > 0) {
+            const pts = ev.path.map(hexXY), cum = [0];
+            for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.max(0.001, Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y)));
+            place(u, 0);
+            u.mv = { t0: nowMs(), dur: ms, pts, cum };
+            if (u.node.animate) {
+              const T = cum[cum.length - 1];
+              u.node.animate(pts.map((p, i) => ({ transform: `translate(${p.x - w / 2}px,${p.y - w / 2}px)`, offset: cum[i] / T })), { duration: ms, easing: 'linear' });
+            }
+          } else if (!fast && !reduced && st === 'leap' && ms > 0) {
+            place(u, 0);
+            const h = 1.1;
+            u.mv = { from, t0: nowMs(), dur: ms, arc: h };
+            const a = hexXY(from), b = hexXY(u.hex), kf = [];
+            for (let i = 0; i <= 8; i++) { const k = i / 8; kf.push({ transform: `translate(${a.x + (b.x - a.x) * k - w / 2}px,${a.y + (b.y - a.y) * k - w / 2 - Math.sin(Math.PI * k) * w * h}px)`, offset: k }); }
+            if (u.node.animate) u.node.animate(kf, { duration: ms, easing: 'linear' });
+          } else place(u, ms);
           if (!fast && fx) fx.move(u, from, u.hex, ev);
-          void cur;
         }
         break;
       case 'atk': {
@@ -279,6 +306,7 @@ export function playBattle(boardEl, result, opts = {}) {
         break;
       case 'fx': {
         if (fast || !fx) break;
+        if (ev.name) { fx.fxEv(ev); break; }
         const a = resolvePt(ev.from), b = resolvePt(ev.to);
         const src = ev.src != null ? U.get(ev.src) : null;
         if (ev.kind === 'aoe' || ev.kind === 'cone') {
@@ -287,6 +315,10 @@ export function playBattle(boardEl, result, opts = {}) {
         } else if (a && b) fx.line(a, b, ev.kind, src);
         break;
       }
+      case 'proj': if (!fast && fx) fx.proj(ev); break;
+      case 'obj': if (!fast && fx) fx.obj(ev); break;
+      case 'air': if (!fast && fx) fx.air(ev); break;
+      case 'chan': if (!fast && fx) fx.chan(ev); break;
       case 'status':
         if (u) { setStatus(u, ev.kind, ev.on); if (!fast && fx) fx.status(u, ev.kind, ev.on); }
         break;

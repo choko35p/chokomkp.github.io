@@ -183,33 +183,54 @@
         "op": "flag",
         "name": "spider",
         "on": true
+       },
+       {
+        "op": "fx",
+        "name": "morph",
+        "at": "self",
+        "skin": "spider"
        }
       ]
      },
      {
-      "op": "damage",
+      "op": "projectile",
       "to": {
        "mostDamage": 1
       },
-      "type": "magic",
-      "value": {
-       "ap": [
-        90,
-        135,
-        200
-       ]
-      }
-     },
-     {
-      "op": "stun",
-      "to": "prev",
-      "dur": 1.5
+      "shape": "web",
+      "speed": 10,
+      "pierce": false,
+      "firstHit": true,
+      "onHit": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "magic",
+        "value": {
+         "ap": [
+          90,
+          135,
+          200
+         ]
+        }
+       },
+       {
+        "op": "stun",
+        "to": "prev",
+        "dur": 1.5
+       },
+       {
+        "op": "fx",
+        "name": "burst",
+        "at": "current"
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "變身加血併入第一次施放；網子直接打「造成最多傷害的敵人」，不算「第一個被擊中」。"
+    "simplified": "變身加血併入第一次施放。"
    },
    "passives": []
   },
@@ -248,7 +269,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "巨石改為普攻之外額外一發，不取代那一下普攻。"
+    "simplified": "巨石是額外一發，不取代第 3 下普攻。"
    },
    "passives": [
     {
@@ -257,15 +278,34 @@
      "src": "unit",
      "ops": [
       {
-       "op": "damage",
-       "type": "physical",
-       "value": {
-        "ad": [
-         130,
-         195,
-         290
-        ]
-       }
+       "op": "projectile",
+       "to": "current",
+       "shape": "rock",
+       "arc": true,
+       "speed": 9,
+       "onHit": [
+        {
+         "op": "damage",
+         "type": "physical",
+         "value": {
+          "ad": [
+           130,
+           195,
+           290
+          ]
+         }
+        },
+        {
+         "op": "fx",
+         "name": "burst",
+         "at": "current"
+        },
+        {
+         "op": "fx",
+         "name": "shake",
+         "power": 1
+        }
+       ]
       },
       {
        "op": "buff",
@@ -312,6 +352,13 @@
     "castTime": 0.6,
     "steps": [
      {
+      "op": "fx",
+      "name": "spin",
+      "at": "self",
+      "r": 1,
+      "dur": 0.35
+     },
+     {
       "op": "damage",
       "to": {
        "adjacent": "enemy"
@@ -326,28 +373,46 @@
       }
      },
      {
-      "op": "damage",
-      "to": "current",
-      "type": "magic",
-      "value": {
-       "ap": [
-        240,
-        360,
-        575
-       ]
-      }
-     },
-     {
       "op": "status",
       "to": "prev",
       "kind": "charm",
       "dur": 5
+     },
+     {
+      "op": "delay",
+      "sec": 0.25,
+      "ops": [
+       {
+        "op": "fx",
+        "name": "slash",
+        "at": "current",
+        "big": true
+       },
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "magic",
+        "value": {
+         "ap": [
+          240,
+          360,
+          575
+         ]
+        }
+       },
+       {
+        "op": "status",
+        "to": "prev",
+        "kind": "charm",
+        "dur": 5
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "古典樂的額外效果交給羈絆；著迷只套用在開膛的目標。"
+    "simplified": "古典樂的額外效果交給羈絆。"
    },
    "passives": []
   },
@@ -384,30 +449,45 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "to": {
-       "line": "current",
+      "op": "pathDash",
+      "path": {
+       "kind": "through",
+       "to": "current",
        "len": 2
       },
-      "type": "physical",
-      "value": {
-       "ap": [
-        15,
-        25,
-        45
-       ],
-       "ad": [
-        115,
-        175,
-        270
-       ]
-      }
+      "speed": 14,
+      "end": "stay",
+      "trail": "scythe",
+      "onHit": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "physical",
+        "value": {
+         "ap": [
+          15,
+          25,
+          45
+         ],
+         "ad": [
+          115,
+          175,
+          270
+         ]
+        }
+       },
+       {
+        "op": "fx",
+        "name": "slash",
+        "at": "current"
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": true,
-    "simplified": "滑行簡化成不位移；「額外35%魔法傷害」簡化為全傷害增幅 +35%；無法被選取的秒數原文沒寫，估 1.5 秒。"
+    "simplified": "「額外35%魔法傷害」簡化為全傷害增幅 +35%；無法被選取的秒數原文沒寫，估 1.5 秒。"
    },
    "passives": [
     {
@@ -422,6 +502,12 @@
         "favorite": true
        },
        "then": [
+        {
+         "op": "fx",
+         "name": "morph",
+         "at": "self",
+         "skin": "shadow"
+        },
         {
          "op": "status",
          "to": "self",
@@ -500,6 +586,13 @@
      "src": "unit",
      "ops": [
       {
+       "op": "fx",
+       "name": "aura",
+       "at": "self",
+       "skin": "spark",
+       "pulse": true
+      },
+      {
        "op": "damage",
        "to": {
         "adjacent": "enemy"
@@ -550,6 +643,13 @@
     "castTime": 0.5,
     "steps": [
      {
+      "op": "fx",
+      "name": "aura",
+      "at": "self",
+      "skin": "hype",
+      "dur": 8
+     },
+     {
       "op": "repeat",
       "times": 8,
       "gap": 1,
@@ -572,7 +672,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": true,
-    "simplified": "被動「最強的柯布柯獲得超流行熱度 100% 額外生命」數值未公布，丟掉；興奮狀態 8 秒簡化成連續 8 次每秒治療（沒有別的加成）。"
+    "simplified": "被動「最強的柯布柯獲得超流行熱度 100% 額外生命」數值未公布，丟掉；興奮狀態簡化成連續 8 次每秒治療。"
    },
    "passives": []
   },
@@ -618,6 +718,17 @@
         600
        ]
       }
+     },
+     {
+      "op": "fx",
+      "name": "slash",
+      "at": "current"
+     },
+     {
+      "op": "fx",
+      "name": "shockwave",
+      "at": "current",
+      "r": 1
      },
      {
       "op": "damage",
@@ -684,28 +795,46 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        78,
-        120,
-        175
-       ]
-      },
-      "hits": 3
-     },
-     {
-      "op": "if",
-      "cond": {
-       "killed": true
-      },
-      "then": [
+      "op": "projectile",
+      "to": "current",
+      "shape": "ribbon",
+      "count": 3,
+      "spread": "seq",
+      "gap": 0.12,
+      "speed": 12,
+      "onHit": [
        {
-        "op": "buff",
-        "to": "self",
-        "stat": "ap",
-        "value": 1
+        "op": "damage",
+        "to": "current",
+        "type": "magic",
+        "value": {
+         "ap": [
+          78,
+          120,
+          175
+         ]
+        }
+       },
+       {
+        "op": "fx",
+        "name": "flash",
+        "at": "current"
+       }
+      ],
+      "onEnd": [
+       {
+        "op": "if",
+        "cond": {
+         "killed": true
+        },
+        "then": [
+         {
+          "op": "buff",
+          "to": "self",
+          "stat": "ap",
+          "value": 1
+         }
+        ]
        }
       ]
      }
@@ -779,6 +908,18 @@
      "limit": 1,
      "src": "unit",
      "ops": [
+      {
+       "op": "fx",
+       "name": "morph",
+       "at": "self",
+       "skin": "rage"
+      },
+      {
+       "op": "fx",
+       "name": "shockwave",
+       "at": "self",
+       "r": 1
+      },
       {
        "op": "heal",
        "to": "self",
@@ -858,7 +999,12 @@
       "value": {
        "selfMaxHp": 0.07
       },
-      "hits": 2
+      "hits": 2,
+      "fx": {
+       "name": "slash",
+       "heavy": true,
+       "shake": 1
+      }
      }
     ],
     "altSteps": null,
@@ -965,6 +1111,13 @@
        ]
       },
       "dur": 4
+     },
+     {
+      "op": "fx",
+      "name": "tether",
+      "frm": "self",
+      "to": "prev",
+      "skin": "gem"
      }
     ],
     "altSteps": null,
@@ -1006,6 +1159,15 @@
     "desc": "射出一陣箭雨，對目標造成30/45/70（受法術強度加成） + 230/345/520（受攻擊力加成）物理傷害，對相鄰敵人造成15/22.5/35（受法術強度加成） + 115/172.5/260（受攻擊力加成）傷害，並施加20%緩速，持續5秒。\n緩速：降低攻擊速度。",
     "castTime": 0.6,
     "steps": [
+     {
+      "op": "fx",
+      "name": "rain",
+      "at": "current",
+      "r": 1,
+      "shape": "arrow",
+      "n": 8,
+      "dur": 0.4
+     },
      {
       "op": "damage",
       "to": "current",
@@ -1092,26 +1254,40 @@
     "castTime": 0.5,
     "steps": [
      {
+      "op": "fx",
+      "name": "aura",
+      "at": "self",
+      "skin": "glow"
+     },
+     {
       "op": "empower",
       "to": "self",
       "dur": 60,
       "onHit": [
        {
-        "op": "damage",
+        "op": "projectile",
         "to": "current",
-        "type": "physical",
-        "value": {
-         "ap": [
-          3,
-          5,
-          7
-         ],
-         "ad": [
-          13,
-          20,
-          30
-         ]
-        }
+        "shape": "orb",
+        "speed": 14,
+        "onHit": [
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "physical",
+          "value": {
+           "ap": [
+            3,
+            5,
+            7
+           ],
+           "ad": [
+            13,
+            20,
+            30
+           ]
+          }
+         }
+        ]
        }
       ]
      }
@@ -1119,7 +1295,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "「本場剩餘時間」用 60 秒的強化代替；光球當成附加傷害，不另外飛行。"
+    "simplified": "「本場剩餘時間」用 60 秒的強化代替。"
    },
    "passives": []
   },
@@ -1157,32 +1333,58 @@
     "castTime": 0.6,
     "steps": [
      {
-      "op": "damage",
+      "op": "projectile",
       "to": "current",
-      "type": "magic",
-      "value": {
-       "ap": [
-        120,
-        180,
-        270
-       ]
-      }
-     },
-     {
-      "op": "damage",
-      "to": {
-       "around": "current",
-       "r": 1,
-       "includeCenter": false
-      },
-      "type": "magic",
-      "value": {
-       "ap": [
-        60,
-        90,
-        135
-       ]
-      }
+      "shape": "bomb",
+      "arc": true,
+      "speed": 8,
+      "onHit": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "magic",
+        "value": {
+         "ap": [
+          120,
+          180,
+          270
+         ]
+        }
+       },
+       {
+        "op": "damage",
+        "to": {
+         "around": "current",
+         "r": 1,
+         "includeCenter": false
+        },
+        "type": "magic",
+        "value": {
+         "ap": [
+          60,
+          90,
+          135
+         ]
+        }
+       },
+       {
+        "op": "fx",
+        "name": "burst",
+        "at": "current",
+        "r": 1
+       },
+       {
+        "op": "fx",
+        "name": "shockwave",
+        "at": "current",
+        "r": 1
+       },
+       {
+        "op": "fx",
+        "name": "shake",
+        "power": 1
+       }
+      ]
      }
     ],
     "altSteps": null,
@@ -1244,38 +1446,42 @@
     "castTime": 0.8,
     "steps": [
      {
-      "op": "damage",
+      "op": "fx",
+      "name": "hop",
+      "at": "self",
+      "skin": "tossback"
+     },
+     {
+      "op": "projectile",
       "to": {
        "farthest": 1
       },
-      "type": "magic",
-      "value": {
-       "ap": [
-        450,
-        675,
-        1000
-       ]
-      }
-     },
-     {
-      "op": "if",
-      "cond": {
-       "killed": true
+      "shape": "ball",
+      "speed": 13,
+      "pierce": false,
+      "firstHit": true,
+      "bounce": {
+       "when": "kill",
+       "carry": "overkill",
+       "pick": "nextInPath"
       },
-      "then": [
+      "onHit": [
        {
         "op": "damage",
-        "to": {
-         "nearest": 1
-        },
+        "to": "current",
         "type": "magic",
         "value": {
          "ap": [
-          225,
-          337.5,
-          500
+          450,
+          675,
+          1000
          ]
         }
+       },
+       {
+        "op": "fx",
+        "name": "burst",
+        "at": "current"
        }
       ]
      }
@@ -1283,7 +1489,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": true,
-    "simplified": "球彈跳簡化成擊殺後再打最近的敵人一次，傷害為 50%（「剩餘傷害」的比例是推測），不連鎖。"
+    "simplified": ""
    },
    "passives": []
   },
@@ -1331,6 +1537,15 @@
        ]
       },
       "dur": 4
+     },
+     {
+      "op": "fx",
+      "name": "cone",
+      "frm": "self",
+      "to": "current",
+      "r": 2,
+      "skin": "fire",
+      "dur": 0.5
      },
      {
       "op": "damage",
@@ -1412,16 +1627,26 @@
       "replace": true,
       "onHit": [
        {
-        "op": "damage",
-        "type": "physical",
-        "value": {
-         "ad": [
-          33,
-          50,
-          75
-         ]
-        },
-        "hits": 3
+        "op": "projectile",
+        "to": "current",
+        "shape": "arrow",
+        "count": 3,
+        "spread": "fan",
+        "speed": 16,
+        "onHit": [
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "physical",
+          "value": {
+           "ad": [
+            33,
+            50,
+            75
+           ]
+          }
+         }
+        ]
        }
       ]
      }
@@ -1429,7 +1654,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "3支箭都打同一個目標，合成一次三連擊。"
+    "simplified": ""
    },
    "passives": []
   },
@@ -1466,6 +1691,15 @@
     "castTime": 0.5,
     "steps": [
      {
+      "op": "fx",
+      "name": "cone",
+      "frm": "self",
+      "to": "current",
+      "r": 2,
+      "skin": "sweep",
+      "dur": 0.3
+     },
+     {
       "op": "damage",
       "type": "physical",
       "value": {
@@ -1496,6 +1730,16 @@
      "on": "kill",
      "src": "unit",
      "ops": [
+      {
+       "op": "fx",
+       "name": "tether",
+       "frm": "self",
+       "to": {
+        "nearest": 1
+       },
+       "skin": "hook",
+       "dur": 0.15
+      },
       {
        "op": "dash",
        "to": {
@@ -1550,93 +1794,127 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "type": "physical",
-      "value": {
-       "ap": [
-        30,
-        45,
-        70
-       ],
-       "ad": [
-        190,
-        285,
-        430
-       ]
-      }
-     },
-     {
-      "op": "damage",
-      "type": "physical",
-      "value": {
-       "ap": [
-        9.9,
-        14.85,
-        23.1
-       ],
-       "ad": [
-        62.7,
-        94.05,
-        141.9
-       ]
-      },
-      "to": {
-       "around": "current",
-       "r": 1,
-       "includeCenter": false
-      }
-     },
-     {
-      "op": "if",
-      "cond": {
-       "favorite": true
-      },
-      "then": [
+      "op": "projectile",
+      "to": "current",
+      "shape": "bolt",
+      "speed": 16,
+      "onHit": [
        {
-        "op": "damage",
-        "type": "physical",
-        "value": {
-         "ap": [
-          7.5,
-          11.25,
-          17.5
-         ],
-         "ad": [
-          47.5,
-          71.25,
-          107.5
-         ]
-        },
-        "to": "current"
+        "op": "fx",
+        "name": "flash",
+        "at": "current",
+        "skin": "mark"
        }
       ]
      },
      {
-      "op": "if",
-      "cond": {
-       "castN": 3
-      },
-      "then": [
+      "op": "delay",
+      "sec": 0.25,
+      "ops": [
        {
-        "op": "damage",
-        "type": "physical",
-        "value": {
-         "ap": [
-          9.9,
-          14.85,
-          23.1
-         ],
-         "ad": [
-          62.7,
-          94.05,
-          141.9
-         ]
-        },
-        "to": {
-         "around": "current",
-         "r": 2,
-         "includeCenter": false
-        }
+        "op": "projectile",
+        "to": "current",
+        "shape": "bolt",
+        "speed": 16,
+        "onHit": [
+         {
+          "op": "damage",
+          "type": "physical",
+          "value": {
+           "ap": [
+            30,
+            45,
+            70
+           ],
+           "ad": [
+            190,
+            285,
+            430
+           ]
+          }
+         },
+         {
+          "op": "damage",
+          "type": "physical",
+          "value": {
+           "ap": [
+            9.9,
+            14.85,
+            23.1
+           ],
+           "ad": [
+            62.7,
+            94.05,
+            141.9
+           ]
+          },
+          "to": {
+           "around": "current",
+           "r": 1,
+           "includeCenter": false
+          }
+         },
+         {
+          "op": "if",
+          "cond": {
+           "favorite": true
+          },
+          "then": [
+           {
+            "op": "damage",
+            "type": "physical",
+            "value": {
+             "ap": [
+              7.5,
+              11.25,
+              17.5
+             ],
+             "ad": [
+              47.5,
+              71.25,
+              107.5
+             ]
+            },
+            "to": "current"
+           }
+          ]
+         },
+         {
+          "op": "if",
+          "cond": {
+           "castN": 3
+          },
+          "then": [
+           {
+            "op": "damage",
+            "type": "physical",
+            "value": {
+             "ap": [
+              9.9,
+              14.85,
+              23.1
+             ],
+             "ad": [
+              62.7,
+              94.05,
+              141.9
+             ]
+            },
+            "to": {
+             "around": "current",
+             "r": 2,
+             "includeCenter": false
+            }
+           }
+          ]
+         },
+         {
+          "op": "fx",
+          "name": "burst",
+          "at": "current",
+          "r": 1
+         }
+        ]
        }
       ]
      }
@@ -1681,6 +1959,13 @@
     "desc": "狂歡5秒，每秒回復56/61/68（受法術強度加成） + 2%最大生命，並在攻擊時額外造成60/80/100（受法術強度加成） + 6%最大生命魔法傷害。\n每有一名3星的 K/DA 友軍，兩項效果提高15%。（總提升：（數值未公布））",
     "castTime": 0.5,
     "steps": [
+     {
+      "op": "fx",
+      "name": "aura",
+      "at": "self",
+      "skin": "party",
+      "dur": 5
+     },
      {
       "op": "empower",
       "to": "self",
@@ -1771,6 +2056,21 @@
       }
      },
      {
+      "op": "fx",
+      "name": "ground",
+      "shape": "line",
+      "frm": "self",
+      "to": "current",
+      "len": 2,
+      "skin": "tentacle",
+      "dur": 0.4
+     },
+     {
+      "op": "fx",
+      "name": "shake",
+      "power": 1
+     },
+     {
       "op": "damage",
       "type": "magic",
       "value": {
@@ -1835,6 +2135,10 @@
         300,
         480
        ]
+      },
+      "fx": {
+       "name": "slash",
+       "heavy": true
       }
      },
      {
@@ -1869,7 +2173,13 @@
         "to": {
          "nearest": 2
         },
-        "falloff": 0.3
+        "falloff": 0.3,
+        "fx": {
+         "name": "beam",
+         "frm": "self",
+         "skin": "edm",
+         "dur": 0.25
+        }
        }
       ]
      }
@@ -1877,7 +2187,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": true,
-    "simplified": "加攻速（20%）與每穿過一人降低傷害（30%）原文未公布，皆為推測；光束用2名最近敵人加遞減。"
+    "simplified": "加攻速（20%）與每穿過一人降低傷害（30%）原文未公布，皆為推測。"
    },
    "passives": []
   },
@@ -1914,6 +2224,18 @@
     "desc": "短暫延遲後，對當前目標造成440/660/930（受法術強度加成）魔法傷害。若目標死亡，則以70%效果再次施放技能。",
     "castTime": 0.8,
     "steps": [
+     {
+      "op": "fx",
+      "name": "rain",
+      "at": "current",
+      "shape": "pillar",
+      "n": 1
+     },
+     {
+      "op": "fx",
+      "name": "shake",
+      "power": 1
+     },
      {
       "op": "damage",
       "type": "magic",
@@ -1989,27 +2311,51 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "type": "physical",
-      "value": {
-       "ap": [
-        8,
-        12,
-        18
-       ],
-       "ad": [
-        80,
-        120,
-        180
-       ]
+      "op": "pathDash",
+      "path": {
+       "kind": "side",
+       "dist": 1,
+       "keepRange": true
       },
-      "hits": 2
+      "speed": 14,
+      "end": "stay",
+      "trail": "dash",
+      "then": [
+       {
+        "op": "projectile",
+        "to": "current",
+        "shape": "bolt",
+        "count": 2,
+        "spread": "seq",
+        "gap": 0.12,
+        "speed": 18,
+        "onHit": [
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "physical",
+          "value": {
+           "ap": [
+            8,
+            12,
+            18
+           ],
+           "ad": [
+            80,
+            120,
+            180
+           ]
+          }
+         }
+        ]
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "滑行位移省略，只保留2發射擊。"
+    "simplified": ""
    },
    "passives": []
   },
@@ -2045,6 +2391,15 @@
     "desc": "在兩種效果之間輪流切換：\n奇想！：賦予一名友軍35% + 45%/55%/65%（受法術強度加成）會逐漸衰減的攻擊速度，以及命中時20/30/45（受法術強度加成）魔法傷害，持續5秒。\n狂野生長：使一名友軍生命提高175/260/395（受法術強度加成），持續5秒。效果期間，相鄰敵人每秒受到20/30/45（受法術強度加成）魔法傷害。",
     "castTime": 0.5,
     "steps": [
+     {
+      "op": "fx",
+      "name": "tether",
+      "frm": "self",
+      "to": {
+       "allies": 1
+      },
+      "skin": "sparkle"
+     },
      {
       "op": "buff",
       "to": {
@@ -2085,6 +2440,15 @@
     ],
     "altSteps": [
      {
+      "op": "fx",
+      "name": "morph",
+      "at": {
+       "allies": 1
+      },
+      "skin": "grow",
+      "dur": 5
+     },
+     {
       "op": "buff",
       "to": {
        "allies": 1
@@ -2119,12 +2483,14 @@
          ]
         }
        }
-      ]
+      ],
+      "follow": true,
+      "skin": "wildgrowth"
      }
     ],
     "altEvery": 2,
     "guess": false,
-    "simplified": "地面區域不跟著友軍移動，固定在施放當下友軍的位置。"
+    "simplified": ""
    },
    "passives": []
   },
@@ -2161,37 +2527,65 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        350,
-        525,
-        850
-       ]
-      }
-     },
-     {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        170,
-        255,
-        425
-       ]
-      },
-      "to": {
-       "around": "current",
-       "r": 1,
-       "includeCenter": false
-      }
+      "op": "projectile",
+      "to": "current",
+      "shape": "prism",
+      "arc": true,
+      "speed": 10,
+      "stopAbove": true,
+      "onHit": [
+       {
+        "op": "fx",
+        "name": "beam",
+        "frm": "self",
+        "to": "current",
+        "skin": "light",
+        "dur": 0.3
+       },
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          350,
+          525,
+          850
+         ]
+        }
+       },
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          170,
+          255,
+          425
+         ]
+        },
+        "to": {
+         "around": "current",
+         "r": 2,
+         "includeCenter": false,
+         "max": 1
+        }
+       },
+       {
+        "op": "fx",
+        "name": "beam",
+        "frm": "current",
+        "to": "prev",
+        "skin": "light",
+        "thin": true,
+        "dur": 0.3
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "第二道光束打目標周圍1格的敵人（可能不只一名）。"
+    "simplified": "第二道光束打目標 2 格內最近的 1 名敵人（「附近」的距離原文沒寫，推測）。"
    },
    "passives": [
     {
@@ -2258,9 +2652,17 @@
         }
        },
        {
-        "op": "status",
-        "kind": "charm",
-        "dur": 1
+        "op": "if",
+        "cond": {
+         "tgtMaxHpBelowSelf": true
+        },
+        "then": [
+         {
+          "op": "status",
+          "kind": "charm",
+          "dur": 1
+         }
+        ]
        }
       ],
       "ally": [
@@ -2274,7 +2676,9 @@
          ]
         }
        }
-      ]
+      ],
+      "skin": "gala",
+      "follow": false
      },
      {
       "op": "repeat",
@@ -2298,7 +2702,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": true,
-    "simplified": "著迷不判斷最大生命，區域內敵人每秒都著迷1秒（時間推測）；自身治療另寫，區域友軍治療若含自己會多算。"
+    "simplified": "著迷每秒 1 秒（時間推測）；自身治療另寫，區域友軍治療若含自己會多算。"
    },
    "passives": []
   },
@@ -2335,81 +2739,123 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "type": "physical",
-      "value": {
-       "ap": [
-        30,
-        45,
-        70
-       ],
-       "ad": [
-        195,
-        290,
-        440
-       ]
-      },
-      "to": {
-       "line": "current",
+      "op": "pathDash",
+      "path": {
+       "kind": "through",
+       "to": "current",
        "len": 2
       },
-      "falloff": 0.5,
-      "minPct": 0.5
-     },
-     {
-      "op": "if",
-      "cond": {
-       "castN": 3
-      },
+      "speed": 14,
+      "end": "stay",
+      "trail": "ring",
+      "onHit": [
+       {
+        "op": "if",
+        "cond": {
+         "isMainTarget": true
+        },
+        "then": [
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "physical",
+          "value": {
+           "ap": [
+            30,
+            45,
+            70
+           ],
+           "ad": [
+            195,
+            290,
+            440
+           ]
+          }
+         }
+        ],
+        "else": [
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "physical",
+          "value": {
+           "ap": [
+            15,
+            22.5,
+            35
+           ],
+           "ad": [
+            97.5,
+            145,
+            220
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "op": "fx",
+        "name": "slash",
+        "at": "current"
+       }
+      ],
       "then": [
        {
-        "op": "heal",
-        "to": "self",
+        "op": "if",
+        "cond": {
+         "castN": 3
+        },
+        "then": [
+         {
+          "op": "heal",
+          "to": "self",
+          "value": {
+           "dealt": 0.2
+          }
+         }
+        ]
+       },
+       {
+        "op": "if",
+        "cond": {
+         "castN": 2
+        },
+        "then": [
+         {
+          "op": "mana",
+          "to": "self",
+          "value": 10
+         }
+        ]
+       },
+       {
+        "op": "if",
+        "cond": {
+         "castN": 4
+        },
+        "then": [
+         {
+          "op": "econ",
+          "kind": "gold",
+          "value": 1
+         }
+        ]
+       },
+       {
+        "op": "damage",
+        "type": "physical",
         "value": {
          "dealt": 0.2
-        }
+        },
+        "to": "current"
        }
       ]
-     },
-     {
-      "op": "if",
-      "cond": {
-       "castN": 2
-      },
-      "then": [
-       {
-        "op": "mana",
-        "to": "self",
-        "value": 10
-       }
-      ]
-     },
-     {
-      "op": "if",
-      "cond": {
-       "castN": 4
-      },
-      "then": [
-       {
-        "op": "econ",
-        "kind": "gold",
-        "value": 1
-       }
-      ]
-     },
-     {
-      "op": "damage",
-      "type": "physical",
-      "value": {
-       "dealt": 0.2
-      },
-      "to": "current"
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "顏色輪替改成固定規則：紅色20%傷害每次都有，綠色（治療）每第3次，藍色（回魔）每第2次，金色（1金幣）每第4次；其餘目標只吃紅色以外的傷害。"
+    "simplified": "顏色輪替改成固定規則：紅色傷害每次都有，綠色（治療）每第3次，藍色（回魔）每第2次，金色（1金幣）每第4次。"
    },
    "passives": []
   },
@@ -2446,58 +2892,92 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "dot",
+      "op": "projectile",
       "to": "current",
-      "type": "magic",
-      "value": {
-       "ap": [
-        160,
-        240,
-        580
-       ]
-      },
-      "dur": 15,
-      "tick": 1
-     },
-     {
-      "op": "dot",
-      "to": {
-       "around": "current",
-       "r": 2,
-       "includeCenter": false
-      },
-      "type": "magic",
-      "value": {
-       "ap": [
-        80,
-        120,
-        290
-       ]
-      },
-      "dur": 15,
-      "tick": 1
-     },
-     {
-      "op": "status",
-      "to": "current",
-      "kind": "charm",
-      "dur": 3
-     },
-     {
-      "op": "status",
-      "to": {
-       "around": "current",
-       "r": 2,
-       "includeCenter": false
-      },
-      "kind": "charm",
-      "dur": 3
+      "shape": "note",
+      "speed": 11,
+      "onHit": [
+       {
+        "op": "dot",
+        "to": "current",
+        "type": "magic",
+        "value": {
+         "ap": [
+          160,
+          240,
+          580
+         ]
+        },
+        "dur": 15,
+        "tick": 1
+       },
+       {
+        "op": "status",
+        "to": "current",
+        "kind": "poison",
+        "dur": 15
+       },
+       {
+        "op": "status",
+        "to": "current",
+        "kind": "charm",
+        "dur": 3
+       },
+       {
+        "op": "dot",
+        "to": {
+         "around": "current",
+         "r": 2,
+         "includeCenter": false,
+         "max": 2,
+         "prefer": {
+          "noStatus": "poison"
+         }
+        },
+        "type": "magic",
+        "value": {
+         "ap": [
+          80,
+          120,
+          290
+         ]
+        },
+        "dur": 15,
+        "tick": 1
+       },
+       {
+        "op": "status",
+        "to": "prev",
+        "kind": "poison",
+        "dur": 15
+       },
+       {
+        "op": "status",
+        "to": {
+         "around": "current",
+         "r": 2,
+         "includeCenter": false,
+         "max": 2,
+         "prefer": {
+          "noStatus": "poison"
+         }
+        },
+        "kind": "charm",
+        "dur": 3
+       },
+       {
+        "op": "fx",
+        "name": "burst",
+        "at": "current",
+        "skin": "poison"
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "毒素層數改成總傷害（目標2層＝全額，周圍各1層＝一半，周圍不限2人）；星級較低者著迷12秒略掉，一律3秒。"
+    "simplified": "毒素層數改成總傷害（目標2層＝全額，周圍各1層＝一半）；星級較低者著迷12秒略掉，一律3秒。"
    },
    "passives": []
   },
@@ -2534,6 +3014,12 @@
     "castTime": 0.5,
     "steps": [
      {
+      "op": "fx",
+      "name": "morph",
+      "at": "self",
+      "skin": "grow"
+     },
+     {
       "op": "buff",
       "to": "self",
       "stat": "hp",
@@ -2544,6 +3030,13 @@
         375
        ]
       }
+     },
+     {
+      "op": "fx",
+      "name": "spin",
+      "at": "self",
+      "r": 1,
+      "dur": 0.4
      },
      {
       "op": "damage",
@@ -2602,21 +3095,33 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "type": "physical",
-      "value": {
-       "ap": [
-        4,
-        6,
-        9
-       ],
-       "ad": [
-        35,
-        53,
-        80
-       ]
-      },
-      "hits": 10
+      "op": "projectile",
+      "to": "current",
+      "shape": "bullet",
+      "count": 10,
+      "spread": "seq",
+      "gap": 0.06,
+      "jitter": true,
+      "speed": 20,
+      "onHit": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "physical",
+        "value": {
+         "ap": [
+          4,
+          6,
+          9
+         ],
+         "ad": [
+          35,
+          53,
+          80
+         ]
+        }
+       }
+      ]
      }
     ],
     "altSteps": null,
@@ -2672,24 +3177,42 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "dot",
-      "to": "current",
-      "type": "magic",
-      "value": {
-       "ap": [
-        600,
-        900,
-        1350
-       ]
-      },
+      "op": "channel",
       "dur": 2.5,
-      "tick": 0.5
+      "tick": 0.5,
+      "skin": "notes",
+      "to": "current",
+      "ops": [
+       {
+        "op": "projectile",
+        "to": "current",
+        "shape": "note",
+        "count": 2,
+        "spread": "seq",
+        "gap": 0.1,
+        "speed": 12,
+        "onHit": [
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "magic",
+          "value": {
+           "ap": [
+            60,
+            90,
+            135
+           ]
+          }
+         }
+        ]
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "新星、超級巨星的額外音符（沒有數字）丟掉。"
+    "simplified": "新星、超級巨星的額外音符（沒有數字）丟掉；引導期間不普攻。"
    },
    "passives": []
   },
@@ -2726,42 +3249,77 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "type": "physical",
-      "value": {
-       "ap": [
-        15,
-        20,
-        30
-       ],
-       "ad": [
-        125,
-        190,
-        285
-       ]
-      },
+      "op": "projectile",
       "to": {
        "nearest": 3
-      }
-     },
-     {
-      "op": "damage",
-      "type": "physical",
-      "value": {
-       "ap": [
-        15,
-        20,
-        30
-       ],
-       "ad": [
-        125,
-        190,
-        285
-       ]
       },
-      "to": {
-       "nearest": 1
-      }
+      "shape": "bomb",
+      "arc": true,
+      "speed": 10,
+      "spread": "seq",
+      "gap": 0.15,
+      "onHit": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "physical",
+        "value": {
+         "ap": [
+          15,
+          20,
+          30
+         ],
+         "ad": [
+          125,
+          190,
+          285
+         ]
+        }
+       },
+       {
+        "op": "fx",
+        "name": "burst",
+        "at": "current"
+       }
+      ],
+      "onEnd": [
+       {
+        "op": "delay",
+        "sec": 0.15,
+        "ops": [
+         {
+          "op": "damage",
+          "type": "physical",
+          "value": {
+           "ap": [
+            15,
+            20,
+            30
+           ],
+           "ad": [
+            125,
+            190,
+            285
+           ]
+          },
+          "to": {
+           "nearest": 1
+          }
+         },
+         {
+          "op": "fx",
+          "name": "burst",
+          "at": "prev",
+          "big": true
+         },
+         {
+          "op": "fx",
+          "name": "shake",
+          "power": 1
+         }
+        ]
+       }
+      ]
      }
     ],
     "altSteps": null,
@@ -2812,6 +3370,16 @@
         750
        ]
       }
+     },
+     {
+      "op": "fx",
+      "name": "tether",
+      "frm": "self",
+      "to": {
+       "nearest": 4
+      },
+      "skin": "bandage",
+      "dur": 0.35
      },
      {
       "op": "damage",
@@ -2877,27 +3445,35 @@
     "castTime": 0.6,
     "steps": [
      {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        210,
-        315,
-        505
-       ]
-      },
-      "to": {
-       "line": "current",
-       "len": "board",
-       "width": 1
-      },
-      "falloff": 0.3
+      "op": "projectile",
+      "to": "current",
+      "shape": "spirit",
+      "count": 5,
+      "spread": "wave",
+      "pierce": true,
+      "len": "board",
+      "speed": 9,
+      "falloff": 0.3,
+      "onHit": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "magic",
+        "value": {
+         "ap": [
+          210,
+          315,
+          505
+         ]
+        }
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "旅人號角（施法得經驗、攻擊多回魔力）拿掉；小精靈改成沿目標方向的直線，每多穿一人 −30%。"
+    "simplified": "旅人號角（施法得經驗、攻擊多回魔力）拿掉。"
    },
    "passives": []
   },
@@ -2945,6 +3521,17 @@
        "selfMaxHp": 0.1
       },
       "dur": 4
+     },
+     {
+      "op": "fx",
+      "name": "shockwave",
+      "at": "self",
+      "r": 1
+     },
+     {
+      "op": "fx",
+      "name": "shake",
+      "power": 2
      },
      {
       "op": "damage",
@@ -3018,35 +3605,21 @@
       }
      },
      {
-      "op": "dash",
+      "op": "projectile",
       "to": {
        "farthest": 1,
        "within": 3
-      }
-     },
-     {
-      "op": "damage",
-      "type": "physical",
-      "value": {
-       "ad": [
-        100,
-        150,
-        240
-       ]
       },
-      "to": {
-       "around": "current",
-       "r": 1,
-       "includeCenter": true
-      }
-     },
-     {
-      "op": "empower",
-      "to": "self",
-      "attacks": 3,
-      "asPct": 2.0,
-      "replace": true,
+      "shape": "snack",
+      "arc": true,
+      "speed": 12,
       "onHit": [
+       {
+        "op": "dash",
+        "to": "current",
+        "style": "slide",
+        "trail": "blood"
+       },
        {
         "op": "damage",
         "type": "physical",
@@ -3056,7 +3629,38 @@
           150,
           240
          ]
+        },
+        "to": {
+         "around": "current",
+         "r": 1,
+         "includeCenter": true
         }
+       },
+       {
+        "op": "fx",
+        "name": "burst",
+        "at": "current",
+        "r": 1
+       },
+       {
+        "op": "empower",
+        "to": "self",
+        "attacks": 3,
+        "asPct": 2.0,
+        "replace": true,
+        "onHit": [
+         {
+          "op": "damage",
+          "type": "physical",
+          "value": {
+           "ad": [
+            100,
+            150,
+            240
+           ]
+          }
+         }
+        ]
        }
       ]
      }
@@ -3064,7 +3668,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "踢零食改成直接衝向 3 格內最遠的敵人，對其 1 格範圍造成傷害；劈砍強化 3 次攻擊照做。"
+    "simplified": ""
    },
    "passives": []
   },
@@ -3101,39 +3705,49 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "type": "physical",
-      "value": {
-       "ad": [
-        155,
-        235,
-        375
-       ]
-      }
-     },
-     {
-      "op": "zone",
-      "at": "current",
-      "r": 1,
-      "dur": 3,
-      "tick": 1,
-      "enemy": [
+      "op": "projectile",
+      "to": "current",
+      "shape": "disc",
+      "spin": true,
+      "speed": 11,
+      "onHit": [
        {
         "op": "damage",
         "type": "physical",
         "value": {
-         "ap": [
-          15,
-          25,
-          35
-         ],
          "ad": [
-          125,
-          185,
-          300
+          155,
+          235,
+          375
          ]
-        },
-        "split": true
+        }
+       },
+       {
+        "op": "zone",
+        "at": "current",
+        "r": 1,
+        "dur": 3,
+        "tick": 1,
+        "enemy": [
+         {
+          "op": "damage",
+          "type": "physical",
+          "value": {
+           "ap": [
+            15,
+            25,
+            35
+           ],
+           "ad": [
+            125,
+            185,
+            300
+           ]
+          },
+          "split": true
+         }
+        ],
+        "skin": "vortex"
        }
       ]
      }
@@ -3179,6 +3793,12 @@
     "castTime": 0.5,
     "steps": [
      {
+      "op": "fx",
+      "name": "afterimage",
+      "at": "self",
+      "skin": "rewind"
+     },
+     {
       "op": "heal",
       "to": "self",
       "value": {
@@ -3199,6 +3819,9 @@
         300,
         480
        ]
+      },
+      "fx": {
+       "name": "slash"
       }
      }
     ],
@@ -3254,6 +3877,16 @@
       "pen": 0.4
      },
      {
+      "op": "fx",
+      "name": "cone",
+      "frm": "self",
+      "to": "current",
+      "r": 2,
+      "wide": true,
+      "skin": "lash",
+      "dur": 0.3
+     },
+     {
       "op": "damage",
       "type": "magic",
       "value": {
@@ -3265,7 +3898,8 @@
       },
       "to": {
        "cone": "current",
-       "r": 2
+       "r": 2,
+       "exclude": "current"
       },
       "pen": 0.4
      }
@@ -3273,7 +3907,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": true,
-    "simplified": "「至少 3 名友軍存活」的條件拿掉；韌性數值未公布，當成 20% 減傷（推測）；半圓範圍可能連主目標再打一次。"
+    "simplified": "「至少 3 名友軍存活」的條件拿掉；韌性數值未公布，當成 20% 減傷（推測）。"
    },
    "passives": [
     {
@@ -3345,23 +3979,38 @@
       "dur": 4
      },
      {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        120,
-        180,
-        300
-       ]
-      },
+      "op": "projectile",
       "to": {
        "mostDamage": 1
-      }
-     },
-     {
-      "op": "stun",
-      "to": "prev",
-      "dur": 1
+      },
+      "shape": "gust",
+      "speed": 10,
+      "onHit": [
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          120,
+          180,
+          300
+         ]
+        },
+        "to": {
+         "mostDamage": 1
+        }
+       },
+       {
+        "op": "stun",
+        "to": "prev",
+        "dur": 1
+       },
+       {
+        "op": "fx",
+        "name": "burst",
+        "at": "current"
+       }
+      ]
      }
     ],
     "altSteps": null,
@@ -3418,16 +4067,36 @@
      },
      {
       "op": "dash",
-      "to": "current"
+      "to": "current",
+      "style": "charge",
+      "trail": "dust"
+     },
+     {
+      "op": "displace",
+      "to": "current",
+      "kind": "knockback",
+      "dist": 1,
+      "dur": 1.25
      },
      {
       "op": "stun",
       "to": {
        "around": "current",
        "r": 1,
-       "includeCenter": true
+       "includeCenter": false
       },
       "dur": 1.25
+     },
+     {
+      "op": "fx",
+      "name": "shockwave",
+      "at": "current",
+      "r": 1
+     },
+     {
+      "op": "fx",
+      "name": "shake",
+      "power": 2
      },
      {
       "op": "damage",
@@ -3440,12 +4109,21 @@
        ]
       },
       "to": "current"
+     },
+     {
+      "op": "status",
+      "to": {
+       "around": "self",
+       "r": 2
+      },
+      "kind": "taunt",
+      "dur": 1.25
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": true,
-    "simplified": "護盾、技能傷害數值未公布，為推測；嘲諷簡化成暈眩；「2525」讀成 +25 護甲 +25 魔抗（開場拿一次，之後一直有）。"
+    "simplified": "護盾、技能傷害數值未公布，為推測；嘲諷時間原文沒寫，暫用 1.25 秒；「2525」讀成 +25 護甲 +25 魔抗（開場拿一次，之後一直有）。"
    },
    "passives": [
     {
@@ -3536,6 +4214,13 @@
     "castTime": 0.3,
     "steps": [
      {
+      "op": "fx",
+      "name": "aura",
+      "at": "self",
+      "skin": "glow",
+      "dur": 0.5
+     },
+     {
       "op": "buff",
       "to": "self",
       "stat": "asPct",
@@ -3554,9 +4239,13 @@
      "src": "unit",
      "ops": [
       {
-       "op": "repeat",
-       "times": 3,
-       "ops": [
+       "op": "projectile",
+       "to": "current",
+       "shape": "missile",
+       "count": 3,
+       "spread": "arcfan",
+       "speed": 13,
+       "onHit": [
         {
          "op": "damage",
          "type": "physical",
@@ -3612,21 +4301,24 @@
     "castTime": 0.6,
     "steps": [
      {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        400,
-        600,
-        960
-       ]
-      }
-     },
-     {
-      "op": "repeat",
-      "times": 4,
-      "gap": 0.5,
+      "op": "channel",
+      "dur": 2,
+      "tick": 0.5,
+      "skin": "beam",
+      "to": "current",
       "ops": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "magic",
+        "value": {
+         "ap": [
+          100,
+          150,
+          240
+         ]
+        }
+       },
        {
         "op": "status",
         "to": {
@@ -3640,6 +4332,7 @@
        },
        {
         "op": "damage",
+        "to": "prev",
         "type": "magic",
         "value": {
          "ap": [
@@ -3647,8 +4340,13 @@
           75,
           120
          ]
-        },
-        "to": "prev"
+        }
+       },
+       {
+        "op": "fx",
+        "name": "shockwave",
+        "at": "current",
+        "r": 1
        }
       ]
      }
@@ -3656,7 +4354,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "2 秒光束改成瞬間主傷害，之後 4 次爆發（每 0.5 秒）撕裂 30% 魔抗。"
+    "simplified": "2 秒光束分成 4 拍（每 0.5 秒），每拍 1/4 的主傷害；引導期間不普攻。"
    },
    "passives": []
   },
@@ -3693,52 +4391,60 @@
     "castTime": 0.4,
     "steps": [
      {
-      "op": "if",
-      "cond": {
-       "castN": 2
-      },
-      "then": [
+      "op": "projectile",
+      "to": "current",
+      "shape": "bolt",
+      "speed": 18,
+      "onHit": [
        {
-        "op": "damage",
-        "type": "physical",
-        "value": {
-         "ap": [
-          37.5,
-          52.5,
-          90
-         ],
-         "ad": [
-          210,
-          315,
-          510
-         ]
-        }
-       },
-       {
-        "op": "buff",
-        "to": "self",
-        "stat": "dmgAmp",
-        "value": 0.1,
-        "stackKey": "senna",
-        "maxStacks": 5
-       }
-      ],
-      "else": [
-       {
-        "op": "damage",
-        "type": "physical",
-        "value": {
-         "ap": [
-          25,
-          35,
-          60
-         ],
-         "ad": [
-          140,
-          210,
-          340
-         ]
-        }
+        "op": "if",
+        "cond": {
+         "castN": 2
+        },
+        "then": [
+         {
+          "op": "damage",
+          "type": "physical",
+          "value": {
+           "ap": [
+            37.5,
+            52.5,
+            90
+           ],
+           "ad": [
+            210,
+            315,
+            510
+           ]
+          }
+         },
+         {
+          "op": "buff",
+          "to": "self",
+          "stat": "dmgAmp",
+          "value": 0.1,
+          "stackKey": "senna",
+          "maxStacks": 5
+         }
+        ],
+        "else": [
+         {
+          "op": "damage",
+          "type": "physical",
+          "value": {
+           "ap": [
+            25,
+            35,
+            60
+           ],
+           "ad": [
+            140,
+            210,
+            340
+           ]
+          }
+         }
+        ]
        }
       ]
      }
@@ -3818,6 +4524,12 @@
         "op": "flag",
         "name": "demon",
         "on": true
+       },
+       {
+        "op": "fx",
+        "name": "morph",
+        "at": "self",
+        "skin": "demon"
        }
       ]
      }
@@ -3839,6 +4551,13 @@
         "flag": "demon"
        },
        "then": [
+        {
+         "op": "fx",
+         "name": "aura",
+         "at": "self",
+         "skin": "drain",
+         "pulse": true
+        },
         {
          "op": "damage",
          "type": "magic",
@@ -3892,35 +4611,60 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        300,
-        450,
-        720
-       ]
-      }
-     },
-     {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        110,
-        165,
-        265
-       ]
-      },
-      "to": {
-       "fewestItems": 1
-      }
+      "op": "projectile",
+      "to": "current",
+      "shape": "ball",
+      "arc": true,
+      "speed": 13,
+      "onHit": [
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          300,
+          450,
+          720
+         ]
+        }
+       },
+       {
+        "op": "fx",
+        "name": "burst",
+        "at": "current"
+       },
+       {
+        "op": "projectile",
+        "frm": "current",
+        "to": {
+         "behind": "current",
+         "fewestItems": 1
+        },
+        "shape": "ball",
+        "arc": true,
+        "speed": 11,
+        "onHit": [
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "magic",
+          "value": {
+           "ap": [
+            110,
+            165,
+            265
+           ]
+          }
+         }
+        ]
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "彈球彈向物品最少的敵人，若就是主目標則再打一次。"
+    "simplified": ""
    },
    "passives": []
   },
@@ -3998,6 +4742,12 @@
      "src": "unit",
      "ops": [
       {
+       "op": "fx",
+       "name": "morph",
+       "at": "self",
+       "skin": "rage"
+      },
+      {
        "op": "buff",
        "to": "self",
        "stat": "hp",
@@ -4065,20 +4815,34 @@
     "castTime": 0.8,
     "steps": [
      {
-      "op": "repeat",
-      "times": 6,
-      "gap": 0.15,
+      "op": "fx",
+      "name": "telegraph",
+      "at": "current",
+      "skin": "swords",
+      "n": 6,
+      "dur": 0.3
+     },
+     {
+      "op": "delay",
+      "sec": 0.3,
       "ops": [
        {
-        "op": "damage",
-        "type": "physical",
-        "value": {
-         "ap": [
-          39,
-          59,
-          93
-         ]
-        }
+        "op": "repeat",
+        "times": 6,
+        "gap": 0.15,
+        "ops": [
+         {
+          "op": "damage",
+          "type": "physical",
+          "value": {
+           "ap": [
+            39,
+            59,
+            93
+           ]
+          }
+         }
+        ]
        }
       ]
      }
@@ -4123,23 +4887,81 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        60,
-        90,
-        150
-       ]
-      },
+      "op": "projectile",
       "to": "current",
-      "hits": 10
+      "shape": "orb",
+      "count": 10,
+      "spread": "arcfan",
+      "gap": 0.05,
+      "speed": 14,
+      "onHit": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "magic",
+        "value": {
+         "ap": [
+          60,
+          90,
+          150
+         ]
+        }
+       }
+      ]
      }
     ],
-    "altSteps": null,
-    "altEvery": 0,
+    "altSteps": [
+     {
+      "op": "fx",
+      "name": "afterimage",
+      "at": "self",
+      "skin": "flow"
+     },
+     {
+      "op": "projectile",
+      "to": "current",
+      "shape": "heart",
+      "speed": 11,
+      "onHit": [
+       {
+        "op": "fx",
+        "name": "burst",
+        "at": "current",
+        "r": 2
+       },
+       {
+        "op": "projectile",
+        "frm": "current",
+        "to": {
+         "around": "current",
+         "r": 2,
+         "includeCenter": true
+        },
+        "shape": "orb",
+        "count": 10,
+        "spread": "distribute",
+        "speed": 14,
+        "onHit": [
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "magic",
+          "value": {
+           "ap": [
+            60,
+            90,
+            150
+           ]
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "altEvery": 2,
     "guess": true,
-    "simplified": "狐火每枚傷害未公布，推測 10 枚×AP60 的總量；流動狀態、愛心、狐火分散都省略。"
+    "simplified": "狐火每枚傷害未公布，推測 10 枚×AP60 的總量；愛心本身的傷害未公布、不另加；狐火數量成長（6→14）沒做。"
    },
    "passives": []
   },
@@ -4187,6 +5009,23 @@
       "missingScale": 1.0
      },
      {
+      "op": "fx",
+      "name": "slash",
+      "at": "current",
+      "heavy": true
+     },
+     {
+      "op": "fx",
+      "name": "shockwave",
+      "at": "current",
+      "r": 3
+     },
+     {
+      "op": "fx",
+      "name": "shake",
+      "power": 3
+     },
+     {
       "op": "damage",
       "type": "magic",
       "value": {
@@ -4203,8 +5042,9 @@
       }
      },
      {
-      "op": "stun",
+      "op": "displace",
       "to": "prev",
+      "kind": "knockup",
       "dur": [
        1.5,
        1.75,
@@ -4215,7 +5055,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "攻擊目標的動作省略，擊飛簡化成暈眩。"
+    "simplified": ""
    },
    "passives": []
   },
@@ -4259,20 +5099,45 @@
       },
       "then": [
        {
-        "op": "damage",
-        "type": "magic",
-        "value": {
-         "ap": [
-          30,
-          45,
-          72
-         ]
-        },
+        "op": "projectile",
         "to": "current",
-        "hits": 5
+        "shape": "orb",
+        "count": 5,
+        "spread": "seq",
+        "gap": 0.08,
+        "speed": 14,
+        "onHit": [
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "magic",
+          "value": {
+           "ap": [
+            30,
+            45,
+            72
+           ]
+          }
+         }
+        ]
        }
       ],
       "else": [
+       {
+        "op": "fx",
+        "name": "rain",
+        "at": "current",
+        "shape": "spotlight",
+        "n": 1
+       },
+       {
+        "op": "fx",
+        "name": "ground",
+        "at": "current",
+        "r": 2,
+        "skin": "light",
+        "dur": 0.5
+       },
        {
         "op": "damage",
         "type": "magic",
@@ -4345,38 +5210,80 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        275,
-        415,
-        2000
-       ]
+      "op": "blink",
+      "place": {
+       "bestLine": {
+        "len": "board"
+       }
       },
-      "to": {
-       "highestHp": 2
-      }
-     },
-     {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        90,
-        135,
-        1500
-       ]
-      },
-      "to": {
-       "nearest": 4
-      }
+      "remember": true,
+      "then": [
+       {
+        "op": "fx",
+        "name": "beam",
+        "frm": "self",
+        "along": "bestLine",
+        "len": "board",
+        "skin": "aurora",
+        "wide": true,
+        "dur": 0.5
+       },
+       {
+        "op": "fx",
+        "name": "shake",
+        "power": 1
+       },
+       {
+        "op": "damage",
+        "to": {
+         "line": "best",
+         "len": "board",
+         "pick": {
+          "highestHp": 2
+         }
+        },
+        "type": "magic",
+        "value": {
+         "ap": [
+          275,
+          415,
+          2000
+         ]
+        }
+       },
+       {
+        "op": "damage",
+        "to": {
+         "line": "best",
+         "len": "board",
+         "exclude": "prev"
+        },
+        "type": "magic",
+        "value": {
+         "ap": [
+          90,
+          135,
+          1500
+         ]
+        }
+       },
+       {
+        "op": "delay",
+        "sec": 0.5,
+        "ops": [
+         {
+          "op": "blink",
+          "place": "origin"
+         }
+        ]
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "傳送與回原位省略；其餘敵人改成最近 4 名，不含已被打的那 2 名之外的光束路徑判定。"
+    "simplified": ""
    },
    "passives": []
   },
@@ -4423,6 +5330,16 @@
        ],
        "selfMaxHp": 0.12
       }
+     },
+     {
+      "op": "projectile",
+      "to": "current",
+      "shape": "wave",
+      "pierce": true,
+      "len": 2,
+      "width": 2,
+      "speed": 10,
+      "cosmetic": true
      },
      {
       "op": "damage",
@@ -4496,7 +5413,9 @@
     "steps": [
      {
       "op": "dash",
-      "to": "current"
+      "to": "current",
+      "style": "slide",
+      "trail": "smoke"
      },
      {
       "op": "empower",
@@ -4522,7 +5441,14 @@
          "cone": "current",
          "r": 2
         },
-        "hits": 5
+        "hits": 5,
+        "fx": {
+         "name": "cone",
+         "frm": "self",
+         "r": 2,
+         "skin": "pellets",
+         "n": 5
+        }
        }
       ]
      }
@@ -4530,7 +5456,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "擊殺時強化額外一次攻擊省略；滑行改成位移到目標旁。"
+    "simplified": "擊殺時強化額外一次攻擊省略；散彈每顆都打整個錐形。"
    },
    "passives": []
   },
@@ -4578,6 +5504,14 @@
      "src": "unit",
      "ops": [
       {
+       "op": "fx",
+       "name": "tether",
+       "frm": "self",
+       "to": "current",
+       "skin": "violin",
+       "dur": 0.12
+      },
+      {
        "op": "damage",
        "type": "physical",
        "value": {
@@ -4604,21 +5538,35 @@
      "src": "unit",
      "ops": [
       {
-       "op": "damage",
-       "type": "physical",
-       "value": {
-        "ap": [
-         14,
-         21,
-         104
-        ],
-        "ad": [
-         90,
-         135,
-         744
-        ]
-       },
-       "to": "current"
+       "op": "projectile",
+       "to": "current",
+       "shape": "bullet",
+       "big": true,
+       "speed": 22,
+       "onHit": [
+        {
+         "op": "damage",
+         "type": "physical",
+         "value": {
+          "ap": [
+           14,
+           21,
+           104
+          ],
+          "ad": [
+           90,
+           135,
+           744
+          ]
+         },
+         "to": "current"
+        },
+        {
+         "op": "fx",
+         "name": "burst",
+         "at": "current"
+        }
+       ]
       }
      ],
      "text": "第四發"
@@ -4658,28 +5606,49 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "type": "physical",
-      "value": {
-       "ap": [
-        6,
-        9,
-        30
-       ],
-       "ad": [
-        38,
-        57,
-        300
-       ]
+      "op": "projectile",
+      "to": {
+       "around": "current",
+       "r": 2,
+       "includeCenter": true
       },
-      "to": "current",
-      "hits": 14
+      "shape": "rocket",
+      "count": 14,
+      "spread": "distribute",
+      "gap": 0.07,
+      "arc": true,
+      "speed": 12,
+      "onHit": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "physical",
+        "value": {
+         "ap": [
+          6,
+          9,
+          30
+         ],
+         "ad": [
+          38,
+          57,
+          300
+         ]
+        }
+       },
+       {
+        "op": "fx",
+        "name": "burst",
+        "at": "current",
+        "small": true
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": true,
-    "simplified": "飛彈數未公布，推測 14 枚；全部打當前目標，不分散給附近敵人。"
+    "simplified": "飛彈數未公布，推測 14 枚；「附近」取目標 2 格內（推測）。"
    },
    "passives": []
   },
@@ -4730,39 +5699,67 @@
       "dur": 4
      },
      {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        250,
-        375,
-        2000
-       ]
-      },
-      "to": {
-       "around": "current",
-       "r": 2,
-       "includeCenter": true
-      }
+      "op": "fx",
+      "name": "aura",
+      "at": "self",
+      "skin": "swords",
+      "dur": 4,
+      "stackOnAttack": true
      },
      {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        35,
-        55,
-        400
-       ]
-      },
-      "to": "current",
-      "hits": 6
+      "op": "delay",
+      "sec": 4,
+      "ops": [
+       {
+        "op": "fx",
+        "name": "rain",
+        "at": "current",
+        "r": 2,
+        "shape": "blade",
+        "n": 8,
+        "dur": 0.5
+       },
+       {
+        "op": "fx",
+        "name": "shake",
+        "power": 2
+       },
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          250,
+          375,
+          2000
+         ]
+        },
+        "to": {
+         "around": "current",
+         "r": 2,
+         "includeCenter": true
+        }
+       },
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          35,
+          55,
+          400
+         ]
+        },
+        "to": "current",
+        "hits": 6
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": true,
-    "simplified": "劍雨不等 4 秒，施放時立刻落下；劍數推測 6 把；劍雨傷害原文沒寫類型，當魔法。"
+    "simplified": "劍數推測 6 把；劍雨傷害原文沒寫類型，當魔法。"
    },
    "passives": [
     {
@@ -4851,6 +5848,11 @@
         },
         "to": {
          "random": 1
+        },
+        "fx": {
+         "name": "rain",
+         "shape": "sunbeam",
+         "n": 1
         }
        },
        {
@@ -4863,7 +5865,8 @@
          -15
         ]
        }
-      ]
+      ],
+      "gap": 0.08
      }
     ],
     "altSteps": null,
@@ -4906,47 +5909,74 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        15,
-        22,
-        400
-       ]
-      },
+      "op": "projectile",
       "to": {
        "farthest": 1,
        "within": 4
       },
-      "hits": 3
-     },
-     {
-      "op": "buff",
-      "to": "self",
-      "stat": "dmgAmp",
-      "value": 0.1,
-      "stackKey": "mark",
-      "maxStacks": 3
-     },
-     {
-      "op": "dash",
-      "to": {
-       "farthest": 1,
-       "within": 4
-      }
-     },
-     {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        150,
-        225,
-        2000
-       ]
-      },
-      "to": "current"
+      "shape": "spike",
+      "count": 3,
+      "spread": "seq",
+      "gap": 0.08,
+      "pierce": true,
+      "speed": 18,
+      "onHit": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "magic",
+        "value": {
+         "ap": [
+          15,
+          22,
+          400
+         ]
+        }
+       },
+       {
+        "op": "status",
+        "to": "current",
+        "kind": "lockeMark",
+        "dur": 999
+       }
+      ],
+      "onEnd": [
+       {
+        "op": "buff",
+        "to": "self",
+        "stat": "dmgAmp",
+        "value": 0.1,
+        "stackKey": "mark",
+        "maxStacks": 3
+       },
+       {
+        "op": "blink",
+        "to": {
+         "farthest": 1,
+         "within": 4
+        },
+        "place": "adjacent",
+        "then": [
+         {
+          "op": "fx",
+          "name": "burst",
+          "at": "current"
+         },
+         {
+          "op": "damage",
+          "type": "magic",
+          "value": {
+           "ap": [
+            150,
+            225,
+            2000
+           ]
+          },
+          "to": "current"
+         }
+        ]
+       }
+      ]
      }
     ],
     "altSteps": null,
@@ -5028,9 +6058,15 @@
         },
         "to": {
          "nearest": 3
+        },
+        "fx": {
+         "name": "proj",
+         "shape": "orb",
+         "arc": true
         }
        }
-      ]
+      ],
+      "gap": 0.04
      }
     ],
     "altSteps": null,
@@ -5073,6 +6109,12 @@
     "castTime": 0.5,
     "steps": [
      {
+      "op": "fx",
+      "name": "flash",
+      "at": "self",
+      "skin": "shield"
+     },
+     {
       "op": "shield",
       "to": "self",
       "value": {
@@ -5089,16 +6131,26 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "變身門檻 3★ 的 95% 沒做，三星也用 70%。"
+    "simplified": ""
    },
    "passives": [
     {
      "on": "hpBelow",
-     "n": 0.7,
+     "n": [
+      0.7,
+      0.7,
+      0.95
+     ],
      "limit": 1,
      "src": "unit",
      "text": "變身為龍",
      "ops": [
+      {
+       "op": "fx",
+       "name": "morph",
+       "at": "self",
+       "skin": "dragon"
+      },
       {
        "op": "buff",
        "to": "self",
@@ -5137,6 +6189,13 @@
         "flag": "enraged"
        },
        "then": [
+        {
+         "op": "fx",
+         "name": "burst",
+         "at": "current",
+         "r": 1,
+         "skin": "fire"
+        },
         {
          "op": "damage",
          "type": "magic",
@@ -5201,6 +6260,16 @@
         2000
        ]
       }
+     },
+     {
+      "op": "fx",
+      "name": "tether",
+      "frm": {
+       "nearest": 3
+      },
+      "to": "self",
+      "skin": "soul",
+      "dur": 3
      },
      {
       "op": "dot",
@@ -5272,6 +6341,12 @@
     "castTime": 0.5,
     "steps": [
      {
+      "op": "fx",
+      "name": "aura",
+      "at": "self",
+      "skin": "demon"
+     },
+     {
       "op": "empower",
       "attacks": [
        3,
@@ -5302,14 +6377,49 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": true,
-    "simplified": "翻滾冷卻 4 秒改成每場最多 3 次；韌性數值未公布，當成 2 秒 20% 減傷（推測）；翻滾位移省略。"
+    "simplified": "韌性數值未公布，當成 2 秒 20% 減傷（推測）。"
    },
    "passives": [
     {
      "on": "hit",
-     "limit": 3,
      "src": "unit",
      "ops": [
+      {
+       "op": "pathDash",
+       "path": {
+        "kind": "side",
+        "dist": 1,
+        "keepRange": true
+       },
+       "speed": 16,
+       "end": "stay",
+       "trail": "roll"
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "dr",
+       "value": 0.2,
+       "dur": 2
+      }
+     ],
+     "cooldown": 4
+    },
+    {
+     "on": "cast",
+     "src": "unit",
+     "ops": [
+      {
+       "op": "pathDash",
+       "path": {
+        "kind": "side",
+        "dist": 1,
+        "keepRange": true
+       },
+       "speed": 16,
+       "end": "stay",
+       "trail": "roll"
+      },
       {
        "op": "buff",
        "to": "self",
@@ -5365,51 +6475,60 @@
       }
      },
      {
-      "op": "damage",
-      "type": "physical",
-      "value": {
-       "ad": [
-        30,
-        45,
-        3000
-       ]
-      },
-      "to": {
-       "around": "current",
-       "r": 2,
-       "includeCenter": true
-      },
-      "hits": 6
-     },
-     {
-      "op": "buff",
-      "to": "prev",
-      "stat": "armor",
-      "value": -5
-     },
-     {
-      "op": "buff",
-      "to": "prev",
-      "stat": "mr",
-      "value": -5
-     },
-     {
-      "op": "buff",
-      "to": "self",
-      "stat": "armor",
-      "value": 15
-     },
-     {
-      "op": "buff",
-      "to": "self",
-      "stat": "mr",
-      "value": 15
+      "op": "projectile",
+      "pattern": "radial",
+      "count": 6,
+      "range": 2,
+      "shape": "clone",
+      "pierce": true,
+      "returns": true,
+      "speed": 12,
+      "onHit": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "physical",
+        "value": {
+         "ad": [
+          30,
+          45,
+          3000
+         ]
+        }
+       },
+       {
+        "op": "buff",
+        "to": "current",
+        "stat": "armor",
+        "value": -5
+       },
+       {
+        "op": "buff",
+        "to": "current",
+        "stat": "mr",
+        "value": -5
+       },
+       {
+        "op": "buff",
+        "to": "self",
+        "stat": "armor",
+        "value": 5,
+        "applyOn": "return"
+       },
+       {
+        "op": "buff",
+        "to": "self",
+        "stat": "mr",
+        "value": 5,
+        "applyOn": "return"
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "分身偷護甲魔抗簡化成：圈內每名敵人 -5、悟空固定 +15（約 3 名）；分身往返省略。"
+    "simplified": "偷護甲魔抗：每名被分身穿過的敵人 −5，分身飛回來時悟空 +5（固定值，不是「偷多少拿多少」）。"
    },
    "passives": []
   },
@@ -5468,7 +6587,11 @@
           150
          ]
         },
-        "to": "current"
+        "to": "current",
+        "fx": {
+         "name": "proj",
+         "shape": "feather"
+        }
        },
        {
         "op": "buff",
@@ -5478,7 +6601,8 @@
         "stackKey": "feather",
         "maxStacks": 60
        }
-      ]
+      ],
+      "gap": 0.03
      }
     ],
     "altSteps": null,
@@ -5521,63 +6645,113 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "type": "physical",
-      "value": {
-       "ad": [
-        140,
-        210,
-        2100
-       ]
-      },
-      "to": {
-       "line": "current",
+      "op": "pathDash",
+      "path": {
+       "kind": "through",
+       "to": "current",
        "len": 2
-      }
-     },
-     {
-      "op": "if",
-      "cond": {
-       "castN": 3
       },
+      "speed": 16,
+      "end": "stay",
+      "trail": "wind",
+      "onHit": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "physical",
+        "value": {
+         "ad": [
+          140,
+          210,
+          2100
+         ]
+        }
+       },
+       {
+        "op": "fx",
+        "name": "slash",
+        "at": "current"
+       }
+      ],
       "then": [
        {
-        "op": "damage",
-        "type": "physical",
-        "value": {
-         "ad": [
-          400,
-          600,
-          3400
-         ]
+        "op": "if",
+        "cond": {
+         "castN": 3
         },
-        "to": "current"
-       },
-       {
-        "op": "stun",
-        "to": "prev",
-        "dur": 1
-       },
-       {
-        "op": "damage",
-        "type": "physical",
-        "value": {
-         "ap": [
-          30,
-          45,
-          200
-         ],
-         "ad": [
-          155,
-          235,
-          2350
-         ]
-        },
-        "to": {
-         "around": "current",
-         "r": 1,
-         "includeCenter": true
-        }
+        "then": [
+         {
+          "op": "displace",
+          "to": "current",
+          "kind": "knockup",
+          "dur": 1,
+          "high": true
+         },
+         {
+          "op": "damage",
+          "type": "physical",
+          "value": {
+           "ad": [
+            400,
+            600,
+            3400
+           ]
+          },
+          "to": "current"
+         },
+         {
+          "op": "fx",
+          "name": "afterimage",
+          "at": "current",
+          "skin": "airslash"
+         },
+         {
+          "op": "delay",
+          "sec": 1,
+          "ops": [
+           {
+            "op": "fx",
+            "name": "shockwave",
+            "at": "current",
+            "r": [
+             1,
+             1,
+             2
+            ]
+           },
+           {
+            "op": "fx",
+            "name": "shake",
+            "power": 2
+           },
+           {
+            "op": "damage",
+            "to": {
+             "around": "current",
+             "r": [
+              1,
+              1,
+              2
+             ],
+             "includeCenter": true
+            },
+            "type": "physical",
+            "value": {
+             "ap": [
+              30,
+              45,
+              200
+             ],
+             "ad": [
+              155,
+              235,
+              2350
+             ]
+            }
+           }
+          ]
+         }
+        ]
        }
       ]
      }
@@ -5585,7 +6759,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": true,
-    "simplified": "滑行省略；擊飛時間原文沒寫，推測 1 秒；落地範圍 3★ 的 2 格沒做，固定 1 格。"
+    "simplified": "擊飛時間原文沒寫，推測 1 秒。"
    },
    "passives": []
   },
@@ -5622,6 +6796,12 @@
     "castTime": 0.5,
     "steps": [
      {
+      "op": "fx",
+      "name": "afterimage",
+      "at": "self",
+      "skin": "spirit"
+     },
+     {
       "op": "repeat",
       "times": [
        3,
@@ -5641,9 +6821,14 @@
         },
         "to": {
          "nearest": 3
+        },
+        "fx": {
+         "name": "slash",
+         "skin": "twin"
         }
        }
-      ]
+      ],
+      "gap": 0.08
      },
      {
       "op": "if",
@@ -5684,7 +6869,12 @@
         2500
        ]
       },
-      "to": "current"
+      "to": "current",
+      "fx": {
+       "name": "slash",
+       "big": true,
+       "shake": 2
+      }
      }
     ],
     "altSteps": null,
@@ -5776,36 +6966,49 @@
          ]
         }
        }
+      ],
+      "skin": "stage",
+      "onEnd": [
+       {
+        "op": "fx",
+        "name": "shockwave",
+        "at": "current",
+        "r": 2
+       },
+       {
+        "op": "fx",
+        "name": "shake",
+        "power": 2
+       },
+       {
+        "op": "damage",
+        "to": {
+         "around": "current",
+         "r": 2
+        },
+        "type": "magic",
+        "value": {
+         "ap": [
+          100,
+          150,
+          2400
+         ]
+        }
+       },
+       {
+        "op": "status",
+        "to": "prev",
+        "kind": "chill",
+        "dur": 4,
+        "value": 0.2
+       }
       ]
-     },
-     {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        100,
-        150,
-        2400
-       ]
-      },
-      "to": {
-       "around": "current",
-       "r": 2,
-       "includeCenter": true
-      }
-     },
-     {
-      "op": "status",
-      "to": "prev",
-      "kind": "chill",
-      "dur": 4,
-      "value": 0.2
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": true,
-    "simplified": "區域持續時間原文沒寫，推測 3 秒；最後一個音符不延遲，施放時就打。"
+    "simplified": "區域持續時間原文沒寫，推測 3 秒；區域維持在目標身上。"
    },
    "passives": []
   },
@@ -5843,44 +7046,72 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        180,
-        270,
-        1500
-       ]
-      },
-      "to": "current"
-     },
-     {
-      "op": "status",
-      "to": "prev",
-      "kind": "shred",
-      "dur": 8,
-      "value": 10
-     },
-     {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "dealt": 0.4
-      },
-      "to": "current"
-     },
-     {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "dealt": 1
-      },
-      "to": {
-       "around": "current",
-       "r": 2,
-       "includeCenter": false
-      },
-      "split": true
+      "op": "projectile",
+      "to": "current",
+      "shape": "disc",
+      "spin": true,
+      "speed": 12,
+      "onHit": [
+       {
+        "op": "damage",
+        "type": "magic",
+        "value": {
+         "ap": [
+          180,
+          270,
+          1500
+         ]
+        },
+        "to": "current"
+       },
+       {
+        "op": "status",
+        "to": "prev",
+        "kind": "shred",
+        "dur": 8,
+        "value": 10
+       },
+       {
+        "op": "fx",
+        "name": "aura",
+        "at": "current",
+        "skin": "recordstack",
+        "dur": 8
+       },
+       {
+        "op": "delay",
+        "sec": 0.4,
+        "ops": [
+         {
+          "op": "fx",
+          "name": "burst",
+          "at": "current",
+          "r": 2
+         },
+         {
+          "op": "damage",
+          "type": "magic",
+          "value": {
+           "dealt": 0.4
+          },
+          "to": "current"
+         },
+         {
+          "op": "damage",
+          "type": "magic",
+          "value": {
+           "dealt": 1
+          },
+          "to": {
+           "around": "current",
+           "r": 2,
+           "includeCenter": false
+          },
+          "split": true
+         }
+        ]
+       }
+      ]
      }
     ],
     "altSteps": null,
@@ -5946,35 +7177,50 @@
       }
      },
      {
-      "op": "dash",
-      "to": "current"
-     },
-     {
-      "op": "damage",
-      "type": "magic",
-      "value": {
-       "ap": [
-        250,
-        375,
-        3500
-       ]
-      },
-      "to": {
-       "around": "current",
-       "r": 1,
-       "includeCenter": true
-      }
-     },
-     {
-      "op": "stun",
-      "to": "prev",
-      "dur": 1
+      "op": "leap",
+      "to": "current",
+      "air": 0.45,
+      "land": "adjacent",
+      "onLand": [
+       {
+        "op": "fx",
+        "name": "shockwave",
+        "at": "self",
+        "r": 1
+       },
+       {
+        "op": "fx",
+        "name": "shake",
+        "power": 2
+       },
+       {
+        "op": "damage",
+        "to": {
+         "around": "self",
+         "r": 1
+        },
+        "type": "magic",
+        "value": {
+         "ap": [
+          250,
+          375,
+          3500
+         ]
+        }
+       },
+       {
+        "op": "displace",
+        "to": "prev",
+        "kind": "knockup",
+        "dur": 1
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": true,
-    "simplified": "蓄力 2 秒（3★ 1 秒）簡化成施放時間 1.5 秒；韌性就是減傷，蓄力時有 15%／15%／50% 減傷；擊飛時間推測 1 秒。"
+    "simplified": "蓄力 2 秒（3★ 1 秒）簡化成施放時間 1.5 秒；擊飛時間推測 1 秒。"
    },
    "passives": []
   },
@@ -6010,54 +7256,107 @@
     "castTime": 0.6,
     "steps": [
      {
-      "op": "damage",
-      "to": {
-       "line": "current",
-       "len": "board"
+      "op": "pathDash",
+      "path": {
+       "kind": "longestRow",
+       "noStatus": "paint"
       },
-      "type": "physical",
-      "value": {
-       "ap": [
-        10,
-        15,
-        999
+      "speed": 13,
+      "end": "stay",
+      "trail": "spray",
+      "paint": {
+       "skin": "paint",
+       "dur": null,
+       "enemy": [
+        {
+         "op": "status",
+         "kind": "vulnerable",
+         "dur": 1,
+         "value": 0.1
+        }
        ],
-       "ad": [
-        70,
-        105,
-        5000
-       ]
-      }
-     },
-     {
-      "op": "status",
-      "to": "prev",
-      "kind": "vulnerable",
-      "dur": 6,
-      "value": 0.1
-     },
-     {
-      "op": "if",
-      "cond": {
-       "castN": 3
+       "tick": 0.5,
+       "tag": "paint"
       },
-      "then": [
+      "onHit": [
        {
         "op": "damage",
-        "to": "allEnemies",
+        "to": "current",
         "type": "physical",
         "value": {
          "ap": [
-          32.5,
-          48.75,
-          3246.75
+          10,
+          15,
+          999
          ],
          "ad": [
-          227.5,
-          341.25,
-          16250
+          70,
+          105,
+          5000
          ]
         }
+       },
+       {
+        "op": "status",
+        "to": "current",
+        "kind": "paint",
+        "dur": 999
+       },
+       {
+        "op": "status",
+        "to": "current",
+        "kind": "vulnerable",
+        "dur": 6,
+        "value": 0.1
+       },
+       {
+        "op": "fx",
+        "name": "burst",
+        "at": "current",
+        "skin": "paint"
+       }
+      ],
+      "then": [
+       {
+        "op": "if",
+        "cond": {
+         "castN": 3
+        },
+        "then": [
+         {
+          "op": "fx",
+          "name": "ground",
+          "at": {
+           "marked": "paint"
+          },
+          "skin": "ignite",
+          "dur": 0.5
+         },
+         {
+          "op": "fx",
+          "name": "shake",
+          "power": 2
+         },
+         {
+          "op": "damage",
+          "to": {
+           "marked": "paint"
+          },
+          "type": "physical",
+          "value": {
+           "ap": [
+            32.5,
+            48.75,
+            3246.75
+           ],
+           "ad": [
+            227.5,
+            341.25,
+            16250
+           ]
+          }
+         }
+        ]
        }
       ]
      }
@@ -6065,7 +7364,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "上色格子簡化：被滑板擊中的敵人才算上色；每第3次施放的點燃改打全部敵人。"
+    "simplified": "被上色（或站在上色格）的敵人才吃點燃；上色格整場保留，易傷沿用現有 6 秒。"
    },
    "passives": []
   },
@@ -6108,6 +7407,20 @@
       "dur": 0.8
      },
      {
+      "op": "buff",
+      "to": "self",
+      "stat": "dr",
+      "value": 0.25,
+      "dur": 0.8
+     },
+     {
+      "op": "fx",
+      "name": "slash",
+      "at": "current",
+      "n": 3,
+      "skin": "neon"
+     },
+     {
       "op": "damage",
       "to": "current",
       "type": "magic",
@@ -6121,31 +7434,66 @@
       "bonusVsTank": 0.5
      },
      {
-      "op": "dash",
-      "to": "current"
-     },
-     {
-      "op": "damage",
-      "to": {
-       "around": "current",
-       "r": 2,
-       "includeCenter": true
-      },
-      "type": "magic",
-      "value": {
-       "ap": [
-        620,
-        930,
-        9999
-       ]
-      },
-      "split": true
+      "op": "delay",
+      "sec": 0.35,
+      "ops": [
+       {
+        "op": "blink",
+        "to": "current",
+        "place": "adjacent",
+        "then": [
+         {
+          "op": "projectile",
+          "to": "current",
+          "shape": "bomb",
+          "arc": true,
+          "speed": 9,
+          "onHit": [
+           {
+            "op": "fx",
+            "name": "burst",
+            "at": "current",
+            "r": 2
+           },
+           {
+            "op": "fx",
+            "name": "shockwave",
+            "at": "current",
+            "r": 2
+           },
+           {
+            "op": "fx",
+            "name": "shake",
+            "power": 2
+           },
+           {
+            "op": "damage",
+            "to": {
+             "around": "current",
+             "r": 2,
+             "includeCenter": true
+            },
+            "type": "magic",
+            "value": {
+             "ap": [
+              620,
+              930,
+              9999
+             ]
+            },
+            "split": true
+           }
+          ]
+         }
+        ]
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "B 面被動（擊殺回玩家生命）沒重製；25% 韌性省略。"
+    "simplified": "B 面被動（擊殺回玩家生命）沒重製；25% 韌性當成 0.8 秒的 25% 減傷。"
    },
    "passives": []
   },
@@ -6181,43 +7529,60 @@
     "castTime": 0.6,
     "steps": [
      {
-      "op": "damage",
+      "op": "projectile",
       "to": {
        "nearest": 3
       },
-      "type": "physical",
-      "value": {
-       "ap": [
-        60,
-        90,
-        300
-       ],
-       "ad": [
-        280,
-        420,
-        3000
-       ]
-      }
-     },
-     {
-      "op": "damage",
-      "to": {
-       "nearest": 3
-      },
-      "type": "physical",
-      "value": {
-       "ap": [
-        9,
-        13.5,
-        300
-       ],
-       "ad": [
-        42,
-        63,
-        3000
-       ]
-      },
-      "hits": 4
+      "shape": "moon",
+      "speed": 13,
+      "onHit": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "physical",
+        "value": {
+         "ap": [
+          60,
+          90,
+          300
+         ],
+         "ad": [
+          280,
+          420,
+          3000
+         ]
+        }
+       },
+       {
+        "op": "fx",
+        "name": "burst",
+        "at": "current",
+        "skin": "shards",
+        "n": 16
+       }
+      ],
+      "onEnd": [
+       {
+        "op": "damage",
+        "to": {
+         "nearest": 3
+        },
+        "type": "physical",
+        "value": {
+         "ap": [
+          9,
+          13.5,
+          300
+         ],
+         "ad": [
+          42,
+          63,
+          3000
+         ]
+        },
+        "hits": 4
+       }
+      ]
      },
      {
       "op": "buff",
@@ -6350,13 +7715,15 @@
          ]
         }
        }
-      ]
+      ],
+      "follow": true,
+      "skin": "toxic"
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "最大生命3000的興奮狀態省略；5秒回血改成一次回完；3★範圍5格改成2格。"
+    "simplified": "最大生命3000的興奮狀態省略；3★範圍5格改成2格。"
    },
    "passives": []
   },
@@ -6395,8 +7762,7 @@
      {
       "op": "damage",
       "to": {
-       "line": "current",
-       "len": "board"
+       "row": "current"
       },
       "type": "magic",
       "value": {
@@ -6406,6 +7772,19 @@
         4000
        ]
       }
+     },
+     {
+      "op": "fx",
+      "name": "slash",
+      "shape": "row",
+      "at": "current",
+      "skin": "scissors",
+      "dur": 0.3
+     },
+     {
+      "op": "fx",
+      "name": "shake",
+      "power": 2
      },
      {
       "op": "damage",
@@ -6419,12 +7798,29 @@
        ]
       },
       "split": true
+     },
+     {
+      "op": "if",
+      "cond": {
+       "prevCountMax": 1
+      },
+      "then": [
+       {
+        "op": "mana",
+        "to": "self",
+        "value": [
+         50,
+         50,
+         200
+        ]
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "滑向新目標、「命中1名以下回魔」省略。"
+    "simplified": ""
    },
    "passives": [
     {
@@ -6446,9 +7842,9 @@
       {
        "op": "damage",
        "to": {
-        "around": "current",
+        "cone": "current",
         "r": 1,
-        "includeCenter": false
+        "exclude": "current"
        },
        "type": "magic",
        "value": {
@@ -6457,10 +7853,31 @@
          45,
          500
         ]
+       },
+       "fx": {
+        "name": "cone",
+        "frm": "self",
+        "r": 1,
+        "skin": "snip"
        }
       }
      ],
      "text": "攻擊附加魔傷"
+    },
+    {
+     "on": "kill",
+     "src": "unit",
+     "ops": [
+      {
+       "op": "dash",
+       "to": {
+        "nearest": 1
+       },
+       "style": "slide",
+       "trail": "thread"
+      }
+     ],
+     "text": "滑向新目標"
     }
    ]
   },
@@ -6504,6 +7921,17 @@
       },
       "then": [
        {
+        "op": "fx",
+        "name": "sweep",
+        "skin": "hurricane",
+        "dur": 4.5
+       },
+       {
+        "op": "fx",
+        "name": "shake",
+        "power": 1
+       },
+       {
         "op": "dot",
         "to": "allEnemies",
         "type": "magic",
@@ -6520,18 +7948,32 @@
       ],
       "else": [
        {
-        "op": "damage",
+        "op": "projectile",
         "to": {
          "nearest": 3
         },
-        "type": "magic",
-        "value": {
-         "ap": [
-          140,
-          210,
-          9999
-         ]
-        }
+        "shape": "dragon",
+        "speed": 10,
+        "trailFx": "wind",
+        "onHit": [
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "magic",
+          "value": {
+           "ap": [
+            140,
+            210,
+            9999
+           ]
+          }
+         },
+         {
+          "op": "fx",
+          "name": "burst",
+          "at": "current"
+         }
+        ]
        }
       ]
      }
@@ -6539,7 +7981,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": true,
-    "simplified": "原文「45秒」疑為4.5秒（推測）；第3次施放只放颶風、不再丟天龍；3★每次施放都放颶風，這裡一律每第3次。"
+    "simplified": "原文「45秒」疑為4.5秒（推測）；第3次施放只放颶風、不再丟天龍。"
    },
    "passives": []
   },
@@ -6574,6 +8016,18 @@
     "desc": "釋放一套共（數值未公布）擊的毀滅性連擊，從龍擊開始依序進行。之後的施放會延長連擊。\n龍擊：對目標造成15/20/150（受法術強度加成） + 150/225/1300（受攻擊力加成）物理傷害。2格內的其他敵人受到40%傷害。\n暴風迴旋：對目標造成20.25/27/202.5（受法術強度加成） + 202.5/303.75/1755（受攻擊力加成）物理傷害，並擊飛1/1/10秒。1格內的其他敵人受到50%傷害。\n天界之拳：對目標造成30/40/300（受法術強度加成） + 300/450/2600（受攻擊力加成）物理傷害並標記。若已被標記，則擊中其核心，額外造成400%真實傷害。",
     "castTime": 1.0,
     "steps": [
+     {
+      "op": "fx",
+      "name": "slash",
+      "at": "current",
+      "skin": "dragon"
+     },
+     {
+      "op": "fx",
+      "name": "shockwave",
+      "at": "current",
+      "r": 2
+     },
      {
       "op": "damage",
       "to": "current",
@@ -6613,82 +8067,140 @@
       }
      },
      {
-      "op": "damage",
-      "to": "current",
-      "type": "physical",
-      "value": {
-       "ap": [
-        20.25,
-        27,
-        202.5
-       ],
-       "ad": [
-        202.5,
-        303.75,
-        1755
-       ]
-      }
-     },
-     {
-      "op": "stun",
-      "to": "prev",
-      "dur": [
-       1,
-       1,
-       10
+      "op": "delay",
+      "sec": 0.4,
+      "lock": true,
+      "ops": [
+       {
+        "op": "fx",
+        "name": "spin",
+        "at": "self",
+        "r": 1,
+        "dur": 0.25
+       },
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "physical",
+        "value": {
+         "ap": [
+          20.25,
+          27,
+          202.5
+         ],
+         "ad": [
+          202.5,
+          303.75,
+          1755
+         ]
+        }
+       },
+       {
+        "op": "displace",
+        "to": "current",
+        "kind": "knockup",
+        "dur": [
+         1,
+         1,
+         10
+        ],
+        "high": true
+       },
+       {
+        "op": "damage",
+        "to": {
+         "around": "current",
+         "r": 1,
+         "includeCenter": false
+        },
+        "type": "physical",
+        "value": {
+         "ap": [
+          10.125,
+          13.5,
+          101.25
+         ],
+         "ad": [
+          101.25,
+          151.875,
+          877.5
+         ]
+        }
+       }
       ]
      },
      {
-      "op": "damage",
-      "to": {
-       "around": "current",
-       "r": 1,
-       "includeCenter": false
-      },
-      "type": "physical",
-      "value": {
-       "ap": [
-        10.125,
-        13.5,
-        101.25
-       ],
-       "ad": [
-        101.25,
-        151.875,
-        877.5
-       ]
-      }
-     },
-     {
-      "op": "damage",
-      "to": "current",
-      "type": "physical",
-      "value": {
-       "ap": [
-        30,
-        40,
-        300
-       ],
-       "ad": [
-        300,
-        450,
-        2600
-       ]
-      }
-     },
-     {
-      "op": "damage",
-      "to": "current",
-      "type": "true",
-      "value": {
-       "dealt": 4
-      }
+      "op": "delay",
+      "sec": 0.9,
+      "lock": true,
+      "ops": [
+       {
+        "op": "leap",
+        "to": "current",
+        "air": 0.2,
+        "land": "adjacent",
+        "onLand": [
+         {
+          "op": "fx",
+          "name": "burst",
+          "at": "current",
+          "big": true
+         },
+         {
+          "op": "fx",
+          "name": "shake",
+          "power": 3
+         },
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "physical",
+          "value": {
+           "ap": [
+            30,
+            40,
+            300
+           ],
+           "ad": [
+            300,
+            450,
+            2600
+           ]
+          }
+         },
+         {
+          "op": "if",
+          "cond": {
+           "tgtStatus": "leeMark"
+          },
+          "then": [
+           {
+            "op": "damage",
+            "to": "current",
+            "type": "true",
+            "value": {
+             "dealt": 4
+            }
+           }
+          ],
+          "else": [
+           {
+            "op": "status",
+            "to": "current",
+            "kind": "leeMark",
+            "dur": 999
+           }
+          ]
+         }
+        ]
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": true,
-    "simplified": "連擊擊數未公布，固定3段（推測）；「標記後再擊中核心」改成每次都額外 +400% 該段傷害的真傷；之後施放延長連擊省略。"
+    "simplified": "連擊擊數未公布，固定3段（推測）；之後施放延長連擊省略。"
    },
    "passives": []
   },
@@ -6725,31 +8237,47 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "to": {
-       "nearest": 12
+      "op": "projectile",
+      "to": "current",
+      "shape": "pinball",
+      "speed": 15,
+      "bounce": {
+       "n": 12,
+       "pick": "nearestUnhit",
+       "falloff": 0.2,
+       "minPct": 0.2
       },
-      "type": "physical",
-      "value": {
-       "ap": [
-        30,
-        45,
-        908
-       ],
-       "ad": [
-        145,
-        220,
-        1337
-       ]
-      },
-      "falloff": 0.2,
-      "minPct": 0.2
+      "onHit": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "physical",
+        "value": {
+         "ap": [
+          30,
+          45,
+          908
+         ],
+         "ad": [
+          145,
+          220,
+          1337
+         ]
+        }
+       },
+       {
+        "op": "fx",
+        "name": "flash",
+        "at": "current",
+        "skin": "pixel"
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "彈跳改成由近到遠依序打最多12名，每名 -20%。"
+    "simplified": ""
    },
    "passives": []
   },
@@ -6785,10 +8313,27 @@
     "castTime": 0.6,
     "steps": [
      {
-      "op": "status",
+      "op": "buff",
       "to": "self",
-      "kind": "ccImmune",
+      "stat": "dr",
+      "value": 0.4,
       "dur": 1.2
+     },
+     {
+      "op": "fx",
+      "name": "ground",
+      "shape": "line",
+      "frm": "self",
+      "to": "current",
+      "len": "board",
+      "width": 2,
+      "skin": "claw",
+      "dur": 0.5
+     },
+     {
+      "op": "fx",
+      "name": "shake",
+      "power": 2
      },
      {
       "op": "damage",
@@ -6821,10 +8366,12 @@
       }
      },
      {
-      "op": "stun",
+      "op": "displace",
       "to": {
        "nearest": 4
       },
+      "kind": "pull",
+      "toward": "self",
       "dur": 0.8
      },
      {
@@ -6892,7 +8439,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "拉扯簡化成0.8秒暈眩；40%韌性改成1.2秒免控；重擊普攻在第一次施放後啟用。"
+    "simplified": "拉扯期間的控制時間 0.8 秒、40% 減傷持續 1.2 秒為推測；重擊普攻在第一次施放後啟用。"
    },
    "passives": []
   },
@@ -6935,18 +8482,41 @@
       },
       "then": [
        {
-        "op": "damage",
-        "to": "current",
-        "type": "magic",
-        "value": {
-         "ap": [
-          150,
-          225,
-          1500
-         ]
-        },
-        "hits": 4,
-        "ramp": 0.4
+        "op": "repeat",
+        "times": 4,
+        "gap": 0.3,
+        "lock": true,
+        "ops": [
+         {
+          "op": "leap",
+          "to": {
+           "chain": true,
+           "within": 3
+          },
+          "air": 0.2,
+          "land": "adjacent",
+          "onLand": [
+           {
+            "op": "damage",
+            "to": "current",
+            "type": "magic",
+            "value": {
+             "ap": [
+              150,
+              225,
+              1500
+             ]
+            },
+            "ramp": 0.4
+           },
+           {
+            "op": "fx",
+            "name": "burst",
+            "at": "current"
+           }
+          ]
+         }
+        ]
        }
       ],
       "else": [
@@ -6962,33 +8532,63 @@
         }
        },
        {
-        "op": "damage",
+        "op": "projectile",
         "to": "current",
-        "type": "magic",
-        "value": {
-         "ap": [
-          380,
-          570,
-          3000
-         ]
-        }
-       },
-       {
-        "op": "damage",
-        "to": {
-         "around": "current",
-         "r": 1,
-         "includeCenter": true
-        },
-        "type": "magic",
-        "value": {
-         "ap": [
-          80,
-          120,
-          500
-         ]
-        },
-        "hits": 3
+        "shape": "spear",
+        "speed": 17,
+        "onHit": [
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "magic",
+          "value": {
+           "ap": [
+            380,
+            570,
+            3000
+           ]
+          }
+         },
+         {
+          "op": "fx",
+          "name": "telegraph",
+          "at": "current",
+          "r": 1,
+          "skin": "flowers",
+          "n": 3,
+          "dur": 0.5
+         },
+         {
+          "op": "delay",
+          "sec": 0.5,
+          "ops": [
+           {
+            "op": "fx",
+            "name": "burst",
+            "at": "current",
+            "r": 1,
+            "skin": "petal"
+           },
+           {
+            "op": "damage",
+            "to": {
+             "around": "current",
+             "r": 1,
+             "includeCenter": true
+            },
+            "type": "magic",
+            "value": {
+             "ap": [
+              80,
+              120,
+              500
+             ]
+            },
+            "hits": 3
+           }
+          ]
+         }
+        ]
        }
       ]
      }
@@ -6996,7 +8596,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "形態改以生命 >75% 判斷；跳躍次數3★的99次改成4次；3朵花改成連打3次。"
+    "simplified": "形態改以生命 >75% 判斷；3★ 的 99 次跳躍改成 4 次。"
    },
    "passives": []
   },
@@ -7041,36 +8641,66 @@
        0.3,
        2.0
       ]
+     },
+     {
+      "op": "rollerMod",
+      "id": "disco",
+      "speedMul": 1.5,
+      "sizeMul": [
+       1.3,
+       1.3,
+       3.0
+      ]
+     },
+     {
+      "op": "fx",
+      "name": "burst",
+      "at": "self",
+      "skin": "sparkle"
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": true,
-    "simplified": "迪斯可球傷害未公布（推測：100/150/500，每 4 秒滾一次）；移動加快省略。"
+    "simplified": "迪斯可球傷害未公布（推測 100/150/500；同一名敵人 4 秒內只會被壓一次）；「移動更快」沒有數字，暫定 ×1.5。努努跟在球後面推著走，不普攻。"
    },
    "passives": [
     {
-     "on": "every",
-     "n": 4,
+     "on": "start",
      "src": "unit",
      "ops": [
       {
-       "op": "damage",
-       "to": {
-        "line": "current",
-        "len": "board"
-       },
-       "type": "magic",
-       "value": {
-        "ap": [
-         100,
-         150,
-         500
-        ]
-       }
+       "op": "roller",
+       "id": "disco",
+       "skin": "discoball",
+       "hitR": 0.6,
+       "speed": 1.0,
+       "path": "seek",
+       "rehit": 4,
+       "owner": "push",
+       "onPass": [
+        {
+         "op": "damage",
+         "to": "current",
+         "type": "magic",
+         "value": {
+          "ap": [
+           100,
+           150,
+           500
+          ]
+         }
+        },
+        {
+         "op": "fx",
+         "name": "flash",
+         "at": "current",
+         "skin": "sparkle"
+        }
+       ]
       }
      ],
-     "text": "迪斯可球滾過"
+     "text": "迪斯可球登場"
     },
     {
      "on": "start",
@@ -7124,46 +8754,69 @@
     "castTime": 0.4,
     "steps": [
      {
-      "op": "damage",
+      "op": "blink",
       "to": "current",
-      "type": "physical",
-      "value": {
-       "ad": [
-        345,
-        520,
-        4000
-       ]
-      }
-     },
-     {
-      "op": "damage",
-      "to": "allEnemies",
-      "type": "physical",
-      "value": {
-       "ad": [
-        120,
-        180,
-        800
-       ]
-      }
-     },
-     {
-      "op": "execute",
-      "to": "current",
-      "below": {
-       "flat": 0.08,
-       "ap": [
-        0.02,
-        0.02,
-        0.85
-       ]
-      }
+      "place": "behind",
+      "then": [
+       {
+        "op": "fx",
+        "name": "slash",
+        "at": "current",
+        "skin": "x",
+        "big": true
+       },
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "physical",
+        "value": {
+         "ad": [
+          345,
+          520,
+          4000
+         ]
+        }
+       },
+       {
+        "op": "fx",
+        "name": "sweep",
+        "skin": "xslash",
+        "dur": 0.3
+       },
+       {
+        "op": "damage",
+        "to": {
+         "all": "enemy",
+         "exclude": "current"
+        },
+        "type": "physical",
+        "value": {
+         "ad": [
+          120,
+          180,
+          800
+         ]
+        }
+       },
+       {
+        "op": "execute",
+        "to": "current",
+        "below": {
+         "flat": 0.08,
+         "ap": [
+          0.02,
+          0.02,
+          0.85
+         ]
+        }
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "X字形改成全場敵人（含目標）；被動「低血敵人立即補放技能」省略，只保留主動處決。"
+    "simplified": "被動「低血敵人立即補放技能」省略。"
    },
    "passives": []
   },
@@ -7206,37 +8859,56 @@
       },
       "then": [
        {
-        "op": "dash",
-        "to": "current"
-       },
-       {
-        "op": "damage",
-        "to": "current",
-        "type": "magic",
-        "value": {
-         "resist": [
-          1.8,
-          2.7,
-          300
-         ]
-        }
-       },
-       {
-        "op": "damage",
+        "op": "leap",
         "to": {
-         "around": "current",
-         "r": 3,
-         "includeCenter": true
+         "cluster": {
+          "r": 3
+         }
         },
-        "type": "magic",
-        "value": {
-         "resist": [
-          2.025,
-          3.0375,
-          300
-         ]
-        },
-        "split": true
+        "air": 0.4,
+        "land": "adjacent",
+        "onLand": [
+         {
+          "op": "fx",
+          "name": "shockwave",
+          "at": "current",
+          "r": 3
+         },
+         {
+          "op": "fx",
+          "name": "shake",
+          "power": 3
+         },
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "magic",
+          "value": {
+           "resist": [
+            1.8,
+            2.7,
+            300
+           ]
+          }
+         },
+         {
+          "op": "damage",
+          "to": {
+           "around": "current",
+           "r": 3,
+           "includeCenter": true
+          },
+          "type": "magic",
+          "value": {
+           "resist": [
+            2.025,
+            3.0375,
+            300
+           ]
+          },
+          "split": true
+         }
+        ]
        }
       ],
       "else": [
@@ -7270,8 +8942,17 @@
             15
            ]
           }
+         },
+         {
+          "op": "fx",
+          "name": "shockwave",
+          "at": "self",
+          "r": 2,
+          "thin": true
          }
-        ]
+        ],
+        "follow": true,
+        "skin": "speakers"
        }
       ]
      }
@@ -7279,7 +8960,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "3 支喇叭合併成自己周圍 2 格的音波區。要先靠節拍大師羈絆在半血時上馬，才會換成衝撞招式。"
+    "simplified": "要先靠節拍大師羈絆在半血時上馬，才會換成衝撞招式。"
    },
    "passives": []
   },
@@ -7316,50 +8997,99 @@
     "castTime": 0.6,
     "steps": [
      {
-      "op": "damage",
+      "op": "projectile",
       "to": "current",
-      "type": "magic",
-      "value": {
-       "ap": [
-        185,
-        280,
-        2000
-       ]
-      },
-      "hits": 3
+      "shape": "rock",
+      "count": 3,
+      "spread": "seq",
+      "gap": 0.12,
+      "speed": 14,
+      "onHit": [
+       {
+        "op": "damage",
+        "to": "current",
+        "type": "magic",
+        "value": {
+         "ap": [
+          185,
+          280,
+          2000
+         ]
+        }
+       },
+       {
+        "op": "fx",
+        "name": "burst",
+        "at": "current",
+        "small": true
+       }
+      ]
      },
      {
       "op": "if",
       "cond": {
-       "castN": 3
+       "castN": [
+        3,
+        3,
+        1
+       ]
       },
       "then": [
        {
-        "op": "damage",
-        "to": {
-         "line": "current",
-         "len": "board"
-        },
-        "type": "magic",
-        "value": {
-         "ap": [
-          160,
-          240,
-          2000
-         ],
-         "tgtMaxHp": {
-          "ap": [
-           0.02,
-           0.03,
-           0.5
+        "op": "delay",
+        "sec": 0.45,
+        "ops": [
+         {
+          "op": "blink",
+          "place": {
+           "bestLine": {
+            "len": "board"
+           }
+          },
+          "then": [
+           {
+            "op": "pathDash",
+            "path": {
+             "kind": "bestLine",
+             "len": "board"
+            },
+            "speed": 12,
+            "end": "stay",
+            "trail": "wave",
+            "onHit": [
+             {
+              "op": "damage",
+              "to": {
+               "line": "current",
+               "len": "board"
+              },
+              "type": "magic",
+              "value": {
+               "ap": [
+                160,
+                240,
+                2000
+               ],
+               "tgtMaxHp": {
+                "ap": [
+                 0.02,
+                 0.03,
+                 0.5
+                ]
+               }
+              }
+             },
+             {
+              "op": "displace",
+              "to": "current",
+              "kind": "knockup",
+              "dur": 0.8
+             }
+            ]
+           }
           ]
          }
-        }
-       },
-       {
-        "op": "stun",
-        "to": "prev",
-        "dur": 0.8
+        ]
        }
       ]
      }
@@ -7367,7 +9097,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "「每第3/3/1次」的3★每次都衝浪，這裡一律每第3次；換位省略。"
+    "simplified": ""
    },
    "passives": []
   },
@@ -7404,44 +9134,69 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "damage",
-      "to": {
-       "around": "current",
-       "r": 3,
-       "includeCenter": true
-      },
-      "type": "magic",
-      "value": {
-       "ap": [
-        570,
-        855,
-        13337
-       ]
-      }
-     },
-     {
-      "op": "dot",
-      "to": {
-       "around": "current",
-       "r": 3,
-       "includeCenter": true
-      },
-      "type": "magic",
-      "value": {
-       "ap": [
-        120,
-        180,
-        1337
-       ]
-      },
-      "dur": 15,
-      "tick": 1
+      "op": "projectile",
+      "to": "current",
+      "shape": "mushroom",
+      "arc": true,
+      "speed": 8,
+      "onHit": [
+       {
+        "op": "fx",
+        "name": "burst",
+        "at": "current",
+        "r": 3,
+        "skin": "spore"
+       },
+       {
+        "op": "fx",
+        "name": "ground",
+        "at": "current",
+        "r": 3,
+        "skin": "spore",
+        "dur": 1.2
+       },
+       {
+        "op": "damage",
+        "to": {
+         "around": "current",
+         "r": 3,
+         "includeCenter": true
+        },
+        "type": "magic",
+        "value": {
+         "ap": [
+          570,
+          855,
+          13337
+         ]
+        },
+        "distFalloff": 0.2
+       },
+       {
+        "op": "dot",
+        "to": {
+         "around": "current",
+         "r": 3,
+         "includeCenter": true
+        },
+        "type": "magic",
+        "value": {
+         "ap": [
+          120,
+          180,
+          1337
+         ]
+        },
+        "dur": 15,
+        "tick": 1
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "殭屍自爆省略；蘑菇「距離中心每遠1格 -20%」省略。"
+    "simplified": "殭屍自爆省略。"
    },
    "passives": [
     {
@@ -7506,30 +9261,49 @@
       "replace": true,
       "onHit": [
        {
-        "op": "damage",
+        "op": "projectile",
         "to": "current",
-        "type": "magic",
-        "value": {
-         "ap": [
-          100,
-          150,
-          2000
-         ]
-        }
+        "shape": "card",
+        "spin": true,
+        "speed": 17,
+        "onHit": [
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "magic",
+          "value": {
+           "ap": [
+            100,
+            150,
+            2000
+           ]
+          }
+         }
+        ]
        },
        {
-        "op": "damage",
+        "op": "projectile",
         "to": {
-         "nearest": 2
+         "nearest": 2,
+         "exclude": "current"
         },
-        "type": "magic",
-        "value": {
-         "ap": [
-          30,
-          45,
-          1000
-         ]
-        }
+        "shape": "card",
+        "spin": true,
+        "speed": 17,
+        "onHit": [
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "magic",
+          "value": {
+           "ap": [
+            30,
+            45,
+            1000
+           ]
+          }
+         }
+        ]
        }
       ]
      }
@@ -7587,6 +9361,13 @@
     "desc": "召喚2個巨大的全像拳頭。獲得275/375/500（受法術強度加成）護盾，持續2秒，並為2/2/10名附近友軍提供125/165/215（受法術強度加成）護盾。攻擊目標5/5/40次，每次對其造成115/175/1000（受攻擊力加成）物理傷害，對2格半徑內的其他敵人造成45/70/400（受攻擊力加成）傷害。\n電子舞曲強化：多攻擊一次，並治療此技能造成傷害的15%。",
     "castTime": 0.5,
     "steps": [
+     {
+      "op": "fx",
+      "name": "aura",
+      "at": "self",
+      "skin": "holofists",
+      "dur": 1.8
+     },
      {
       "op": "shield",
       "to": "self",
@@ -7649,6 +9430,12 @@
           175,
           1000
          ]
+        },
+        "fx": {
+         "name": "slash",
+         "skin": "holofist",
+         "heavy": true,
+         "shake": 1
         }
        },
        {
@@ -7729,6 +9516,16 @@
     "castTime": 0.6,
     "steps": [
      {
+      "op": "fx",
+      "name": "tether",
+      "frm": {
+       "nearest": 3
+      },
+      "to": "self",
+      "skin": "blood",
+      "dur": 0.4
+     },
+     {
       "op": "damage",
       "to": {
        "nearest": 3
@@ -7765,9 +9562,32 @@
      {
       "op": "if",
       "cond": {
-       "castN": 5
+       "castN": [
+        5,
+        5,
+        1
+       ]
       },
       "then": [
+       {
+        "op": "fx",
+        "name": "rain",
+        "at": "boardCenter",
+        "shape": "chandelier",
+        "n": 1,
+        "dur": 0.5
+       },
+       {
+        "op": "fx",
+        "name": "shockwave",
+        "at": "boardCenter",
+        "r": 5
+       },
+       {
+        "op": "fx",
+        "name": "shake",
+        "power": 3
+       },
        {
         "op": "damage",
         "to": "allEnemies",
@@ -7778,7 +9598,9 @@
           600,
           9999
          ]
-        }
+        },
+        "distFalloff": 0.1,
+        "center": "board"
        }
       ]
      }
@@ -7786,7 +9608,7 @@
     "altSteps": null,
     "altEvery": 0,
     "guess": true,
-    "simplified": "撕裂幅度30%、持續5秒、吸血30%為推測；撕裂後著迷改成3秒（原文為整場，太強）；吊燈距離遞減省略，3★每次落下改為每第5次。"
+    "simplified": "撕裂幅度30%、持續5秒、吸血30%為推測；撕裂後著迷改成3秒（原文為整場，太強）。"
    },
    "passives": []
   },
@@ -7823,29 +9645,54 @@
     "castTime": 0.6,
     "steps": [
      {
-      "op": "damage",
-      "to": "current",
-      "type": "physical",
-      "value": {
-       "ap": [
-        15,
-        20,
-        100
-       ],
-       "ad": [
-        135,
-        205,
-        1000
-       ]
+      "op": "pathDash",
+      "path": {
+       "kind": "strafe",
+       "dist": 3,
+       "keepRange": true
       },
-      "hits": 6,
-      "pen": 0.3
+      "speed": 16,
+      "end": "stay",
+      "trail": "lightning",
+      "then": [
+       {
+        "op": "projectile",
+        "to": "current",
+        "shape": "laser",
+        "count": 6,
+        "spread": "seq",
+        "gap": 0.08,
+        "pierce": true,
+        "len": "board",
+        "speed": 30,
+        "onHit": [
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "physical",
+          "value": {
+           "ap": [
+            15,
+            20,
+            100
+           ],
+           "ad": [
+            135,
+            205,
+            1000
+           ]
+          },
+          "pen": 0.3
+         }
+        ]
+       }
+      ]
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "滑行位移省略。"
+    "simplified": "滑行距離原文沒寫，3 格為推測；雷射改成貫穿。"
    },
    "passives": []
   },
@@ -7881,8 +9728,20 @@
     "castTime": 0.8,
     "steps": [
      {
-      "op": "stun",
+      "op": "fx",
+      "name": "sweep",
+      "skin": "roar",
+      "dur": 0.5
+     },
+     {
+      "op": "fx",
+      "name": "shake",
+      "power": 3
+     },
+     {
+      "op": "displace",
       "to": "allEnemies",
+      "kind": "knockup",
       "dur": 1
      },
      {
@@ -7927,7 +9786,8 @@
          "range": 1
         },
         "at": "nearTarget",
-        "dur": 5
+        "dur": 5,
+        "skin": "musician"
        }
       ]
      }
@@ -7972,52 +9832,72 @@
     "castTime": 0.5,
     "steps": [
      {
-      "op": "dash",
-      "to": {
-       "nearest": 1
-      }
-     },
-     {
-      "op": "repeat",
-      "times": [
-       8,
-       8,
-       32
-      ],
-      "ops": [
+      "op": "pathDash",
+      "path": {
+       "kind": "toward",
+       "to": {
+        "cluster": {
+         "r": 1
+        }
+       }
+      },
+      "speed": 15,
+      "end": "adjacent",
+      "trail": "feather",
+      "then": [
        {
-        "op": "damage",
+        "op": "projectile",
         "to": {
          "around": "current",
          "r": 1,
          "includeCenter": true
         },
-        "type": "magic",
-        "value": {
-         "ap": [
-          100,
-          180,
-          2400
-         ]
+        "shape": "feather",
+        "count": [
+         8,
+         8,
+         32
+        ],
+        "spread": "distribute",
+        "gap": 0.03,
+        "speed": 16,
+        "onHit": [
+         {
+          "op": "damage",
+          "to": "current",
+          "type": "magic",
+          "value": {
+           "ap": [
+            100,
+            180,
+            2400
+           ]
+          }
+         }
+        ]
+       },
+       {
+        "op": "fx",
+        "name": "shockwave",
+        "at": "self",
+        "r": 2
+       },
+       {
+        "op": "displace",
+        "to": {
+         "around": "self",
+         "r": 2
         },
-        "split": true
+        "kind": "knockup",
+        "dur": 0.8
        }
       ]
-     },
-     {
-      "op": "stun",
-      "to": {
-       "around": "current",
-       "r": 2,
-       "includeCenter": true
-      },
-      "dur": 0.8
      }
     ],
     "altSteps": null,
     "altEvery": 0,
     "guess": false,
-    "simplified": "分身與本尊合併成一個；擊飛改成0.8秒暈眩。"
+    "simplified": "分身與本尊合併成一個；擊飛時間 0.8 秒。"
    },
    "passives": []
   },
@@ -8092,9 +9972,16 @@
        "dur": 3
       },
       {
+       "op": "fx",
+       "name": "shockwave",
+       "at": "self",
+       "r": 2
+      },
+      {
        "op": "damage",
        "to": {
-        "adjacent": "enemy"
+        "around": "self",
+        "r": 2
        },
        "type": "physical",
        "value": {
@@ -8119,9 +10006,14 @@
            360,
            2600
           ]
+         },
+         "fx": {
+          "name": "slash",
+          "skin": "beat"
          }
         }
-       ]
+       ],
+       "gap": 0.12
       }
      ],
      "text": "攀升"
@@ -8160,6 +10052,18 @@
     "desc": "被動：無法攻擊。改為每3秒獲得（數值未公布）魔力，對最近的3/3/10名敵人造成120/180/3000（受法術強度加成）魔法傷害，並使2/2/10名友軍獲得50/100/9999（受法術強度加成）護盾，持續3秒。\n主動：釋放一道穿越戰場的音波，對所有敵人分攤造成1600/2400/99999（受法術強度加成）魔法傷害，並暈眩2/2/30秒。友軍分攤獲得400/700/99999（受法術強度加成）護盾，持續5秒。",
     "castTime": 0.8,
     "steps": [
+     {
+      "op": "fx",
+      "name": "sweep",
+      "skin": "soundwave",
+      "dur": 0.6,
+      "dir": "forward"
+     },
+     {
+      "op": "fx",
+      "name": "shake",
+      "power": 2
+     },
      {
       "op": "damage",
       "to": "allEnemies",
@@ -8221,6 +10125,16 @@
      "n": 3,
      "src": "unit",
      "ops": [
+      {
+       "op": "fx",
+       "name": "proj",
+       "frm": "self",
+       "to": {
+        "nearest": 3
+       },
+       "shape": "note",
+       "cosmetic": true
+      },
       {
        "op": "mana",
        "to": "self",

@@ -1,6 +1,6 @@
 // 戰鬥引擎（SPEC 第 3 章）。純邏輯、決定性：不用 Math.random / Date / Math.pow 等。
 import { makeRng } from './rng.js';
-import { dist, neighbors, within, ROWS, COLS } from './hex.js';
+import { dist, neighbors, within, ROWS, COLS, center, same } from './hex.js';
 import { runOps, selectTargets, evalValue } from './ops.js';
 
 export const C = {
@@ -52,8 +52,10 @@ export const C = {
   EIGHTBIT_KEY: 'MissFortune',
   EIGHTBIT_MULT: 3,
   MAX_PASSIVE_DEPTH: 4,
+  ROLLER_EMIT: 4,
 };
 
+const hyp = (a, b) => Math.sqrt(a * a + b * b);
 const TYPE_CH = { physical: 'p', magic: 'm', true: 't' };
 const TYPE_KEY = { physical: 'phys', magic: 'magic', true: 'true' };
 function trKey(src) { return typeof src === 'string' && src.startsWith('trait:') ? src.slice(6) : null; }
@@ -88,6 +90,9 @@ export function simulate(setup) {
   const execs = { player: null, enemy: null };
   const active = { player: new Set(), enemy: new Set() };
   const nextNum = { player: 0, enemy: 0 };
+  const rollers = [];
+  const paintZones = [];
+  let pidN = 0, oidN = 0;
   const sideTeams = ['player', 'enemy'];
 
   const secTicks = (sec) => Math.max(1, Math.round(sec * TPS));
@@ -188,12 +193,14 @@ export function simulate(setup) {
   function addStatus(u, kind, durTicks, value, srcU) {
     if (!u.alive) return;
     if ((kind === 'stun' || kind === 'chill') && has(u, 'ccImmune')) return;
+    if (kind === 'taunt' && u.boss) return;
     if (kind === 'stun' && u.ccCap > 0) durTicks = Math.min(durTicks, Math.max(1, Math.round(u.ccCap * TPS))); // 頭目：暈眩上限
     const defaults = { chill: C.CHILL, wound: C.WOUND, burn: C.BURN, shred: C.SHRED, sunder: C.SUNDER, weaken: C.WEAKEN, vulnerable: C.VULNERABLE };
     const v = value != null ? value : (defaults[kind] || 0);
     const end = t + durTicks;
     const s = u.status[kind];
-    if (s && s.end > t) { s.end = Math.max(s.end, end); s.value = Math.max(s.value, v); } else u.status[kind] = { end, value: v };
+    if (s && s.end > t) { s.end = Math.max(s.end, end); s.value = Math.max(s.value, v); if (srcU) s.src = srcU; } else u.status[kind] = { end, value: v, src: srcU || null };
+    if (kind === 'stun' && u.channel && u.channel.active) channelEnd(u, u.channel, true);
     emit({ e: 'status', id: u.id, kind, dur: durTicks, on: true });
     const fin = u.status[kind].end;
     schedule(fin, () => {
@@ -286,7 +293,8 @@ export function simulate(setup) {
       let frac;
       if (ent.owner) frac = v.hp / v.hpMax;
       else { let a = 0, b = 0; for (const x of units) if (x.side === ent.side && !x.summon) { b += x.hpMax; a += x.hp; } frac = b ? a / b : 1; }
-      if (frac < p.n) fire(ent, v, false);
+      const nv = Array.isArray(p.n) ? p.n[Math.min(Math.max((ent.owner ? ent.owner.star : 1), 1), p.n.length) - 1] : p.n;
+      if (frac < nv) fire(ent, v, false);
     }
     const l2 = reg.enemyHpBelow;
     if (l2) for (const ent of l2) {
@@ -407,7 +415,7 @@ export function simulate(setup) {
     }
     tgt.alive = false;
     tgt.hp = 0;
-    occ[cell(tgt.hex)] = null;
+    vacate(tgt);
     emit({ e: 'death', id: tgt.id, killer: src ? src.id : null });
     byUnit[tgt.id].alive = false;
     byUnit[tgt.id].hpLeft = 0;
@@ -416,6 +424,14 @@ export function simulate(setup) {
     trigger('death', tgt, src, 0, true);
     trigger('allyDeath', tgt, tgt, 0, true);
     trigger('enemyDeath', tgt, tgt, 0, true);
+  }
+
+  // 單位離場：清掉佔格（滑行中的單位另外保留了終點格；格子被別人佔著時不能清掉）
+  function vacate(u) {
+    if (occ[cell(u.hex)] === u) occ[cell(u.hex)] = null;
+    if (u.slideFinal) { if (occ[cell(u.slideFinal)] === u) occ[cell(u.slideFinal)] = null; u.slideFinal = null; }
+    if (u.channel && u.channel.active) channelEnd(u, u.channel, true);
+    if (u.pushRoller) removeRoller(u.pushRoller);
   }
 
   function heal(src, tgt, amt, tag, origin) {
@@ -452,6 +468,7 @@ export function simulate(setup) {
     const p = ent.p;
     if (p.limit != null && ent.st.fired >= p.limit) return;
     if (passiveDepth >= C.MAX_PASSIVE_DEPTH) return;
+    if (p.cooldown) { if (t < (ent.st.cd || 0)) return; ent.st.cd = t + secTicks(p.cooldown); }
     ent.st.fired++;
     const k = trKey(p.src);
     if (k) {
@@ -494,10 +511,11 @@ export function simulate(setup) {
   }
 
   // ---- 召喚 / 位置 ----------------------------------------------------------------
-  function freeNear(ref) {
+  function freeNear(ref, own) {
     let best = null, bd = 1e9;
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-      if (occ[r * COLS + c]) continue;
+      const o = occ[r * COLS + c];
+      if (o && o !== own) continue;
       const d = dist(ref, { row: r, col: c });
       if (d < bd) { bd = d; best = { row: r, col: c }; }
     }
@@ -528,7 +546,7 @@ export function simulate(setup) {
     emit({ e: 'spawn', unit: snap(u, true) });
     if (durTicks) schedule(t + durTicks, () => {
       if (!u.alive) return;
-      u.alive = false; u.hp = 0; occ[cell(u.hex)] = null;
+      u.alive = false; u.hp = 0; vacate(u);
       byUnit[u.id].alive = false; byUnit[u.id].hpLeft = 0;
       emit({ e: 'death', id: u.id, killer: null });
     });
@@ -562,7 +580,8 @@ export function simulate(setup) {
     if (u && k) bt(k, side).procs += 0;
   }
 
-  function dash(u, tgt) {
+  function dash(u, tgt, o) {
+    if (!u.alive) return;
     let best = null, bd = 1e9;
     for (const h of neighbors(tgt.hex)) {
       if (occ[cell(h)]) continue;
@@ -575,22 +594,240 @@ export function simulate(setup) {
     u.hex = best;
     occ[cell(best)] = u;
     u.target = tgt;
-    emit({ e: 'move', id: u.id, to: { row: best.row, col: best.col }, dur: C.DASH_TICKS, style: 'dash', from: dashFrom });
+    u.retargetAt = 0;
+    emit({ e: 'move', id: u.id, to: { row: best.row, col: best.col }, dur: C.DASH_TICKS, style: (o && o.style) || 'dash', trail: o && o.trail, from: dashFrom });
   }
 
   function addZone(z) {
-    emit({ e: 'fx', kind: 'aoe', from: z.hex, hexes: within(z.hex, z.r), src: z.source ? z.source.id : null });
+    const oid = 'z' + (++oidN);
+    const anchor = z.anchor || null;
+    const cur = () => (z.follow && anchor && anchor.alive ? anchor.hex : z.hex);
+    if (z.skin) emit({ e: 'obj', oid, act: 'spawn', skin: z.skin, hex: { row: z.hex.row, col: z.hex.col }, r: z.r, dur: z.dur, follow: z.follow && anchor ? anchor.id : null, src: z.source ? z.source.id : null });
+    else emit({ e: 'fx', kind: 'aoe', from: z.hex, hexes: within(z.hex, z.r), src: z.source ? z.source.id : null });
     const n = Math.max(1, Math.floor(z.dur / z.tick));
     for (let k = 1; k <= n; k++) {
       schedule(t + z.tick * k, () => {
+        if (z.follow && anchor && !anchor.alive) { if (k === 1 || true) emit({ e: 'obj', oid, act: 'remove' }); return; }
+        const c0 = cur();
         for (const u of units.slice()) {
-          if (!u.alive || dist(z.hex, u.hex) > z.r) continue;
+          if (!u.alive || dist(c0, u.hex) > z.r) continue;
           const ops = u.side === z.side ? z.ally : z.enemy;
           if (!ops) continue;
           runOps(sim, ops, z.source, { ...z.origin, side: z.side, current: u, allowDead: false });
         }
+        if (k === n) {
+          if (z.skin) emit({ e: 'obj', oid, act: 'remove' });
+          if (z.onEnd && (!z.source || z.source.alive)) runOps(sim, z.onEnd, z.source, { ...z.origin, side: z.side, current: anchor || undefined, allowDead: false });
+        }
       });
     }
+  }
+
+  // ---- 位移（階段二）-----------------------------------------------------------------
+  const occAt = (h) => occ[cell(h)] || null;
+  function cancelSlide(u) {
+    if (!u.slideFinal) return;
+    if (occ[cell(u.slideFinal)] === u) occ[cell(u.slideFinal)] = null;
+    u.slideFinal = null; u.slideTok = 0;
+  }
+  function relocate(u, hex) {
+    cancelSlide(u);
+    if (occ[cell(u.hex)] === u) occ[cell(u.hex)] = null;
+    u.hex = { row: hex.row, col: hex.col };
+    occ[cell(hex)] = u;
+  }
+  function castLock(u, ticks) { u.castUntil = Math.max(u.castUntil, t + ticks); }
+  let slideN = 0;
+  function slide(u, pathHexes, finalHex, total, o) {
+    const start = pathHexes[0];
+    cancelSlide(u);
+    if (occ[cell(u.hex)] === u) occ[cell(u.hex)] = null;
+    occ[cell(finalHex)] = u;
+    u.slideTok = ++slideN;
+    u.slideFinal = { row: finalHex.row, col: finalHex.col };
+    const lockT = t + total + 1;
+    u.castUntil = Math.max(u.castUntil, lockT); u.moveUntil = Math.max(u.moveUntil, lockT);
+    emit({ e: 'move', id: u.id, from: { row: start.row, col: start.col }, to: { row: finalHex.row, col: finalHex.col }, dur: total, style: (o && o.style) || 'slide', trail: o && o.trail, path: rec ? pathHexes.map((h) => ({ row: h.row, col: h.col })) : undefined });
+    return u.slideTok;
+  }
+  function slideEnd(u, tok) {
+    if (!u.slideFinal || (tok != null && u.slideTok !== tok)) return;
+    u.hex = { row: u.slideFinal.row, col: u.slideFinal.col };
+    u.slideFinal = null; u.slideTok = 0;
+  }
+  function leap(u, tgt, air) {
+    let land = null, bd = 1e9;
+    for (const h of neighbors(tgt.hex)) {
+      const o = occ[cell(h)];
+      if (o && o !== u) continue;
+      const d = dist(u.hex, h);
+      if (d < bd) { bd = d; land = h; }
+    }
+    if (!land) land = freeNear(tgt.hex, u);
+    if (!land) return;
+    const from = { row: u.hex.row, col: u.hex.col };
+    relocate(u, land);
+    u.target = tgt; u.retargetAt = 0;
+    addStatus(u, 'untargetable', air + 1, 0, u);
+    castLock(u, air + 1); u.moveUntil = Math.max(u.moveUntil, t + air + 1);
+    emit({ e: 'move', id: u.id, from, to: { row: land.row, col: land.col }, dur: air, style: 'leap' });
+  }
+  function leapEnd(u) { const s2 = u.status.untargetable; if (s2 && s2.end > t && s2.end <= t + 2) { delete u.status.untargetable; emit({ e: 'status', id: u.id, kind: 'untargetable', dur: 0, on: false }); } }
+  function blink(u, dest, ticks) {
+    const from = { row: u.hex.row, col: u.hex.col };
+    relocate(u, dest);
+    castLock(u, ticks + 1); u.moveUntil = Math.max(u.moveUntil, t + ticks + 1);
+    emit({ e: 'move', id: u.id, from, to: { row: dest.row, col: dest.col }, dur: ticks, style: 'blink' });
+  }
+  function moveUnit(u, dest, style, ticks) {
+    const from = { row: u.hex.row, col: u.hex.col };
+    relocate(u, dest);
+    u.moveUntil = Math.max(u.moveUntil, t + ticks); u.retargetAt = 0;
+    emit({ e: 'move', id: u.id, from, to: { row: dest.row, col: dest.col }, dur: ticks, style });
+  }
+  function channelBegin(u, total, info) {
+    const ch = { active: true, end: t + total };
+    u.channel = ch;
+    castLock(u, total + 1);
+    emit({ e: 'chan', id: u.id, tgt: info.tgt, dur: total, skin: info.skin, on: true });
+    return ch;
+  }
+  function channelEnd(u, ch, aborted) {
+    if (!ch.active) return;
+    ch.active = false;
+    if (u.channel === ch) u.channel = null;
+    if (aborted && u.castUntil <= ch.end + 1) u.castUntil = t;
+    emit({ e: 'chan', id: u.id, on: false });
+  }
+  // 染色格（阿卡莉）：一個施法者一張，格子整場保留；站在上面的敵人每個 tick 週期吃一次 enemy ops
+  function paintCell(src, hex, spec, origin) {
+    let pz = paintZones.find((z) => z.source === src);
+    if (!pz) {
+      pz = { source: src, side: src.side, cells: [], tag: spec.tag || 'paint', spec, origin };
+      paintZones.push(pz);
+      const per = secTicks(spec.tick || 0.5);
+      const loop = () => schedule(t + per, () => {
+        if (!src.alive) return;
+        for (const u of units.slice()) {
+          if (!u.alive || u.side === pz.side || !pz.cells.some((h) => same(h, u.hex))) continue;
+          if (spec.enemy) runOps(sim, spec.enemy, src, { ...origin, side: pz.side, current: u });
+        }
+        loop();
+      });
+      loop();
+    }
+    if (pz.cells.some((h) => same(h, hex))) return;
+    pz.cells.push({ row: hex.row, col: hex.col });
+    emit({ e: 'obj', oid: 'pc' + (++oidN), act: 'spawn', skin: spec.skin || 'paint', hex: { row: hex.row, col: hex.col }, persist: true, tag: pz.tag, src: src.id });
+  }
+  function marked(side, tag) {
+    const out = [];
+    for (const u of units) {
+      if (!u.alive || u.side === side) continue;
+      if (has(u, tag) || paintZones.some((z) => z.side === side && z.tag === tag && z.cells.some((h) => same(h, u.hex)))) out.push(u);
+    }
+    return out;
+  }
+
+  // ---- 場上滾動物件（努努的迪斯可球）----------------------------------------------------
+  function addRoller(d) {
+    const old = rollers.find((r) => r.active && r.owner === d.owner && r.id === d.id);
+    if (old) return;
+    const o = d.owner;
+    const foes = units.filter((e) => e.side !== o.side && targetable(e));
+    const c0 = center(o.hex);
+    let hx = 0, hy = o.side === 'player' ? -1 : 1;
+    if (foes.length) {
+      let best = null, bd = 1e9;
+      for (const e of foes) { const ce = center(e.hex), dd = hyp(ce.x - c0.x, ce.y - c0.y); if (dd < bd) { bd = dd; best = ce; } }
+      const L = Math.max(1e-6, bd); hx = (best.x - c0.x) / L; hy = (best.y - c0.y) / L;
+    }
+    const r = Object.assign(d, { active: true, oid: 'r' + (++oidN), x: c0.x + hx * 0.9, y: c0.y + hy * 0.9, hx, hy, tgt: null, speedMul: 1, sizeMul: 1, last: new Map(), endT: d.dur != null ? t + d.dur : null, lastEmit: -99 });
+    rollers.push(r);
+    if (r.push) o.pushRoller = r;
+    emit({ e: 'obj', oid: r.oid, act: 'spawn', skin: r.skin, xy: { x: r.x, y: r.y }, scale: 1, hitR: r.hitR, src: o.id });
+  }
+  function removeRoller(r) {
+    if (!r.active) return;
+    r.active = false;
+    if (r.owner && r.owner.pushRoller === r) r.owner.pushRoller = null;
+    emit({ e: 'obj', oid: r.oid, act: 'remove' });
+  }
+  function rollerMod(owner, id, speedMul, sizeMul) {
+    for (const r of rollers) {
+      if (!r.active || r.owner !== owner || (id && r.id !== id)) continue;
+      if (speedMul != null) r.speedMul = speedMul;
+      if (sizeMul != null) r.sizeMul = sizeMul;
+      emit({ e: 'obj', oid: r.oid, act: 'mod', scale: r.sizeMul, speedMul: r.speedMul });
+    }
+  }
+  function stepRollers() {
+    for (const r of rollers) {
+      if (!r.active) continue;
+      if (!r.owner.alive || (r.endT != null && t >= r.endT)) { removeRoller(r); continue; }
+      const foes = [];
+      for (const e of units) if (e.alive && e.side !== r.side && targetable(e)) foes.push(e);
+      if (!foes.length) continue;
+      const wd = (c) => hyp(c.x - r.x, c.y - r.y);
+      let tg = r.tgt;
+      if (!tg || !tg.alive || !targetable(tg) || wd(center(tg.hex)) < 0.3) {
+        let best = null, bd = -1;
+        for (const e of foes) { const d = wd(center(e.hex)); if (d > bd + 1e-9 || (Math.abs(d - bd) <= 1e-9 && best && e.ord < best.ord)) { bd = d; best = e; } }
+        r.tgt = tg = best;
+        r.lastEmit = -99;
+      }
+      const tc = center(tg.hex), L = Math.max(1e-6, wd(tc)), step = r.speed * r.speedMul / TPS;
+      const mv = Math.min(step, L);
+      r.hx = (tc.x - r.x) / L; r.hy = (tc.y - r.y) / L;
+      r.x += r.hx * mv; r.y += r.hy * mv;
+      const R = r.hitR * r.sizeMul;
+      for (const e of foes) {
+        const ce = center(e.hex);
+        if (hyp(ce.x - r.x, ce.y - r.y) > R) continue;
+        const lt = r.last.get(e.id);
+        if (lt != null && t - lt < r.rehit) continue;
+        r.last.set(e.id, t);
+        runOps(sim, r.onPass, r.owner, { ...r.origin, current: e, side: r.side });
+        if (!r.owner.alive) break;
+      }
+      if (rec && t - r.lastEmit >= C.ROLLER_EMIT) {
+        r.lastEmit = t;
+        const nx = r.x + r.hx * Math.min(step * C.ROLLER_EMIT, Math.max(0, wd(tc) - 0));
+        const ny = r.y + r.hy * Math.min(step * C.ROLLER_EMIT, Math.max(0, wd(tc)));
+        emit({ e: 'obj', oid: r.oid, act: 'move', xy: { x: nx, y: ny }, dur: C.ROLLER_EMIT });
+      }
+    }
+  }
+  // 推球的人：站在球後面的格子，不普攻
+  function pushStep(u, r) {
+    const P = { x: r.x - r.hx * 0.95, y: r.y - r.hy * 0.95 };
+    const own = center(u.hex);
+    if (hyp(own.x - P.x, own.y - P.y) <= 0.8) return;
+    const start = u.hex;
+    const prev = new Array(ROWS * COLS).fill(-2);
+    const depth = new Array(ROWS * COLS).fill(0);
+    const q = [cell(start)];
+    prev[cell(start)] = -1;
+    let best = cell(start), bd = hyp(own.x - P.x, own.y - P.y);
+    for (let qi = 0; qi < q.length; qi++) {
+      const cur = q[qi];
+      const ch = { row: Math.floor(cur / COLS), col: cur % COLS };
+      for (const n of neighbors(ch)) {
+        const k = cell(n);
+        if (prev[k] !== -2 || occ[k]) continue;
+        prev[k] = cur; depth[k] = depth[cur] + 1;
+        q.push(k);
+        const cn = center(n), d = hyp(cn.x - P.x, cn.y - P.y);
+        if (d < bd - 1e-9) { bd = d; best = k; }
+      }
+    }
+    if (best === cell(start)) return;
+    let k = best;
+    while (prev[k] !== cell(start)) k = prev[k];
+    const to = { row: Math.floor(k / COLS), col: k % COLS };
+    relocate(u, to);
+    u.moveUntil = t + C.MOVE_TICKS;
+    emit({ e: 'move', id: u.id, to: { row: to.row, col: to.col }, dur: C.MOVE_TICKS, style: 'push' });
   }
 
   // ---- 普攻 / 施法 / 移動 ---------------------------------------------------------
@@ -639,7 +876,7 @@ export function simulate(setup) {
 
   const selfCastCache = new Map();
   function isSelfCast(ab) {
-    const first = ab.steps && ab.steps[0];
+    const first = ab.steps && ab.steps.find((o) => o.op !== 'fx');   // 開頭的純畫面步驟不算
     if (!first) return false;
     const to = first.to;
     return to === 'self' || to === 'allEnemies' || (to && typeof to === 'object' && to.allies != null);
@@ -731,6 +968,10 @@ export function simulate(setup) {
     if (!u.alive || t < startTick) return;
     if (has(u, 'stun') || t < u.castUntil || t < u.moveUntil) return;
     let tg = u.target;
+    if (u.status.taunt && has(u, 'taunt')) {
+      const ts = u.status.taunt.src;
+      if (ts && ts.alive && targetable(ts) && ts.side !== u.side) { if (tg !== ts) { tg = ts; u.target = ts; } }
+    }
     const range = stat(u, 'range');
     let valid = !!tg && targetable(tg);
     let inRange = valid && dist(u.hex, tg.hex) <= range;
@@ -746,6 +987,7 @@ export function simulate(setup) {
       if (sc === undefined) { sc = isSelfCast(u.ability); selfCastCache.set(u.ability, sc); }
       if (sc || inRange) { startCast(u); return; }
     }
+    if (u.pushRoller && u.pushRoller.active) { pushStep(u, u.pushRoller); return; }   // 推球的人不普攻
     if (!valid) return;
     if (inRange) {
       u.prog += stat(u, 'as') / TPS;
@@ -761,9 +1003,27 @@ export function simulate(setup) {
     alive: aliveList,
     stat, has, shieldTotal, damage, heal, shield, addStatus, addBuff, addEmpower, addMana,
     schedule, dash, addZone, summon: summonOp,
+    rec, emit, nextPid: () => 'j' + (++pidN), occAt, freeNear, relocate, castLock, slide, slideEnd, leap, leapEnd, blink, moveUnit,
+    channelBegin, channelEnd, paintCell, marked, addRoller, rollerMod, slideAlive: (u, tok) => u.slideTok === tok,
     traitActive: (side, key) => active[side].has(key),
     warn: (m) => { if (warnings.indexOf(m) < 0) warnings.push(m); },
   };
+
+  function verifyOcc() {
+    const seen = new Map();
+    for (const u of units) {
+      if (!u.alive) continue;
+      const home = u.slideFinal || u.hex;
+      if (occ[cell(home)] !== u) throw new Error(`occ 不一致：${u.id} 在 ${home.row},${home.col} t=${t}`);
+      const k = cell(home);
+      if (seen.has(k)) throw new Error('兩隻同格 ' + u.id + ' ' + seen.get(k) + ' t=' + t);
+      seen.set(k, u.id);
+    }
+    for (let i = 0; i < occ.length; i++) {
+      const o = occ[i];
+      if (o && !o.instrument && (!o.alive || cell(o.slideFinal || o.hex) !== i)) throw new Error('幽靈佔格 ' + o.id + ' @' + i + ' t=' + t);
+    }
+  }
 
   // ---- 開場 -------------------------------------------------------------------
   const startEnts = [];
@@ -894,8 +1154,10 @@ export function simulate(setup) {
         if (u.alive && has(u, 'burn')) damage(null, u, u.hpMax * statusVal(u, 'burn'), 'true', { tag: 'ot' });
       }
     }
+    if (rollers.length) stepRollers();
     const list = units.slice();
     for (const u of list) actUnit(u);
+    if (opts.checkOcc) verifyOcc();
     if (rec && t % C.MANA_SAMPLE_TICKS === 0) {
       for (const u of units) {
         if (u.alive && u.manaMax > 0 && Math.round(u.mana) !== u.lastManaEmit) {
@@ -934,6 +1196,7 @@ export function simulate(setup) {
   }
   const result = {
     winner, seconds: t / TPS, ticks: t, units: openUnits, instruments, events,
+    final: units.map((u) => ({ id: u.id, alive: u.alive, hex: { row: u.hex.row, col: u.hex.col } })),
     summary: {
       byUnit, byTrait, byTraitEnemy, playerAlive: pAlive, enemyAlive: eAlive,
       enemyHpPctLeft: hpMaxInit.enemy > 0 ? eHp / hpMaxInit.enemy : 0,

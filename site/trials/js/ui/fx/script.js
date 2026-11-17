@@ -1,5 +1,7 @@
-// 技能演出播放：把 data/fx.json 的時間軸（由 ability_fx.json 轉出）＋引擎的純畫面事件（fire／atk／dmg／move…）變成 stage 上的特效。
+// 技能演出播放：引擎事件（fire／atk／dmg／move／proj／obj／air／chan／fx…）變成 stage 上的特效。
+// 位移、投射物、場上物件（努努的球、染色格、區域）全部照引擎事件的位置與時間走；data/fx.json 只剩配色、一句動作描述、沒有明確演出時的備用提示。
 // 完全不影響戰鬥：這裡只讀事件、只畫。畫面亂數只用 Math.random（UI 端）。
+const TICK = 50;   // 引擎 1 tick ＝ 50ms（與 battle.js 的 TICK_MS 相同）
 import { createStage, css, mix, glow, TAU, clamp, lerp, easeOut, rnd } from './stage.js';
 import { makePresets, pal } from './presets.js';
 
@@ -27,6 +29,7 @@ export function createFx(root, env0) {
 
   // ---------- 目標解析 ----------
   function resolve(spec, c, dflt) {
+    if (Array.isArray(spec)) return spec.map((id) => env.unit(id)).filter(Boolean);   // 引擎事件：已解析好的單位 id
     const s = spec || dflt || 'tgt';
     const u = c.u, t = c.tgt;
     switch (s) {
@@ -58,11 +61,6 @@ export function createFx(root, env0) {
     switch (n.k) {
       case 'fx': return execFx(n, c);
       case 'proj': return execProj(n, c);
-      case 'move': return execMove(n, c);
-      case 'knock': { for (const t of resolve(n.to, c)) if (t && t.id) knockUp(t, A(n.dur, c.star), n.high); return; }
-      case 'chan': { const t = resolve(n.to, c)[0]; if (t) FX.beam({ fromId: u.id, toId: t.id, x: P(u).x, y: P(u).y, tx: P(t).x, ty: P(t).y, skin: n.skin === 'notes' ? 'notes' : 'beam', c1: c.c1, c2: c.c2, dur: Math.min(A(n.dur, c.star), 3) / 1, wide: true }); return; }
-      case 'roller': return startRoller(u, n);
-      case 'zone': return addZone(n, c);
     }
   }
 
@@ -72,15 +70,19 @@ export function createFx(root, env0) {
     if (name === 'sweep') return FX.sweep({ skin: n.skin, dir: n.dir, dur: n.dur, c1: c.c1, c2: c.c2 });
     const base = { skin: n.skin, r: n.r, n: n.n, big: n.big, small: n.small, heavy: n.heavy, thin: n.thin, wide: n.wide, shape: n.shape, dur: n.dur, pulse: n.pulse, len: n.len, width: n.width, along: n.along, star: c.star, c1: c.c1, c2: c.c2 };
     if (name === 'beam' || name === 'tether' || name === 'cone' || name === 'ground' && (n.shape === 'line') || name === 'telegraph' && false) {
-      const fr = resolve(n.frm, c, 'self')[0], to = resolve(n.to, c, 'tgt')[0], pf = fr && ptOf(fr), pt = to && ptOf(to);
-      if (!pf || !pt) return;
-      const a = Object.assign({}, base, { x: pf.x, y: pf.y, tx: pt.x, ty: pt.y, fromId: fr.id, toId: to.id });
-      if (name === 'beam') return FX.beam(a);
-      if (name === 'tether') return FX.tether(a);
-      if (name === 'cone') return FX.cone(a);
-      return FX.ground(a);
+      const frs = resolve(n.frm, c, 'self'), tos = n.toXY ? [{ fixed: env.xy(n.toXY), id: null }] : resolve(n.to, c, 'tgt');
+      const fr0 = frs[0];
+      if (!fr0 || !tos.length) return;
+      const lim = Math.min(tos.length, S.eff() ? 3 : 6);
+      for (let i = 0; i < lim; i++) {   // 一個來源對多個目標（阿姆姆 4 條繃帶、瑟雷西 3 條連線）：各畫一條；多個來源對一個目標（弗拉迪米爾）：各畫一條
+        const to = tos[i], fr = frs.length > 1 && frs.length === tos.length ? frs[i] : fr0, pf = ptOf(fr), pt = ptOf(to);
+        if (!pf || !pt) continue;
+        const a = Object.assign({}, base, { x: pf.x, y: pf.y, tx: pt.x, ty: pt.y, fromId: fr.id, toId: to.id });
+        if (name === 'beam') FX.beam(a); else if (name === 'tether') FX.tether(a); else if (name === 'cone') FX.cone(a); else FX.ground(a);
+      }
+      return;
     }
-    const list = resolve(n.at, c, name === 'aura' || name === 'morph' || name === 'spin' || name === 'hop' ? 'self' : 'tgt');
+    const list = n.center ? [{ id: null, fixed: { x: env.W() / 2, y: env.H() / 2 } }] : resolve(n.at, c, name === 'aura' || name === 'morph' || name === 'spin' || name === 'hop' ? 'self' : 'tgt');
     const lim = Math.min(list.length, S.eff() ? 4 : 8);
     const src = P(u);
     for (let i = 0; i < lim; i++) {
@@ -142,147 +144,71 @@ export function createFx(root, env0) {
   function shoot(u, from, to, o) {   // 單發：from/to 是座標，to 也可帶 follow 單位
     const base = S.baseOf(o.shape);
     const dur = o.dur || flightMs(from, to, o.speed, 100, 420);
-    return S.proj({ x0: from.x, y0: from.y, x1: to.x, y1: to.y, x: from.x, y: from.y, follow: o.follow || null, dur, arc: !!o.arc, col: o.c1, col2: o.c2, base, sz: o.sz || 1, key: u && u.key, full: !!o.full, arrive: o.arrive });
+    return S.proj({ x0: from.x, y0: from.y, x1: to.x, y1: to.y, x: from.x, y: from.y, follow: o.follow || null, dur, arc: !!o.arc, col: o.c1, col2: o.c2, base, sz: o.sz || 1, key: u && u.key, full: !!o.full, spin: !!o.spin, arrive: o.arrive });
   }
+  // 沒有引擎演出的備用：tok 提示產生的簡單投射物（只畫，不重複引擎的飛行）
   function execProj(n, c) {
     const u = c.u, src = P(u); if (!src) return;
-    const [c1, c2] = [c.c1, c.c2];
-    const hitNodes = n.hit || [], endNodes = n.end || [];
-    const onArrive = (t) => () => { if (hitNodes.length) run(hitNodes, Object.assign({}, c, { tgt: t }), 0); if (endNodes.length) run(endNodes, Object.assign({}, c, { tgt: t }), 0); };
-    if (n.cos) { const t = resolve(n.to, c)[0]; const pt = t && ptOf(t); if (pt) shoot(u, src, pt, { shape: n.shape, c1, c2, speed: 14, follow: t.id }); return; }
-    const targets = resolve(n.to, c).filter((t) => t && P(t));
-    if (!targets.length && n.pattern !== 'radial') return;
-    const count = Math.max(1, Math.min(A(n.count, c.star) || 1, 40));
-    const shots = Math.min(count, S.eff() ? 6 : 14), fat = count > shots ? Math.min(1.8, 1 + (count - shots) / count) : 1;   // 多發：合併成較粗的幾顆
-    const gap = ms(n.gap || 0.05) * (count / shots);
-    if (n.pattern === 'radial') {   // 悟空：六個方向衝出去再飛回
-      const rr = (A(n.range, c.star) || 2) * w();
-      for (let i = 0; i < 6; i++) {
-        const ang = i * TAU / 6 + Math.PI / 6, tgt = { x: src.x + Math.cos(ang) * rr, y: src.y + Math.sin(ang) * rr };
-        shoot(u, src, tgt, { shape: n.shape, c1, c2, dur: ms(0.3), full: true, sz: 1.2, arrive: () => { if (n.ret) shoot(u, tgt, P(u) || src, { shape: n.shape, c1, c2, dur: ms(0.3), full: true, sz: 1.2, arrive: () => { const q = P(u); if (q) FX.flash({ x: q.x, y: q.y, skin: 'light', c1: '#ffe27a' }); } }); } });
-        if (n.hit) for (const e of enemiesOf(u)) { const p = P(e); if (p && dist(p, src) < rr * 1.1 && Math.abs(Math.atan2(p.y - src.y, p.x - src.x) - ang) < 0.55) S.after(ms(0.15), () => run(hitNodes, Object.assign({}, c, { tgt: e }), 0)); }
-      }
-      return;
-    }
-    if (n.bounce) {   // 彈跳：依序彈向最近的、還沒打過的敵人
-      const chain = []; let cur = targets[0]; const seen = new Set();
-      while (cur && chain.length < Math.min(n.bounce, S.eff() ? 6 : 12)) {
-        chain.push(cur); seen.add(cur.id);
-        let best = null, bd = 1e9; const cp = P(cur);
-        for (const e of enemiesOf(u)) { if (seen.has(e.id)) continue; const d = dist(cp, P(e)); if (d < bd) { bd = d; best = e; } }
-        cur = best;
-      }
-      let from = src;
-      chain.forEach((t, i) => {
-        const d0 = i * ms(0.14); const sz = Math.max(0.55, 1 - i * 0.07);
-        S.after(d0, () => { const a = from; const b = P(t) || a; shoot(u, a, b, { shape: n.shape, c1, c2, dur: ms(0.13), sz, full: true, arrive: () => { if (hitNodes.length) run(hitNodes, Object.assign({}, c, { tgt: t }), 0); const q = P(t); if (q) FX.hit({ x: q.x, y: q.y, c1 }); } }); });
-        from = P(t) || from;
-      });
-      return;
-    }
-    if (n.pierce) {
-      const t = targets[0], pt = P(t), L = Math.hypot(pt.x - src.x, pt.y - src.y) || 1, len = (A(n.len, c.star) || 5) * w();
-      const end = { x: src.x + (pt.x - src.x) / L * len, y: src.y + (pt.y - src.y) / L * len };
-      const dur = flightMs(src, end, n.speed, 150, 480);
-      shoot(u, src, end, { shape: n.shape, c1, c2, dur, sz: 1.2, full: true });
-      for (const e of enemiesOf(u)) {
-        const q = P(e); if (!q) continue;
-        const k = ((q.x - src.x) * (end.x - src.x) + (q.y - src.y) * (end.y - src.y)) / (len * len);
-        const dx = src.x + (end.x - src.x) * k - q.x, dy = src.y + (end.y - src.y) * k - q.y;
-        if (k > 0 && k < 1.02 && Math.hypot(dx, dy) < w() * 0.55) S.after(dur * Math.min(k, 1), () => { onArrive(e)(); });
-      }
-      return;
-    }
-    for (let i = 0; i < shots; i++) {
-      const t = targets[i % targets.length];
-      S.after(i * gap, () => {
-        const a = P(u) || src, b0 = P(t); if (!b0) return;
-        const jit = n.spread === 'fan' || n.spread === 'arcfan' || n.spread === 'distribute' ? { x: (rnd() - 0.5) * w() * 0.9, y: (rnd() - 0.5) * w() * 0.7 } : { x: 0, y: 0 };
-        const off = n.spread === 'fan' || n.spread === 'arcfan' ? (i - (shots - 1) / 2) * 0.14 : 0;
-        const b = { x: b0.x + jit.x, y: b0.y + jit.y };
-        if (off) { const ang = Math.atan2(b.y - a.y, b.x - a.x) + off, d = dist(a, b); b.x = a.x + Math.cos(ang) * d; b.y = a.y + Math.sin(ang) * d; }
-        shoot(u, a, b, { shape: n.shape, c1, c2, speed: n.speed, arc: n.arc, sz: fat, follow: shots === 1 && !jit.x ? t.id : null, full: shots <= 4, arrive: onArrive(t) });
-      });
-    }
+    const t = resolve(n.to, c)[0], pt = t && ptOf(t); if (!pt) return;
+    shoot(u, src, pt, { shape: n.shape, c1: c.c1, c2: c.c2, speed: 14, follow: t.id, arrive: () => { const q = P(t); if (q) FX.burst({ x: q.x, y: q.y, c1: c.c1, c2: c.c2, small: true }); } });
   }
 
-  // ---------- 位移演出（純畫面：只是頭像飛出去再回來，格子與戰局不變）----------
-  function execMove(n, c) {
-    const u = c.u, src = P(u), t = c.tgt, tp = t && P(t); if (!src || !S.enabled) return;
-    const node = env.unitNode(u.id); if (!node) return;
-    const m = n.m;
-    if (S.reduced) return;
-    let pts = []; const W = w();
-    const foes = enemiesOf(u);
-    if (m === 'longestRow' || m === 'bestLine') {   // 沿敵人最多的一列飛過去
-      const rows = new Map(); for (const e of foes) { const k = e.hex.row; (rows.get(k) || rows.set(k, []).get(k)).push(e); }
-      let best = null; for (const [k, l] of rows) if (!best || l.length > best.length) best = l;
-      if (best) { best = best.slice().sort((a, b) => dist(P(a), src) - dist(P(b), src)).slice(0, 5); for (const e of best) pts.push({ p: P(e), e }); }
+  // ---------- 引擎事件：投射物 ----------
+  function onProj(ev) {
+    const src = ev.src != null ? env.unit(ev.src) : null;
+    if (!S.enabled || !src && ev.src != null) return;
+    const [c1, c2] = colors(src);
+    const a0 = ev.fromId != null && env.pos(ev.fromId) ? env.pos(ev.fromId) : env.hexPt(ev.from);
+    let tgt, follow = null;
+    if (typeof ev.to === 'string') { const tp = env.pos(ev.to); if (!tp) return; tgt = { x: tp.x, y: tp.y }; follow = ev.to; }
+    else if (ev.to && ev.to.x != null) tgt = env.xy(ev.to);
+    else if (ev.to && ev.to.row != null) tgt = env.hexPt(ev.to);
+    else return;
+    const dur = Math.max(60, ev.dur * TICK / spd());
+    const nCopy = ev.n && ev.n > 1 ? Math.min(ev.n, S.eff() ? 3 : 5) : 1;
+    const base = Math.atan2(tgt.y - a0.y, tgt.x - a0.x);
+    for (let i = 0; i < nCopy; i++) {
+      const off = nCopy > 1 ? (i - (nCopy - 1) / 2) * w() * 0.34 : (ev.fan != null ? ev.fan * w() * 0.3 : 0);
+      const ox = -Math.sin(base) * off, oy = Math.cos(base) * off;
+      shoot(src, { x: a0.x + ox * 0.4, y: a0.y + oy * 0.4 }, { x: tgt.x + ox, y: tgt.y + oy }, { shape: ev.shape, c1, c2, dur, arc: ev.arc, spin: ev.spin, follow: nCopy === 1 && ev.fan == null ? follow : null, sz: (ev.big ? 1.45 : 1) * (ev.bounce ? 0.85 : 1) * (ev.cosmetic ? 0.8 : 1), full: !ev.cosmetic });
     }
-    if (!pts.length && tp && (m === 'through' || m === 'longestRow' || m === 'bestLine' || m === 'toward' || m === 'dash')) {
-      const L = dist(tp, src) || 1, ex = (tp.x - src.x) / L, ey = (tp.y - src.y) / L, len = m === 'through' ? (n.len || 2) * W : 0.45 * W;
-      pts.push({ p: tp, e: t }); if (m === 'through') pts.push({ p: { x: tp.x + ex * len, y: tp.y + ey * len } });
-      else pts[0] = { p: { x: tp.x - ex * W * 0.7, y: tp.y - ey * W * 0.7 }, e: t };
-    }
-    if (!pts.length && tp && (m === 'leap' || m === 'blink')) { const L = dist(tp, src) || 1; pts.push({ p: { x: tp.x - (tp.x - src.x) / L * W * 0.8, y: tp.y - (tp.y - src.y) / L * W * 0.8 }, e: t }); }
-    if (!pts.length && (m === 'side' || m === 'strafe')) { const s = rnd() < 0.5 ? 1 : -1; pts.push({ p: { x: src.x + s * W * 1.1, y: src.y } }); }
-    if (!pts.length) return;
-    const col = c.c1, col2 = c.c2, blink = m === 'blink', leap = m === 'leap';
-    const seg = blink ? 90 : ms(0.12) * (spd() >= 4 ? 0.7 : 1), out = [{ x: 0, y: 0 }], hitAt = [];
-    let prev = src; const base = src;
-    for (const q of pts) { out.push({ x: q.p.x - base.x, y: q.p.y - base.y }); hitAt.push(q.e || null); prev = q.p; }
-    out.push({ x: 0, y: 0 });
-    const total = seg * (out.length - 1) + 60;
-    const t0 = S.now; let lastGhost = 0, lastK = -1; let lastParticle = 0;
-    if (blink) { FX.burst({ x: src.x, y: src.y, c1: col, c2: col2, skin: 'shadow', small: true }); }
-    u.ghosting = true;
-    S.addObj({ until: t0 + total, upd: (ob, dt, now) => {
-      const e = now - t0, k = Math.min(out.length - 1.0001, e / seg), i = Math.floor(k), f = easeOut(k - i);
-      const a = out[i], b = out[i + 1];
-      u.ox = lerp(a.x, b.x, blink ? (f > 0.5 ? 1 : 0) : (k - i)); u.oy = lerp(a.y, b.y, blink ? (f > 0.5 ? 1 : 0) : (k - i));
-      if (leap) u.oy -= Math.sin(Math.PI * Math.min(1, e / total)) * W * 0.7;
-      env.applyOffset(u);
-      if (i !== lastK) { lastK = i; const e2 = hitAt[i - 1]; if (i >= 1 && e2) run(n.hit || [], Object.assign({}, c, { tgt: e2 }), 0); if (i === 1 && pts.length && !hitAt[0] && n.hit) run(n.hit, c, 0); if (n.paint && i >= 1 && i <= pts.length) FX.ground({ x: base.x + out[i].x, y: base.y + out[i].y, skin: n.paint, r: 0.5, persist: true, c1: col, c2: col2 }); }
-      if (now - lastGhost > 55 && S.trailOn()) { lastGhost = now; ghost(u, col, 1); }
-      if (now - lastParticle > 30) { lastParticle = now; const p = P(u); if (p) S.part(p.x, p.y, (rnd() - 0.5) * 60, (rnd() - 0.5) * 60, { life: 320, size: 3, col: rnd() < 0.5 ? col : col2 }); }
-    }, done: () => { u.ox = 0; u.oy = 0; u.ghosting = false; env.applyOffset(u); } });
   }
+  function onAir(ev) { const t = env.unit(ev.id); if (t && t.alive !== false) knockUp(t, ev.dur * TICK / 1000, ev.high); }
 
-  // ---------- 場上物件 ----------
-  function addZone(n, c) {
-    const t = resolve(n.at, c)[0]; if (!t) return;
-    const [c1, c2] = pal(n.skin, c.c1, c.c2); const r = (A(n.r, c.star) || 1);
-    const fixed = n.follow ? null : P(t), dur = ms(Math.min(A(n.dur, c.star) || 3, 8));
-    S.addObj({ until: S.now + dur, drawU: (cv, o, now) => {
-      const p = fixed || P(t); if (!p) return; const R = (r + 0.5) * w() * 0.96, k = (now - o.t0) / dur, al = k < 0.1 ? k / 0.1 : k > 0.85 ? (1 - k) / 0.15 : 1;
+  // ---------- 引擎事件：場上物件 ----------
+  const objs = new Map();   // oid -> { o, R }
+  function onObj(ev) {
+    if (!S.enabled) return;
+    if (ev.act === 'remove') { const q = objs.get(ev.oid); if (q) { S.removeObj(q.o); objs.delete(ev.oid); } return; }
+    if (ev.act === 'move') { const q = objs.get(ev.oid); if (q && q.R) { const R = q.R; R.sx = R.x; R.sy = R.y; const p = env.xy(ev.xy); R.tx = p.x; R.ty = p.y; R.mt0 = S.now; R.mdur = Math.max(30, ev.dur * TICK / spd()); } return; }
+    if (ev.act === 'mod') { const q = objs.get(ev.oid); if (q && q.R) q.R.goalSize = ev.scale || 1; return; }
+    if (ev.act !== 'spawn') return;
+    const src = ev.src != null ? env.unit(ev.src) : null, [c1, c2] = colors(src);
+    if (ev.skin === 'discoball') return spawnBall(ev);
+    if (ev.persist) {   // 染色格：整場留在地上
+      const p = env.hexPt(ev.hex), o = FX.ground({ x: p.x, y: p.y, skin: ev.skin, r: 0.5, persist: true, c1, c2 });
+      if (o) objs.set(ev.oid, { o });
+      return;
+    }
+    spawnZone(ev, c1, c2);
+  }
+  function spawnZone(ev, c1x, c2x) {
+    const [c1, c2] = pal(ev.skin, c1x, c2x), r = ev.r || 1, follow = ev.follow || null, fixed = env.hexPt(ev.hex);
+    const dur = Math.max(400, ev.dur * TICK / spd());
+    const o = S.addObj({ keep: true, drawU: (cv, ob, now) => {
+      const p = (follow && P(env.unit(follow))) || fixed; if (!p) return; const R = (r + 0.5) * w() * 0.96, k = (now - ob.t0) / dur, al = k < 0.08 ? k / 0.08 : 1;
       cv.fillStyle = css(c1, 0.2 * al); cv.strokeStyle = css(c2, 0.7 * al); cv.lineWidth = 2; cv.beginPath(); cv.ellipse(p.x, p.y, R, R * 0.82, 0, 0, TAU); cv.fill(); cv.stroke();
       cv.setLineDash([6, 8]); cv.lineDashOffset = -now / 50; cv.beginPath(); cv.ellipse(p.x, p.y, R * 0.7, R * 0.7 * 0.82, 0, 0, TAU); cv.stroke();
-    }, upd: (o, dt, now) => { if (!S.reduced && rnd() < dt / 160) { const p = fixed || P(t); if (p) { const a = rnd() * TAU, rr = rnd() * (r + 0.4) * w(); S.part(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr * 0.8, 0, -w() * 0.8, { life: 600, size: 3, col: rnd() < 0.5 ? c1 : c2 }); } } } });
+    }, upd: (ob, dt) => { if (!S.reduced && rnd() < dt / 160) { const p = (follow && P(env.unit(follow))) || fixed; if (p) { const a = rnd() * TAU, rr = rnd() * (r + 0.4) * w(); S.part(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr * 0.8, 0, -w() * 0.8, { life: 600, size: 3, col: rnd() < 0.5 ? c1 : c2 }); } } } });
+    if (o) { objs.set(ev.oid, { o }); o.until = S.now + dur * 1.5 + 1500; }   // 保險：remove 事件沒到也會自己收掉
   }
-  // 迪斯可球：努努推著它在敵陣裡滾（純畫面）；球壓過誰誰冒火花
-  const rollers = new Map();
-  function startRoller(u, n) {
-    if (!S.enabled || rollers.has(u.id)) { const r0 = rollers.get(u.id); if (r0) { r0.size = Math.min(1.6, r0.size + 0.15); } return; }
-    const p0 = P(u); if (!p0) return;
-    const R = { x: p0.x, y: p0.y, size: 1, visited: new Map(), ang: 0, owner: u };
-    const foes = () => enemiesOf(u);
+  // 迪斯可球：位置全部照引擎的 obj 事件（努努就站在球後面，是引擎真的在移動他）
+  function spawnBall(ev) {
+    const p0 = env.xy(ev.xy);
+    const R = { x: p0.x, y: p0.y, sx: p0.x, sy: p0.y, tx: p0.x, ty: p0.y, mt0: S.now, mdur: 1, size: 1, goalSize: 1, ang: 0 };
     const o = S.addObj({ keep: true, upd: (ob, dt, now) => {
-      if (!u.alive) { ob.on = false; return; }
-      const list = foes(); if (!list.length) return;
-      let tg = R.tg && R.tg.alive ? R.tg : null;
-      if (!tg) { let best = null, bd = -1; for (const e of list) { const lv = R.visited.get(e.id) || -1e9; if (now - lv < 1400) continue; const d = dist(P(e), R); if (bd < 0 || d < bd) { bd = d; best = e; } } R.tg = tg = best || list[(Math.floor(now / 900)) % list.length]; }
-      const tp = P(tg); if (!tp) return;
-      const L = dist(tp, R) || 1, sp = w() * (n.speed || 1) * 1.9 * R.size * (dt / 1000);
-      R.x += (tp.x - R.x) / L * Math.min(sp, L); R.y += (tp.y - R.y) / L * Math.min(sp, L); R.ang += dt / 160;
-      if (L < w() * 0.45 && (now - (R.visited.get(tg.id) || -1e9)) > 1000) { R.visited.set(tg.id, now); R.tg = null; FX.burst({ x: tp.x, y: tp.y, skin: 'sparkle', n: 7, c1: '#ffd24a', c2: '#ff3fa8' }); FX.flash({ x: tp.x, y: tp.y, skin: 'light' }); }
-      for (const e of list) { if (e === tg) continue; const q = P(e); if (q && dist(q, R) < w() * 0.5 * R.size && now - (R.visited.get(e.id) || -1e9) > 1000) { R.visited.set(e.id, now); FX.burst({ x: q.x, y: q.y, skin: 'sparkle', n: 5, c1: '#3df2ff', c2: '#ff3fa8', small: true }); } }
-      // 努努跟在球後面（只是畫面上的跟隨，格子不變；最多離原位 2.4 格）
-      const own = u, ob0 = env.basePos(own.id); if (ob0 && !S.reduced) {
-        const dx = R.x - ob0.x, dy = R.y - ob0.y, d = Math.hypot(dx, dy) || 1, back = w() * 0.95;
-        let tx = dx - dx / d * back, ty = dy - dy / d * back; const dm = Math.hypot(tx, ty), cap = w() * 2.4;
-        if (dm > cap) { tx *= cap / dm; ty *= cap / dm; }
-        own.ox = lerp(own.ox || 0, tx, 0.12); own.oy = lerp(own.oy || 0, ty, 0.12); env.applyOffset(own);
-      }
+      const k = clamp((now - R.mt0) / R.mdur, 0, 1); R.x = lerp(R.sx, R.tx, k); R.y = lerp(R.sy, R.ty, k);
+      R.size = lerp(R.size, R.goalSize, Math.min(1, dt / 240)); R.ang += dt / 160;
       if (S.trailOn() && rnd() < 0.5) S.part(R.x, R.y + w() * 0.2, (rnd() - 0.5) * 30, w() * 0.2, { life: 400, size: 3, col: ['#ffd24a', '#ff3fa8', '#3df2ff'][Math.floor(rnd() * 3)] });
     }, drawU: (cv) => { const g = cv.createRadialGradient(R.x, R.y + w() * 0.2, 0, R.x, R.y + w() * 0.2, w() * 0.5 * R.size); g.addColorStop(0, 'rgba(255,210,74,.35)'); g.addColorStop(1, 'rgba(255,210,74,0)'); cv.fillStyle = g; cv.fillRect(R.x - w(), R.y - w() * 0.5, w() * 2, w() * 1.8); },
     drawO: (cv) => {
@@ -295,10 +221,50 @@ export function createFx(root, env0) {
       cv.globalCompositeOperation = 'lighter'; for (let i = 0; i < 5; i++) { const a = R.ang * 1.3 + i * 1.25; glow(cv, x + Math.cos(a) * r * 0.6, y + Math.sin(a * 1.4) * r * 0.55, r * 0.35, ['#ffd24a', '#ff3fa8', '#3df2ff'][i % 3], 0.9); }
       cv.restore();
       cv.strokeStyle = 'rgba(255,255,255,.7)'; cv.lineWidth = 1.5; cv.beginPath(); cv.arc(x, y, r, 0, TAU); cv.stroke();
-    }, done: () => { rollers.delete(u.id); u.ox = 0; u.oy = 0; env.applyOffset(u); } });
-    if (o) rollers.set(u.id, R);
+    } });
+    if (o) { objs.set(ev.oid, { o, R }); FX.burst({ x: p0.x, y: p0.y, skin: 'sparkle', n: 10, c1: '#ffd24a', c2: '#ff3fa8' }); }
   }
 
+  // ---------- 引擎事件：引導 ----------
+  const chans = new Map();
+  function onChan(ev) {
+    const old = chans.get(ev.id); if (old) { S.removeObj(old); chans.delete(ev.id); }
+    if (!ev.on || !S.enabled) return;
+    const u = env.unit(ev.id); if (!u) return;
+    const [c1, c2] = colors(u), notes = ev.skin === 'notes';
+    const o = S.addObj({ keep: true, drawO: (cv, ob, now) => {
+      const a = P(u), tg = env.unit(ev.tgt); const b = tg && tg.alive !== false ? P(tg) : null; if (!a) return;
+      cv.globalCompositeOperation = 'lighter';
+      const pulse = S.reduced ? 1 : 0.8 + 0.2 * Math.sin(now / 45);
+      if (b && !notes) {
+        cv.lineCap = 'round';
+        cv.strokeStyle = css(c1, 0.32); cv.lineWidth = w() * 0.5 * pulse; cv.beginPath(); cv.moveTo(a.x, a.y); cv.lineTo(b.x, b.y); cv.stroke();
+        cv.strokeStyle = css(c1, 0.9); cv.lineWidth = w() * 0.18 * pulse; cv.stroke();
+        cv.strokeStyle = '#fff'; cv.lineWidth = w() * 0.06; cv.stroke();
+        glow(cv, b.x, b.y, w() * 0.45, c1, 0.7);
+      }
+      glow(cv, a.x, a.y, w() * (0.55 + (S.reduced ? 0 : 0.08 * Math.sin(now / 80))), notes ? c2 : c1, 0.7);
+    }, until: S.now + Math.max(500, ev.dur * TICK / spd()) + 600 });
+    if (o) chans.set(ev.id, o);
+  }
+
+  // ---------- 引擎事件：fx op ----------
+  function onFx(ev) {
+    const u = ev.src != null ? env.unit(ev.src) : null;
+    const c = Object.assign({ u, tgt: null, star: u ? u.star : 1, castN: u ? u.castN : 1 }, { c1: colors(u)[0], c2: colors(u)[1] });
+    if (!u) { c.c1 = '#ffd24a'; c.c2 = '#ffffff'; }
+    const n = Object.assign({ k: 'fx', f: ev.name }, ev);
+    delete n.e; delete n.name; delete n.src;
+    n.f = ev.name;
+    if (ev.name === 'shake') return S.shake(ev.power || 1);
+    if (n.at === undefined && !n.center && (ev.name === 'aura' || ev.name === 'morph' || ev.name === 'spin' || ev.name === 'hop')) n.at = u ? [u.id] : [];
+    if (n.frm === undefined && u && (ev.name === 'beam' || ev.name === 'tether' || ev.name === 'cone')) n.frm = [u.id];
+    if (ev.name === 'cone' && n.to === undefined && u && u.target != null) n.to = [u.target];
+    if (n.at === undefined && !n.center && ev.name !== 'sweep' && ev.name !== 'beam' && ev.name !== 'tether' && ev.name !== 'cone') n.at = n.to || [];
+    try { execFx(n, c); } catch (e) { console.error(e); }
+  }
+
+  // ---------- 對外：事件處理 ----------
   // ---------- 對外：事件處理 ----------
   const api = {
     stage: S,
@@ -314,8 +280,9 @@ export function createFx(root, env0) {
     spawn(u) { const p = P(u); if (p) { const [c1, c2] = colors(u); FX.burst({ x: p.x, y: p.y, c1, c2, n: 8 }); FX.shockwave({ x: p.x, y: p.y, r: 0.8, thin: true, c1 }); } },
     resize() { S.resize(); },
     tick(dt) { S.step(dt); },
-    clear() { S.clear(); rollers.clear(); },
+    clear() { S.clear(); objs.clear(); chans.clear(); },
     busy: () => S.busy(),
+    dbg: () => ({ objs: objs.size, balls: [...objs.values()].filter((q) => q.R).map((q) => ({ x: q.R.x, y: q.R.y })), projs: S.projN(), chans: chans.size, pos: env.units().filter((u) => u.alive !== false).map((u) => { const q = env.pos(u.id); return { k: u.key, s: u.side, x: q.x, y: q.y }; }) }),
     // 戰鬥開始：被動演出（努努的球等）
     start() {
       for (const u of env.units()) {
@@ -327,18 +294,18 @@ export function createFx(root, env0) {
       const [c1, c2] = colors(u); const p = P(u); if (!p) return;
       FX.charge({ id: u.id, c1, c2 });
     },
-    fire(u, ev) {   // 技能生效
+    fire(u, ev) {   // 技能生效：瞬間的蓄力收尾；真正的演出（位移、投射物、特效）由引擎事件逐一帶出
       u.castN = (u.castN || 0) + 1;
       api.lastFire = { key: u.key, id: u.id, n: u.castN, at: performance.now() }; api.fires = (api.fires || 0) + 1;
       const d = udef(u), tgt = ev.tgt != null ? env.unit(ev.tgt) : null;
       const c = ctxOf(u, tgt || enemiesOf(u)[0] || null);
-      let nodes = d ? (ev.alt && d.alt ? d.alt : d.cast) : null;
-      if (!nodes || !nodes.length) nodes = tokNodes(d && d.tok);
-      const strong = nodes.some((n) => n.k === 'proj' || n.k === 'move' || n.k === 'chan' || (n.k === 'fx' && /^(burst|slash|shockwave|ground|beam|cone|spin|rain|sweep|tether|telegraph)$/.test(n.f)));
       const p = P(u); if (p) { FX.flash({ x: p.x, y: p.y, skin: 'light', c1: c.c1 }); FX.shockwave({ x: p.x, y: p.y, r: 0.7, thin: true, c1: c.c1 }); }
-      if (!strong) generic(u, d, c);
-      else if (d && d.ar && d.ar[1] >= 1 && !nodes.some((n) => n.k === 'fx' && /^(shockwave|cone|ground|sweep)$/.test(n.f))) areaHint(u, d, c);
-      run(nodes, c, 0);
+      if (d && d.eng) {
+        if (!d.strong) generic(u, d, c);
+        else if (d.ar && d.ar[1] >= 1 && !d.area) areaHint(u, d, c);
+        return;
+      }
+      generic(u, d, c); run(tokNodes(d && d.tok), c, 0);
     },
     atk(u, ev) {
       const t = env.unit(ev.tgt); if (!t) return;
@@ -348,7 +315,7 @@ export function createFx(root, env0) {
       if (!ev.ranged) return;
       const a = P(u), b = P(t); if (!a || !b) return;
       const [c1, c2] = colors(u);
-      let shape = 'orb'; const pr = d && d.cast.find((n) => n.k === 'proj' && RANGED_SHAPE.has(n.shape)); if (pr) shape = pr.shape;
+      let shape = 'orb'; if (d && d.bs && RANGED_SHAPE.has(d.bs)) shape = d.bs;
       const info = { crit: false }; u.lastAtk = info;
       shoot(u, a, b, { shape, c1, c2, sz: 0.62, speed: 15, follow: t.id, arrive: () => { const q = P(t); if (q && !(t.hitAt && S.now - t.hitAt < 60)) { t.hitAt = S.now; FX.hit({ x: q.x, y: q.y, c1, crit: info.crit, ang: Math.atan2(q.y - a.y, q.x - a.x) }); } } });
     },
@@ -383,11 +350,21 @@ export function createFx(root, env0) {
     status(t, kind, on) {
       if (kind === 'stun') { if (on && !t.stunObj) t.stunObj = FX.stun({ id: t.id }); else if (!on && t.stunObj) { S.removeObj(t.stunObj); t.stunObj = null; } }
     },
-    move(u, from, to, ev) {   // from/to 是格座標
-      if (ev.style !== 'dash' || !S.trailOn()) return;
-      const [c1] = colors(u);
-      trailOn(u, c1, ms((ev.dur || 4) / 20) + 40); ghost(u, c1, 2, 40);
+    move(u, from, to, ev) {   // from/to 是格座標；位置本身由 battle.js 照事件走，這裡只加拖尾、殘影、落地等演出
+      const [c1, c2] = colors(u);
+      const ms2 = Math.max(60, (ev.dur || 4) * TICK / spd());
+      const st = ev.style || 'walk';
+      if (st === 'walk' || st === 'push') return;
+      if (st === 'blink') { const p = env.hexPt(from), q = env.hexPt(to); FX.burst({ x: p.x, y: p.y, c1, c2, skin: 'shadow', small: true }); FX.shockwave({ x: q.x, y: q.y, r: 0.7, thin: true, c1 }); ghost(u, c1, 2, 40); return; }
+      if (st === 'leap') {
+        if (!S.reduced) S.add('u', ms2, (cv, p) => { const q = env.basePos(u.id); if (!q) return; const k = Math.sin(Math.PI * p); cv.fillStyle = `rgba(0,0,0,${0.28 * (1 - k * 0.5)})`; cv.beginPath(); cv.ellipse(q.x, q.y + w() * 0.2, w() * 0.3 * (1 - k * 0.35), w() * 0.12 * (1 - k * 0.35), 0, 0, TAU); cv.fill(); });
+        const p = env.hexPt(to); S.after(ms2, () => { FX.shockwave({ x: p.x, y: p.y + w() * 0.1, r: 0.8, thin: true, c1: '#ffffff' }); FX.burst({ x: p.x, y: p.y + w() * 0.2, small: true, c1: '#d8c8a8', c2: '#ffffff', skin: 'spore', n: 5 }); });
+      }
+      if (st === 'knockback' || st === 'pull') { if (S.trailOn()) trailOn(u, '#ffffff', ms2); return; }
+      if (!S.trailOn()) return;
+      trailOn(u, c1, ms2 + 40); ghost(u, c1, 2, 40);
     },
+    proj: onProj, air: onAir, obj: onObj, chan: onChan, fxEv: onFx,
   };
 
   function generic(u, d, c) {   // 沒有明確演出的技能：目標身上爆一下＋依範圍提示補一圈

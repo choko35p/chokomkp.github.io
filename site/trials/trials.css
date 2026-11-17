@@ -356,7 +356,10 @@ html, body { background: var(--g-bg); }
   .tt-rank { flex: 1; font-size: clamp(12px, 1cqw, 17px); min-height: 0; justify-content: center; }
   [data-phase=battle] .tt-go { display: none; }
   .tt-shell[data-dragging] .tt-unitpanel { display: block; }
-  .tt-unitpanel { position: absolute; left: 87%; top: 18%; width: 13%; height: 66%; max-height: none; bottom: auto; right: auto; overflow: visible; z-index: 20; }
+  .tt-unitpanel { position: absolute; left: 87%; top: 18%; width: 13%; height: auto; max-height: 80%; bottom: auto; right: auto; overflow: hidden auto; overscroll-behavior: contain; scrollbar-width: none; z-index: 20; }
+  .tt-unitpanel::-webkit-scrollbar { display: none; }   /* 面板裡捲動不顯示捲軸，不然面板變窄 */
+  /* 站主 2026-11-17「右邊會跑出那個滾輪條就會晃一下」：桌機版整頁本來就剛好塞滿畫面，不讓整頁出現捲軸（右邊面板太長就在面板裡面捲） */
+  html.tt-game, html.tt-game body { overflow: hidden; }
   .tt-toast { position: absolute; left: 50%; top: 66%; bottom: auto; transform: translateX(-50%); }
 }
 @media (min-width: 1024px) and (max-width: 1499px) and (orientation: landscape) { .tt-hud-odds .tt-od i { display: none; } .tt-hud-odds .tt-od { font-weight: 700; color: var(--tt-cc); } .tt-hud-odds { gap: .55cqw; } }

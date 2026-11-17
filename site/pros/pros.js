@@ -1,5 +1,5 @@
 /* 高手教學庫（站主 2026-11-17：「就是一個教學庫一個課本的概念…這個教學庫包含所有可以教的東西」）
-   資料：pros/lessons.json（課本）、pros/data.json（S19 評價）、pros/videos.json（高手與影片）。設計：Fable 5.2。純前端、不連外。 */
+   資料：pros/book.json（課本文章）、pros/data.json（S19 評價）、pros/videos.json（高手與影片）。設計：Fable 5.2。純前端、不連外。 */
 (function () {
   "use strict";
   const $ = (s, r = document) => r.querySelector(s);
@@ -21,95 +21,61 @@
   const ORDER = ["一致看好", "多數看好", "看法分歧", "多數看衰", "評價普通", "資料不足"];
   const byLabel = (a, b) => ORDER.indexOf(a.label) - ORDER.indexOf(b.label) || (a.cost || 0) - (b.cost || 0);
   const st = { tab: "book", q: "", pros: new Set(), season: "default", cons: "all", ch: null, cost: "全部", label: "全部", tLabel: "全部" };
-  let L = null, R = null, V = null;
-  const proName = (k) => (L?.pros.find((p) => p.key === k) || {}).name || k;
+  let B = null, R = null, V = null;
+  const proName = (k) => (B?.pros.find((p) => p.key === k) || {}).name || k;
 
-  /* ---------- 課本 ---------- */
-  function scopeTag(p) {
-    const s = p.scope || {};
-    if (s.level === "set") return h("span", { class: "pr-tag t-na" }, `${s.set || ""} 限定`);
-    if (s.level === "patch") return h("span", { class: "pr-tag t-na" }, `${s.patch || s.set || ""} 版`);
-    if (s.system_dependent) return h("span", { class: "pr-tag t-na" }, "數字以當季為準");
-    return null;
+  /* ---------- 課本（站主 2026-11-17：「要梳理出一套邏輯…寫成好幾篇文章，然後有條理的把它串聯起來」） ---------- */
+  const arts = () => B.parts.flatMap((p) => p.articles.map((a) => ({ ...a, part: p })));
+  const go = (hash) => { location.hash = hash; };
+  function cover() {
+    let n = 0;
+    return h("div", { class: "bk-cover" },
+      h("h2", { class: "bk-title" }, B.title),
+      B.intro ? h("p", { class: "bk-intro" }, B.intro) : null,
+      B.parts.map((p, pi) => h("section", { class: "bk-part" },
+        h("h3", null, h("span", { class: "bk-pno" }, `第 ${pi + 1} 部`), p.title),
+        p.intro ? h("p", { class: "bk-pintro muted" }, p.intro) : null,
+        h("ol", { class: "bk-list", start: String(n + 1) }, p.articles.map((a) => { n++;
+          return h("li", { class: a.todo ? "todo" : null },
+            a.todo ? h("span", { class: "bk-a" }, h("b", null, a.title), h("span", { class: "muted" }, a.one), h("em", { class: "bk-soon" }, "撰寫中"))
+              : h("a", { class: "bk-a", href: "#a/" + a.id }, h("b", null, a.title), h("span", { class: "muted" }, a.one), h("em", null, `約 ${a.mins} 分鐘`)));
+        })))));
   }
-  function seasonOk(p) {
-    const s = p.scope || {};
-    if (st.season === "all") return true;
-    if (st.season === "default") return s.level === "universal" || !s.level || s.set === "S19";
-    if (st.season === "universal") return s.level === "universal" || !s.level;
-    return s.set === st.season || (p.sources || []).some((x) => x.set === st.season);
+  function toc(cur) {
+    let n = 0;
+    return h("nav", { class: "bk-toc", "aria-label": "課本目錄" },
+      h("a", { class: "bk-toc-home", href: "#book" }, "📖 " + B.title),
+      B.parts.map((p, pi) => h("div", { class: "bk-toc-part" },
+        h("div", { class: "bk-toc-ph" }, `第 ${pi + 1} 部｜${p.title}`),
+        p.articles.map((a) => { n++;
+          const on = cur && a.id === cur.id;
+          return h("div", null,
+            a.todo ? h("span", { class: "bk-toc-a todo" }, `${n}. ${a.title}`) : h("a", { class: "bk-toc-a" + (on ? " on" : ""), href: "#a/" + a.id, "aria-current": on ? "page" : null }, `${n}. ${a.title}`),
+            on && a.heads?.length ? h("div", { class: "bk-toc-sub" }, a.heads.map((x) => h("a", { href: "#" + x.id, onclick: (e) => { e.preventDefault(); document.getElementById(x.id)?.scrollIntoView({ behavior: "smooth" }); } }, x.title))) : null);
+        }))));
   }
-  function pointOk(p) {
-    if (!seasonOk(p)) return false;
-    if (st.cons === "consensus" && !["consensus", "multi"].includes(p.consensus)) return false;
-    if (st.cons === "split" && p.consensus !== "split") return false;
-    if (st.pros.size && !p.pros.some((k) => st.pros.has(k))) return false;
-    const q = st.q.trim().toLowerCase();
-    if (q && ![p.text, p.why, p.when, ...p.pros.map(proName)].some((x) => String(x || "").toLowerCase().includes(q))) return false;
-    return true;
+  function article(id) {
+    const all = arts().filter((a) => !a.todo), i = all.findIndex((a) => a.id === id), a = all[i];
+    if (!a) return cover();
+    const pno = B.parts.indexOf(a.part) + 1, num = arts().findIndex((x) => x.id === id) + 1;
+    const body = h("div", { class: "bk-body" }); body.innerHTML = a.html;
+    body.querySelectorAll(".bk-cite a").forEach((el) => el.addEventListener("click", (e) => { e.preventDefault(); const t = document.getElementById(el.getAttribute("href").slice(1)); if (t) { t.scrollIntoView({ behavior: "smooth", block: "center" }); t.classList.add("hl"); setTimeout(() => t.classList.remove("hl"), 1600); } }));
+    const nav = (x, dir) => x ? h("a", { class: "bk-nav " + dir, href: "#a/" + x.id }, h("small", null, dir === "prev" ? "← 上一篇" : "下一篇 →"), h("b", null, x.title)) : h("span");
+    return h("div", { class: "bk-read" },
+      h("details", { class: "bk-toc-m" }, h("summary", null, "目錄"), toc(a)),
+      h("aside", { class: "bk-side" }, toc(a)),
+      h("article", { class: "bk-art" },
+        h("div", { class: "bk-crumb muted" }, `第 ${pno} 部｜${a.part.title}　·　第 ${num} 篇　·　約 ${a.mins} 分鐘`),
+        h("h2", { class: "bk-h1" }, a.title),
+        a.one ? h("p", { class: "bk-one" }, a.one) : null,
+        body,
+        a.cites.length ? h("section", { class: "bk-srcs" }, h("h3", null, "出處（點了直接看高手原片那一段）"),
+          h("ol", null, a.cites.map((c, k) => h("li", { id: `${a.id}--src${k + 1}` },
+            h("span", null, c.text),
+            h("span", { class: "bk-srcl" }, c.src.map((s) => h("a", { href: ytUrl(s.v, s.t), target: "_blank", rel: "noopener" }, `${s.pro}${s.old ? "（舊講法）" : s.opp ? "（相反）" : ""} ▶ ${mmss(s.t) || "原片"}`))))))) : null,
+        h("div", { class: "bk-navs" }, nav(all[i - 1], "prev"), nav(all[i + 1], "next"))));
   }
-  function point(p) {
-    const srcs = []; const seen = new Set();
-    for (const s of p.sources) { const k = s.pro + s.video; if (seen.has(k)) continue; seen.add(k); srcs.push(s); }
-    { const one = [], rest = [], got = new Set(); for (const s of srcs) (got.has(s.pro) ? rest : (got.add(s.pro), one)).push(s); srcs.length = 0; srcs.push(...one, ...rest); }
-    const split = p.consensus === "split" && p.sides && p.sides.length;
-    return h("li", { class: "pr-pt", id: p.id },
-      h("p", { class: "pr-pt-t" }, split ? "高手看法不同：" + p.sides.map((sd) => sd.label).join("，還是") + "？" : p.text),
-      !split && (p.why || p.when) ? h("p", { class: "pr-pt-s" }, p.why ? `理由：${p.why}` : null, p.why && p.when ? "　" : null, p.when ? `情況：${p.when}` : null) : null,
-      p.sides && p.sides.length ? h("div", { class: "pr-sides" }, p.sides.map((sd) => h("div", { class: "pr-side" },
-        h("b", null, sd.label), h("p", null, sd.text), sd.why ? h("p", { class: "pr-pt-s" }, `理由：${sd.why}`) : null, sd.when ? h("p", { class: "pr-pt-s" }, `情況：${sd.when}`) : null,
-        (sd.pros || []).length ? h("p", { class: "pr-pt-s" }, "這樣說的：" + sd.pros.map(proName).join("、")) : null))) : null,
-      p.old_note ? h("p", { class: "pr-pt-s pr-old" }, `以前的講法已過時：${p.old_note}`) : null,
-      !split && srcs.some((s) => s.note) ? h("ul", { class: "pr-notes" }, srcs.filter((s) => s.note).map((s) => h("li", null, `${proName(s.pro)} 補充：${s.note}`))) : null,
-      h("div", { class: "pr-pt-m" },
-        h("span", { class: "pr-tag " + (CONS[p.consensus] || CONS.single)[1] }, (CONS[p.consensus] || CONS.single)[0]), scopeTag(p),
-        srcs.slice(0, 6).map((s) => h("a", { class: "pr-src-a" + (!split && (s.stance === "oppose" || s.stance === "old") ? " opp" : ""), href: ytUrl(s.video, s.t), target: "_blank", rel: "noopener", title: split ? null : s.stance === "oppose" ? "這位高手持相反看法" : s.stance === "old" ? "較早的講法，已被新的取代" : null }, `${proName(s.pro)}${split ? "" : s.stance === "oppose" ? "（相反）" : s.stance === "old" ? "（舊講法）" : ""} ▶ ${mmss(s.t) || "看原片"}`)),
-        srcs.length > 6 ? h("span", { class: "pr-n" }, `等 ${srcs.length} 支`) : null));
-  }
-  function bookTab() {
-    const pts = L.points.filter((p) => p.status !== "hidden" && p.status !== "review");
-    const vis = pts.filter(pointOk);
-    const chaps = L.chapters.filter((c) => c.id !== "other" || vis.some((p) => p.chapter === "other"));
-    const search = h("input", { class: "pr-search", type: "search", placeholder: "搜尋觀念、高手（例：連敗、D 牌、前排）", value: st.q, "aria-label": "搜尋觀念" });
-    search.addEventListener("input", () => { st.q = search.value; const k = search.selectionStart; render(); const s2 = $(".pr-search"); s2.focus(); s2.setSelectionRange(k, k); });
-    const chip = (on, label, fn) => h("button", { type: "button", class: "pr-chip", "aria-pressed": String(on), onclick: () => { fn(); render(); } }, label);
-    const toc = h("nav", { class: "pr-toc", "aria-label": "章節" }, chaps.map((c) => {
-      const n = vis.filter((p) => p.chapter === c.id).length;
-      return h("a", { href: "#ch-" + c.id, class: "pr-toc-a" + (n ? "" : " dim") }, c.name, h("span", { class: "pr-n" }, ` ${n}`));
-    }));
-    const body = chaps.map((c) => {
-      const cp = vis.filter((p) => p.chapter === c.id);
-      const who = new Set(cp.flatMap((p) => p.pros));
-      return h("section", { class: "pr-ch", id: "ch-" + c.id },
-        h("h2", null, c.name, h("span", { class: "pr-n" }, `　${cp.length} 條、${who.size} 位高手`)),
-        h("p", { class: "small muted" }, c.desc),
-        cp.length ? null : h("p", { class: "pr-empty small" }, "這一章還在補，之後每週整理新影片會陸續加進來。"),
-        c.sections.filter((sec) => cp.some((p) => p.section === sec.id)).map((sec) => {
-          const sp = cp.filter((p) => p.section === sec.id);
-          const main = sp.filter((p) => !p.loose && p.consensus !== "split" && !(p.scope?.level === "set" && p.scope?.set !== "S19"));
-          const split = sp.filter((p) => p.consensus === "split");
-          const lim = sp.filter((p) => !p.loose && p.consensus !== "split" && p.scope?.level === "set" && p.scope?.set !== "S19");
-          const loose = sp.filter((p) => p.loose);
-          return h("div", { class: "pr-sec2", id: sec.id },
-            h("h3", null, sec.name, sp.length < 3 ? h("span", { class: "pr-n" }, "　還在補") : null),
-            main.length ? h("ul", { class: "pr-pts" }, main.map(point)) : null,
-            split.length ? h("div", { class: "pr-split" }, h("h4", null, "看法分歧"), h("ul", { class: "pr-pts" }, split.map(point))) : null,
-            lim.length ? h("details", { class: "pr-fold" }, h("summary", null, `賽季限定（${lim.length}）`), h("ul", { class: "pr-pts" }, lim.map(point))) : null,
-            loose.length ? h("details", { class: "pr-fold" }, h("summary", null, `零散觀念（${loose.length}）`), h("ul", { class: "pr-pts" }, loose.map(point))) : null);
-        }));
-    });
-    return h("div", null,
-      h("div", { class: "pr-bar" }, search, h("span", { class: "pr-count" }, `符合 ${vis.length} 條`)),
-      h("div", { class: "pr-bar", role: "group", "aria-label": "賽季" },
-        chip(st.season === "default", "通用＋S19", () => (st.season = "default")), chip(st.season === "universal", "只看通用", () => (st.season = "universal")),
-        ["S19", "S18", "S17"].map((s) => chip(st.season === s, s, () => (st.season = s))), chip(st.season === "all", "全部", () => (st.season = "all"))),
-      h("div", { class: "pr-bar", role: "group", "aria-label": "共識" },
-        chip(st.cons === "all", "全部觀念", () => (st.cons = "all")), chip(st.cons === "consensus", "兩位以上都講", () => (st.cons = "consensus")), chip(st.cons === "split", "看法分歧", () => (st.cons = "split"))),
-      h("div", { class: "pr-bar", role: "group", "aria-label": "高手" },
-        chip(!st.pros.size, "全部高手", () => st.pros.clear()),
-        L.pros.filter((p) => pts.some((x) => x.pros.includes(p.key))).map((p) => chip(st.pros.has(p.key), p.name, () => (st.pros.has(p.key) ? st.pros.delete(p.key) : st.pros.add(p.key))))),
-      h("div", { class: "pr-book" }, toc, h("div", { class: "pr-book-body" }, body)));
-  }
+  function bookTab() { return st.art ? article(st.art) : cover(); }
 
   /* ---------- S19 評價（原本的棋子卡片） ---------- */
   function pic(key, cost) {
@@ -163,7 +129,7 @@
     for (const x of cat) (byC[x.creator] ||= []).push(x);
     return h("div", null,
       h("p", { class: "small muted" }, "只收曾經打到宗師以上的高手。段位是我們到 op.gg 等戰績網站查的。每週自動整理新影片，舊影片也會慢慢補完。"),
-      h("div", { class: "pr-who" }, L.pros.map((p) => {
+      h("div", { class: "pr-who" }, B.pros.map((p) => {
         const mine = cat.filter((x) => x.creator === p.name || (p.key === "jazlatte" && x.creator === "絕世拿鐵"));
         const done = V.videos.filter((v) => v.pro === p.key).length;
         return h("div", { class: "pr-wc" }, h("h3", null, h("a", { href: p.channel, target: "_blank", rel: "noopener" }, p.name)),
@@ -176,22 +142,27 @@
   }
 
   function render() {
-    const app = $("#pr-app"), y = window.scrollY;
+    const app = $("#pr-app");
     const tabs = [["book", "📖", "課本"], ["review", "🆕", "S19 評價"], ["videos", "🎬", "高手與影片"]];
     app.replaceChildren(
-      h("div", { class: "pr-meta" }, h("span", null, `上次更新：${L.updated}`), h("span", null, `已整理 ${L.stats.videos_done} 支影片、${L.stats.points} 條觀念`)),
-      h("div", { class: "pr-tabs", role: "tablist" }, tabs.map(([id, ic, t]) => h("button", { type: "button", role: "tab", class: "pr-tab", "aria-selected": String(st.tab === id), onclick: () => { st.tab = id; history.replaceState(null, "", "#" + id); render(); window.scrollTo(0, 0); } }, h("span", { "aria-hidden": "true" }, ic), t))),
+      h("div", { class: "pr-meta" }, h("span", null, `上次更新：${B.updated}`), h("span", null, `${B.stats.articles} 篇文章，整理自 ${B.stats.videos} 支高手影片`)),
+      h("div", { class: "pr-tabs", role: "tablist" }, tabs.map(([id, ic, t]) => h("button", { type: "button", role: "tab", class: "pr-tab", "aria-selected": String(st.tab === id), onclick: () => go(id === "book" ? "book" : id) }, h("span", { "aria-hidden": "true" }, ic), t))),
       st.tab === "book" ? bookTab() : st.tab === "review" ? reviewTab() : videoTab());
-    window.scrollTo(0, y);
   }
   const get = (f) => fetch(f + "?v=" + Date.now().toString(36).slice(0, -4)).then((r) => r.json());
   function loadReviews() { get("data.json").then((d) => { R = d; render(); }).catch((e) => { console.error(e); R = { units: [], traits: [], intro: "評價資料載入失敗，請重新整理。" }; render(); }); }
   function loadVideos() { get("videos.json").then((d) => { V = d; render(); }).catch(() => { V = { videos: [], catalog: [] }; render(); }); }
-  get("lessons.json").then((d) => {
-    L = d; $("#pr-loading").remove(); $("#pr-app").hidden = false;
-    const hsh = location.hash.slice(1);
-    if (hsh === "review" || hsh === "units" || hsh === "traits") st.tab = "review"; else if (hsh === "videos") st.tab = "videos";
-    render();
-    if (hsh && st.tab === "book") { const t = document.getElementById(hsh); if (t) { if (t.closest("details")) t.closest("details").open = true; t.scrollIntoView(); } }
-  }).catch(() => { $("#pr-loading").textContent = "資料載入失敗，請重新整理再試一次。"; });
+  function route() {
+    const hsh = decodeURIComponent(location.hash.slice(1));
+    if (hsh.includes("--")) { const t = document.getElementById(hsh); if (t) { t.scrollIntoView(); return; } }
+    st.art = null;
+    if (hsh === "review" || hsh === "units" || hsh === "traits") st.tab = "review";
+    else if (hsh === "videos") st.tab = "videos";
+    else { st.tab = "book"; if (hsh.startsWith("a/")) st.art = hsh.slice(2); }
+    render(); window.scrollTo(0, 0);
+  }
+  get("book.json").then((d) => {
+    B = d; $("#pr-loading").remove(); $("#pr-app").hidden = false;
+    window.addEventListener("hashchange", route); route();
+  }).catch((e) => { console.error(e); $("#pr-loading").textContent = "資料載入失敗，請重新整理再試一次。"; });
 })();

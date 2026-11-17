@@ -294,6 +294,7 @@ export function bindInput({ app, api, R = {}, render, h = {} }) {
     reroll: () => api.act('reroll'),
     buyXp: () => api.act('buyXp'),
     levelUp: () => api.act('levelUp'),
+    lockShop: () => api.act('lockShop'),
     sell: () => { const u = target(); if (u) { ui.hoverUid = null; PN.sellUnit(api, u); } },
     deploy: doDeploy,
     fight: () => h.go && h.go(),

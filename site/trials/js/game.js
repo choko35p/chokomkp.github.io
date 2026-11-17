@@ -383,7 +383,9 @@ function beginRound(state, DATA, events, retry = false) {
   state.freeRerolls = (state.freeRerolls || 0) + ruleSum(state, DATA, 'freeRerollPerRound');
   U.feedUnlocks(state, DATA, { kind: 'roundStart' });
   runUnlocks(state, DATA, events);   // 抽商店之前：開局禮、頭目獎勵帶來的解鎖，這次商店就保證出現
-  S.rollShop(state, DATA, { roundStart: true });
+  // 站主 2026-11-17「商店要可以鎖」：鎖住的話這回合不換商店，用掉一次就自動解鎖（跟正式服一樣）
+  if (state.shopLocked && (state.shop || []).some(Boolean)) { state.shopLocked = false; events.push({ type: 'shopKept' }); }
+  else { state.shopLocked = false; S.rollShop(state, DATA, { roundStart: true }); }
   state.battle = null;
   nextPending(state);
   events.push({ type: 'roundStart', round: state.round, retry });
@@ -505,6 +507,11 @@ export function actReroll(state, DATA) {
   runUnlocks(state, DATA, events);   // 先檢查再抽：這次重抽就讓剛解鎖的棋子出現
   S.rollShop(state, DATA);
   return ok({ events });
+}
+export function actLockShop(state, DATA, on) {
+  if (state.phase === 'over') return no('遊戲已結束');
+  state.shopLocked = on == null ? !state.shopLocked : !!on;
+  return ok({ events: [{ type: 'shopLock', on: state.shopLocked }] });
 }
 export function actBuyXp(state, DATA) {
   const g = needPlan(state); if (g) return g;

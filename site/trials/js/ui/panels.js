@@ -953,6 +953,7 @@ const HK_ACTIONS = [
   { id: 'reroll', zh: '重抽', phase: 'plan', official: true, def: 'KeyD' },
   { id: 'buyXp', zh: '購買經驗值', phase: 'plan', official: true, def: 'KeyF' },
   { id: 'levelUp', zh: '一鍵升級（買到升下一級）', phase: 'plan', official: false, def: null },
+  { id: 'lockShop', zh: '鎖住／解鎖商店', phase: 'plan', official: false, def: null },
   { id: 'sell', zh: '賣出（滑鼠指著棋子按）', phase: 'plan', official: true, def: 'KeyE' },
   { id: 'deploy', zh: '上場／回板凳（同上）', phase: 'plan', official: true, def: 'KeyW' },
   { id: 'fight', zh: '戰鬥', phase: 'plan', official: false, def: 'Space' },

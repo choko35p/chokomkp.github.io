@@ -89,7 +89,16 @@ export function renderHud(root, api) {
     }, el('span', 'tt-lvup-ar', { 'aria-hidden': 'true' }, '⏫'), el('b', '', {}, `升 ${lc.to} 級`), coin('tt-sm'), el('span', 'tt-num', {}, lc.gold));
     lvup.addEventListener('click', () => api.act('levelUp'));
   }
-  root.replaceChildren(...[lvl, lvup, odds, gold, streak, pop].filter(Boolean));
+  // 站主 2026-11-17「商店要可以鎖」
+  const lk = !!s.shopLocked, lkKey = hk(api, 'lockShop', '');
+  const lock = el('button', 'tt-hud-lock' + (lk ? ' tt-on' : ''), { type: 'button', 'data-tt-noclear': '', 'aria-pressed': String(lk),
+    'aria-label': lk ? '商店已鎖住，下回合不換；點一下解鎖' : '鎖住商店：下回合不換商店',
+    'data-tt-tip': 'text:' + (lk ? '商店鎖住了：下回合開始不會換掉這排，用過一次自動解鎖。點一下解鎖。' : '鎖住商店：下回合開始不會換掉這排（重抽還是可以）。') + (lkKey && lkKey !== '未設定' ? `快捷鍵 ${lkKey}` : '') });
+  lock.innerHTML = lk
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 10V7a5 5 0 0 1 10 0v3h1.500A1.500 1.500 0 0 1 20 11.500v9A1.500 1.500 0 0 1 18.500 22h-13A1.500 1.500 0 0 1 4 20.500v-9A1.500 1.500 0 0 1 5.500 10H7zm2 0h6V7a3 3 0 0 0-6 0v3z"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 10h9.500A1.500 1.500 0 0 1 20 11.500v9A1.500 1.500 0 0 1 18.500 22h-13A1.500 1.500 0 0 1 4 20.500v-9A1.500 1.500 0 0 1 5.500 10H7V7a5 5 0 0 1 9.600-1.900l-1.850.760A3 3 0 0 0 9 7v3z"/></svg>';
+  lock.addEventListener('click', () => api.act('lockShop'));
+  root.replaceChildren(...[lvl, lvup, odds, gold, streak, lock, pop].filter(Boolean));
 }
 
 // ---------- 商店本體 ----------
@@ -155,7 +164,7 @@ export function renderShop(root, api) {
     if (!slot) { cards.append(el('div', 'tt-card tt-empty', { 'aria-hidden': 'true' })); return; }
     cards.append(cardEl(api, slot, i));
   });
-  const wrap = el('div', 'tt-shopin', {}, left, cards);
+  const wrap = el('div', 'tt-shopin' + (state.shopLocked ? ' tt-shop-locked' : ''), {}, left, cards);
   root.replaceChildren(wrap);
   // 戰鬥鍵上的快捷鍵小字
   const g = document.querySelector('.tt-go .tt-hk');

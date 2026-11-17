@@ -657,3 +657,13 @@ button.tt-tag:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .tt-unit.tt-anvil .tt-anv-ic { width: 62%; height: 62%; display: block; } .tt-unit.tt-anvil .tt-anv-ic svg { width: 100%; height: 100%; fill: #ffe9a8; filter: drop-shadow(0 1px 0 rgba(0,0,0,.6)); }
 .tt-unit.tt-anvil .tt-anv-t { position: absolute; left: -10%; right: -10%; bottom: -14%; text-align: center; font-size: max(10px, calc(var(--tk, 40px) * .26)); font-weight: 700; color: #ffe9a8; text-shadow: 0 1px 2px #000; line-height: 1.1; }
 .tt-unit.tt-anvil.tt-sel { box-shadow: 0 0 0 3px #ffd93b, 0 0 12px rgba(255,214,70,.9); }
+/* 站主 2026-11-17：鎖商店 */
+.tt-hud-lock { all: unset; box-sizing: border-box; cursor: pointer; flex: 0 0 auto; display: grid; place-items: center; width: 34px; height: 26px; color: #9fb1c4; border: 1px solid var(--g-gold-dim, #5b4a2a); background: rgba(8,16,26,.85); }
+.tt-hud-lock svg { width: 18px; height: 18px; }
+.tt-hud-lock:hover, .tt-hud-lock:focus-visible { color: var(--g-gold-hi); border-color: var(--g-gold); }
+.tt-hud-lock.tt-on { color: #ffd93b; border-color: #ffd93b; box-shadow: 0 0 8px rgba(255,217,59,.5); }
+.tt-shopin.tt-shop-locked .tt-cards { box-shadow: inset 0 0 0 2px #ffd93b; }
+@media (min-width: 1024px) and (orientation: landscape) {
+  .tt-hud-lock { position: absolute; left: 88.6%; top: 0; bottom: 0; width: 4%; height: auto; border-width: 1px 1px 0 1px; }
+  .tt-hud-lock svg { width: 1.3cqw; height: 1.3cqw; min-width: 14px; min-height: 14px; }
+}

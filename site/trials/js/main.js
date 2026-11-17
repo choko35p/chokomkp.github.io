@@ -21,7 +21,7 @@ const REASONS = {
 const reasonText = (r) => (r && /[一-鿿]/.test(r) ? r : REASONS[r] || '這個動作現在做不到');
 
 const PICK_ZH = { mixer: '混音器', fav: '心鋼最愛', spot: '聚光燈', deal: '唱片合約', prod: '合作邀請', clone: '分身站位', inst: '沙灘樂器' };
-const SFX = { buy: 'buy', sell: 'sell', reroll: 'reroll', buyXp: 'xp', levelUp: 'xp', move: 'place', equip: 'equip', pickAugment: 'pick', rerollAugmentSlot: 'reroll', setFavorite: 'equip', moveFavorite: 'equip', pick: 'equip', instrument: 'equip', useRemover: 'equip', pickReward: 'pick', startBattle: 'start', mixerPreset: 'equip', mixerReset: 'equip', combineItems: 'equip', chooseComponent: 'equip', openAnvil: 'equip' };
+const SFX = { buy: 'buy', sell: 'sell', reroll: 'reroll', buyXp: 'xp', levelUp: 'xp', lockShop: 'pick', move: 'place', equip: 'equip', pickAugment: 'pick', rerollAugmentSlot: 'reroll', setFavorite: 'equip', moveFavorite: 'equip', pick: 'equip', instrument: 'equip', useRemover: 'equip', pickReward: 'pick', startBattle: 'start', mixerPreset: 'equip', mixerReset: 'equip', combineItems: 'equip', chooseComponent: 'equip', openAnvil: 'equip' };
 
 function showFatal(msg, withLink) {
   const root = document.getElementById('tt-root');

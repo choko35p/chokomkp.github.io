@@ -885,5 +885,749 @@
    "desc": "攻速 +15%、暴擊率 +20%、魔抗 +20。開場 8 秒免疫控制。",
    "simplified": ""
   }
+ ],
+ "radiant": [
+  {
+   "key": "DeathbladeRadiant",
+   "zh": "聖光死神之刃",
+   "radiant": true,
+   "base": "Deathblade",
+   "stats": {
+    "adPct": 1.1,
+    "dmgAmp": 0.2
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。攻擊 +55%、傷害增幅 +10%",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "GiantSlayer_Radiant",
+   "zh": "聖光巨人殺手",
+   "radiant": true,
+   "base": "GiantSlayer",
+   "stats": {
+    "adPct": 0.3,
+    "ap": 30,
+    "asPct": 0.3
+   },
+   "passives": [
+    {
+     "on": "start",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "dmgAmp",
+       "value": 0.1
+      }
+     ],
+     "src": "item:GiantSlayer",
+     "text": "巨人殺手"
+    }
+   ],
+   "desc": "聖光版：屬性加倍。攻擊 +15%、法術強度 +15、攻速 +15%。傷害增幅 +10%。",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "HextechGunbladeRadiant",
+   "zh": "聖光海克斯科技槍刃",
+   "radiant": true,
+   "base": "HextechGunblade",
+   "stats": {
+    "adPct": 0.4,
+    "ap": 40,
+    "manaRegen": 2,
+    "omnivamp": 0.3
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。攻擊 +20%、法術強度 +20、法力回復 +1、全能吸血 +15%",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "SpearOfShojinRadiant",
+   "zh": "聖光精進之矛",
+   "radiant": true,
+   "base": "SpearOfShojin",
+   "stats": {
+    "adPct": 0.3,
+    "ap": 30,
+    "manaRegen": 2
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。攻擊 +15%、法術強度 +15、法力回復 +1",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "InfinityEdgeRadiant",
+   "zh": "聖光無盡之刃",
+   "radiant": true,
+   "base": "InfinityEdge",
+   "stats": {
+    "adPct": 0.7,
+    "crit": 0.7
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。攻擊 +35%、暴擊率 +35%",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "GuinsoosRagebladeRadiant",
+   "zh": "聖光鬼索的狂暴之刃",
+   "radiant": true,
+   "base": "GuinsoosRageblade",
+   "stats": {
+    "ap": 20,
+    "asPct": 0.2
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "asPct",
+       "value": 0.05,
+       "stackKey": "guinsoo",
+       "maxStacks": 40
+      }
+     ],
+     "src": "item:GuinsoosRageblade",
+     "text": "狂暴"
+    }
+   ],
+   "desc": "聖光版：屬性加倍。法術強度 +10、攻速 +10%。每次普攻，攻速 +5%，可疊加。",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "VoidStaffRadiant",
+   "zh": "聖光虛空之杖",
+   "radiant": true,
+   "base": "VoidStaff",
+   "stats": {
+    "ap": 70,
+    "asPct": 0.3,
+    "manaRegen": 2
+   },
+   "passives": [
+    {
+     "on": "cast",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "shred",
+       "dur": 3,
+       "value": 0.3
+      }
+     ],
+     "src": "item:VoidStaff",
+     "text": "破魔"
+    }
+   ],
+   "desc": "聖光版：屬性加倍。法術強度 +35、攻速 +15%、法力回復 +1。施放技能後，目標魔抗 -30%，持續 3 秒。",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "KrakensFury_Radiant",
+   "zh": "聖光海妖之怒",
+   "radiant": true,
+   "base": "KrakensFury",
+   "stats": {
+    "adPct": 0.2,
+    "asPct": 0.2,
+    "mr": 40
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "adPct",
+       "value": 0.04,
+       "stackKey": "kraken",
+       "maxStacks": 30
+      }
+     ],
+     "src": "item:KrakensFury",
+     "text": "疊攻"
+    }
+   ],
+   "desc": "聖光版：屬性加倍。攻擊 +10%、攻速 +10%、魔抗 +20。每次普攻，攻擊 +4%，可疊加。",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "NashorsToothRadiant",
+   "zh": "聖光納什之牙",
+   "radiant": true,
+   "base": "NashorsTooth",
+   "stats": {
+    "ap": 30,
+    "asPct": 0.2,
+    "crit": 0.4,
+    "hp": 300
+   },
+   "passives": [
+    {
+     "on": "cast",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "asPct",
+       "value": 0.4,
+       "dur": 4
+      }
+     ],
+     "src": "item:NashorsTooth",
+     "text": "攻速"
+    }
+   ],
+   "desc": "聖光版：屬性加倍。法術強度 +15、攻速 +10%、暴擊率 +20%、生命 +150。施放技能後，攻速 +40%，持續 4 秒。",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "LastWhisperRadiant",
+   "zh": "聖光最後耳語",
+   "radiant": true,
+   "base": "LastWhisper",
+   "stats": {
+    "adPct": 0.3,
+    "asPct": 0.4,
+    "crit": 0.4
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "sunder",
+       "dur": 3,
+       "value": 0.3
+      }
+     ],
+     "src": "item:LastWhisper",
+     "text": "破甲"
+    }
+   ],
+   "desc": "聖光版：屬性加倍。攻擊 +15%、攻速 +20%、暴擊率 +20%。普攻讓目標護甲 -30%，持續 3 秒。",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "ArchangelsStaffRadiant",
+   "zh": "聖光大天使之杖",
+   "radiant": true,
+   "base": "ArchangelsStaff",
+   "stats": {
+    "ap": 60,
+    "manaRegen": 2
+   },
+   "passives": [
+    {
+     "on": "every",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "ap",
+       "value": 20,
+       "stackKey": "archangel",
+       "maxStacks": 9
+      }
+     ],
+     "src": "item:ArchangelsStaff",
+     "text": "法強",
+     "n": 5
+    }
+   ],
+   "desc": "聖光版：屬性加倍。法術強度 +30、法力回復 +1。每 5 秒，法術強度 +20，可疊加。",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "CrownguardRadiant",
+   "zh": "聖光皇冠守衛",
+   "radiant": true,
+   "base": "Crownguard",
+   "stats": {
+    "ap": 40,
+    "armor": 40,
+    "hp": 200
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。法術強度 +20、護甲 +20、生命 +100",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "IonicSparkRadiant",
+   "zh": "聖光離子星火",
+   "radiant": true,
+   "base": "IonicSpark",
+   "stats": {
+    "ap": 30,
+    "hp": 500,
+    "mr": 70
+   },
+   "passives": [
+    {
+     "on": "start",
+     "ops": [
+      {
+       "op": "status",
+       "to": "allEnemies",
+       "kind": "shred",
+       "dur": 30,
+       "value": 0.3
+      }
+     ],
+     "src": "item:IonicSpark",
+     "text": "破魔"
+    }
+   ],
+   "desc": "聖光版：屬性加倍。法術強度 +15、生命 +250、魔抗 +35。開場讓所有敵人魔抗 -30%。",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "JeweledGauntletRadiant",
+   "zh": "聖光寶石手套",
+   "radiant": true,
+   "base": "JeweledGauntlet",
+   "stats": {
+    "ap": 70,
+    "crit": 0.7
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。法術強度 +35、暴擊率 +35%",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "BlueBuffRadiant",
+   "zh": "聖光藍Buff",
+   "radiant": true,
+   "base": "BlueBuff",
+   "stats": {
+    "adPct": 0.3,
+    "ap": 30,
+    "manaRegen": 10
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。攻擊 +15%、法術強度 +15、法力回復 +5",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "SpiritVisage_Radiant",
+   "zh": "聖光振奮盔甲",
+   "radiant": true,
+   "base": "SpiritVisage",
+   "stats": {
+    "hp": 600,
+    "manaRegen": 4
+   },
+   "passives": [
+    {
+     "on": "every",
+     "ops": [
+      {
+       "op": "heal",
+       "to": "self",
+       "value": {
+        "selfMissingHp": 0.09
+       }
+      }
+     ],
+     "src": "item:SpiritVisage",
+     "text": "治療",
+     "n": 5
+    }
+   ],
+   "desc": "聖光版：屬性加倍。生命 +300、法力回復 +2。每 5 秒，回復已損失生命的 9%。",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "GargoyleStoneplate_Radiant",
+   "zh": "聖光石像鬼磐核",
+   "radiant": true,
+   "base": "GargoyleStoneplate",
+   "stats": {
+    "armor": 50,
+    "hp": 200,
+    "mr": 50
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。護甲 +25、生命 +100、魔抗 +25",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "SteadfastHeartRadiant",
+   "zh": "聖光堅定之心",
+   "radiant": true,
+   "base": "SteadfastHeart",
+   "stats": {
+    "armor": 40,
+    "crit": 0.4,
+    "hp": 500
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。護甲 +20、暴擊率 +20%、生命 +250",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "WarmogsArmorRadiant",
+   "zh": "聖光好戰者鎧甲",
+   "radiant": true,
+   "base": "WarmogsArmor",
+   "stats": {
+    "hp": 1000,
+    "hpPct": 0.36
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。生命 +500、生命 +18%",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "StrikersFlailRadiant",
+   "zh": "聖光打手連枷",
+   "radiant": true,
+   "base": "StrikersFlail",
+   "stats": {
+    "asPct": 0.2,
+    "crit": 0.4,
+    "dmgAmp": 0.2,
+    "hp": 300
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。攻速 +10%、暴擊率 +20%、傷害增幅 +10%、生命 +150",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "RabadonsDeathcap_Radiant",
+   "zh": "聖光死亡之帽",
+   "radiant": true,
+   "base": "RabadonsDeathcap",
+   "stats": {
+    "ap": 110,
+    "dmgAmp": 0.3
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。法術強度 +55、傷害增幅 +15%",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "BloodthirsterRadiant",
+   "zh": "聖光嗜血者",
+   "radiant": true,
+   "base": "Bloodthirster",
+   "stats": {
+    "adPct": 0.36,
+    "ap": 36,
+    "mr": 40,
+    "omnivamp": 0.4
+   },
+   "passives": [
+    {
+     "on": "hpBelow",
+     "ops": [
+      {
+       "op": "shield",
+       "to": "self",
+       "value": {
+        "selfMaxHp": 0.25
+       },
+       "dur": 5
+      }
+     ],
+     "src": "item:Bloodthirster",
+     "text": "護盾",
+     "n": 0.4,
+     "limit": 1
+    }
+   ],
+   "desc": "聖光版：屬性加倍。攻擊 +18%、法術強度 +18、魔抗 +20、全能吸血 +20%。生命低於 40% 時，獲得 25% 最大生命的護盾，5 秒。",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "SunfireCape_Radiant",
+   "zh": "聖光日炎斗篷",
+   "radiant": true,
+   "base": "SunfireCape",
+   "stats": {
+    "armor": 40,
+    "hp": 300,
+    "hpPct": 0.16
+   },
+   "passives": [
+    {
+     "on": "every",
+     "ops": [
+      {
+       "op": "status",
+       "to": {
+        "adjacent": "enemy"
+       },
+       "kind": "burn",
+       "dur": 3,
+       "value": 0.01
+      },
+      {
+       "op": "status",
+       "to": {
+        "adjacent": "enemy"
+       },
+       "kind": "wound",
+       "dur": 3,
+       "value": 0.33
+      }
+     ],
+     "src": "item:SunfireCape",
+     "text": "灼燒",
+     "n": 2
+    }
+   ],
+   "desc": "聖光版：屬性加倍。護甲 +20、生命 +150、生命 +8%。每 2 秒，讓身邊敵人灼燒與重傷 3 秒。",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "RedBuffRadiant",
+   "zh": "聖光紅Buff",
+   "radiant": true,
+   "base": "RedBuff",
+   "stats": {
+    "asPct": 0.9
+   },
+   "passives": [
+    {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "burn",
+       "dur": 5,
+       "value": 0.01
+      },
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "wound",
+       "dur": 5,
+       "value": 0.33
+      }
+     ],
+     "src": "item:RedBuff",
+     "text": "灼燒"
+    }
+   ],
+   "desc": "聖光版：屬性加倍。攻速 +45%。普攻讓目標灼燒（每秒 1% 最大生命）與重傷 5 秒。",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "EdgeOfNightRadiant",
+   "zh": "聖光夜色緣界",
+   "radiant": true,
+   "base": "EdgeOfNight",
+   "stats": {
+    "adPct": 0.2,
+    "ap": 20,
+    "armor": 40,
+    "asPct": 0.3
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。攻擊 +10%、法術強度 +10、護甲 +20、攻速 +15%",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "SteraksGageRadiant",
+   "zh": "聖光史特拉克手套",
+   "radiant": true,
+   "base": "SteraksGage",
+   "stats": {
+    "adPct": 0.9,
+    "hp": 600
+   },
+   "passives": [
+    {
+     "on": "hpBelow",
+     "ops": [
+      {
+       "op": "shield",
+       "to": "self",
+       "value": {
+        "selfMaxHp": 0.25
+       },
+       "dur": 5
+      }
+     ],
+     "src": "item:SteraksGage",
+     "text": "護盾",
+     "n": 0.6,
+     "limit": 1
+    }
+   ],
+   "desc": "聖光版：屬性加倍。攻擊 +45%、生命 +300。生命低於 60% 時，獲得 25% 最大生命的護盾，5 秒。",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "TitansResolve_Radiant",
+   "zh": "聖光泰坦的決意",
+   "radiant": true,
+   "base": "TitansResolve",
+   "stats": {
+    "armor": 40,
+    "asPct": 0.2
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。護甲 +20、攻速 +10%",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "MorellonomiconRadiant",
+   "zh": "聖光黑魔禁書",
+   "radiant": true,
+   "base": "Morellonomicon",
+   "stats": {
+    "ap": 40,
+    "hp": 300,
+    "manaRegen": 2
+   },
+   "passives": [
+    {
+     "on": "cast",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "burn",
+       "dur": 5,
+       "value": 0.01
+      },
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "wound",
+       "dur": 5,
+       "value": 0.33
+      }
+     ],
+     "src": "item:Morellonomicon",
+     "text": "灼燒"
+    }
+   ],
+   "desc": "聖光版：屬性加倍。法術強度 +20、生命 +150、法力回復 +1。施放技能後，讓目標灼燒與重傷 5 秒。",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "ProtectorsVowRadiant",
+   "zh": "聖光保衛者之誓",
+   "radiant": true,
+   "base": "ProtectorsVow",
+   "stats": {
+    "armor": 50,
+    "manaRegen": 2,
+    "mr": 50,
+    "startMana": 40
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。護甲 +25、法力回復 +1、魔抗 +25、起始法力 +20",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "AdaptiveHelm_Radiant",
+   "zh": "聖光適性神盔",
+   "radiant": true,
+   "base": "AdaptiveHelm",
+   "stats": {
+    "manaRegen": 6,
+    "mr": 40
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。法力回復 +3、魔抗 +20",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "HandOfJusticeRadiant",
+   "zh": "聖光正義手套",
+   "radiant": true,
+   "base": "HandOfJustice",
+   "stats": {
+    "adPct": 0.36,
+    "ap": 36,
+    "crit": 0.4,
+    "manaRegen": 2,
+    "omnivamp": 0.24
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。攻擊 +18%、法術強度 +18、暴擊率 +20%、法力回復 +1、全能吸血 +12%",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "BrambleVestRadiant",
+   "zh": "聖光刺藤胸甲",
+   "radiant": true,
+   "base": "BrambleVest",
+   "stats": {
+    "armor": 100,
+    "hpPct": 0.12
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。護甲 +50、生命 +6%",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "DragonsClawRadiant",
+   "zh": "聖光龍之爪",
+   "radiant": true,
+   "base": "DragonsClaw",
+   "stats": {
+    "hpPct": 0.12,
+    "mr": 120
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。生命 +6%、魔抗 +60",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "EvenshroudRadiant",
+   "zh": "聖光均等法衣",
+   "radiant": true,
+   "base": "Evenshroud",
+   "stats": {
+    "hp": 500,
+    "mr": 40
+   },
+   "passives": [],
+   "desc": "聖光版：屬性加倍。生命 +250、魔抗 +20",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  },
+  {
+   "key": "QuicksilverRadiant",
+   "zh": "聖光水銀兜帽",
+   "radiant": true,
+   "base": "Quicksilver",
+   "stats": {
+    "asPct": 0.3,
+    "crit": 0.4,
+    "mr": 40
+   },
+   "passives": [
+    {
+     "on": "start",
+     "ops": [
+      {
+       "op": "status",
+       "to": "self",
+       "kind": "ccImmune",
+       "dur": 8
+      }
+     ],
+     "src": "item:Quicksilver",
+     "text": "免控"
+    }
+   ],
+   "desc": "聖光版：屬性加倍。攻速 +15%、暴擊率 +20%、魔抗 +20。開場 8 秒免疫控制。",
+   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+  }
  ]
 }

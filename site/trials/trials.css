@@ -669,3 +669,5 @@ button.tt-tag:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
   .tt-hud-lock { position: absolute; left: 88.6%; top: 0; bottom: 0; width: 4%; height: auto; border-width: 1px 1px 0 1px; }
   .tt-hud-lock svg { width: 1.3cqw; height: 1.3cqw; min-width: 14px; min-height: 14px; }
 }
+/* 站主 2026-11-17：聖光成裝 */
+.tt-xitem.tt-radiant { box-shadow: 0 0 0 2px #ffe27a, 0 0 10px rgba(255, 226, 122, .75); }

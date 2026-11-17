@@ -177,8 +177,25 @@ function trimToLimit(state, DATA, events) {
 
 // ---------- 抽選工具 ----------
 function rewardRng(state) { return makeRng(hashSeed(state.seed, 'reward', state.round, state.rewardN++)); }
+// 站主 2026-11-17「前五個裝備不要是鐵砧，然後第19個之後的裝備給聖光成裝」：
+// 白送的裝備（開局、回合、頭目、棋子獎勵）照順序算：第 1～5 個直接給散件、第 6～18 個是散件鐵砧、第 19 個起給聖光成裝
 function giveComponent(state, DATA, events, choice = false) {
-  if (choice && R(DATA).componentChoice) {   // 自選散件（rules.componentChoice；教學頁關掉）：放在板凳上的散件鐵砧，賣掉時挑
+  if (choice && R(DATA).componentChoice) {
+    const n = state.dropN = (state.dropN || 0) + 1;
+    const plan = R(DATA).itemDrops || { directUntil: 5, radiantFrom: 19 };
+    const rad = DATA.items.radiant || [];
+    if (n >= plan.radiantFrom && rad.length) {
+      const k = rewardRng(state).pick(rad);
+      const g = S.addItemBench(state, k, DATA);
+      events.push({ type: 'item', key: k, radiant: true, ...(g ? { overflowGold: g } : {}) });
+      return k;
+    }
+    if (n <= plan.directUntil) {
+      const k = pickChoiceComponent(state, DATA, n);   // 直接給：挑能跟裝備欄落單散件合的，不給一堆合不起來的
+      const g = S.addItemBench(state, k, DATA);
+      events.push({ type: 'item', key: k, ...(g ? { overflowGold: g } : {}) });
+      return k;
+    }   // 自選散件（rules.componentChoice；教學頁關掉）：放在板凳上的散件鐵砧，賣掉時挑
     const bi = state.bench.findIndex(x => !x);
     if (bi >= 0) {
       const a = { uid: state.uidNext++, key: S.ANVIL, star: 1, items: [], pos: null };

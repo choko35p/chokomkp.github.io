@@ -40,7 +40,7 @@ export function indexData(raw) {
     unlocks: { version: raw.unlocks && raw.unlocks.version, rule: (raw.unlocks && raw.unlocks.rule) || { guarantee: 'nextShop', slot: 'right' }, list: ul, byKey: byKeyOf(ul) },
     units: { byKey: byKeyOf(uList), list: uList, sprite: raw.units.sprite, starMult: raw.units.starMult, version: raw.units.version },
     traits: { byKey: byKeyOf(tList), list: tList, sprite: raw.traits.sprite },
-    items: { byKey: byKeyOf(iList), components: comps, compByKey: byKeyOf(comps), recipes },
+    items: { byKey: byKeyOf(iList.concat(raw.items.radiant || [])), components: comps, compByKey: byKeyOf(comps), recipes, radiant: (raw.items.radiant || []).map(x => x.key) },   // radiant＝聖光裝備（不能合成，只會被送）
     augments: { byKey: byKeyOf(aList), list: aList },
     rules: raw.rules,
     enemies: raw.enemies,

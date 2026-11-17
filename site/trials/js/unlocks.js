@@ -62,7 +62,8 @@ export const CONDS = {
       for (const u of unitsIn(ctx.state, 'own')) {
         if (c.traitAny && !hasTrait(ctx.DATA, u, c.traitAny)) continue;
         if (c.roleAny && !c.roleAny.includes((defOf(ctx.DATA, u.key) || {}).roleClass)) continue;
-        const n = c.item ? u.items.filter(i => i === c.item).length : u.items.length;
+        // 站主 2026-11-17「合成後的裝備也一算她的解鎖條件」：成品（含聖光版）裡含這件散件也算，用到幾件算幾件
+        const n = c.item ? u.items.reduce((s, i) => s + compCount(ctx.DATA, i, c.item), 0) : u.items.length;
         if (n > best) best = n;
       }
       return best;
@@ -271,6 +272,12 @@ function walkLeaves(cond, path, fn) {
 }
 
 // 條件裡引用到的 unit／trait／item／role，給 validate 用
+function compCount(DATA, key, comp) {
+  if (key === comp) return 1;
+  let it = DATA.items.byKey[key];
+  if (it && it.radiant && it.base) it = DATA.items.byKey[it.base];
+  return it && it.recipe ? it.recipe.filter(r => r === comp).length : 0;
+}
 export function condRefs(cond, out = { types: [], units: [], traits: [], items: [], roles: [] }) {
   out.types.push(cond.type);
   if (cond.type === 'all' || cond.type === 'any') { for (const c of cond.of || []) condRefs(c, out); return out; }

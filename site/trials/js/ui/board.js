@@ -265,6 +265,7 @@ export function renderItems(el_, api) {
     }
     const b = el('div', 'tt-xslot tt-xitem', { role: 'button', tabindex: '0', 'data-tt-tap': `item:${i}`, 'data-tt-drag': `item:${i}`, 'data-tt-drop': `item:${i}`, 'data-tt-tip': 'item:' + k, 'aria-label': '裝備：' + itemZh(DATA, k) });
     b.style.backgroundImage = `url("../icons/items/${k}.webp")`;
+    if (DATA.items.byKey[k] && DATA.items.byKey[k].radiant) b.classList.add('tt-radiant');   // 聖光成裝
     if (sel && sel.kind === 'item' && sel.idx === i) b.classList.add('tt-sel');
     nodes.push(b);
   }

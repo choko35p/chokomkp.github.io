@@ -199,3 +199,11 @@ button.tt-pl-trait.tt-pl-tsel { opacity: 1; border-color: #ffd93b; background: r
 .tt-pl-tfilter { all: unset; box-sizing: border-box; cursor: pointer; display: flex; align-items: center; gap: 6px; width: 100%; margin-bottom: 8px; padding: 6px 10px; border: 1px solid #ffd93b; border-radius: 6px; background: rgba(255, 217, 59, .1); color: #ffd93b; font-size: 14px; }
 .tt-pl-tfilter > span:not(.tt-ticon) { flex: 1 1 auto; } .tt-pl-tfilter > .tt-ticon { flex: 0 0 auto; } .tt-pl-tfilter b { font-size: 14px; }
 .tt-pl-tfilter:hover { background: rgba(255, 217, 59, .18); }
+/* 站主 2026-11-17「編輯器的角色圖太小了，其他可以小但角色圖要大阿那是重點」：已選棋子的頭像放大 */
+.tt-pl-sel { grid-template-columns: repeat(auto-fill, 84px); justify-content: start; gap: 8px; max-height: 280px; }
+.tt-pl[data-collapsed="1"] .tt-pl-sel { grid-template-columns: repeat(auto-fill, 72px); max-height: 168px; gap: 6px; }
+.tt-pl-sel .tt-pl-cell { border-width: 3px; border-radius: 8px; }
+@media (max-width: 600px) {
+  .tt-pl-sel { grid-template-columns: repeat(auto-fill, 60px); gap: 6px; max-height: 210px; }
+  .tt-pl[data-collapsed="1"] .tt-pl-sel { grid-template-columns: repeat(auto-fill, 56px); max-height: 126px; }
+}

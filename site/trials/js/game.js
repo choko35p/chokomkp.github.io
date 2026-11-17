@@ -191,7 +191,7 @@ function giveComponent(state, DATA, events, choice = false) {
       return k;
     }
     if (n <= plan.directUntil) {
-      const k = pickChoiceComponent(state, DATA, n);   // 直接給：挑能跟裝備欄落單散件合的，不給一堆合不起來的
+      const k = freshComponent(state, DATA);   // 直接給：隨機、盡量不重複
       const g = S.addItemBench(state, k, DATA);
       events.push({ type: 'item', key: k, ...(g ? { overflowGold: g } : {}) });
       return k;
@@ -203,8 +203,8 @@ function giveComponent(state, DATA, events, choice = false) {
       events.push({ type: 'anvil', uid: a.uid });
       return S.ANVIL;
     }
-    // 板凳滿了：直接幫你挑（先配裝備欄落單的散件）
-    const k = pickChoiceComponent(state, DATA);
+    // 板凳滿了：直接給一件（隨機、盡量不重複）
+    const k = freshComponent(state, DATA);
     const g = S.addItemBench(state, k, DATA);
     events.push({ type: 'item', key: k, auto: true, ...(g ? { overflowGold: g } : {}) });
     return k;
@@ -651,6 +651,19 @@ export function actChooseComponent(state, idx, key, DATA) {
   return ok({ events: [{ type: 'chooseComponent', idx, key }] });
 }
 // 挑一件「最能合成」的散件：先配裝備欄落單的散件，沒有就照固定順序
+// 白送的散件：隨機、盡量不重複（站主 2026-11-17「前面給的散件盡量隨機然後盡量別重複」）
+// 這局給過的不再給，8 種（不含金鏟鏟、平底鍋）都給過一輪才重來；也盡量避開裝備欄裡已經有的那幾種
+function freshComponent(state, DATA) {
+  const basic = S.itemIndex(DATA).compKeys.filter(k => !/Spatula|FryingPan/i.test(k));
+  const given = Array.isArray(state.compGiven) ? state.compGiven : (state.compGiven = []);
+  let pool = basic.filter(k => !given.includes(k));
+  if (!pool.length) { given.length = 0; pool = basic.slice(); }
+  const held = new Set(state.itemBench.filter(Boolean));
+  const fresh = pool.filter(k => !held.has(k));
+  const k = rewardRng(state).pick(fresh.length ? fresh : pool);
+  given.push(k);
+  return k;
+}
 function pickChoiceComponent(state, DATA, salt = 0) {
   const { compKeys, compSet } = S.itemIndex(DATA);
   const basic = compKeys.filter(k => !/Spatula|FryingPan/i.test(k));
@@ -1339,3 +1352,5 @@ export function actFinishBattle(state, DATA) {
   beginRound(state, DATA, events, !advance);
   return ok({ win, round, roundScore, gains, score: state.score, events });
 }
+// 測試用：白送一件裝備（照白送順序）
+export const __giveComponentForTest = (state, DATA, events = []) => giveComponent(state, DATA, events, true);

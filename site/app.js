@@ -2084,6 +2084,17 @@
   const KIND_LB = { origin: "起源", class: "職業", unique: "獨特" };
   const trName = (k) => { const t = (WK.d?.traits || []).find((x) => x.key === k); return t ? t.zh : traitName(k); };
   const starVals = (xs) => (xs?.length ? xs.map((v) => (Math.round(v * 10) / 10).toString()).join(" / ") : null);
+  // S19 解鎖條件（站主 2026-11-17：「s19小百科沒有寫解鎖條件」）：要解鎖的棋子格子上有鎖頭，點開寫條件；資料是 wiki.json 的 unit.unlock（build_s19 從試煉的 unlocks.json 併進來）
+  const LOCK_SVG = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+  const lockIco = (cls) => { const e = h("span", { class: cls }); e.innerHTML = LOCK_SVG; return e; };
+  const hasUnlocks = () => (WK.d?.units || []).some((u) => u.unlock);
+  function wkUnlock(u) {
+    if (u.unlock) return h("div", { class: "wk-unlock" },
+      h("p", null, lockIco("wk-lk"), h("b", null, "解鎖條件："), u.unlock.text, u.unlock.temp ? h("span", { class: "tag unv" }, "暫譯") : null),
+      h("p", { class: "xs muted" }, "要先達成這個條件才拿得到這隻。"),
+      u.unlock.note ? h("p", { class: "xs muted" }, u.unlock.note) : null);
+    return hasUnlocks() ? h("p", { class: "small muted wk-unlock-free" }, "不用解鎖，一開始就抽得到。") : null;
+  }
   function wkUnitDetail(u) {
     const later = "PBE 後補";
     const row = (l, v) => h("div", { class: "wk-st" }, h("span", { class: "wk-stl" }, l), h("b", null, v ?? later));
@@ -2092,6 +2103,7 @@
         h("b", null, u.zh), u.nameStatus === "temp" ? h("span", { class: "tag unv" }, "暫譯") : null,
         h("p", { class: "small muted" }, `${u.cost} 費`, u.role ? `・${u.role}` : "", u.dmg ? `・${u.dmg}傷害` : ""),
         h("p", { class: "wk-utr" }, (u.traits || []).map((t) => h("button", { type: "button", class: "chip", onclick: () => { WK.tab = "traits"; WK.topen = t; drawWiki(); } }, traitIco(t), trName(t)))))),
+      wkUnlock(u),
       h("div", { class: "wk-stats" },
         row("生命（1/2/3 星）", starVals(u.hp)), row("物攻（1/2/3 星）", starVals(u.ad)), row("攻速", u.as != null ? String(u.as) : null),
         row("護甲", u.armor != null ? String(u.armor) : null), row("魔抗", u.mr != null ? String(u.mr) : null),
@@ -2111,9 +2123,9 @@
         const us = xs.filter((u) => u.cost === cost);
         const open = us.find((u) => u.key === WK.uopen);
         list.append(h("div", { class: "wk-group" }, h("h3", null, `${cost} 費`, h("span", { class: "wk-n" }, String(us.length))),
-          h("div", { class: "wk-grid wk-ugrid" }, us.map((u) => h("button", { type: "button", class: "wk-it" + (WK.uopen === u.key ? " on" : ""), "aria-expanded": WK.uopen === u.key ? "true" : "false",
+          h("div", { class: "wk-grid wk-ugrid" }, us.map((u) => h("button", { type: "button", class: "wk-it" + (WK.uopen === u.key ? " on" : "") + (u.unlock ? " locked" : ""), "aria-expanded": WK.uopen === u.key ? "true" : "false",
             onclick: () => { WK.uopen = WK.uopen === u.key ? null : u.key; track("wiki_unit", u.key); draw(); } },
-            icon("champion", u.key, "sm"), h("span", { class: "nm" }, u.zh)))),
+            icon("champion", u.key, "sm"), h("span", { class: "nm" }, u.zh, u.unlock ? h("span", { class: "sr-only" }, "（要解鎖）") : null), u.unlock ? lockIco("wk-lockb") : null))),
           open ? wkUnitDetail(open) : null));
       }
       if (!xs.length) list.append(h("p", { class: "empty small" }, "找不到符合的棋子。"));
@@ -2122,7 +2134,8 @@
     };
     q.addEventListener("input", () => { WK.uq = q.value.trim(); draw(); });
     draw();
-    box.append(d.units?.some((u) => u.hp?.length) ? h("p", { class: "small muted" }, d.starNote || "") : h("p", { class: "notice small" }, d.statsNote || "血量、物攻等基礎數值 PBE 開了才會公布，到時候補上。"), q, list);
+    box.append(d.units?.some((u) => u.hp?.length) ? h("p", { class: "small muted" }, d.starNote || "") : h("p", { class: "notice small" }, d.statsNote || "血量、物攻等基礎數值 PBE 開了才會公布，到時候補上。"),
+      hasUnlocks() ? h("p", { class: "small wk-unlock-legend" }, lockIco("wk-lk"), `有鎖頭的 ${d.units.filter((u) => u.unlock).length} 隻要先達成解鎖條件才拿得到，點棋子看條件。`) : null, q, list);
     return box;
   }
   function wkTraits() {

@@ -1309,7 +1309,7 @@
   // 首頁就有 T 表：等瀏覽器閒下來才抓代碼表，不跟首頁搶頻寬
   const idlePlanner = () => (PL.ip ||= new Promise((res) => (window.requestIdleCallback ? requestIdleCallback(() => res(), { timeout: 2500 }) : setTimeout(res, 400))).then(loadPlanner));
   function tierCopyBtn(c, card) {
-    if (S19 || O.tmode || (PL.d && !tierCode(c))) return null;  // 代碼表已載好卻算不出代碼（沒有棋盤的待補陣容等）就不放
+    if (O.tmode || (PL.d && !tierCode(c))) return null;  // S19 PBE 有官方代碼了（站主 2026-11-19：「分享碼你也要弄在T度表那邊」）  // 代碼表已載好卻算不出代碼（沒有棋盤的待補陣容等）就不放
     const btn = h("button", { type: "button", class: "tc-cp", hidden: true, "aria-label": `複製「${c.name}」的戰術規劃分享碼` });
     btn.innerHTML = CP_SVG;
     const show = () => {
@@ -1517,7 +1517,7 @@
         cTabs.length && tTabs.length ? h("span", { class: "htab-sep", "aria-hidden": "true" }) : null, tTabs.map(tabOf)));
       // 站主 2026-11-04：裝備的解釋（評價怎麼看、每欄只亮一件）刪掉
       if (hero.simple) {  // S19 預測：只有攻略網的推薦裝，沒有場數
-        area.append(h("p", { class: "small muted" }, `${champName(hero.key)}（${hero.role}）的推薦裝（${hero.src || "攻略網"}，PBE 前預測）：`),
+        area.append(h("p", { class: "small muted" }, `${champName(hero.key)}（${hero.role}）的推薦裝（${hero.src === "pbe" ? "PBE 高手實際帶的" : `${hero.src || "攻略網"}，PBE 前預測`}）：`),
           h("div", { class: "irecs" }, h("div", { class: "irec first" }, h("div", { class: "irec-h" }, h("b", null, "推薦")),
             h("div", { class: "irec-i" }, hero.bis.map((k) => h("span", { class: "irec-it" }, icon("item", k, "sm"), h("span", { class: "xs" }, itemName(k))))))));
         return;
@@ -1661,7 +1661,7 @@
       open = b.branch;
       const v = compById(b.branch);
       if (!v) return;
-      const title = `${b.type === "trait" ? itemName(b.key) : b.text.split("：")[0].replace(/（[^）]*）/g, "")}的版面`;
+      const title = `${b.type === "trait" ? itemName(b.key) : b.text.split("：")[0].replace(/（[^）]*）/g, "")}的版面`;  // type "unit"（S19 古風李星）也走 text
       const more = h("a", { class: "bp-more", href: "#" + slug(v.id) }, "完整頁面（升等放什麼）→");
       // 站主 2026-11-10：「你這個版面也要讓我可以調阿」→ 站主模式打開加分的版面＝直接是棋盤編輯器（人口、站位、星級、裝備，存到這個轉職自己的棋盤）
       if (O.on) { pane.append(h("div", { class: "bp-head" }, h("b", null, title), more), boardEditor(v)); return; }
@@ -1673,9 +1673,9 @@
     const grid = h("div", { class: "bonus-grid" }, c.bonus.map((b) => {
       // 站主 2026-11-04：括號裡的說明多餘；「多一個特性／多一個野性」重複又不直觀 → 直接寫「野性徽章」
       const title = b.type === "trait" ? itemName(b.key) : b.text.split("：")[0].replace(/（[^）]*）/g, "");
-      const kind = b.type === "trait" ? null : b.type === "artifact" ? "神器" : b.type === "emblem" ? "轉職" : "裝備";
+      const kind = b.type === "trait" ? null : b.type === "artifact" ? "神器" : b.type === "emblem" ? "轉職" : b.type === "unit" ? "拿到棋子" : "裝備";
       const card = h(b.branch ? "button" : "div", { class: "bcard" + (b.branch ? " has-board" : ""), ...(b.branch ? { type: "button", "aria-expanded": "false", onclick: () => show(b, card) } : {}) },
-        h("div", { class: "bc-ico" }, icon("item", b.key), b.hero && CH[b.hero] ? h("span", { class: "bc-hero" }, icon("champion", b.hero, "sm")) : null),
+        h("div", { class: "bc-ico" }, b.type === "unit" ? icon("champion", b.key, "sm") : icon("item", b.key), b.hero && CH[b.hero] ? h("span", { class: "bc-hero" }, icon("champion", b.hero, "sm")) : null),
         h("div", { class: "bc-txt" },
           kind ? h("span", { class: "bc-kind" }, kind) : null,
           h("b", { class: "bc-title" }, title),
@@ -1832,9 +1832,9 @@
   function predBox(c) {
     const p = c.pred;
     return h("div", { class: "small stack" },
-      p.reason ? h("p", null, h("b", null, `${c.tier} 級：`), p.reason) : null,
-      h("p", { class: "muted" }, "棋盤、裝備來自 ", p.url ? h("a", { href: p.url, target: "_blank", rel: "noopener" }, p.srcName || p.src) : (p.srcName || p.src),
-        `（原名「${p.srcComp}」${p.srcTier ? `，評 ${p.srcTier}` : ""}）。評級是本站審查後的結果。`),
+      p.reason ? h("p", null, h("b", null, c.pbe ? "PBE 前的預測：" : `${c.tier} 級：`), p.reason) : null,
+      h("p", { class: "muted" }, Object.values(c.boards || {}).some((b) => b && b.source === "pbe") ? "PBE 前的預測來自 " : (c.itemModel || []).some((m) => m.src === "pbe") ? "棋盤來自 " : "棋盤、裝備來自 ", p.url ? h("a", { href: p.url, target: "_blank", rel: "noopener" }, p.srcName || p.src) : (p.srcName || p.src),
+        `（原名「${p.srcComp}」${p.srcTier ? `，評 ${p.srcTier}` : ""}）。${Object.values(c.boards || {}).some((b) => b && b.source === "pbe") ? "棋盤和推薦裝已改成 PBE 高手實戰的樣子。" : (c.itemModel || []).some((m) => m.src === "pbe") ? "推薦裝改用 PBE 高手實際帶的。" : ""}${c.pbe ? "" : "評級是本站審查後的結果。"}`),
       h("p", { class: "muted" }, D.seasonNote?.detail || "增幅、均名、實戰對局等 PBE 開了、有對局之後再補。"));
   }
   // S19 PBE（站主 2026-11-18「抓高手的戰績，PBE只有一般場，然後做成新陣容T度表」）：高手 PBE 實況錄影辨識出的每一場
@@ -1842,9 +1842,11 @@
     const p = c.pbe;
     const gs = [...(p.games || [])].sort((a, b) => a.p - b.p);
     return h("div", { class: "small stack" },
-      p.reason ? h("p", null, h("b", null, c.tier ? `${c.tier} 級：` : "研究中："), p.reason) : null,
-      ul(gs.map((g) => [h("b", null, `第 ${g.p} 名`), `　${g.s}${g.rg ? `（${g.rg}）` : ""}`, g.lv ? `・${g.lv} 等` : "",
-        g.v ? ["　", h("a", { href: g.v, target: "_blank", rel: "noopener" }, "看錄影")] : null])),
+      p.reason ? h("p", null, h("b", null, c.tier ? `${c.tier} 級：` : c.status === "branch" ? "加分版本：" : "研究中："), p.reason) : null,
+      p.dist ? h("p", null, h("b", null, "名次分布："), p.dist.map((n, i) => `${i + 1} 名 ${n} 場`).join("・")) : null,
+      gs.length && p.dist ? h("p", null, h("b", null, "高手實況錄影")) : null,
+      gs.length ? ul(gs.map((g) => [h("b", null, `第 ${g.p} 名`), `　${g.s}${g.rg ? `（${g.rg}）` : ""}`, g.lv ? `・${g.lv} 等` : "",
+        g.v ? ["　", h("a", { href: g.v, target: "_blank", rel: "noopener" }, "看錄影")] : null])) : null,
       h("p", { class: "muted" }, D.pbeNote || "PBE 只有一般場，名次和陣容是從高手實況錄影的結算畫面辨識的；裝備圖示太小認不出，推薦裝先沿用預測版。"));
   }
   const compById = (id) => D.comps.find((x) => x.id === id) || (O.on ? (O.custom.find((x) => x.id === id) && customToComp(O.custom.find((x) => x.id === id))) : null);

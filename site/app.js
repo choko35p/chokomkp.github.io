@@ -165,7 +165,7 @@
     if ($("#ssw")) return;
     const mk = (s, label, sub) => h("a", { class: "ssw-b" + (SEASON === s ? " on" : ""), href: seasonHref(s), "aria-current": SEASON === s ? "true" : "false",
       onclick: () => track("season", s) }, h("b", null, label), h("small", null, sub));
-    const sw = h("div", { id: "ssw", class: "ssw", role: "group", "aria-label": "切換賽季" }, mk(18, "S18", "現行"), mk(19, "S19", "預測"));
+    const sw = h("div", { id: "ssw", class: "ssw", role: "group", "aria-label": "切換賽季" }, mk(18, "S18", "現行"), mk(19, "S19", "PBE"));
     $(".top .brand")?.after(sw);
     // 觀眾 2026-11-16：點左上的圖或站名就回首頁
     const br = $(".top .brand");
@@ -653,6 +653,7 @@
             c.patchImpact?.tierFrom && D.inference && c.tierSource !== "owner" ? h("span", { class: "was", title: `推測前是 ${c.patchImpact.tierFrom} 級` }, "原" + c.patchImpact.tierFrom) : null,
             c.custom ? h("span", { class: "tag todo" }, "待補資料") : null),
           r.ceil ? h("span", { class: "tc-sub" }, c.watch ? h("b", { class: "tag watch" }, "研究中") : null, lvPill("下限", r.floor), lvPill("上限", r.ceil), c.watch ? h("span", { class: "tag few" }, `樣本少：${c.watch.n} 場`) : c.freq != null ? h("span", { class: "tc-freq" }, `頻率 ${pct(c.freq)}`) : null)
+            : c.pbe ? h("span", { class: "tc-sub" }, h("b", { class: "tag pbe" }, "PBE"), h("span", { class: "tc-freq" }, `高手 ${c.pbe.n} 場・均名 ${c.pbe.avg.toFixed(1)}`))
             : c.pred ? h("span", { class: "tc-sub" }, h("b", { class: "tag pred" }, "預測"), c.pred.srcTier ? h("span", { class: "tc-freq" }, `${c.pred.src} ${c.pred.srcTier}`) : null)
             : h("span", { class: "tc-sub" }, c.custom ? "待補資料" : "研究中"),
           showReq ? h("span", { class: "tc-req", title: req }, "需要：", req) : null)),
@@ -677,7 +678,7 @@
           h("span", { class: "tc-nm" }, h("span", { class: "nm" }, c.name)),
           // T 度表只用下限／上限（站主 11/4）；均名、前四率在詳細頁
           h("span", { class: "tc-sub" }, c.range?.floor ? [lvPill("下限", c.range.floor), lvPill("上限", c.range.ceil)] : null,
-            h("span", { class: "tag few" }, `樣本少：${w.n} 場・${w.players} 位`)),
+            h("span", { class: "tag few" }, `樣本少：${w.n} 場・${w.players} 位`), c.pbe ? h("span", { class: "tc-freq" }, `均名 ${c.pbe.avg.toFixed(1)}`) : null),
           c.lane === "conditional" && c.required?.length ? h("span", { class: "tc-req", title: reqText(c.required) }, "需要：", reqText(c.required)) : null)));
     const cp = tierCopyBtn(c, el); if (cp) el.append(cp);
     return el;
@@ -1836,6 +1837,16 @@
         `（原名「${p.srcComp}」${p.srcTier ? `，評 ${p.srcTier}` : ""}）。評級是本站審查後的結果。`),
       h("p", { class: "muted" }, D.seasonNote?.detail || "增幅、均名、實戰對局等 PBE 開了、有對局之後再補。"));
   }
+  // S19 PBE（站主 2026-11-18「抓高手的戰績，PBE只有一般場，然後做成新陣容T度表」）：高手 PBE 實況錄影辨識出的每一場
+  function pbeBox(c) {
+    const p = c.pbe;
+    const gs = [...(p.games || [])].sort((a, b) => a.p - b.p);
+    return h("div", { class: "small stack" },
+      p.reason ? h("p", null, h("b", null, c.tier ? `${c.tier} 級：` : "研究中："), p.reason) : null,
+      ul(gs.map((g) => [h("b", null, `第 ${g.p} 名`), `　${g.s}${g.rg ? `（${g.rg}）` : ""}`, g.lv ? `・${g.lv} 等` : "",
+        g.v ? ["　", h("a", { href: g.v, target: "_blank", rel: "noopener" }, "看錄影")] : null])),
+      h("p", { class: "muted" }, D.pbeNote || "PBE 只有一般場，名次和陣容是從高手實況錄影的結算畫面辨識的；裝備圖示太小認不出，推薦裝先沿用預測版。"));
+  }
   const compById = (id) => D.comps.find((x) => x.id === id) || (O.on ? (O.custom.find((x) => x.id === id) && customToComp(O.custom.find((x) => x.id === id))) : null);
   function renderDetail(id) {
     const c = compById(id);
@@ -1851,7 +1862,9 @@
         h("div", { class: "dhero-icons" }, keys.map((k, i) => icon("champion", k, i ? "sm" : ""))),
         h("div", { class: "dhero-txt" },
           h("h2", null, c.name),
-          c.pred ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag pred" }, "預測"), c.lane === "conditional" ? h("span", { class: "tag cond" }, "") : null, c.lane === "highroll" ? h("span", { class: "tag" }, "九等五費") : null,
+          c.pbe ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag pbe" }, "PBE"), c.lane === "conditional" ? h("span", { class: "tag cond" }, "") : null, c.lane === "highroll" ? h("span", { class: "tag" }, "九等五費") : null,
+            h("span", { class: "small muted" }, `高手 ${c.pbe.n} 場（${c.pbe.players} 位）・均名 ${c.pbe.avg.toFixed(2)}・前四 ${pct(c.pbe.top4)}${c.watch ? "・樣本少，還沒正式評級" : ""}`))
+          : c.pred ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag pred" }, "預測"), c.lane === "conditional" ? h("span", { class: "tag cond" }, "") : null, c.lane === "highroll" ? h("span", { class: "tag" }, "九等五費") : null,
             c.pred.srcTier ? h("span", { class: "small muted" }, `${c.pred.src} 評 ${c.pred.srcTier}`) : null)
           : c.status === "ready" ? h("div", { class: "tc-sub dhero-sub" }, r.ceil ? [lvPill("下限", r.floor), lvPill("上限", r.ceil)] : null, c.freq != null ? h("span", { class: "tc-freq" }, `頻率 ${pct(c.freq)}`) : null,
             c.conditional || c.lane === "conditional" ? h("span", { class: "tag cond" }, "") : null, c.lane === "highroll" ? h("span", { class: "tag" }, "九等五費") : null,
@@ -1884,6 +1897,7 @@
       c.patchImpact.tierFrom ? `；評級 ${c.patchImpact.tierFrom} → ${c.tier}` : ""));
     // 站主 2026-11-04：一句話選陣在「不順時轉哪套」上面；拿掉主C／副C／主坦那幾行（前排替換留著）
     const parts = [
+      ...(c.pbe ? [["PBE 高手戰績", "PBE戰績", pbeBox(c)]] : []),
       ...(c.pred ? [["S19 預測說明", "說明", predBox(c)]] : []),
       ["加分（拿到會更強）", "加分", bonusBox(c)],
       ["一句話選陣", "一句話選陣", c.oneLiner ? h("p", null, tx(`comp:${c.id}:oneLiner`, c.oneLiner)) : null],

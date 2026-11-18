@@ -1189,6 +1189,7 @@ button.bcard { font: inherit; color: inherit; text-align: left; cursor: pointer;
 .s19-banner .wrap { padding-top: 8px; padding-bottom: 8px; line-height: 1.5; }
 .s19-banner b { color: var(--accent); }
 .tag.pred { border-color: var(--warn-line); background: var(--warn-bg); }
+.tag.pbe { border-color: var(--good-line, #3a8f5c); background: var(--good-bg, rgba(58,143,92,.15)); }
 /* 小百科：棋子 */
 .wk-ugrid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 .wk-udetail .wk-dh { align-items: flex-start; }

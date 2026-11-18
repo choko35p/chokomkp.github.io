@@ -694,7 +694,7 @@
     const shown = pool.filter((c) => (O.tmode || !c.hidden) && !isChip(c));
     if (D.inference) root.append(h("div", { class: "tb-infer small" }, h("b", { class: "tag infer" }, "推測"), " ",
       ui("tier.infer", `${D.inference.patch} 剛上線，先用 ${D.inference.basePatch} 的高手資料加上 ${D.inference.patch} 改動推測：↑ 變強、↓ 變弱，「原B」是推測前的評級。改版 ${D.inference.hours} 小時後、對局夠多就改用 ${D.inference.patch} 的資料。`)));
-    if (S19) root.append(h("p", { class: "tb-legend small" }, h("b", null, "評級怎麼來："), D.tierNote || "攻略網預測陣容，再由本站審查；卡片右下是來源站自己的評級。"));
+    // 站主 2026-11-19：「評級怎麼來的不用寫出來在正式站，不就跟s18一樣嗎」→ S19 也不寫評級說明
     else root.append(h("p", { class: "tb-legend small" }, h("b", null, ui("tier.legendHead", "下限與上限：")), ui("tier.legend", "逆風選下限高的，順風選上限高的。"),
       h("span", { class: "lv-scale", "aria-label": "分五級，由好到差" }, ["很高", "高", "中", "低", "很低"].map(lvTag))));
     // 站主 2026-11-06：數據很好但樣本很少的陣容，在 T 度表最下面另開一列「研究中」（站主調 T 表時不顯示）
@@ -1901,7 +1901,7 @@
     // 站主 2026-11-04：一句話選陣在「不順時轉哪套」上面；拿掉主C／副C／主坦那幾行（前排替換留著）
     const parts = [
       ...(c.pbe ? [["PBE 高手戰績", "PBE戰績", pbeBox(c)]] : []),
-      ...(c.pred ? [["S19 預測說明", "說明", predBox(c)]] : []),
+      ...(c.pred && !c.pbe ? [["S19 預測說明", "說明", predBox(c)]] : []),  // 站主 11/19：要跟 S18 一樣，有 PBE 戰績的就不放預測說明
       ["加分（拿到會更強）", "加分", bonusBox(c)],
       ["一句話選陣", "一句話選陣", c.oneLiner ? h("p", null, tx(`comp:${c.id}:oneLiner`, c.oneLiner)) : null],
       ["不順時轉哪套", "轉哪套", switchBox(c)],
@@ -2559,7 +2559,8 @@
       onclick: open, onkeydown: (ev) => { if (ev.key === "Enter" || ev.key === " ") open(ev); } }, shown);
   }
   function rerender() {
-    applyOwnerNames(); applyDataTx(); renderTop(); renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderRoute();
+    applyOwnerNames(); applyDataTx(); renderTop();
+    if (S19) { renderTiers(); renderCompList(); } else { renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderRoute(); }  // S19 沒有本次更新、版本主軸那幾區
     const hsh = location.hash.slice(1), c = D.comps.find((x) => slug(x.id) === hsh) || (O.on ? O.custom.map(customToComp).find((x) => slug(x.id) === hsh) : null);
     if (c) { const y = scrollY; renderDetail(c.id); scrollTo(0, y); }
     ownerPanel();
@@ -2569,7 +2570,7 @@
       if (!D.preview || !window.claude?.use) return;
       const user = await window.claude.use("user");
       if (!user?.isOwner?.()) return;
-      if (S19) { ownerNotice("S19 是 PBE 前的預測資料，站主編輯器先不開（PBE 後整批重做）。要改什麼直接跟 Claude 說。"); return; }
+      // 站主 2026-11-19：「為什麼盤面我不能調，你s18那邊有的功能這裡也要有啊」→ S19 也開站主工具（陣容 id 有 s19_ 開頭，跟 S18 存在同一個資料庫不會打架；手動陣容記 season）
       const db = await window.claude.use("db");
       if (!db) return;
       O.db = db;
@@ -2581,7 +2582,7 @@
       O.terms = (ts.docs || []).map((d) => d.data()).filter((x) => x?.from);
       for (const d of bs.docs || []) { const x = d.data(); if (x?.compId) O.boards[x.compId] = x; }
       for (const d of tis.docs || []) { const x = d.data(); if (x?.compId) O.tiers[x.compId] = x; }
-      O.custom = (cus.docs || []).map((d) => d.data()).filter((x) => x?.id && x.name);
+      O.custom = (cus.docs || []).map((d) => d.data()).filter((x) => x?.id && x.name && (x.season || 18) === SEASON);
       O.on = true;
       ownerFormulaComps();
       rerender();
@@ -2773,7 +2774,7 @@
   const champGroups = (used = new Set()) => [1, 2, 3, 4, 5].map((cost) => ({ label: `${cost} 費`, items: D.gamedata.champions.filter((x) => x.cost === cost).map((x) => ({ key: x.key, name: champName(x.key) + (used.has(x.key) ? "（已選）" : ""), ico: icon("champion", x.key, "sm") })) })).filter((g) => g.items.length);
   function openCustom(cur) {
     $("#editor")?.remove();
-    const st = cur ? { ...cur, units: [...(cur.units || [])] } : { id: "custom_" + Date.now().toString(36), name: "", lane: "normal", tier: "B", carrier: null, units: [], note: "", order: 999 };
+    const st = cur ? { ...cur, units: [...(cur.units || [])] } : { id: (S19 ? "custom19_" : "custom_") + Date.now().toString(36), season: SEASON, name: "", lane: "normal", tier: "B", carrier: null, units: [], note: "", order: 999 };
     const name = h("input", { type: "text", "aria-label": "陣容名稱", placeholder: "例：重裝易大師" }); name.value = st.name;
     const note = h("textarea", { rows: "3", "aria-label": "給 Claude 的說明", placeholder: "例：3-2 前易大師 2 星就轉，主坦給蔚" }); note.value = st.note;
     const msg = h("p", { class: "xs muted", role: "status" });

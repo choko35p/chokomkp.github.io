@@ -1792,7 +1792,7 @@
       const xs = d?.cases?.[c.id] || [];
       if (!xs.length) { box.append(h("p", { class: "small muted" }, "目前沒有可以公開的對戰紀錄。")); return; }
       const nT = xs.filter((x) => x.timeline).length, nR = xs.filter((x) => x.replay).length;
-      box.append(h("p", { class: "small" }, `${d.patch ? d.patch + " " : ""}高手用這套打進前四的對局 ${xs.length} 場（有時間軸 ${nT} 場${nR ? `、有重播 ${nR} 場` : ""}排在前面，其他照時間新到舊；同一位高手最多 2 場）。點一場到 MetaTFT，可以看每個階段的升級、搜牌和站位。`));
+      box.append(h("p", { class: "small" }, `${d.patch ? d.patch + " " : ""}高手用這套打進前四的對局 ${xs.length} 場（${nT || nR ? `有時間軸 ${nT} 場${nR ? `、有重播 ${nR} 場` : ""}排在前面，其他照時間新到舊` : "照時間新到舊"}；同一位高手最多 2 場）。點一場到 MetaTFT，可以看那場的完整紀錄。`));
       box.append(h("div", { class: "cases" }, xs.map((x) => h("a", { class: "case", href: x.url, target: "_blank", rel: "noopener", onclick: () => track("case", c.id) },
         h("div", { class: "case-head" },
           h("span", { class: "plc p" + Math.min(x.placement, 5) }, `第 ${x.placement} 名`),
@@ -1864,9 +1864,9 @@
         h("div", { class: "dhero-icons" }, keys.map((k, i) => icon("champion", k, i ? "sm" : ""))),
         h("div", { class: "dhero-txt" },
           h("h2", null, c.name),
-          c.pbe ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag pbe" }, "PBE"), c.lane === "conditional" ? h("span", { class: "tag cond" }, "") : null, c.lane === "highroll" ? h("span", { class: "tag" }, "九等五費") : null,
+          c.pbe && !r.ceil && c.status !== "branch" ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag pbe" }, "PBE"), c.lane === "conditional" ? h("span", { class: "tag cond" }, "") : null, c.lane === "highroll" ? h("span", { class: "tag" }, "九等五費") : null,
             h("span", { class: "small muted" }, `高手 ${c.pbe.n} 場（${c.pbe.players} 位）・均名 ${c.pbe.avg.toFixed(2)}・前四 ${pct(c.pbe.top4)}${c.watch ? "・樣本少，還沒正式評級" : ""}`))
-          : c.pred ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag pred" }, "預測"), c.lane === "conditional" ? h("span", { class: "tag cond" }, "") : null, c.lane === "highroll" ? h("span", { class: "tag" }, "九等五費") : null,
+          : c.pred && !r.ceil && !c.stats ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag pred" }, "預測"), c.lane === "conditional" ? h("span", { class: "tag cond" }, "") : null, c.lane === "highroll" ? h("span", { class: "tag" }, "九等五費") : null,
             c.pred.srcTier ? h("span", { class: "small muted" }, `${c.pred.src} 評 ${c.pred.srcTier}`) : null)
           : c.status === "ready" ? h("div", { class: "tc-sub dhero-sub" }, r.ceil ? [lvPill("下限", r.floor), lvPill("上限", r.ceil)] : null, c.freq != null ? h("span", { class: "tc-freq" }, `頻率 ${pct(c.freq)}`) : null,
             c.conditional || c.lane === "conditional" ? h("span", { class: "tag cond" }, "") : null, c.lane === "highroll" ? h("span", { class: "tag" }, "九等五費") : null,
@@ -1874,8 +1874,9 @@
             : c.variantKind === "trait" ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag watch" }, "轉職分支"), h("span", { class: "small muted" }, `${c.statsMeta?.games || 0} 場高手對局整理，只放站位、裝備和升等，不評級`))
             : c.variantKind === "formula" ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag watch" }, "公式"), h("span", { class: "small muted" }, "站主給的盤面，不另外評級；評級看"), h("a", { class: "small", href: "#" + slug(c.formulaOf) }, nameOf(c.formulaOf)))
             : c.watch ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag watch" }, "研究中"), r.ceil ? [lvPill("下限", r.floor), lvPill("上限", r.ceil)] : null, h("span", { class: "small muted" }, "數據很好、樣本還少，還沒正式評級"))
+            : c.status === "branch" && c.branchOf ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag watch" }, "加分版面"), h("span", { class: "small muted" }, "不另外評級；評級看"), h("a", { class: "small", href: "#" + slug(c.branchOf) }, nameOf(c.branchOf)))
             : h("div", { class: "small muted" }, c.status === "custom" ? "站主新增，待補資料" : "研究中，尚無合資格數據"),
-          c.status === "ready" || c.variantKind === "formula" ? dStats(c) : c.watch ? dStats(c, true) : null)));
+          c.status === "ready" || c.status === "branch" || c.variantKind === "formula" ? dStats(c) : c.watch ? dStats(c, true) : null)));
     if (c.status === "custom") {
       v.append(h("div", { class: "notice", style: "margin-top:16px" }, h("b", null, "站主手動加的陣容"),
         h("p", { class: "small", style: "margin:4px 0 0" }, "Claude 下次更新時會去查高手對局的數據，補上棋盤、裝備和攻略；補完才會放到正式站。")),

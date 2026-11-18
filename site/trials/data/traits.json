@@ -1,5 +1,5 @@
 {
- "version": "s19-prepbe-1",
+ "version": "s19-pbe-1",
  "sprite": {
   "src": "../icons/s19/traits.webp",
   "cols": 8,
@@ -2744,8 +2744,7 @@
     "Viego",
     "Garen",
     "Ahri",
-    "Nidalee",
-    "Rakan"
+    "Nidalee"
    ],
    "always": [],
    "tiers": [

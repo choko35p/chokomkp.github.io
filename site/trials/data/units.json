@@ -1,6 +1,6 @@
 {
- "version": "s19-prepbe-1",
- "guessNote": "S19 的血量、攻擊、攻速、雙抗、射程尚未公布，依 S18 同費用同定位推測；PBE 後更新。",
+ "version": "s19-pbe-1",
+ "guessNote": "S19 PBE 已開，但官方數值檔還沒解出來；血量、攻擊、攻速、雙抗暫時沿用推測值，官方檔一出來就更新。費用、羈絆、射程、法力已對過官方公開資料（11/18）。",
  "starMult": {
   "hp": [
    1,
@@ -9805,8 +9805,7 @@
    "cost": 7,
    "slots": 1,
    "traits": [
-    "BoyBand",
-    "Choreographer"
+    "BoyBand"
    ],
    "role": "魔法刺客",
    "roleClass": "Assassin",

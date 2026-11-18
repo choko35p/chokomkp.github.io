@@ -93,9 +93,10 @@ export const CONDS = {
     text: (c, D) => `${sp(c.traits.map(t => tzhOf(D, t)).join('、'))}英雄的星級合計 ${c.n}${c.unique ? '（同名只算一次）' : ''}`,
   },
   activeTraits: {
-    cur: (c, ctx) => boardTraits(ctx).filter(t => t.tier > 0 && (!c.kinds || c.kinds.includes(t.kind))).length,
+    // c.traits：只算這幾個羈絆（例：加里歐＝保鑣、重裝戰士、主唱）
+    cur: (c, ctx) => boardTraits(ctx).filter(t => t.tier > 0 && (!c.kinds || c.kinds.includes(t.kind)) && (!c.traits || c.traits.includes(t.key))).length,
     need: (c) => c.min,
-    text: (c) => `${c.min} 個啟動中的非獨有羈絆`,
+    text: (c, D) => (c.traits ? `${c.traits.map(t => tzhOf(D, t)).join('、')}啟動 ${c.min} 個` : `${c.min} 個啟動中的非獨有羈絆`),
   },
   formation: {
     cur: (c, ctx, box) => (box.v ? 1 : 0),

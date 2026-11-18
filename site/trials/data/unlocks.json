@@ -1,5 +1,5 @@
 {
- "version": "s19-preview-1",
+ "version": "s19-pbe-1",
  "rule": {
   "guarantee": "nextShop",
   "slot": "right"
@@ -85,6 +85,33 @@
    "guess": true
   },
   {
+   "key": "Nasus",
+   "cond": {
+    "type": "itemsOn",
+    "n": 2,
+    "traitAny": [
+     "Classical"
+    ]
+   },
+   "text": "將所需件數的裝備裝在一隻古典樂英雄身上。",
+   "local": "官方還沒公布件數，本頁先用 2 件。",
+   "guess": true
+  },
+  {
+   "key": "RenataGlasc",
+   "cond": {
+    "type": "itemsOn",
+    "n": 2,
+    "traitAny": [
+     "Classical",
+     "Choreographer"
+    ]
+   },
+   "text": "將所需件數的裝備裝在一隻古典樂或編舞師英雄身上。",
+   "local": "官方還沒公布件數，本頁先用 2 件。",
+   "guess": true
+  },
+  {
    "key": "Evelynn",
    "cond": {
     "type": "traitUnits",
@@ -115,6 +142,45 @@
    "text": "擁有一隻 2 星、裝備 1 件裝備的安妮。",
    "local": "",
    "guess": false
+  },
+  {
+   "key": "Galio",
+   "cond": {
+    "type": "all",
+    "of": [
+     {
+      "type": "level",
+      "min": 7
+     },
+     {
+      "type": "activeTraits",
+      "min": 2,
+      "traits": [
+       "Bodyguard",
+       "Juggernaut",
+       "Frontman"
+      ]
+     }
+    ]
+   },
+   "text": "玩家等級 7。保鑣、重裝戰士、主唱這三個羈絆啟動所需的數量。",
+   "local": "官方還沒公布要幾個，本頁先用 2 個。",
+   "guess": true
+  },
+  {
+   "key": "Syndra",
+   "cond": {
+    "type": "traitStars",
+    "traits": [
+     "BeachPop",
+     "Choreographer"
+    ],
+    "unique": true,
+    "n": 6
+   },
+   "text": "場上海灘流行或編舞師英雄的星級合計達到所需數量（同名只算一次）。",
+   "local": "官方還沒公布星級數，本頁先用 6。",
+   "guess": true
   },
   {
    "key": "Alistar",

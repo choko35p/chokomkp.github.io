@@ -1255,7 +1255,32 @@
     const row = h("div", { class: "tp-row" });
     const draw = () => {
       row.textContent = "";
-      if (!PL.d) { row.append(h("p", { class: "xs muted" }, S19 ? "S19 的分享碼還沒放：網路上流傳的代碼匯不進遊戲，確認遊戲內真正的代碼後再補。" : PL.done ? "分享碼讀不到，重新整理再試一次。" : "分享碼載入中…")); return; }
+      if (S19) {
+        const cid = String(label || "").split(":")[0], lvm = /:lv(\d+)/.exec(label || ""), sc = shareCode19(cid);
+        if (sc) {
+          const codeEl = h("code", { class: "tp-code", title: "遊戲內「戰術規劃」的分享碼" }, sc.code), msg = h("span", { class: "xs tp-msg", role: "status" });
+          const btn = h("button", { type: "button", class: "btn tp-copy", onclick: async () => { track("planner", label || "board"); const ok = await copyText(sc.code, codeEl);
+            msg.textContent = ok ? "已複製！到遊戲的「戰術規劃」按匯入貼上。" : "瀏覽器不讓複製，請長按／選取上面的代碼複製。"; } }, "📋 複製分享碼");
+          codeEl.addEventListener("click", () => btn.click()); codeEl.style.cursor = "pointer";
+          row.append(h("div", { class: "tp-line" }, btn, codeEl), msg, sc.auto ? h("p", { class: "xs muted" }, "這組是用站主填過的代碼推算的。") : null);
+        } else if (!O.on) row.append(h("p", { class: "xs muted" }, "S19 的分享碼還沒放。"));
+        if (O.on && cid) {
+          const inp = h("input", { type: "text", class: "tp-in", placeholder: "在遊戲「戰術規劃」排好按匯出，把代碼貼這裡", value: sc?.own ? sc.code : "", spellcheck: "false", autocomplete: "off" });
+          const note = h("span", { class: "xs tp-msg", role: "status" });
+          const save = async (val) => {
+            const key = "code19:" + cid, v = val.trim().replace(/\s+/g, "");
+            if (v && !/^0[0-9a-f]{31}/i.test(v)) { note.textContent = "看起來不是戰術規劃的代碼（應該是 02 開頭、後面一串英數字）。"; return; }
+            const doc = v ? { key, after: v, before: "", lv: lvm ? +lvm[1] : null, note: "S19 分享碼", at: new Date().toISOString(), where: location.hash || "#home" } : null;
+            try { if (doc) await O.db.doc("edits/" + docId(key)).set(doc); else await O.db.doc("edits/" + docId(key)).delete(); O.edits[key] = doc; ownerNotice(doc ? "分享碼已儲存，下次更新正式站會一起上線。" : "分享碼已清掉。"); draw(); }
+            catch (err) { note.textContent = "儲存失敗：" + (err?.message || "請再試一次"); }
+          };
+          inp.addEventListener("paste", () => setTimeout(() => { if (inp.value.trim()) save(inp.value); }, 0));   // 貼上就存，不用再按
+          row.append(h("div", { class: "tp-own" }, h("span", { class: "xs" }, "站主：這套的分享碼（貼上就存）"), inp,
+            h("button", { type: "button", class: "btn sm", onclick: () => save(inp.value) }, "儲存"), sc?.own ? h("button", { type: "button", class: "btn sm ghost", onclick: () => save("") }, "清掉") : null, note));
+        }
+        return;
+      }
+      if (!PL.d) { row.append(h("p", { class: "xs muted" }, PL.done ? "分享碼讀不到，重新整理再試一次。" : "分享碼載入中…")); return; }
       const r = plannerCode(units);
       if (!r) return;
       const codeEl = h("code", { class: "tp-code", title: "遊戲內「戰術規劃」的分享碼" }, r.code);
@@ -1293,7 +1318,10 @@
     for (let lv = want + 1; lv <= 10; lv++) if (boardOk(c, lv)) return lv;
     return null;
   }
-  const tierCode = (c) => { const lv = PL.d ? tierBoardLv(c) : null; const r = lv ? plannerCode(c.boards["lv" + lv].units) : null; return r ? { lv, code: r.code } : null; };
+  // S19 分享碼（站主 2026-11-19：「弄不出來就讓我有個地方能自己填方便填…我想到順手填一下」）：站主在遊戲裡排好、按匯出貼上的代碼，
+  // 存在預覽站資料庫 edits（key code19:<陣容id>），上線時寫進 site-data 的 shareCodes；建置時也用這些代碼反推棋子代碼表（D.planner19）
+  const shareCode19 = (cid) => { const e = O.edits?.["code19:" + cid]; if (e === null) return null; if (e && e.after) return { code: e.after, lv: e.lv || null, own: true }; return D.shareCodes?.[cid] || null; };
+  const tierCode = (c) => { if (S19) { const sc = shareCode19(c.id); if (sc) return { lv: sc.lv || tierBoardLv(c), code: sc.code }; } const lv = PL.d ? tierBoardLv(c) : null; const r = lv ? plannerCode(c.boards["lv" + lv].units) : null; return r ? { lv, code: r.code } : null; };
   function tpToast(msg, code) {
     let n = $("#tp-toast");
     if (!n) { n = h("div", { id: "tp-toast", class: "tp-toast", role: "status", "aria-live": "polite" }); document.body.append(n); }

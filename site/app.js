@@ -551,6 +551,16 @@
   };
   const tierLabel = (c) => c.tier ? `${c.tier} 級${D.inference && c.patchImpact?.tierFrom ? "（推測）" : ""}` : "";
   const reqText = (r) => (r || []).map((x) => x.text.replace(/（轉職）$/, "")).join("、");
+  // 站主 2026-11-19：「需要轉職的陣容不要用寫字的要用圖」→ 轉職條件畫成徽章圖（S18 指定誰拿的，前面加那隻的頭像）；滑過去／長按看得到原本的文字
+  const reqHasEmblem = (r) => (r || []).some((x) => x.type === "emblem" && x.key);
+  function reqIcons(r) {
+    return (r || []).flatMap((x) => {
+      const txt = x.text.replace(/^入場條件：/, "").replace(/（轉職）$/, "");
+      if (x.type !== "emblem" || !x.key) return [h("span", { class: "rq-t" }, txt)];
+      const holder = Object.keys(CH).filter((k) => txt.startsWith(champName(k))).sort((a, b) => champName(b).length - champName(a).length)[0];
+      return [h("span", { class: "rq-i", title: txt, "aria-label": txt }, holder ? icon("champion", holder, "xs") : null, icon("item", x.key, "xs"))];
+    });
+  }
   const impArrow = (c) => {
     const p = c.patchImpact;
     if (!p || !D.inference) return null;
@@ -659,7 +669,7 @@
             : c.pbe ? h("span", { class: "tc-sub" }, h("b", { class: "tag pbe" }, "PBE"), h("span", { class: "tc-freq" }, `高手 ${c.pbe.n} 場・均名 ${c.pbe.avg.toFixed(1)}`))
             : c.pred ? h("span", { class: "tc-sub" }, h("b", { class: "tag pred" }, "預測"), c.pred.srcTier ? h("span", { class: "tc-freq" }, `${c.pred.src} ${c.pred.srcTier}`) : null)
             : h("span", { class: "tc-sub" }, c.custom ? "待補資料" : "研究中"),
-          showReq ? h("span", { class: "tc-req", title: req }, "需要：", req) : null)),
+          showReq ? (reqHasEmblem(c.required) ? h("span", { class: "tc-req rq", title: req }, "需要", reqIcons(c.required.filter((x) => x.type === "emblem"))) : h("span", { class: "tc-req", title: req }, "需要：", req)) : null)),
       vs.length ? h("div", { class: "tc-br" }, h("span", { class: "tc-brh" }, "分支"), vs.sort(cellSort).map((v) => {
         const g = (c.variants || []).find((x) => x.id === v.id)?.avgGain;
         const chg = g == null ? null : -g;
@@ -682,7 +692,7 @@
           // T 度表只用下限／上限（站主 11/4）；均名、前四率在詳細頁
           h("span", { class: "tc-sub" }, c.range?.floor ? [lvPill("下限", c.range.floor), lvPill("上限", c.range.ceil)] : null,
             h("span", { class: "tag few" }, `樣本少：${w.n} 場・${w.players} 位`), c.pbe ? h("span", { class: "tc-freq" }, `均名 ${c.pbe.avg.toFixed(1)}`) : null),
-          c.lane === "conditional" && c.required?.length ? h("span", { class: "tc-req", title: reqText(c.required) }, "需要：", reqText(c.required)) : null)));
+          c.lane === "conditional" && c.required?.length ? (reqHasEmblem(c.required) ? h("span", { class: "tc-req rq", title: reqText(c.required) }, "需要", reqIcons(c.required.filter((x) => x.type === "emblem"))) : h("span", { class: "tc-req", title: reqText(c.required) }, "需要：", reqText(c.required))) : null)));
     const cp = tierCopyBtn(c, el); if (cp) el.append(cp);
     return el;
   }
@@ -1912,6 +1922,7 @@
             : c.watch ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag watch" }, "研究中"), r.ceil ? [lvPill("下限", r.floor), lvPill("上限", r.ceil)] : null, h("span", { class: "small muted" }, "數據很好、樣本還少，還沒正式評級"))
             : c.status === "branch" && c.branchOf ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag watch" }, "加分版面"), h("span", { class: "small muted" }, "不另外評級；評級看"), h("a", { class: "small", href: "#" + slug(c.branchOf) }, nameOf(c.branchOf)))
             : h("div", { class: "small muted" }, c.status === "custom" ? "站主新增，待補資料" : "研究中，尚無合資格數據"),
+          c.lane === "conditional" && reqHasEmblem(c.required) && c.status !== "branch" ? h("div", { class: "dreq" }, h("b", null, "需要"), reqIcons(c.required.filter((x) => x.type === "emblem")), h("span", { class: "small muted" }, reqText(c.required))) : null,
           c.status === "ready" || c.status === "branch" || c.variantKind === "formula" ? dStats(c) : c.watch ? dStats(c, true) : null)));
     if (c.status === "custom") {
       v.append(h("div", { class: "notice", style: "margin-top:16px" }, h("b", null, "站主手動加的陣容"),

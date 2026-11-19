@@ -75,8 +75,8 @@
     const fb = h("span", { class: "fb" }, name.replace(/(轉職|徽章)$/, "").slice(0, 2));
     const base = `icons/${isChamp ? "champions" : "items"}/${isChamp ? key : (IT[key]?.icon || key)}`;
     const path = ICONS.has(base + ".webp") ? base + ".webp" : base + ".png";
-    const sp = isChamp && S19 ? D.sprite19 : null, si = sp?.map?.[key];
-    if (si != null) {  // S19 頭像：一張精靈圖（預覽站一個版本最多 512 個檔）
+    const sp = S19 ? (isChamp ? D.sprite19 : D.itemSprite19) : null, si = sp?.map?.[key];
+    if (si != null) {  // S19 頭像、S19 新裝備／徽章（站主 11/19：轉職沒認出來）：各一張精靈圖（預覽站一個版本最多 512 個檔）
       const c = si % sp.cols, r = Math.floor(si / sp.cols);
       box.append(h("span", { class: "spr", "aria-hidden": "true", style: `background-image:url(${sp.src});background-size:${sp.cols * 100}% ${sp.rows * 100}%;background-position:${sp.cols > 1 ? (c / (sp.cols - 1)) * 100 : 0}% ${sp.rows > 1 ? (r / (sp.rows - 1)) * 100 : 0}%` }));
     } else if (!S19 && ICONS.has(path) || S19 && !isChamp && ICONS.has(path)) {
@@ -1803,7 +1803,7 @@
           h("span", { class: "plc p" + Math.min(x.placement, 5) }, `第 ${x.placement} 名`),
           h("b", null, x.player), x.score ? h("span", { class: "tag score", title: "那場玩家的積分" }, "分數 " + x.score) : null,
           h("span", { class: "xs muted" }, `${x.region}｜${x.level} 級｜${fmtTime(x.time)?.replace("（台灣時間）", "") || ""}`),
-          x.timeline ? h("span", { class: "tag up" }, "有時間軸") : null, x.replay ? h("span", { class: "tag up" }, "有重播") : null, x.champ ? h("span", { class: "tag tier" }, x.champ) : null),
+          x.timeline ? h("span", { class: "tag up" }, "有時間軸") : null, x.replay ? (typeof x.replay === "string" ? h("span", { class: "tag up rp-tag", role: "link", tabindex: "0", title: "看這場的實況錄影", onclick: (e) => { e.preventDefault(); e.stopPropagation(); track("case_rp", c.id); window.open(x.replay, "_blank", "noopener"); } }, "▶ 看 RP") : h("span", { class: "tag up" }, "有重播")) : null, x.champ ? h("span", { class: "tag tier" }, x.champ) : null),
         h("div", { class: "case-units" }, x.units.map((u) => h("span", { class: "cu" }, h("span", { class: "stars" }, "★".repeat(u.star)), icon("champion", u.key, "sm"), h("span", { class: "its" }, (u.items || []).map((i) => icon("item", i, "xs"))))))))));
     });
     return box;
@@ -2242,7 +2242,7 @@
         h("span", { class: "xs muted" }, [g.rg, g.lv ? g.lv + " 級" : null, fmtTime(g.t)?.replace("（台灣時間）", "")].filter(Boolean).join("｜"))),
       h("div", { class: "rp-comp" }, c ? [g.near ? h("span", { class: "xs muted" }, "接近 ") : null, h("a", { href: "#" + slug(c.id), onclick: () => track("rp_comp", c.id) }, c.name, " →")]
         : h("span", { class: "muted" }, g.f ? `其他：${g.f}` : "其他陣容")),
-      h("div", { class: "vod-augs rp-augs" }, g.a.length ? [...g.a.map(([n, st, r, ic, sp]) => h("span", { class: "vod-aug " + (RAR_V[r] || ""), title: `${st} 選的海克斯：${n}` },
+      S19 ? null : h("div", { class: "vod-augs rp-augs" }, g.a.length ? [...g.a.map(([n, st, r, ic, sp]) => h("span", { class: "vod-aug " + (RAR_V[r] || ""), title: `${st} 選的海克斯：${n}` },
         h("span", { class: "st" }, st), sp != null && RP.d?.sprite ? rpAugIcon(sp, RP.d.sprite) : ic ? h("img", { src: "icons/" + ic, alt: "", loading: "lazy", onerror: (e) => e.target.remove() }) : null, n)),
         g.ap ? h("span", { class: "xs muted" }, "（有一個沒辨識出來）") : null] : h("span", { class: "xs muted" }, "海克斯：待錄影辨識")),
       h("div", { class: "case-units" }, g.u.map(([k, st, its]) => h("span", { class: "cu" }, h("span", { class: "stars" }, "★".repeat(st)), icon("champion", k, "sm"), h("span", { class: "its" }, its.map((i) => icon("item", i, "xs")))))),
@@ -2285,6 +2285,7 @@
       h("p", { class: "rp-cur" }, h("b", null, label(RP.comp)), `　${xs.length} 場`, RP.comp !== "all" && RP.comp !== "own" && RP.comp !== "other" ? h("a", { href: "#" + slug(RP.comp), class: "rp-cur-go" }, "看這套攻略 →") : null),
       h("div", { class: "cases rp-list" }, xs.slice(0, RP.n).map(rpCard)),
       xs.length > RP.n ? h("button", { type: "button", class: "btn rp-more", onclick: () => { RP.n += 20; drawRp(); } }, `再顯示 ${Math.min(20, xs.length - RP.n)} 場（還有 ${xs.length - RP.n} 場）`) : null,
+      S19 ? h("p", { class: "xs muted" }, `資料來源：${d.source}，${d.patch} 打進前四，最近的排前面。陣容用本站的分類，分類對不到的寫「其他陣容」。點「看這場 RP」會跳到錄影裡那一場開始的地方。`) :
       h("p", { class: "xs muted" }, `資料來源：${d.source || "MetaTFT 影片庫"}＋站主的 YouTube 直播存檔，${d.patch || ""} 版、大師以上、打進前四，最近的排前面${d.asOf ? `（${fmtTime(d.asOf)?.replace("（台灣時間）", "") || ""} 更新）` : ""}。`,
         "陣容用本站的分類；分類對不到、但主C一樣而且棋子有 5 隻以上一樣的寫「接近」；都不像的寫主C。點「看這場 RP」會跳到錄影裡那一場開始的地方。海克斯對局資料裡沒有，要看錄影辨識，還沒辨識的寫「待錄影辨識」。",
         d.pendingYoutube?.length ? `YouTube 頻道（${d.pendingYoutube.join("、")}）還在接。` : ""));
@@ -2294,7 +2295,7 @@
     let sec = $("#rp-sec");
     if (!sec) {
       sec = h("section", { class: "block", id: "rp-sec" }, h("h2", null, "高手 RP"),
-        h("p", { class: "rlead" }, "高手實況裡打進前四的對局，最近的排前面。可以照陣容篩，看他們選了哪些海克斯，再點進錄影看那一場怎麼打。"),
+        h("p", { class: "rlead" }, S19 ? "高手 PBE 實況裡打進前四的對局，最近的排前面。可以照陣容篩，點進錄影看那一場怎麼打。" : "高手實況裡打進前四的對局，最近的排前面。可以照陣容篩，看他們選了哪些海克斯，再點進錄影看那一場怎麼打。"),
         h("div", { class: "rp-body" }));
       $("#home")?.append(sec);
       const ul = document.querySelector(".nav ul");
@@ -3596,7 +3597,7 @@
     adaptLayout();
     if (S19) {  // S19 預測版：沒有高手資料，本次更新、版本主軸、隨手速查、定陣路線、高手 RP 都不放
       for (const id of ["#updates-sec", "#version", "#picker"]) $(id)?.remove();
-      renderTop(); renderTiers(); renderPatch(); renderLearnHub(); renderCompList(); renderResearch(); renderWiki(); applyDataTx();  // 站主 11/19：S19 也要有「改動一覽」
+      renderTop(); renderTiers(); renderPatch(); renderLearnHub(); renderCompList(); renderResearch(); renderRp(); renderWiki(); applyDataTx();  // 站主 11/19：S19 也要有「改動一覽」、「高手的RP呢?」
     } else {
       renderTop(); renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderPicker(); renderRoute(); renderCompList(); renderResearch(); renderRp(); renderWiki(); applyDataTx();
     }

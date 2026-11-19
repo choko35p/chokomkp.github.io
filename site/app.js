@@ -1255,7 +1255,7 @@
     const row = h("div", { class: "tp-row" });
     const draw = () => {
       row.textContent = "";
-      if (!PL.d) { row.append(h("p", { class: "xs muted" }, S19 ? "S19 的分享碼要等 PBE 開了、官方公布棋子代碼才有。" : PL.done ? "分享碼讀不到，重新整理再試一次。" : "分享碼載入中…")); return; }
+      if (!PL.d) { row.append(h("p", { class: "xs muted" }, S19 ? "S19 的分享碼還沒放：網路上流傳的代碼匯不進遊戲，確認遊戲內真正的代碼後再補。" : PL.done ? "分享碼讀不到，重新整理再試一次。" : "分享碼載入中…")); return; }
       const r = plannerCode(units);
       if (!r) return;
       const codeEl = h("code", { class: "tp-code", title: "遊戲內「戰術規劃」的分享碼" }, r.code);
@@ -1586,7 +1586,9 @@
     return [h("div", { class: "review" }, h("p", { class: "review-tag" }, h("b", null, "⚠ 新手可能用不到"), "（只有預覽看得到）", h("br"), why, h("br"), h("span", { class: "xs" }, "要刪或要留，跟我說一聲。")), ...kids)];
   }
   const ITEMS_P = {};
-  const loadItems = (cid) => (ITEMS_P[cid] ||= fetch(dataUrl(`items/${cid}.json`)).then((r) => (r.ok ? r.json() : null)).catch(() => null));
+  let ITEMS19 = null;  // S19：所有陣容的「選裝備看搭配」放在一個檔（預覽站檔案數有上限）
+  const loadItems = (cid) => (ITEMS_P[cid] ||= S19 ? (ITEMS19 ||= fetch(dataUrl("items.json")).then((r) => (r.ok ? r.json() : {})).catch(() => ({})))
+    .then((all) => all?.[cid] || null) : fetch(dataUrl(`items/${cid}.json`)).then((r) => (r.ok ? r.json() : null)).catch(() => null));
   /* 選裝備看搭配：選一件、兩件或三件，列出跟其他裝備的組合、頻率和成績（像 MetaTFT 探索功能的裝備篩選） */
   const FSTATE = {};
   function finder(hero, data, label) {

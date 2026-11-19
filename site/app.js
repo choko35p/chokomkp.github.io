@@ -221,6 +221,8 @@
       else body.append(h("div", { class: "pgroup" }, h("h3", null, g.label, g.remember ? h("span", { class: "tag remember" }, "容易忘") : null,
         h("span", { class: "xs muted" }, ` ${g.items.length} 項`)), grid));
     }
+    if (pc.source?.url) body.append(h("p", { class: "xs muted" }, "來源：", h("a", { href: pc.source.url, target: "_blank", rel: "noopener" }, pc.source.name || "原文")));
+    for (const old of pc.history || []) body.append(h("details", { class: "pgroup" }, h("summary", null, `${old.patch}（${old.live}）`), h("div", { class: "in" }, patchChart({ ...old, history: [] }))));  // S19 PBE：之前幾天的改動
     return body;
   }
   function openPatch() {
@@ -246,11 +248,12 @@
     if (!pc) return;
     const all = pc.groups.filter((g) => g.id !== "fix").flatMap((g) => g.items);
     const n = (d) => all.filter((x) => x.dir === d).length;
-    const ics = pc.groups.filter((g) => g.remember).flatMap((g) => g.items).filter((x) => x.icon).slice(0, 3);
+    let ics = pc.groups.filter((g) => g.remember).flatMap((g) => g.items).filter((x) => x.icon).slice(0, 3);
+    if (!ics.length) ics = all.filter((x) => x.unit || x.icon).slice(0, 3);  // S19 增幅還沒有圖示：改放棋子
     slot.append(h("button", { id: "patch-btn", class: "patch-btn", type: "button", onclick: openPatch, "aria-haspopup": "dialog" },
       h("span", { class: "pb-icons", "aria-hidden": "true" }, ics.map(pIcon)),
       h("span", { class: "pb-txt" }, h("span", { class: "pb-main" }, `${pc.patch} 改動一覽`),
-        h("span", { class: "pb-sub" }, h("span", { class: "dirtag up" }, `↑ ${n("up")}`), h("span", { class: "dirtag down" }, `↓ ${n("down")}`), "增幅、神火都在這"))));
+        h("span", { class: "pb-sub" }, h("span", { class: "dirtag up" }, `↑ ${n("up")}`), h("span", { class: "dirtag down" }, `↓ ${n("down")}`), pc.btnSub || "增幅、神火都在這"))));
   }
 
   /* 版本主軸：練線路線（先練→再練）。同一步裡左強右弱，點陣容看完整攻略。 */
@@ -2560,7 +2563,7 @@
   }
   function rerender() {
     applyOwnerNames(); applyDataTx(); renderTop();
-    if (S19) { renderTiers(); renderCompList(); } else { renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderRoute(); }  // S19 沒有本次更新、版本主軸那幾區
+    if (S19) { renderTiers(); renderPatch(); renderCompList(); } else { renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderRoute(); }  // S19 沒有本次更新、版本主軸那幾區
     const hsh = location.hash.slice(1), c = D.comps.find((x) => slug(x.id) === hsh) || (O.on ? O.custom.map(customToComp).find((x) => slug(x.id) === hsh) : null);
     if (c) { const y = scrollY; renderDetail(c.id); scrollTo(0, y); }
     ownerPanel();
@@ -3591,7 +3594,7 @@
     adaptLayout();
     if (S19) {  // S19 預測版：沒有高手資料，本次更新、版本主軸、隨手速查、定陣路線、高手 RP 都不放
       for (const id of ["#updates-sec", "#version", "#picker"]) $(id)?.remove();
-      renderTop(); renderTiers(); renderLearnHub(); renderCompList(); renderResearch(); renderWiki(); applyDataTx();
+      renderTop(); renderTiers(); renderPatch(); renderLearnHub(); renderCompList(); renderResearch(); renderWiki(); applyDataTx();  // 站主 11/19：S19 也要有「改動一覽」
     } else {
       renderTop(); renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderPicker(); renderRoute(); renderCompList(); renderResearch(); renderRp(); renderWiki(); applyDataTx();
     }

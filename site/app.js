@@ -1832,6 +1832,9 @@
           h("b", null, x.player), x.score ? h("span", { class: "tag score", title: "那場玩家的積分" }, "分數 " + x.score) : null,
           h("span", { class: "xs muted" }, `${x.region}｜${x.level} 級｜${fmtTime(x.time)?.replace("（台灣時間）", "") || ""}`),
           x.timeline ? h("span", { class: "tag up" }, "有時間軸") : null, x.replay ? (typeof x.replay === "string" ? h("span", { class: "tag up rp-tag", role: "link", tabindex: "0", title: "看這場的實況錄影", onclick: (e) => { e.preventDefault(); e.stopPropagation(); track("case_rp", c.id); window.open(x.replay, "_blank", "noopener"); } }, "▶ 看 RP") : h("span", { class: "tag up" }, "有重播")) : null, x.champ ? h("span", { class: "tag tier" }, x.champ) : null),
+        // 站主 2026-11-19：「下面戰機要有羈絆」→ 每場列出那場實際開到的羈絆（S19 用對局資料記的；S18 用棋子＋徽章算）
+        (() => { const ts = (x.traits ? x.traits.map(([k, n]) => ({ k, n })) : traitsOf(x.units).filter((t) => t.on)).filter((t) => t.n > 1).slice(0, 10);   // 只有 1 隻就開的小羈絆不列，太雜
+          return ts.length ? h("div", { class: "tchips case-tr" }, ts.map((t) => h("span", { class: "tchip on" }, `${t.n} ${traitName(t.k)}`))) : null; })(),
         h("div", { class: "case-units" }, x.units.map((u) => h("span", { class: "cu" }, h("span", { class: "stars" }, "★".repeat(u.star)), icon("champion", u.key, "sm"), h("span", { class: "its" }, (u.items || []).map((i) => icon("item", i, "xs"))))))))));
     });
     return box;

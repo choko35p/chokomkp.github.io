@@ -1379,3 +1379,7 @@ a.lcard:hover { border-color: var(--accent); }
 .wk-unlock .tag { margin-left: 6px; }
 .wk-unlock-free { margin: var(--s3) 0 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* 對戰紀錄每場的羈絆（站主 2026-11-19） */
+.case-tr { margin: 4px 0 2px; }
+.case-tr .tchip { font-size: 12px; padding: 1px 7px; }

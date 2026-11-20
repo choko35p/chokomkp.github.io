@@ -60,9 +60,7 @@
    },
    "guess": false,
    "stages": [
-    "2-1",
-    "3-2",
-    "4-2"
+    "2-1"
    ]
   },
   {
@@ -153,7 +151,7 @@
     }
    ],
    "onPick": {},
-   "guess": true,
+   "guess": false,
    "stages": [
     "3-2",
     "4-2"
@@ -187,7 +185,7 @@
    "zh": "集中火力",
    "tier": 1,
    "sp": 64,
-   "desc": "全隊攻擊 +10%，之後每 5 秒再 +5%。",
+   "desc": "全隊攻擊 +10%，之後每 5 秒再 +4%。",
    "effects": [
     {
      "type": "stat",
@@ -208,7 +206,7 @@
          "allies": "all"
         },
         "stat": "adPct",
-        "value": 0.05,
+        "value": 0.04,
         "stackKey": "focus"
        }
       ],
@@ -251,7 +249,7 @@
    "zh": "天賜聖典 I",
    "tier": 1,
    "sp": 10,
-   "desc": "全隊全能吸血 +12%。（本頁簡化：官方溢補的治療會變成護盾，這裡沒做。）",
+   "desc": "全隊全能吸血 +12%。（本頁簡化：官方溢補的治療會變成護盾，護盾上限 200 生命，這裡沒做。）",
    "effects": [
     {
      "type": "stat",
@@ -382,7 +380,7 @@
    "zh": "劍匠",
    "tier": 2,
    "sp": 79,
-   "desc": "選到就拿 2 件含暴風之劍的隨機成品裝備。",
+   "desc": "選到就拿 1 件含暴風之劍的隨機成品裝備，1 回合後再拿 1 件。（本頁簡化：選到就一次拿 2 件。）",
    "effects": [],
    "onPick": {
     "completed": 2,
@@ -398,14 +396,14 @@
    "zh": "主角威能",
    "tier": 2,
    "sp": 72,
-   "desc": "全隊雙抗 +8；生命低於 50% 時，雙抗再 +32。",
+   "desc": "全隊雙抗 +10；生命低於 50% 時，雙抗提高到 40（再 +30），持續到戰鬥結束。",
    "effects": [
     {
      "type": "stat",
      "who": "team",
      "stats": {
-      "armor": 8,
-      "mr": 8
+      "armor": 10,
+      "mr": 10
      }
     },
     {
@@ -421,7 +419,7 @@
          "allies": "all"
         },
         "stat": "armor",
-        "value": 32
+        "value": 30
        },
        {
         "op": "buff",
@@ -429,7 +427,7 @@
          "allies": "all"
         },
         "stat": "mr",
-        "value": 32
+        "value": 30
        }
       ],
       "src": "aug:DA_PlotArmor",
@@ -513,7 +511,7 @@
    "zh": "發條加速器",
    "tier": 2,
    "sp": 136,
-   "desc": "戰鬥中每 3 秒，全隊攻速 +10%，可疊加。",
+   "desc": "戰鬥中每 3 秒，全隊攻速 +12%，可疊加。",
    "effects": [
     {
      "type": "teamPassive",
@@ -527,7 +525,7 @@
          "allies": "all"
         },
         "stat": "asPct",
-        "value": 0.1,
+        "value": 0.12,
         "stackKey": "clock"
        }
       ],
@@ -565,7 +563,7 @@
     }
    ],
    "onPick": {},
-   "guess": true,
+   "guess": false,
    "stages": [
     "3-2",
     "4-2"
@@ -588,7 +586,7 @@
     }
    ],
    "onPick": {},
-   "guess": true,
+   "guess": false,
    "stages": [
     "3-2",
     "4-2"
@@ -737,7 +735,7 @@
    "zh": "投資策略II",
    "tier": 3,
    "sp": 203,
-   "desc": "利息上限提高 2，選到就拿 6 金幣。之後每賺 1 點利息，全隊永久 +12 生命。",
+   "desc": "利息上限提高 2，選到就拿 6 金幣。之後每賺 1 點利息，全隊永久 +10 生命。",
    "effects": [
     {
      "type": "rule",
@@ -747,7 +745,7 @@
     {
      "type": "rule",
      "key": "interestHp",
-     "value": 12
+     "value": 10
     }
    ],
    "onPick": {
@@ -780,7 +778,7 @@
     }
    ],
    "onPick": {},
-   "guess": true,
+   "guess": false,
    "stages": [
     "3-2",
     "4-2"
@@ -814,7 +812,7 @@
    "zh": "巴龍巢穴",
    "tier": 3,
    "sp": 197,
-   "desc": "選到就拿 1 件隨機坦克成品裝備。開戰 8 秒後，全隊每秒攻擊 +4%、技能增幅 +4%，一直疊到戰鬥結束。",
+   "desc": "選到就拿 1 件隨機坦克成品裝備。開戰 8 秒後，全隊每秒攻擊 +4%、法強 +4（官方是 4% 魔攻），一直疊到戰鬥結束。",
    "effects": [
     {
      "type": "teamPassive",
@@ -836,8 +834,8 @@
         "to": {
          "allies": "all"
         },
-        "stat": "abilityAmp",
-        "value": 0.04
+        "stat": "ap",
+        "value": 4
        }
       ],
       "src": "aug:DA_BaronsLair",

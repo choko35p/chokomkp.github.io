@@ -100,7 +100,7 @@ export async function mount(root, api, opts = {}) {
         <div class="tt-toast" role="status" aria-live="polite"></div>
       </div>
     </main>
-    <footer class="tt-foot" id="tt-foot"><p>非官方重製・名稱是暫譯・S19 數值為推測｜本站與 Riot Games 無關；遊戲名稱、素材與音效屬於其權利人。</p></footer>`;
+    <footer class="tt-foot" id="tt-foot"><p>非官方重製・數值照 PBE 11/20 的版本｜本站與 Riot Games 無關；遊戲名稱、素材與音效屬於其權利人。</p></footer>`;
   root.append(app);
 
   const R = {
@@ -448,7 +448,7 @@ export async function mount(root, api, opts = {}) {
   });
   function showHelp() {
     if (panels && panels.showHelp) panels.showHelp({ onRestart: () => api.act('restart'), api });
-    else askModal('說明', '30 回合、6 隻頭目、3 條命、沒有計時。非官方重製，數值為推測。把棋子拖到商店可以賣掉，拖到格子可以移動或交換。', [{ label: '知道了', primary: true }]);
+    else askModal('說明', '30 回合、6 隻頭目、3 條命、沒有計時。非官方重製，數值照 PBE 現在的版本。把棋子拖到商店可以賣掉，拖到格子可以移動或交換。', [{ label: '知道了', primary: true }]);
   }
   api.showHelp = showHelp;
   if (!opts.noHelp && !new URLSearchParams(location.search).has('seed')) { if (panels && panels.maybeShowHelpFirst) panels.maybeShowHelpFirst(); else try { if (!localStorage.getItem('trials19.helpSeen')) { localStorage.setItem('trials19.helpSeen', '1'); showHelp(); } } catch (_) { /* 無痕模式 */ } }

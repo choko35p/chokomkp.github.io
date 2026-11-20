@@ -314,15 +314,16 @@ export function createFx(root, env0) {
       if (d && d.pas) for (const p of d.pas) if (p.on === 'attack' && p.n && u.atkN % p.n === 0) run(p.nodes, ctxOf(u, t), 0);
       if (!ev.ranged) return;
       const a = P(u), b = P(t); if (!a || !b) return;
-      const [c1, c2] = colors(u);
+      const [c1, c2] = (d && d.bc) || colors(u);   // bc＝普攻自己的顏色（照實況對的；沒有就用技能色）
       let shape = 'orb'; if (d && d.bs && RANGED_SHAPE.has(d.bs)) shape = d.bs;
       const info = { crit: false }; u.lastAtk = info;
       shoot(u, a, b, { shape, c1, c2, sz: 0.62, speed: 15, follow: t.id, arrive: () => { const q = P(t); if (q && !(t.hitAt && S.now - t.hitAt < 60)) { t.hitAt = S.now; FX.hit({ x: q.x, y: q.y, c1, crit: info.crit, ang: Math.atan2(q.y - a.y, q.x - a.x) }); } } });
     },
     dmg(t, ev, src) {
-      const [c1] = colors(src || t);
+      let [c1] = colors(src || t);
       const p = P(t); if (!p) return;
       if (ev.tag === 'atk') {
+        const sd = src && udef(src); if (sd && sd.bc) c1 = sd.bc[0];
         if (src && src.lastRanged) { if (src.lastAtk) src.lastAtk.crit = !!ev.crit; return; }
         const sp = src ? P(src) : null, ang = sp ? Math.atan2(p.y - sp.y, p.x - sp.x) : null;
         S.after(60, () => { const q = P(t) || p; FX.hit({ x: q.x, y: q.y, c1, crit: !!ev.crit, melee: true, ang }); });

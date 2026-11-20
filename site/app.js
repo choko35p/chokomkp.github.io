@@ -57,6 +57,34 @@
   const TRSP = {"18":{"src":"icons/traits_s18.webp","cols":8,"rows":5,"index":{"Riftbeast":0,"Blossom":1,"Elderwood":2,"Sprykin":3,"Inferno":4,"Coven":5,"Blackthorn":6,"Fae":7,"Solar":8,"Lunar":9,"Primal":10,"Rival":11,"FloraFatalis":12,"Spellweaver":13,"Juggernaut":14,"Vanguard":15,"Ravager":16,"Defender":17,"Brawler":18,"Adaptor":19,"Hunter":20,"Invoker":21,"Executioner":22,"Rapidfire":23,"Summoner":24,"OldGrowth":25,"Monolith":26,"Greenfather":27,"EmeraldAspect":28,"Avatar":29,"Caustic":30,"Thornmaiden":31,"Attuned":32,"BountySeeker":33,"ApexPredator":34}},"19":{"src":"icons/s19/traits.webp","cols":8,"rows":7,"index":{"IonicSpark":0,"KDA":1,"BeachPop":2,"Classical":3,"Heartsteel":4,"Rock":5,"Pentakill":6,"TrueDamage":7,"Hyperpop":8,"ILLBEATS":9,"GuFeng":10,"Jazz":11,"RAndB":12,"EDM":13,"Frontman":14,"Juggernaut":15,"Slayer":16,"Swiftstriker":17,"Choreographer":18,"Bodyguard":19,"Arcanist":20,"Encore":21,"Prodigy":22,"Renegade":23,"Collab":24,"Trickshot":25,"Hitmaker":26,"Manager":27,"8Bit":28,"OneMonsterBand":29,"Composer":30,"Synthwave":31,"Goth":32,"RecordMogul":33,"Emo":34,"Tango":35,"MelodicHeart":36,"HypeMan":37,"Indie":38,"BoyBand":39,"BeatMaster":40,"Freestyle":41,"Producer":42,"Disco":43,"Country":44,"Windblessed":45,"Mariachi":46,"RisingStar":47,"Superstar":48}}};
   const traitIco = (key, px = 20) => { const sp = TRSP[SEASON], i = sp?.index[key]; if (i == null) return null; const c = i % sp.cols, r = Math.floor(i / sp.cols);
     return h("span", { class: "tr-ico", "aria-hidden": "true", style: `width:${px}px;height:${px}px;background-image:url(${sp.src});background-size:${sp.cols * px}px ${sp.rows * px}px;background-position:-${c * px}px -${r * px}px` }); };
+  // 羈絆一律用圖示（站主 2026-11-20）：六角底色照遊戲（未啟動灰、銅、銀、金、彩），右下角是人數；名稱和「人數／下一階」放 data-tip，
+  // 滑鼠移上去、鍵盤選到、或手機點一下才出現（ftip 浮動提示，不會被卡片的 overflow 切掉）。沒有圖示的羈絆用名稱第一個字。
+  const trTier = (k, n) => { const bp = TR[k]?.breakpoints || [], hit = bp.filter((x) => x <= n).length;
+    if (!hit) return "off"; if (hit >= bp.length) return bp.length >= 4 ? "prism" : "gold"; if (bp.length >= 4 && hit === bp.length - 1) return "gold"; return hit === 1 ? "bronze" : "silver"; };
+  const trTip = (k, n) => { const bp = TR[k]?.breakpoints || [], next = bp.find((x) => x > n);
+    return n == null ? traitName(k) : `${traitName(k)} ${n}${next ? "／" + next : ""}`; };
+  const traitBadge = (k, n, o = {}) => { const tip = o.tip || trTip(k, n), ico = traitIco(k, o.px || 18);
+    return h(o.tag || "span", { class: "tbg t-" + (n == null ? "plain" : trTier(k, n)) + (o.cls ? " " + o.cls : ""), "data-tip": tip, "aria-label": tip,
+      ...(o.tag === "button" ? { type: "button", onclick: o.onclick } : { tabindex: "0", role: "img" }) },
+      h("span", { class: "tbg-hex", "aria-hidden": "true" }, ico || h("i", { class: "tbg-txt" }, traitName(k).slice(0, 1))), n == null ? null : h("b", { "aria-hidden": "true" }, n)); };
+  const traitBadges = (list, o = {}) => h("span", { class: "tbgs" + (o.cls ? " " + o.cls : "") }, list.map((t) => traitBadge(t.k, t.n, { px: o.px })));
+  const activeTraits = (counts) => Object.entries(counts).map(([k, n]) => ({ k, n })).filter((t) => (TR[t.k]?.breakpoints || []).some((x) => x <= t.n))
+    .sort((a, b) => ({ prism: 4, gold: 3, silver: 2, bronze: 1, off: 0 }[trTier(b.k, b.n)] - { prism: 4, gold: 3, silver: 2, bronze: 1, off: 0 }[trTier(a.k, a.n)]) || b.n - a.n);
+  const FTIP = (() => { const t = h("div", { class: "ftip", role: "tooltip", hidden: "" }); let on = null, pin = false;
+    const hide = () => { t.hidden = true; on = null; pin = false; };
+    const show = (el) => { if (!t.isConnected) document.body.append(t); t.textContent = el.dataset.tip; t.hidden = false; on = el;
+      const r = el.getBoundingClientRect(), w = t.offsetWidth, hh = t.offsetHeight;
+      t.style.left = Math.max(6, Math.min(innerWidth - w - 6, r.left + r.width / 2 - w / 2)) + "px";
+      t.style.top = (r.top - hh - 6 < 4 ? r.bottom + 6 : r.top - hh - 6) + "px"; };
+    const tgt = (e) => e.target?.closest?.("[data-tip]");
+    document.addEventListener("mouseover", (e) => { const el = tgt(e); if (el) show(el); else if (!pin && on) hide(); });
+    document.addEventListener("focusin", (e) => { const el = tgt(e); if (el) show(el); });
+    document.addEventListener("focusout", () => { if (!pin) hide(); });
+    document.addEventListener("click", (e) => { const el = tgt(e); if (!el) { if (on) hide(); return; }
+      if (el.tagName === "BUTTON") { hide(); return; }   // 本身有動作的按鈕（例如小百科棋子的羈絆會跳到羈絆說明）：照原本的動作走
+      if (pin && on === el) hide(); else { show(el); pin = true; } });
+    addEventListener("scroll", () => on && hide(), { passive: true }); addEventListener("resize", () => on && hide());
+    return { hide }; })();
   const unverifiedMark = (status) => (status && status !== "verified" ? h("span", { class: "tag unv", title: "名稱尚未與遊戲內核對" }, "名稱未核對") : null);
 
   // 輸出／坦的小圖（劍／盾），用在裝備分頁的角標
@@ -101,7 +129,7 @@
   function adaptLayout() {
     const ul = document.querySelector(".nav ul");
     if (ul) ul.replaceChildren(...[["#tierlist", "nav.tier", "T 度表"], ["#updates-sec", "nav.updates", "本次更新"],
-      ["#version", "nav.version", "版本主軸"], ["#picker", "nav.picker", "隨手速查"], ["#learn", "nav.learn", "新手教學"], ["#comps", "nav.comps", "陣容攻略"], ["sim/", "nav.editor", "陣容編輯器"], ["sim/", "nav.sim", "戰鬥模擬"], ["trials/", "nav.trials", "滴答克的試煉"], ["pros/", "nav.pros", "高手教學庫"]].filter(([href]) => !S19 || href === "#tierlist" || href === "#learn" || href === "#comps" || href === "trials/" || href === "pros/").map(([href, k, t]) => h("li", null, h("a", { href, "data-tx": k }, t))));  // 戰鬥模擬器 2026-11-11
+      ["#version", "nav.version", "版本主軸"], ["#picker", "nav.picker", "隨手速查"], ["#learn", "nav.learn", "新手教學"], ["#comps", "nav.comps", "陣容攻略"], ["sim/", "nav.editor", "陣容編輯器"], ["sim/", "nav.sim", "戰鬥模擬"], ["trials/", "nav.trials", "滴答克的試煉"], ["pros/", "nav.pros", "高手教學庫"]].filter(([href]) => !S19 || (S19FULL() ? href !== "sim/" && (href !== "#updates-sec" || D.updateNotes?.length) : href === "#tierlist" || href === "#learn" || href === "#comps" || href === "trials/" || href === "pros/")).map(([href, k, t]) => h("li", null, h("a", { href, "data-tx": k }, t))));  // 戰鬥模擬器 2026-11-11
     const up = $("#updates-sec"), tl = $("#tierlist");
     if (up && !$("#updates-fold")) {
       up.classList.add("slim");
@@ -356,7 +384,8 @@
     renderLearnView();
   }
   /* 站主 2026-11-16：定陣路線歸進新手教學（#learn-route；舊網址 #route-sec 轉過來）。畫在 #learnv 裡 */
-  const routeOk = () => !S19 && !!D.routeGuide?.routes?.length;
+  const routeOk = () => !!D.routeGuide?.routes?.length;
+  const S19FULL = () => S19 && D.versionSummary?.status === "ready";  // S19 有高手資料了：首頁各區照 S18 開
   const learnBack = () => h("a", { class: "back btn ghost", href: "#learn" }, "← 回新手教學");
   function drawRouteView(v) {
     const r = D.routeGuide;
@@ -369,6 +398,7 @@
       learnBack(),
       h("h2", null, tx("route:title", r.title)),
       r.stale ? h("p", { class: "notice small" }, `這是 ${r.patch} 的定陣建議；新版本的高手資料足夠後會重新研究。`) : null,
+      r.note ? h("p", { class: "small muted" }, r.note) : null,
       h("p", { class: "rlead" }, rich("route:lead", r.lead)),
       h("div", { class: "ropen" }, h("h3", null, tx("route:openingTitle", r.openingTitle || "2-1 先看裝備")),
         h("div", { class: "ro-grid" }, (r.opening || []).map((o, i) => h("div", { class: "ro-item ro-" + i },
@@ -423,7 +453,7 @@
       const body = [h("span", { class: "lc-pic", "aria-hidden": "true" }, pic), h("span", { class: "lc-txt" }, h("b", { class: "lc-t" }, title), h("span", { class: "lc-d small" }, desc), prog ? h("span", { class: "lc-p xs" }, prog) : null)];
       return off ? h("div", { class: "lcard off " + cls, "aria-disabled": "true" }, body) : h("a", { class: "lcard " + cls, href, onclick: () => track("learn", cls) }, body);
     };
-    const S19note = S19 ? h("p", { class: "xs muted lc-note" }, "觀念每一季都一樣，示範用的是 S18 的牌。") : null;
+    const S19note = S19 ? h("p", { class: "xs muted lc-note" }, "觀念每一季都一樣；邊玩邊學、決策實驗室示範用的是 S18 的牌。") : null;
     sec.replaceChildren(
       h("h2", null, tx("learn:title", "新手教學")),
       h("p", { class: "rlead" }, tx("learn:lead", "剛開始玩先看這邊。照順序玩一輪，大概半小時。")),
@@ -1455,13 +1485,14 @@
     const tcs = cand ? cand.fixed : cs;
     for (const u of tcs) for (const t of CH[u.key]?.traits || []) traits[t] = (traits[t] || 0) + 1;
     for (const u of tcs) for (const it of u.items || []) if (it.endsWith("Emblem")) { const t = it.slice(0, -6); traits[t] = (traits[t] || 0) + 1; }
-    const active = Object.entries(traits).map(([k, n]) => { const bp = (TR[k]?.breakpoints || []).filter((x) => x <= n); return bp.length ? `${traitName(k)} ${n}` : null; }).filter(Boolean);
+    const active = activeTraits(traits);
     const marks = cs.filter((u) => u.mark).map((u) => champName(u.key));
     const riders = spryOn(cs) ? cs.filter((u) => u.rider && isSpry(u.key)).map((u) => champName(u.key)) : [];
     const plants = plantSummary(hasPos ? all : plantPlan(cs));  // 沒站位也列出神木植物
     const wrap = h("div", { class: "stack" },
-      cand ? h("p", { class: "small" }, `${level} 人口：固定 ${cand.fixed.length} 隻＋虛線框的 ${cand.cands.length} 隻挑 ${cand.pick} 隻放（放哪${cand.pick > 1 ? "幾" : ""}隻都可以）｜固定棋子的羈絆：${active.join("、") || "—"}`)
-        : h("p", { class: "small" }, `人口 ${pop}／${level}${pop > level ? "（超出，請檢查）" : ""}｜啟動羈絆：${active.join("、") || "—"}`),
+      cand ? h("p", { class: "small" }, `${level} 人口：固定 ${cand.fixed.length} 隻＋虛線框的 ${cand.cands.length} 隻挑 ${cand.pick} 隻放（放哪${cand.pick > 1 ? "幾" : ""}隻都可以）`)
+        : h("p", { class: "small" }, `人口 ${pop}／${level}${pop > level ? "（超出，請檢查）" : ""}`),
+      h("div", { class: "bd-tr" }, h("span", { class: "small muted" }, cand ? "固定棋子的羈絆" : "啟動羈絆"), active.length ? traitBadges(active) : h("span", { class: "small" }, "—")),
       marks.length ? h("p", { class: "small" }, h("b", null, "首領標記："), marks.join("、")) : null,
       riders.length ? h("p", { class: "small" }, h("b", null, "騎乘者："), riders.join("、"), "（騎上毛茸茸大夥伴）") : null,
       plants ? h("p", { class: "small" }, h("b", null, "神木植物："), plants) : null,
@@ -1844,7 +1875,7 @@
           x.timeline ? h("span", { class: "tag up" }, "有時間軸") : null, x.replay ? (typeof x.replay === "string" ? h("span", { class: "tag up rp-tag", role: "link", tabindex: "0", title: "看這場的實況錄影", onclick: (e) => { e.preventDefault(); e.stopPropagation(); track("case_rp", c.id); window.open(x.replay, "_blank", "noopener"); } }, "▶ 看 RP") : h("span", { class: "tag up" }, "有重播")) : null, x.champ ? h("span", { class: "tag tier" }, x.champ) : null),
         // 站主 2026-11-19：「下面戰機要有羈絆」→ 每場列出那場實際開到的羈絆（S19 用對局資料記的；S18 用棋子＋徽章算）
         (() => { const ts = (x.traits ? x.traits.map(([k, n]) => ({ k, n })) : traitsOf(x.units).filter((t) => t.on)).filter((t) => t.n > 1).slice(0, 10);   // 只有 1 隻就開的小羈絆不列，太雜
-          return ts.length ? h("div", { class: "tchips case-tr" }, ts.map((t) => h("span", { class: "tchip on" }, `${t.n} ${traitName(t.k)}`))) : null; })(),
+          return ts.length ? traitBadges(ts.slice().sort((a, b) => b.n - a.n), { cls: "case-tr", px: 15 }) : null; })(),
         h("div", { class: "case-units" }, x.units.map((u) => h("span", { class: "cu" }, h("span", { class: "stars" }, "★".repeat(u.star)), icon("champion", u.key, "sm"), h("span", { class: "its" }, (u.items || []).map((i) => icon("item", i, "xs"))))))))));
     });
     return box;
@@ -2134,7 +2165,7 @@
       listBox.append(h("ul", { class: "wk-augs" }, xs.map((a) => h("li", { class: "wk-aug" },
         augIcon(a, d.sprite),
         h("div", null,
-          h("p", { class: "wk-an" }, h("b", null, a.name), h("span", { class: "tag wk-t t" + (a.tier || 0) }, TIER_LB[a.tier] || "特性／其他")),
+          h("p", { class: "wk-an" }, h("b", null, a.name), h("span", { class: "tag wk-t t" + (a.tier || 0) }, TIER_LB[a.tier] || "特性／其他"), a.temp ? h("span", { class: "tag", title: "官方還沒翻成中文，先用本站翻的" }, "暫譯") : null),
           h("p", { class: "wk-ad small" }, a.desc),
           a.for?.length ? h("p", { class: "xs wk-for" }, h("span", { class: "muted" }, "高手實況推薦："), a.for.map((u, i) => [i ? "、" : "", h("a", { href: "#" + slug(u.c) }, nameOf(u.c)), `（${u.s}）`])) : null)))));
       if (!xs.length) listBox.append(h("p", { class: "empty small" }, "找不到符合的增幅。"));
@@ -2166,7 +2197,7 @@
       h("div", { class: "wk-dh" }, icon("champion", u.key, "md"), h("div", null,
         h("b", null, u.zh), u.nameStatus === "temp" ? h("span", { class: "tag unv" }, "暫譯") : null,
         h("p", { class: "small muted" }, `${u.cost} 費`, u.role ? `・${u.role}` : "", u.dmg ? `・${u.dmg}傷害` : ""),
-        h("p", { class: "wk-utr" }, (u.traits || []).map((t) => h("button", { type: "button", class: "chip", onclick: () => { WK.tab = "traits"; WK.topen = t; drawWiki(); } }, traitIco(t), trName(t)))))),
+        h("p", { class: "wk-utr tbgs" }, (u.traits || []).map((t) => traitBadge(t, null, { tag: "button", tip: trName(t) + "（點了看說明）", onclick: () => { FTIP.hide(); WK.tab = "traits"; WK.topen = t; drawWiki(); } }))))),
       wkUnlock(u),
       h("div", { class: "wk-stats" },
         row("生命（1/2/3 星）", starVals(u.hp)), row("物攻（1/2/3 星）", starVals(u.ad)), row("攻速", u.as != null ? String(u.as) : null),
@@ -2209,7 +2240,7 @@
       if (!ts.length) continue;
       box.append(h("div", { class: "wk-group" }, h("h3", null, KIND_LB[kind], h("span", { class: "wk-n" }, String(ts.length))),
         h("div", { class: "wk-tlist" }, ts.map((t) => h("div", { class: "wk-tr" + (WK.topen === t.key ? " on" : ""), id: "wk-t-" + t.key.replace(/[^A-Za-z0-9-]/g, "") },
-          h("div", { class: "wk-trh" }, traitIco(t.key), h("b", null, t.zh), t.nameStatus === "temp" ? h("span", { class: "tag unv" }, "暫譯") : null,
+          h("div", { class: "wk-trh" }, h("span", { class: "tbg t-plain", "aria-hidden": "true" }, h("span", { class: "tbg-hex" }, traitIco(t.key, 18) || h("i", { class: "tbg-txt" }, t.zh.slice(0, 1)))), h("b", null, t.zh), t.nameStatus === "temp" ? h("span", { class: "tag unv" }, "暫譯") : null,
             t.en && t.en !== t.zh ? h("span", { class: "xs muted" }, t.en) : null,
             h("span", { class: "wk-bps" }, (t.breakpoints || []).map((n) => h("span", { class: "wk-bp" }, String(n))))),
           t.desc ? h("p", { class: "small wk-pre" }, t.desc) : null,
@@ -2256,7 +2287,7 @@
     let sec = $("#wiki-sec");
     if (!sec) {
       sec = h("section", { class: "block", id: "wiki-sec" }, h("h2", null, "小百科"),
-        h("p", { class: "rlead" }, S19 ? "S19 所有的棋子（技能、數值）、羈絆說明和裝備。名稱是暫譯，PBE 開了以後照官方繁中更新。" : "這版所有的棋子（血量、物攻、技能）、羈絆說明、裝備和增幅。裝備滑上去（手機點一下）就能看是哪兩件散件合的，也可以直接選散件，找它能合出什麼。"),
+        h("p", { class: "rlead" }, S19 ? "S19 所有的棋子（技能、數值）、羈絆說明、裝備和增幅，數字對過 PBE 現在的版本。名稱照 PBE 官方繁中，官方還沒翻的先用暫譯。" : "這版所有的棋子（血量、物攻、技能）、羈絆說明、裝備和增幅。裝備滑上去（手機點一下）就能看是哪兩件散件合的，也可以直接選散件，找它能合出什麼。"),
         h("div", { class: "wk-body" }));
       $("#home")?.append(sec);
       const ul = document.querySelector(".nav ul");
@@ -2485,7 +2516,7 @@
       v = h("article", { id: "quizv", class: "detail block" },
         h("a", { class: "back btn ghost", href: "#learn" }, "← 回新手教學"),
         h("h2", null, `新手認卡${S19 ? "（S19 預測）" : `（S${SEASON}）`}`),
-        h("p", { class: "rlead" }, S19 ? "S19 的棋子費用、羈絆一次記起來。名稱是暫譯，PBE 開了以後照官方繁中更新。鍵盤可以按 1～7 選答案、Enter 下一題。" : "這季的棋子費用、羈絆一次記起來。鍵盤可以按 1～7 選答案、Enter 下一題。"),
+        h("p", { class: "rlead" }, S19 ? "S19 的棋子費用、羈絆一次記起來。名稱照 PBE 官方繁中，官方還沒翻的先用暫譯。鍵盤可以按 1～7 選答案、Enter 下一題。" : "這季的棋子費用、羈絆一次記起來。鍵盤可以按 1～7 選答案、Enter 下一題。"),
         h("div", { class: "qz-body" }));
       $("#detail").after(v);
       addEventListener("keydown", (e) => {
@@ -2608,7 +2639,7 @@
   }
   function rerender() {
     applyOwnerNames(); applyDataTx(); renderTop();
-    if (S19) { renderTiers(); renderPatch(); renderCompList(); } else { renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderRoute(); }  // S19 沒有本次更新、版本主軸那幾區
+    if (S19 && !S19FULL()) { renderTiers(); renderPatch(); renderCompList(); } else { if ($("#updates")) renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderRoute(); if (S19) renderCompList(); }  // S19 還沒有高手資料時沒有本次更新、版本主軸那幾區
     const hsh = location.hash.slice(1), c = D.comps.find((x) => slug(x.id) === hsh) || (O.on ? O.custom.map(customToComp).find((x) => slug(x.id) === hsh) : null);
     if (c) { const y = scrollY; renderDetail(c.id); scrollTo(0, y); }
     ownerPanel();
@@ -3112,7 +3143,7 @@
       const ecs = ec ? [...ec.cands] : [];
       put(ec ? h("p", { class: "small" }, `人口 ${st.lv}：固定 ${ec.fixed.length} 隻（和 ${ec.from} 人口一樣）＋虛線框的 ${ec.cands.length} 隻是候選，挑 ${ec.pick} 隻放（放哪${ec.pick > 1 ? "幾" : ""}隻都可以）`)
         : h("p", { class: "small" }, `人口 ${pop}／${st.lv}`, pop > st.lv ? h("b", { class: "warn" }, "（超出人口）") : null),
-        h("div", { class: "tchips" }, traitsOf(units).map((t) => h("span", { class: "tchip" + (t.on ? " on" : "") }, t.label))));
+        traitBadges(traitsOf(units)));
       const rOn = riftOn(units);
       if (rOn) put(markBox(units));
       if (spryOn(units)) put(riderBox(units));
@@ -3514,8 +3545,11 @@
       if (DK.tab === "champ") {
         const costs = [["all", "全部"], ...[1, 2, 3, 4, 5].map((n) => [n, `${n} 費`]), ["other", "其他"]];
         const traitKeys = [...new Set(D.gamedata.champions.flatMap((x) => x.traits || []))].sort((a, b) => traitName(a).localeCompare(traitName(b), "zh-Hant"));
-        const sel = h("select", { "aria-label": "羈絆篩選" }, h("option", { value: "" }, "全部羈絆"), traitKeys.map((k) => h("option", { value: k, selected: k === DK.trait }, traitName(k))));
-        sel.addEventListener("change", () => { DK.trait = sel.value; fill(); });
+        const sel = h("div", { class: "tbgs dk-trf", role: "group", "aria-label": "羈絆篩選" },
+          h("button", { type: "button", class: "chip", "aria-pressed": DK.trait ? "false" : "true", onclick: () => { DK.trait = ""; mark(); fill(); } }, "全部羈絆"),
+          traitKeys.map((k) => traitBadge(k, null, { tag: "button", cls: "dk-trb", tip: traitName(k), onclick: () => { DK.trait = DK.trait === k ? "" : k; mark(); fill(); } })));
+        const mark = () => { sel.querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-pressed", (i === 0 ? !DK.trait : traitKeys[i - 1] === DK.trait) ? "true" : "false")); };
+        mark();
         const fill = () => {
           list.textContent = "";
           const xs = D.gamedata.champions.filter((x) => (!DK.q || champName(x.key).toLowerCase().includes(DK.q) || x.key.toLowerCase().includes(DK.q) || (x.en || "").toLowerCase().includes(DK.q))
@@ -3637,11 +3671,12 @@
     TR = Object.fromEntries(D.gamedata.traits.map((t) => [t.key, t]));
     $("#loading").remove();
     adaptLayout();
-    if (S19) {  // S19 預測版：沒有高手資料，本次更新、版本主軸、隨手速查、定陣路線、高手 RP 都不放
+    if (S19 && S19FULL() && !D.updateNotes?.length) $("#updates-sec")?.remove();
+    if (S19 && !S19FULL()) {  // S19 預測版：沒有高手資料，本次更新、版本主軸、隨手速查、定陣路線、高手 RP 都不放
       for (const id of ["#updates-sec", "#version", "#picker"]) $(id)?.remove();
       renderTop(); renderTiers(); renderPatch(); renderLearnHub(); renderCompList(); renderResearch(); renderRp(); renderWiki(); applyDataTx();  // 站主 11/19：S19 也要有「改動一覽」、「高手的RP呢?」
     } else {
-      renderTop(); renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderPicker(); renderRoute(); renderCompList(); renderResearch(); renderRp(); renderWiki(); applyDataTx();
+      renderTop(); if ($("#updates")) renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderPicker(); renderRoute(); if (S19) renderLearnHub(); renderCompList(); renderResearch(); renderRp(); renderWiki(); applyDataTx();
     }
     document.querySelectorAll("a.out").forEach((a) => a.addEventListener("click", () => track("out", a.dataset.ch)));
     addEventListener("hashchange", route); route();

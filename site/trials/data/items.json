@@ -66,12 +66,11 @@
     "BFSword"
    ],
    "stats": {
-    "adPct": 0.55,
-    "dmgAmp": 0.1
+    "adPct": 0.75
    },
    "passives": [],
-   "desc": "攻擊 +55%、傷害增幅 +10%",
-   "simplified": ""
+   "desc": "攻擊 +60%；所有來源的攻擊額外 ×1.15。",
+   "simplified": "引擎沒有「全來源乘算」，簡化成再多 +15% 攻擊（官方是 ×1.15）；原本的傷害增幅 +10% 已不存在。"
   },
   {
    "key": "GiantSlayer",
@@ -83,25 +82,12 @@
    "stats": {
     "adPct": 0.15,
     "ap": 15,
-    "asPct": 0.15
+    "asPct": 0.15,
+    "dmgAmp": 0.15
    },
-   "passives": [
-    {
-     "on": "start",
-     "ops": [
-      {
-       "op": "buff",
-       "to": "self",
-       "stat": "dmgAmp",
-       "value": 0.1
-      }
-     ],
-     "src": "item:GiantSlayer",
-     "text": "巨人殺手"
-    }
-   ],
-   "desc": "攻擊 +15%、法術強度 +15、攻速 +15%。傷害增幅 +10%。",
-   "simplified": "原版是打高血量目標才加成，這裡簡化成全程 +10%。"
+   "passives": [],
+   "desc": "攻擊 +15%、法術強度 +15、攻速 +15%、傷害增幅 +15%。打坦克時再多 15% 傷害增幅。",
+   "simplified": "打坦克時的額外傷害增幅沒做（不分目標）。"
   },
   {
    "key": "HextechGunblade",
@@ -116,9 +102,28 @@
     "manaRegen": 1,
     "omnivamp": 0.15
    },
-   "passives": [],
-   "desc": "攻擊 +20%、法術強度 +20、法力回復 +1、全能吸血 +15%",
-   "simplified": ""
+   "passives": [
+    {
+     "on": "damageDealt",
+     "ops": [
+      {
+       "op": "heal",
+       "to": {
+        "lowestHp": 1,
+        "side": "ally"
+       },
+       "value": {
+        "flat": 10.0
+       }
+      }
+     ],
+     "src": "item:HextechGunblade",
+     "text": "槍刃治療",
+     "n": 50
+    }
+   ],
+   "desc": "攻擊 +20%、法術強度 +20、法力回復 +1、全能吸血 +15%。治療生命比例最低的友軍，治療量等同於 20% 傷害量。",
+   "simplified": "治療是每造成 50 點傷害就治療一次（10 點），不是逐筆。"
   },
   {
    "key": "SpearOfShojin",
@@ -132,8 +137,21 @@
     "ap": 15,
     "manaRegen": 1
    },
-   "passives": [],
-   "desc": "攻擊 +15%、法術強度 +15、法力回復 +1",
+   "passives": [
+    {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "mana",
+       "to": "self",
+       "value": 5
+      }
+     ],
+     "src": "item:SpearOfShojin",
+     "text": "精進回魔"
+    }
+   ],
+   "desc": "攻擊 +15%、法術強度 +15、法力回復 +1。普攻賦予 5 額外法力。",
    "simplified": ""
   },
   {
@@ -144,12 +162,13 @@
     "SparringGloves"
    ],
    "stats": {
+    "abilityCrit": 1,
     "adPct": 0.35,
     "crit": 0.35
    },
    "passives": [],
-   "desc": "攻擊 +35%、暴擊率 +35%",
-   "simplified": "技能暴擊沒做，只留數值。"
+   "desc": "攻擊 +35%、暴擊率 +35%。獲得精準：技能傷害可以暴擊。",
+   "simplified": "額外暴擊率轉成暴擊傷害 +10%（精準）沒做。"
   },
   {
    "key": "GuinsoosRageblade",
@@ -164,22 +183,23 @@
    },
    "passives": [
     {
-     "on": "attack",
+     "on": "every",
      "ops": [
       {
        "op": "buff",
        "to": "self",
        "stat": "asPct",
-       "value": 0.05,
+       "value": 0.07,
        "stackKey": "guinsoo",
-       "maxStacks": 40
+       "maxStacks": 99
       }
      ],
      "src": "item:GuinsoosRageblade",
-     "text": "狂暴"
+     "text": "狂暴",
+     "n": 1
     }
    ],
-   "desc": "法術強度 +10、攻速 +10%。每次普攻，攻速 +5%，可疊加。",
+   "desc": "法術強度 +10、攻速 +10%。每秒攻速 +7%，可疊加。",
    "simplified": ""
   },
   {
@@ -196,13 +216,27 @@
    },
    "passives": [
     {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "shred",
+       "dur": 5,
+       "value": 0.3
+      }
+     ],
+     "src": "item:VoidStaff",
+     "text": "破魔"
+    },
+    {
      "on": "cast",
      "ops": [
       {
        "op": "status",
        "to": "current",
        "kind": "shred",
-       "dur": 3,
+       "dur": 5,
        "value": 0.3
       }
      ],
@@ -210,7 +244,7 @@
      "text": "破魔"
     }
    ],
-   "desc": "法術強度 +35、攻速 +15%、法力回復 +1。施放技能後，目標魔抗 -30%，持續 3 秒。",
+   "desc": "法術強度 +35、攻速 +15%、法力回復 +1。普攻和技能傷害讓目標魔抗 -30%，持續 5 秒。",
    "simplified": ""
   },
   {
@@ -233,16 +267,31 @@
        "op": "buff",
        "to": "self",
        "stat": "adPct",
-       "value": 0.04,
+       "value": 0.035,
        "stackKey": "kraken",
-       "maxStacks": 30
+       "maxStacks": 15
       }
      ],
      "src": "item:KrakensFury",
      "text": "疊攻"
+    },
+    {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "asPct",
+       "value": 0.15
+      }
+     ],
+     "src": "item:KrakensFury",
+     "text": "海妖狂怒",
+     "n": 15,
+     "limit": 1
     }
    ],
-   "desc": "攻擊 +10%、攻速 +10%、魔抗 +20。每次普攻，攻擊 +4%，可疊加。",
+   "desc": "攻擊 +10%、攻速 +10%、魔抗 +20。每次普攻，攻擊 +3.5%，最多 15 層；打滿 15 次普攻後，攻速再 +15%。",
    "simplified": ""
   },
   {
@@ -260,22 +309,20 @@
    },
    "passives": [
     {
-     "on": "cast",
+     "on": "attack",
      "ops": [
       {
-       "op": "buff",
+       "op": "mana",
        "to": "self",
-       "stat": "asPct",
-       "value": 0.4,
-       "dur": 4
+       "value": 2
       }
      ],
      "src": "item:NashorsTooth",
-     "text": "攻速"
+     "text": "普攻回魔"
     }
    ],
-   "desc": "法術強度 +15、攻速 +10%、暴擊率 +20%、生命 +150。施放技能後，攻速 +40%，持續 4 秒。",
-   "simplified": ""
+   "desc": "法術強度 +15、攻速 +10%、暴擊率 +20%、生命 +150。普攻賦予 2 額外法力。",
+   "simplified": "暴擊時額外法力更多，官方沒寫數字，沒做。"
   },
   {
    "key": "LastWhisper",
@@ -303,9 +350,23 @@
      ],
      "src": "item:LastWhisper",
      "text": "破甲"
+    },
+    {
+     "on": "cast",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "sunder",
+       "dur": 3,
+       "value": 0.3
+      }
+     ],
+     "src": "item:LastWhisper",
+     "text": "破甲"
     }
    ],
-   "desc": "攻擊 +15%、攻速 +20%、暴擊率 +20%。普攻讓目標護甲 -30%，持續 3 秒。",
+   "desc": "攻擊 +15%、攻速 +20%、暴擊率 +20%。普攻和技能傷害讓目標護甲 -30%，持續 3 秒。",
    "simplified": ""
   },
   {
@@ -337,7 +398,7 @@
      "n": 5
     }
    ],
-   "desc": "法術強度 +30、法力回復 +1。每 5 秒，法術強度 +20，可疊加。",
+   "desc": "法術強度 +30、法力回復 +1。戰鬥中每 5 秒，法術強度 +20，可疊加。",
    "simplified": ""
   },
   {
@@ -348,13 +409,29 @@
     "ChainVest"
    ],
    "stats": {
-    "ap": 20,
+    "ap": 10,
     "armor": 20,
     "hp": 100
    },
-   "passives": [],
-   "desc": "法術強度 +20、護甲 +20、生命 +100",
-   "simplified": ""
+   "passives": [
+    {
+     "on": "start",
+     "ops": [
+      {
+       "op": "shield",
+       "to": "self",
+       "value": {
+        "selfMaxHp": 0.2
+       },
+       "dur": 8
+      }
+     ],
+     "src": "item:Crownguard",
+     "text": "皇冠護盾"
+    }
+   ],
+   "desc": "法術強度 +10、護甲 +20、生命 +100。戰鬥開始獲得 20% 最大生命的護盾，持續 8 秒。",
+   "simplified": "所有治療與護盾對持有者 +25% 沒做。"
   },
   {
    "key": "IonicSpark",
@@ -365,27 +442,31 @@
    ],
    "stats": {
     "ap": 15,
-    "hp": 250,
+    "hp": 350,
     "mr": 35
    },
    "passives": [
     {
-     "on": "start",
+     "on": "every",
      "ops": [
       {
        "op": "status",
-       "to": "allEnemies",
+       "to": {
+        "around": "self",
+        "r": 2
+       },
        "kind": "shred",
-       "dur": 30,
+       "dur": 1.5,
        "value": 0.3
       }
      ],
      "src": "item:IonicSpark",
-     "text": "破魔"
+     "text": "破魔",
+     "n": 1
     }
    ],
-   "desc": "法術強度 +15、生命 +250、魔抗 +35。開場讓所有敵人魔抗 -30%。",
-   "simplified": "原版是周圍 2 格的敵人，簡化成全部敵人。"
+   "desc": "法術強度 +15、生命 +350、魔抗 +35。2 格內的敵人魔抗 -30%。敵人施放技能時，受到等同其耗費法力 150% 的魔法傷害。",
+   "simplified": "「敵人放技能時吃法力傷害」引擎沒有對應觸發，沒做。"
   },
   {
    "key": "JeweledGauntlet",
@@ -395,12 +476,13 @@
     "NeedlesslyLargeRod"
    ],
    "stats": {
+    "abilityCrit": 1,
     "ap": 35,
     "crit": 0.35
    },
    "passives": [],
-   "desc": "法術強度 +35、暴擊率 +35%",
-   "simplified": "技能暴擊沒做，只留數值。"
+   "desc": "法術強度 +35、暴擊率 +35%。獲得精準：技能傷害可以暴擊。",
+   "simplified": "額外暴擊率轉成暴擊傷害 +10%（精準）沒做。"
   },
   {
    "key": "BlueBuff",
@@ -412,10 +494,11 @@
    "stats": {
     "adPct": 0.15,
     "ap": 15,
-    "manaRegen": 5
+    "manaRegen": 6,
+    "startMana": 10
    },
    "passives": [],
-   "desc": "攻擊 +15%、法術強度 +15、法力回復 +5",
+   "desc": "攻擊 +15%、法術強度 +15、法力回復 +6。戰鬥開始獲得 10 法力。",
    "simplified": ""
   },
   {
@@ -426,6 +509,7 @@
     "TearOfTheGoddess"
    ],
    "stats": {
+    "dr": 0.1,
     "hp": 300,
     "manaRegen": 2
    },
@@ -437,17 +521,17 @@
        "op": "heal",
        "to": "self",
        "value": {
-        "selfMissingHp": 0.09
+        "selfMissingHp": 0.02
        }
       }
      ],
      "src": "item:SpiritVisage",
      "text": "治療",
-     "n": 5
+     "n": 1
     }
    ],
-   "desc": "生命 +300、法力回復 +2。每 5 秒，回復已損失生命的 9%。",
-   "simplified": "原版還會治療附近友軍，簡化成只治療自己。"
+   "desc": "生命 +300、減傷 10%、法力回復 +2。每秒回復已損失生命的 2%。",
+   "simplified": "官方是「承受傷害 ×0.9」，這裡當成減傷 10%。"
   },
   {
    "key": "GargoyleStoneplate",
@@ -462,8 +546,8 @@
     "mr": 25
    },
    "passives": [],
-   "desc": "護甲 +25、生命 +100、魔抗 +25",
-   "simplified": ""
+   "desc": "護甲 +25、生命 +100、魔抗 +25。每有一位敵人以持有者為目標，再 +10 護甲與魔抗。",
+   "simplified": "「每個瞄準你的敵人再加雙抗」沒做，只留基本數值。"
   },
   {
    "key": "SteadfastHeart",
@@ -475,11 +559,28 @@
    "stats": {
     "armor": 20,
     "crit": 0.2,
+    "dr": 0.15,
     "hp": 250
    },
-   "passives": [],
-   "desc": "護甲 +20、暴擊率 +20%、生命 +250",
-   "simplified": ""
+   "passives": [
+    {
+     "on": "hpBelow",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "dr",
+       "value": -0.1
+      }
+     ],
+     "src": "item:SteadfastHeart",
+     "text": "堅定之心減傷",
+     "n": 0.5,
+     "limit": 1
+    }
+   ],
+   "desc": "護甲 +20、暴擊率 +20%、生命 +250。減傷 5%；生命高於 50% 時改為 15%。",
+   "simplified": "官方 PBE 資料的基本數值欄有一格是空的（可能是生命，數值缺），生命 +250 沿用舊值（不確定）。生命回到 50% 以上不會切回高減傷。"
   },
   {
    "key": "WarmogsArmor",
@@ -493,7 +594,7 @@
     "hpPct": 0.18
    },
    "passives": [],
-   "desc": "生命 +500、生命 +18%",
+   "desc": "生命 +500、最大生命 ×1.18。",
    "simplified": ""
   },
   {
@@ -510,8 +611,8 @@
     "hp": 150
    },
    "passives": [],
-   "desc": "攻速 +10%、暴擊率 +20%、傷害增幅 +10%、生命 +150",
-   "simplified": ""
+   "desc": "攻速 +10%、暴擊率 +20%、傷害增幅 +10%、生命 +150。暴擊賦予 5% 傷害增幅，持續 5 秒，最多 4 層。",
+   "simplified": "暴擊疊傷害增幅沒做（引擎沒有暴擊觸發），只留基本數值。"
   },
   {
    "key": "RabadonsDeathcap",
@@ -521,12 +622,11 @@
     "NeedlesslyLargeRod"
    ],
    "stats": {
-    "ap": 55,
-    "dmgAmp": 0.15
+    "ap": 75
    },
    "passives": [],
-   "desc": "法術強度 +55、傷害增幅 +15%",
-   "simplified": ""
+   "desc": "法術強度 +60；所有來源的法術強度額外 ×1.15。",
+   "simplified": "引擎沒有「全來源乘算」，簡化成再多 +15 法術強度（官方是 ×1.15）；原本的傷害增幅已不存在。"
   },
   {
    "key": "Bloodthirster",
@@ -536,8 +636,8 @@
     "NegatronCloak"
    ],
    "stats": {
-    "adPct": 0.18,
-    "ap": 18,
+    "adPct": 0.15,
+    "ap": 15,
     "mr": 20,
     "omnivamp": 0.2
    },
@@ -552,16 +652,22 @@
         "selfMaxHp": 0.25
        },
        "dur": 5
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "omnivamp",
+       "value": 0.15
       }
      ],
      "src": "item:Bloodthirster",
      "text": "護盾",
-     "n": 0.4,
+     "n": 0.6,
      "limit": 1
     }
    ],
-   "desc": "攻擊 +18%、法術強度 +18、魔抗 +20、全能吸血 +20%。生命低於 40% 時，獲得 25% 最大生命的護盾，5 秒。",
-   "simplified": ""
+   "desc": "攻擊 +15%、法術強度 +15、魔抗 +20、全能吸血 +20%。每場戰鬥一次，生命低於 60% 時獲得 25% 最大生命的護盾，之後全能吸血再 +15%。",
+   "simplified": "護盾持續時間官方沒寫，沿用 5 秒。"
   },
   {
    "key": "SunfireCape",
@@ -582,19 +688,21 @@
       {
        "op": "status",
        "to": {
-        "adjacent": "enemy"
+        "around": "self",
+        "r": 2
        },
        "kind": "burn",
-       "dur": 3,
+       "dur": 10,
        "value": 0.01
       },
       {
        "op": "status",
        "to": {
-        "adjacent": "enemy"
+        "around": "self",
+        "r": 2
        },
        "kind": "wound",
-       "dur": 3,
+       "dur": 10,
        "value": 0.33
       }
      ],
@@ -603,7 +711,7 @@
      "n": 2
     }
    ],
-   "desc": "護甲 +20、生命 +150、生命 +8%。每 2 秒，讓身邊敵人灼燒與重傷 3 秒。",
+   "desc": "護甲 +20、生命 +150、最大生命 ×1.08。每 2 秒，讓 2 格內的敵人灼燒（每秒 1% 最大生命）與重傷（33%）10 秒。",
    "simplified": ""
   },
   {
@@ -629,7 +737,8 @@
     "RecurveBow"
    ],
    "stats": {
-    "asPct": 0.45
+    "asPct": 0.45,
+    "dmgAmp": 0.03
    },
    "passives": [
     {
@@ -652,9 +761,30 @@
      ],
      "src": "item:RedBuff",
      "text": "灼燒"
+    },
+    {
+     "on": "cast",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "burn",
+       "dur": 5,
+       "value": 0.01
+      },
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "wound",
+       "dur": 5,
+       "value": 0.33
+      }
+     ],
+     "src": "item:RedBuff",
+     "text": "灼燒"
     }
    ],
-   "desc": "攻速 +45%。普攻讓目標灼燒（每秒 1% 最大生命）與重傷 5 秒。",
+   "desc": "攻速 +45%、傷害增幅 +3%。普攻與技能讓目標灼燒（每秒 1% 最大生命）與重傷 5 秒。",
    "simplified": ""
   },
   {
@@ -670,9 +800,26 @@
     "armor": 20,
     "asPct": 0.15
    },
-   "passives": [],
-   "desc": "攻擊 +10%、法術強度 +10、護甲 +20、攻速 +15%",
-   "simplified": ""
+   "passives": [
+    {
+     "on": "hpBelow",
+     "ops": [
+      {
+       "op": "heal",
+       "to": "self",
+       "value": {
+        "selfMissingHp": 0.15
+       }
+      }
+     ],
+     "src": "item:EdgeOfNight",
+     "text": "夜色緣界",
+     "n": 0.4,
+     "limit": 1
+    }
+   ],
+   "desc": "攻擊 +10%、法術強度 +10、護甲 +20、攻速 +15%。生命降至 40% 時，回復 15% 已損失生命。",
+   "simplified": "官方還會短暫無法被指定並移除負面效果，時間官方沒寫，沒做。"
   },
   {
    "key": "SteraksGage",
@@ -693,19 +840,19 @@
        "op": "shield",
        "to": "self",
        "value": {
-        "selfMaxHp": 0.25
+        "selfMaxHp": 0.4
        },
-       "dur": 5
+       "dur": 4
       }
      ],
      "src": "item:SteraksGage",
      "text": "護盾",
-     "n": 0.6,
+     "n": 0.4,
      "limit": 1
     }
    ],
-   "desc": "攻擊 +45%、生命 +300。生命低於 60% 時，獲得 25% 最大生命的護盾，5 秒。",
-   "simplified": "原版是增加最大生命，簡化成護盾。"
+   "desc": "攻擊 +45%、生命 +300。生命降至 40% 時，獲得 40% 最大生命的護盾（4 秒內快速衰減）。",
+   "simplified": "護盾不會逐漸衰減，4 秒後直接消失。"
   },
   {
    "key": "TitansResolve",
@@ -718,9 +865,56 @@
     "armor": 20,
     "asPct": 0.1
    },
-   "passives": [],
-   "desc": "護甲 +20、攻速 +10%",
-   "simplified": ""
+   "passives": [
+    {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "adPct",
+       "value": 0.02,
+       "stackKey": "titan",
+       "maxStacks": 25
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "ap",
+       "value": 2.0,
+       "stackKey": "titan2",
+       "maxStacks": 25
+      }
+     ],
+     "src": "item:TitansResolve",
+     "text": "泰坦疊加"
+    },
+    {
+     "on": "hit",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "adPct",
+       "value": 0.02,
+       "stackKey": "titan",
+       "maxStacks": 25
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "ap",
+       "value": 2.0,
+       "stackKey": "titan2",
+       "maxStacks": 25
+      }
+     ],
+     "src": "item:TitansResolve",
+     "text": "泰坦疊加"
+    }
+   ],
+   "desc": "護甲 +20、攻速 +10%。攻擊或受傷時，攻擊與法術強度 +2%，最多 25 層。",
+   "simplified": "疊滿 25 層後的最大生命加成與「無法阻擋」沒做。"
   },
   {
    "key": "Morellonomicon",
@@ -736,20 +930,41 @@
    },
    "passives": [
     {
-     "on": "cast",
+     "on": "attack",
      "ops": [
       {
        "op": "status",
        "to": "current",
        "kind": "burn",
-       "dur": 5,
+       "dur": 10,
        "value": 0.01
       },
       {
        "op": "status",
        "to": "current",
        "kind": "wound",
-       "dur": 5,
+       "dur": 10,
+       "value": 0.33
+      }
+     ],
+     "src": "item:Morellonomicon",
+     "text": "灼燒"
+    },
+    {
+     "on": "cast",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "burn",
+       "dur": 10,
+       "value": 0.01
+      },
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "wound",
+       "dur": 10,
        "value": 0.33
       }
      ],
@@ -757,7 +972,7 @@
      "text": "灼燒"
     }
    ],
-   "desc": "法術強度 +20、生命 +150、法力回復 +1。施放技能後，讓目標灼燒與重傷 5 秒。",
+   "desc": "法術強度 +20、生命 +150、法力回復 +1。普攻與技能讓目標灼燒（每秒 1% 最大生命）與重傷 10 秒。",
    "simplified": ""
   },
   {
@@ -773,9 +988,31 @@
     "mr": 25,
     "startMana": 20
    },
-   "passives": [],
-   "desc": "護甲 +25、法力回復 +1、魔抗 +25、起始法力 +20",
-   "simplified": ""
+   "passives": [
+    {
+     "on": "hpBelow",
+     "ops": [
+      {
+       "op": "mana",
+       "to": "self",
+       "value": 15
+      },
+      {
+       "op": "shield",
+       "to": "self",
+       "value": {
+        "selfMaxHp": 0.2
+       }
+      }
+     ],
+     "src": "item:ProtectorsVow",
+     "text": "保衛者護盾",
+     "n": 0.4,
+     "limit": 1
+    }
+   ],
+   "desc": "護甲 +25、魔抗 +25、法力回復 +1。戰鬥開始獲得 20 法力；生命降至 40% 時，獲得 15 法力和 20% 最大生命的護盾。",
+   "simplified": "護盾持續時間官方沒寫，用預設值。"
   },
   {
    "key": "AdaptiveHelm",
@@ -789,8 +1026,8 @@
     "mr": 20
    },
    "passives": [],
-   "desc": "法力回復 +3、魔抗 +20",
-   "simplified": ""
+   "desc": "法力回復 +3、魔抗 +20。從所有來源獲得的法力 +15%。依職業再加成：坦克與鬥士雙防 +80，其他人攻擊與法強 +10%。",
+   "simplified": "依職業的額外加成與「法力 +15%」引擎沒有對應寫法，沒做，只留基本數值。"
   },
   {
    "key": "HandOfJustice",
@@ -800,15 +1037,43 @@
     "SparringGloves"
    ],
    "stats": {
-    "adPct": 0.18,
-    "ap": 18,
+    "adPct": 0.36,
+    "ap": 36,
     "crit": 0.2,
     "manaRegen": 1,
     "omnivamp": 0.12
    },
-   "passives": [],
-   "desc": "攻擊 +18%、法術強度 +18、暴擊率 +20%、法力回復 +1、全能吸血 +12%",
-   "simplified": ""
+   "passives": [
+    {
+     "on": "hpBelow",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "adPct",
+       "value": -0.18
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "ap",
+       "value": -18
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "omnivamp",
+       "value": 0.12
+      }
+     ],
+     "src": "item:HandOfJustice",
+     "text": "正義手套切換",
+     "n": 0.5,
+     "limit": 1
+    }
+   ],
+   "desc": "暴擊率 +20%、法力回復 +1。獲得兩項效果：攻擊 +18% 與法術強度 +18；全能吸血 +12%。生命高於 50% 時攻擊與法強加成翻倍；低於 50% 時全能吸血翻倍。",
+   "simplified": "生命高於 50% 時直接給雙倍攻擊與法強，第一次掉到 50% 以下就切成雙倍全能吸血，之後回血也不會切回來。"
   },
   {
    "key": "BrambleVest",
@@ -819,11 +1084,31 @@
    ],
    "stats": {
     "armor": 50,
+    "dr": 0.05,
     "hpPct": 0.06
    },
-   "passives": [],
-   "desc": "護甲 +50、生命 +6%",
-   "simplified": ""
+   "passives": [
+    {
+     "on": "every",
+     "ops": [
+      {
+       "op": "damage",
+       "to": {
+        "adjacent": "enemy"
+       },
+       "type": "magic",
+       "value": {
+        "flat": 100
+       }
+      }
+     ],
+     "src": "item:BrambleVest",
+     "text": "刺藤反傷",
+     "n": 2
+    }
+   ],
+   "desc": "護甲 +50、最大生命 ×1.06。承受的普攻傷害 -5%；被普攻命中時，對相鄰敵人造成 100 魔法傷害（冷卻 2 秒）。",
+   "simplified": "普攻減傷這裡當成全部傷害減傷；反傷簡化成每 2 秒固定打一次相鄰敵人（官方是被普攻命中、冷卻 2 秒）。"
   },
   {
    "key": "DragonsClaw",
@@ -836,8 +1121,24 @@
     "hpPct": 0.06,
     "mr": 60
    },
-   "passives": [],
-   "desc": "生命 +6%、魔抗 +60",
+   "passives": [
+    {
+     "on": "every",
+     "ops": [
+      {
+       "op": "heal",
+       "to": "self",
+       "value": {
+        "selfMaxHp": 0.025
+       }
+      }
+     ],
+     "src": "item:DragonsClaw",
+     "text": "龍爪回血",
+     "n": 2
+    }
+   ],
+   "desc": "魔抗 +60、最大生命 ×1.06。每 2 秒回復 2.5% 最大生命。",
    "simplified": ""
   },
   {
@@ -851,8 +1152,48 @@
     "hp": 250,
     "mr": 20
    },
-   "passives": [],
-   "desc": "生命 +250、魔抗 +20",
+   "passives": [
+    {
+     "on": "every",
+     "ops": [
+      {
+       "op": "status",
+       "to": {
+        "around": "self",
+        "r": 2
+       },
+       "kind": "sunder",
+       "dur": 1.5,
+       "value": 0.3
+      }
+     ],
+     "src": "item:Evenshroud",
+     "text": "破甲",
+     "n": 1
+    },
+    {
+     "on": "start",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "armor",
+       "value": 15,
+       "dur": 15
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "mr",
+       "value": 15,
+       "dur": 15
+      }
+     ],
+     "src": "item:Evenshroud",
+     "text": "戰鬥開始雙防"
+    }
+   ],
+   "desc": "生命 +250、魔抗 +20。2 格內的敵人護甲 -30%。戰鬥開始後 15 秒內，護甲與魔抗各 +15。",
    "simplified": ""
   },
   {
@@ -875,15 +1216,31 @@
        "op": "status",
        "to": "self",
        "kind": "ccImmune",
-       "dur": 8
+       "dur": 18
       }
      ],
      "src": "item:Quicksilver",
-     "text": "免控"
+     "text": "無人能擋"
+    },
+    {
+     "on": "every",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "asPct",
+       "value": 0.03,
+       "stackKey": "quicksilver",
+       "maxStacks": 99
+      }
+     ],
+     "src": "item:Quicksilver",
+     "text": "疊攻速",
+     "n": 1
     }
    ],
-   "desc": "攻速 +15%、暴擊率 +20%、魔抗 +20。開場 8 秒免疫控制。",
-   "simplified": ""
+   "desc": "攻速 +15%、暴擊率 +20%、魔抗 +20。戰鬥開始 18 秒免疫控制（無人能擋）；每秒攻速 +3%，可疊加。",
+   "simplified": "官方的「無人能擋」簡化成免疫暈眩與緩速。"
   }
  ],
  "radiant": [
@@ -893,12 +1250,11 @@
    "radiant": true,
    "base": "Deathblade",
    "stats": {
-    "adPct": 1.1,
-    "dmgAmp": 0.2
+    "adPct": 1.3
    },
    "passives": [],
-   "desc": "聖光版：屬性加倍。攻擊 +55%、傷害增幅 +10%",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：攻擊 +100%；所有來源的攻擊額外 ×1.3。",
+   "simplified": "引擎沒有「全來源乘算」，簡化成再多 +30% 攻擊（官方是 ×1.3）；原本的傷害增幅 +10% 已不存在。"
   },
   {
    "key": "GiantSlayer_Radiant",
@@ -908,25 +1264,12 @@
    "stats": {
     "adPct": 0.3,
     "ap": 30,
-    "asPct": 0.3
+    "asPct": 0.3,
+    "dmgAmp": 0.3
    },
-   "passives": [
-    {
-     "on": "start",
-     "ops": [
-      {
-       "op": "buff",
-       "to": "self",
-       "stat": "dmgAmp",
-       "value": 0.1
-      }
-     ],
-     "src": "item:GiantSlayer",
-     "text": "巨人殺手"
-    }
-   ],
-   "desc": "聖光版：屬性加倍。攻擊 +15%、法術強度 +15、攻速 +15%。傷害增幅 +10%。",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "passives": [],
+   "desc": "聖光版：攻擊 +30%、法術強度 +30、攻速 +30%、傷害增幅 +30%。打坦克時再多 30% 傷害增幅。",
+   "simplified": "打坦克時的額外傷害增幅沒做（不分目標）。"
   },
   {
    "key": "HextechGunbladeRadiant",
@@ -939,9 +1282,28 @@
     "manaRegen": 2,
     "omnivamp": 0.3
    },
-   "passives": [],
-   "desc": "聖光版：屬性加倍。攻擊 +20%、法術強度 +20、法力回復 +1、全能吸血 +15%",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "passives": [
+    {
+     "on": "damageDealt",
+     "ops": [
+      {
+       "op": "heal",
+       "to": {
+        "lowestHp": 1,
+        "side": "ally"
+       },
+       "value": {
+        "flat": 20.0
+       }
+      }
+     ],
+     "src": "item:HextechGunbladeRadiant",
+     "text": "槍刃治療",
+     "n": 50
+    }
+   ],
+   "desc": "聖光版：攻擊 +40%、法術強度 +40、法力回復 +2、全能吸血 +30%。治療生命比例最低的友軍，治療量等同於 40% 傷害量。",
+   "simplified": "治療是每造成 50 點傷害就治療一次（20 點），不是逐筆。"
   },
   {
    "key": "SpearOfShojinRadiant",
@@ -953,9 +1315,22 @@
     "ap": 30,
     "manaRegen": 2
    },
-   "passives": [],
-   "desc": "聖光版：屬性加倍。攻擊 +15%、法術強度 +15、法力回復 +1",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "passives": [
+    {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "mana",
+       "to": "self",
+       "value": 10
+      }
+     ],
+     "src": "item:SpearOfShojinRadiant",
+     "text": "精進回魔"
+    }
+   ],
+   "desc": "聖光版：攻擊 +30%、法術強度 +30、法力回復 +2。普攻賦予 10 額外法力。",
+   "simplified": ""
   },
   {
    "key": "InfinityEdgeRadiant",
@@ -963,12 +1338,13 @@
    "radiant": true,
    "base": "InfinityEdge",
    "stats": {
-    "adPct": 0.7,
-    "crit": 0.7
+    "abilityCrit": 1,
+    "adPct": 0.75,
+    "crit": 0.75
    },
    "passives": [],
-   "desc": "聖光版：屬性加倍。攻擊 +35%、暴擊率 +35%",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：攻擊 +75%、暴擊率 +75%。獲得精準：技能傷害可以暴擊。",
+   "simplified": "額外暴擊率轉成暴擊傷害 +10%（精準）沒做。"
   },
   {
    "key": "GuinsoosRagebladeRadiant",
@@ -977,27 +1353,28 @@
    "base": "GuinsoosRageblade",
    "stats": {
     "ap": 20,
-    "asPct": 0.2
+    "asPct": 0.25
    },
    "passives": [
     {
-     "on": "attack",
+     "on": "every",
      "ops": [
       {
        "op": "buff",
        "to": "self",
        "stat": "asPct",
-       "value": 0.05,
+       "value": 0.16,
        "stackKey": "guinsoo",
-       "maxStacks": 40
+       "maxStacks": 99
       }
      ],
-     "src": "item:GuinsoosRageblade",
-     "text": "狂暴"
+     "src": "item:GuinsoosRagebladeRadiant",
+     "text": "狂暴",
+     "n": 1
     }
    ],
-   "desc": "聖光版：屬性加倍。法術強度 +10、攻速 +10%。每次普攻，攻速 +5%，可疊加。",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：法術強度 +20、攻速 +25%。每秒攻速 +16%，可疊加。",
+   "simplified": ""
   },
   {
    "key": "VoidStaffRadiant",
@@ -1005,11 +1382,25 @@
    "radiant": true,
    "base": "VoidStaff",
    "stats": {
-    "ap": 70,
+    "ap": 75,
     "asPct": 0.3,
     "manaRegen": 2
    },
    "passives": [
+    {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "shred",
+       "dur": 999,
+       "value": 0.3
+      }
+     ],
+     "src": "item:VoidStaffRadiant",
+     "text": "破魔"
+    },
     {
      "on": "cast",
      "ops": [
@@ -1017,16 +1408,16 @@
        "op": "status",
        "to": "current",
        "kind": "shred",
-       "dur": 3,
+       "dur": 999,
        "value": 0.3
       }
      ],
-     "src": "item:VoidStaff",
+     "src": "item:VoidStaffRadiant",
      "text": "破魔"
     }
    ],
-   "desc": "聖光版：屬性加倍。法術強度 +35、攻速 +15%、法力回復 +1。施放技能後，目標魔抗 -30%，持續 3 秒。",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：法術強度 +75、攻速 +30%、法力回復 +2。普攻和技能傷害讓目標魔抗 -30%，持續 到戰鬥結束。",
+   "simplified": ""
   },
   {
    "key": "KrakensFury_Radiant",
@@ -1046,17 +1437,32 @@
        "op": "buff",
        "to": "self",
        "stat": "adPct",
-       "value": 0.04,
+       "value": 0.07,
        "stackKey": "kraken",
-       "maxStacks": 30
+       "maxStacks": 15
       }
      ],
-     "src": "item:KrakensFury",
+     "src": "item:KrakensFury_Radiant",
      "text": "疊攻"
+    },
+    {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "asPct",
+       "value": 0.3
+      }
+     ],
+     "src": "item:KrakensFury_Radiant",
+     "text": "海妖狂怒",
+     "n": 15,
+     "limit": 1
     }
    ],
-   "desc": "聖光版：屬性加倍。攻擊 +10%、攻速 +10%、魔抗 +20。每次普攻，攻擊 +4%，可疊加。",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：攻擊 +20%、攻速 +20%、魔抗 +40。每次普攻，攻擊 +7%，最多 15 層；打滿 15 次普攻後，攻速再 +30%。",
+   "simplified": ""
   },
   {
    "key": "NashorsToothRadiant",
@@ -1071,22 +1477,20 @@
    },
    "passives": [
     {
-     "on": "cast",
+     "on": "attack",
      "ops": [
       {
-       "op": "buff",
+       "op": "mana",
        "to": "self",
-       "stat": "asPct",
-       "value": 0.4,
-       "dur": 4
+       "value": 4
       }
      ],
-     "src": "item:NashorsTooth",
-     "text": "攻速"
+     "src": "item:NashorsToothRadiant",
+     "text": "普攻回魔"
     }
    ],
-   "desc": "聖光版：屬性加倍。法術強度 +15、攻速 +10%、暴擊率 +20%、生命 +150。施放技能後，攻速 +40%，持續 4 秒。",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：法術強度 +30、攻速 +20%、暴擊率 +40%、生命 +300。普攻賦予 4 額外法力。",
+   "simplified": "暴擊時額外法力更多，官方沒寫數字，沒做。"
   },
   {
    "key": "LastWhisperRadiant",
@@ -1094,7 +1498,7 @@
    "radiant": true,
    "base": "LastWhisper",
    "stats": {
-    "adPct": 0.3,
+    "adPct": 0.45,
     "asPct": 0.4,
     "crit": 0.4
    },
@@ -1106,16 +1510,30 @@
        "op": "status",
        "to": "current",
        "kind": "sunder",
-       "dur": 3,
+       "dur": 999,
        "value": 0.3
       }
      ],
-     "src": "item:LastWhisper",
+     "src": "item:LastWhisperRadiant",
+     "text": "破甲"
+    },
+    {
+     "on": "cast",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "sunder",
+       "dur": 999,
+       "value": 0.3
+      }
+     ],
+     "src": "item:LastWhisperRadiant",
      "text": "破甲"
     }
    ],
-   "desc": "聖光版：屬性加倍。攻擊 +15%、攻速 +20%、暴擊率 +20%。普攻讓目標護甲 -30%，持續 3 秒。",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：攻擊 +45%、攻速 +40%、暴擊率 +40%。普攻和技能傷害讓目標護甲 -30%，持續 到戰鬥結束。",
+   "simplified": ""
   },
   {
    "key": "ArchangelsStaffRadiant",
@@ -1134,18 +1552,18 @@
        "op": "buff",
        "to": "self",
        "stat": "ap",
-       "value": 20,
+       "value": 40,
        "stackKey": "archangel",
        "maxStacks": 9
       }
      ],
-     "src": "item:ArchangelsStaff",
+     "src": "item:ArchangelsStaffRadiant",
      "text": "法強",
      "n": 5
     }
    ],
-   "desc": "聖光版：屬性加倍。法術強度 +30、法力回復 +1。每 5 秒，法術強度 +20，可疊加。",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：法術強度 +60、法力回復 +2。戰鬥中每 5 秒，法術強度 +40，可疊加。",
+   "simplified": ""
   },
   {
    "key": "CrownguardRadiant",
@@ -1157,9 +1575,25 @@
     "armor": 40,
     "hp": 200
    },
-   "passives": [],
-   "desc": "聖光版：屬性加倍。法術強度 +20、護甲 +20、生命 +100",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "passives": [
+    {
+     "on": "start",
+     "ops": [
+      {
+       "op": "shield",
+       "to": "self",
+       "value": {
+        "selfMaxHp": 0.2
+       },
+       "dur": 8
+      }
+     ],
+     "src": "item:CrownguardRadiant",
+     "text": "皇冠護盾"
+    }
+   ],
+   "desc": "聖光版：法術強度 +10、護甲 +20、生命 +100。戰鬥開始獲得 20% 最大生命的護盾，持續 8 秒。（聖光版的官方資料跟原版一模一樣，疑似還沒填，屬性沿用舊的加倍值，不確定。）",
+   "simplified": "所有治療與護盾對持有者 +25% 沒做。"
   },
   {
    "key": "IonicSparkRadiant",
@@ -1168,27 +1602,31 @@
    "base": "IonicSpark",
    "stats": {
     "ap": 30,
-    "hp": 500,
+    "hp": 700,
     "mr": 70
    },
    "passives": [
     {
-     "on": "start",
+     "on": "every",
      "ops": [
       {
        "op": "status",
-       "to": "allEnemies",
+       "to": {
+        "around": "self",
+        "r": 2
+       },
        "kind": "shred",
-       "dur": 30,
+       "dur": 1.5,
        "value": 0.3
       }
      ],
-     "src": "item:IonicSpark",
-     "text": "破魔"
+     "src": "item:IonicSparkRadiant",
+     "text": "破魔",
+     "n": 1
     }
    ],
-   "desc": "聖光版：屬性加倍。法術強度 +15、生命 +250、魔抗 +35。開場讓所有敵人魔抗 -30%。",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：法術強度 +30、生命 +700、魔抗 +70。2 格內的敵人魔抗 -30%。敵人施放技能時，受到等同其耗費法力 300% 的魔法傷害。",
+   "simplified": "「敵人放技能時吃法力傷害」引擎沒有對應觸發，沒做。"
   },
   {
    "key": "JeweledGauntletRadiant",
@@ -1196,12 +1634,13 @@
    "radiant": true,
    "base": "JeweledGauntlet",
    "stats": {
-    "ap": 70,
-    "crit": 0.7
+    "abilityCrit": 1,
+    "ap": 75,
+    "crit": 0.75
    },
    "passives": [],
-   "desc": "聖光版：屬性加倍。法術強度 +35、暴擊率 +35%",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：法術強度 +75、暴擊率 +75%。獲得精準：技能傷害可以暴擊。",
+   "simplified": "額外暴擊率轉成暴擊傷害 +10%（精準）沒做。"
   },
   {
    "key": "BlueBuffRadiant",
@@ -1209,13 +1648,14 @@
    "radiant": true,
    "base": "BlueBuff",
    "stats": {
-    "adPct": 0.3,
-    "ap": 30,
-    "manaRegen": 10
+    "adPct": 0.4,
+    "ap": 40,
+    "manaRegen": 12,
+    "startMana": 20
    },
    "passives": [],
-   "desc": "聖光版：屬性加倍。攻擊 +15%、法術強度 +15、法力回復 +5",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：攻擊 +40%、法術強度 +40、法力回復 +12。戰鬥開始獲得 20 法力。",
+   "simplified": ""
   },
   {
    "key": "SpiritVisage_Radiant",
@@ -1223,7 +1663,8 @@
    "radiant": true,
    "base": "SpiritVisage",
    "stats": {
-    "hp": 600,
+    "dr": 0.18,
+    "hp": 700,
     "manaRegen": 4
    },
    "passives": [
@@ -1234,17 +1675,17 @@
        "op": "heal",
        "to": "self",
        "value": {
-        "selfMissingHp": 0.09
+        "selfMissingHp": 0.04
        }
       }
      ],
-     "src": "item:SpiritVisage",
+     "src": "item:SpiritVisage_Radiant",
      "text": "治療",
-     "n": 5
+     "n": 1
     }
    ],
-   "desc": "聖光版：屬性加倍。生命 +300、法力回復 +2。每 5 秒，回復已損失生命的 9%。",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：生命 +700、減傷 18%、法力回復 +4。每秒回復已損失生命的 4%。",
+   "simplified": "官方是「承受傷害 ×0.82」，這裡當成減傷 18%。"
   },
   {
    "key": "GargoyleStoneplate_Radiant",
@@ -1253,12 +1694,12 @@
    "base": "GargoyleStoneplate",
    "stats": {
     "armor": 50,
-    "hp": 200,
+    "hp": 400,
     "mr": 50
    },
    "passives": [],
-   "desc": "聖光版：屬性加倍。護甲 +25、生命 +100、魔抗 +25",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：護甲 +50、生命 +400、魔抗 +50。每有一位敵人以持有者為目標，再 +20 護甲與魔抗。",
+   "simplified": "「每個瞄準你的敵人再加雙抗」沒做，只留基本數值。"
   },
   {
    "key": "SteadfastHeartRadiant",
@@ -1268,11 +1709,28 @@
    "stats": {
     "armor": 40,
     "crit": 0.4,
+    "dr": 0.3,
     "hp": 500
    },
-   "passives": [],
-   "desc": "聖光版：屬性加倍。護甲 +20、暴擊率 +20%、生命 +250",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "passives": [
+    {
+     "on": "hpBelow",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "dr",
+       "value": -0.2
+      }
+     ],
+     "src": "item:SteadfastHeartRadiant",
+     "text": "堅定之心減傷",
+     "n": 0.5,
+     "limit": 1
+    }
+   ],
+   "desc": "聖光版：護甲 +40、暴擊率 +40%、生命 +500。減傷 10%；生命高於 50% 時改為 30%。",
+   "simplified": "官方 PBE 資料的基本數值欄有一格是空的（可能是生命，數值缺），生命 +500 沿用舊值（不確定）。生命回到 50% 以上不會切回高減傷。"
   },
   {
    "key": "WarmogsArmorRadiant",
@@ -1280,12 +1738,12 @@
    "radiant": true,
    "base": "WarmogsArmor",
    "stats": {
-    "hp": 1000,
+    "hp": 1200,
     "hpPct": 0.36
    },
    "passives": [],
-   "desc": "聖光版：屬性加倍。生命 +500、生命 +18%",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：生命 +1200、最大生命 ×1.36。",
+   "simplified": ""
   },
   {
    "key": "StrikersFlailRadiant",
@@ -1299,8 +1757,8 @@
     "hp": 300
    },
    "passives": [],
-   "desc": "聖光版：屬性加倍。攻速 +10%、暴擊率 +20%、傷害增幅 +10%、生命 +150",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：攻速 +20%、暴擊率 +40%、傷害增幅 +20%、生命 +300。暴擊賦予 10% 傷害增幅，持續 5 秒，最多 4 層。",
+   "simplified": "暴擊疊傷害增幅沒做（引擎沒有暴擊觸發），只留基本數值。"
   },
   {
    "key": "RabadonsDeathcap_Radiant",
@@ -1308,12 +1766,11 @@
    "radiant": true,
    "base": "RabadonsDeathcap",
    "stats": {
-    "ap": 110,
-    "dmgAmp": 0.3
+    "ap": 145
    },
    "passives": [],
-   "desc": "聖光版：屬性加倍。法術強度 +55、傷害增幅 +15%",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：法術強度 +115；所有來源的法術強度額外 ×1.3。",
+   "simplified": "引擎沒有「全來源乘算」，簡化成再多 +30 法術強度（官方是 ×1.3）；原本的傷害增幅已不存在。"
   },
   {
    "key": "BloodthirsterRadiant",
@@ -1321,8 +1778,8 @@
    "radiant": true,
    "base": "Bloodthirster",
    "stats": {
-    "adPct": 0.36,
-    "ap": 36,
+    "adPct": 0.3,
+    "ap": 30,
     "mr": 40,
     "omnivamp": 0.4
    },
@@ -1334,19 +1791,25 @@
        "op": "shield",
        "to": "self",
        "value": {
-        "selfMaxHp": 0.25
+        "selfMaxHp": 0.5
        },
        "dur": 5
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "omnivamp",
+       "value": 0.3
       }
      ],
-     "src": "item:Bloodthirster",
+     "src": "item:BloodthirsterRadiant",
      "text": "護盾",
-     "n": 0.4,
+     "n": 0.6,
      "limit": 1
     }
    ],
-   "desc": "聖光版：屬性加倍。攻擊 +18%、法術強度 +18、魔抗 +20、全能吸血 +20%。生命低於 40% 時，獲得 25% 最大生命的護盾，5 秒。",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：攻擊 +30%、法術強度 +30、魔抗 +40、全能吸血 +40%。每場戰鬥一次，生命低於 60% 時獲得 50% 最大生命的護盾，之後全能吸血再 +30%。",
+   "simplified": "護盾持續時間官方沒寫，沿用 5 秒。"
   },
   {
    "key": "SunfireCape_Radiant",
@@ -1365,29 +1828,31 @@
       {
        "op": "status",
        "to": {
-        "adjacent": "enemy"
+        "around": "self",
+        "r": 2
        },
        "kind": "burn",
-       "dur": 3,
+       "dur": 10,
        "value": 0.01
       },
       {
        "op": "status",
        "to": {
-        "adjacent": "enemy"
+        "around": "self",
+        "r": 2
        },
        "kind": "wound",
-       "dur": 3,
+       "dur": 10,
        "value": 0.33
       }
      ],
-     "src": "item:SunfireCape",
+     "src": "item:SunfireCape_Radiant",
      "text": "灼燒",
      "n": 2
     }
    ],
-   "desc": "聖光版：屬性加倍。護甲 +20、生命 +150、生命 +8%。每 2 秒，讓身邊敵人灼燒與重傷 3 秒。",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：護甲 +20、生命 +150、最大生命 ×1.08。每 2 秒，讓 2 格內的敵人灼燒（每秒 1% 最大生命）與重傷（33%）10 秒。（聖光版的官方資料跟原版一模一樣，疑似還沒填，屬性沿用舊的加倍值，不確定。）",
+   "simplified": ""
   },
   {
    "key": "RedBuffRadiant",
@@ -1395,7 +1860,8 @@
    "radiant": true,
    "base": "RedBuff",
    "stats": {
-    "asPct": 0.9
+    "asPct": 0.8,
+    "dmgAmp": 0.06
    },
    "passives": [
     {
@@ -1406,7 +1872,7 @@
        "to": "current",
        "kind": "burn",
        "dur": 5,
-       "value": 0.01
+       "value": 0.02
       },
       {
        "op": "status",
@@ -1416,12 +1882,33 @@
        "value": 0.33
       }
      ],
-     "src": "item:RedBuff",
+     "src": "item:RedBuffRadiant",
+     "text": "灼燒"
+    },
+    {
+     "on": "cast",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "burn",
+       "dur": 5,
+       "value": 0.02
+      },
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "wound",
+       "dur": 5,
+       "value": 0.33
+      }
+     ],
+     "src": "item:RedBuffRadiant",
      "text": "灼燒"
     }
    ],
-   "desc": "聖光版：屬性加倍。攻速 +45%。普攻讓目標灼燒（每秒 1% 最大生命）與重傷 5 秒。",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：攻速 +80%、傷害增幅 +6%。普攻與技能讓目標灼燒（每秒 2% 最大生命）與重傷 5 秒。",
+   "simplified": ""
   },
   {
    "key": "EdgeOfNightRadiant",
@@ -1429,14 +1916,31 @@
    "radiant": true,
    "base": "EdgeOfNight",
    "stats": {
-    "adPct": 0.2,
-    "ap": 20,
+    "adPct": 0.3,
+    "ap": 30,
     "armor": 40,
     "asPct": 0.3
    },
-   "passives": [],
-   "desc": "聖光版：屬性加倍。攻擊 +10%、法術強度 +10、護甲 +20、攻速 +15%",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "passives": [
+    {
+     "on": "hpBelow",
+     "ops": [
+      {
+       "op": "heal",
+       "to": "self",
+       "value": {
+        "selfMissingHp": 1.0
+       }
+      }
+     ],
+     "src": "item:EdgeOfNightRadiant",
+     "text": "夜色緣界",
+     "n": 0.4,
+     "limit": 1
+    }
+   ],
+   "desc": "聖光版：攻擊 +30%、法術強度 +30、護甲 +40、攻速 +30%。生命降至 40% 時，回復 所有 已損失生命。",
+   "simplified": "官方還會短暫無法被指定並移除負面效果，時間官方沒寫，沒做。"
   },
   {
    "key": "SteraksGageRadiant",
@@ -1455,19 +1959,19 @@
        "op": "shield",
        "to": "self",
        "value": {
-        "selfMaxHp": 0.25
+        "selfMaxHp": 0.4
        },
-       "dur": 5
+       "dur": 4
       }
      ],
-     "src": "item:SteraksGage",
+     "src": "item:SteraksGageRadiant",
      "text": "護盾",
-     "n": 0.6,
+     "n": 0.4,
      "limit": 1
     }
    ],
-   "desc": "聖光版：屬性加倍。攻擊 +45%、生命 +300。生命低於 60% 時，獲得 25% 最大生命的護盾，5 秒。",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：攻擊 +45%、生命 +300。生命降至 40% 時，獲得 40% 最大生命的護盾（4 秒內快速衰減）。（聖光版的官方資料跟原版一模一樣，疑似還沒填，屬性沿用舊的加倍值，不確定。）",
+   "simplified": "護盾不會逐漸衰減，4 秒後直接消失。"
   },
   {
    "key": "TitansResolve_Radiant",
@@ -1478,9 +1982,56 @@
     "armor": 40,
     "asPct": 0.2
    },
-   "passives": [],
-   "desc": "聖光版：屬性加倍。護甲 +20、攻速 +10%",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "passives": [
+    {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "adPct",
+       "value": 0.04,
+       "stackKey": "titan",
+       "maxStacks": 25
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "ap",
+       "value": 4.0,
+       "stackKey": "titan2",
+       "maxStacks": 25
+      }
+     ],
+     "src": "item:TitansResolve_Radiant",
+     "text": "泰坦疊加"
+    },
+    {
+     "on": "hit",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "adPct",
+       "value": 0.04,
+       "stackKey": "titan",
+       "maxStacks": 25
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "ap",
+       "value": 4.0,
+       "stackKey": "titan2",
+       "maxStacks": 25
+      }
+     ],
+     "src": "item:TitansResolve_Radiant",
+     "text": "泰坦疊加"
+    }
+   ],
+   "desc": "聖光版：護甲 +40、攻速 +20%。攻擊或受傷時，攻擊與法術強度 +4%，最多 25 層。",
+   "simplified": "疊滿 25 層後的最大生命加成與「無法阻擋」沒做。"
   },
   {
    "key": "MorellonomiconRadiant",
@@ -1488,11 +2039,32 @@
    "radiant": true,
    "base": "Morellonomicon",
    "stats": {
-    "ap": 40,
+    "ap": 35,
     "hp": 300,
     "manaRegen": 2
    },
    "passives": [
+    {
+     "on": "attack",
+     "ops": [
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "burn",
+       "dur": 10,
+       "value": 0.02
+      },
+      {
+       "op": "status",
+       "to": "current",
+       "kind": "wound",
+       "dur": 10,
+       "value": 0.33
+      }
+     ],
+     "src": "item:MorellonomiconRadiant",
+     "text": "灼燒"
+    },
     {
      "on": "cast",
      "ops": [
@@ -1500,23 +2072,23 @@
        "op": "status",
        "to": "current",
        "kind": "burn",
-       "dur": 5,
-       "value": 0.01
+       "dur": 10,
+       "value": 0.02
       },
       {
        "op": "status",
        "to": "current",
        "kind": "wound",
-       "dur": 5,
+       "dur": 10,
        "value": 0.33
       }
      ],
-     "src": "item:Morellonomicon",
+     "src": "item:MorellonomiconRadiant",
      "text": "灼燒"
     }
    ],
-   "desc": "聖光版：屬性加倍。法術強度 +20、生命 +150、法力回復 +1。施放技能後，讓目標灼燒與重傷 5 秒。",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：法術強度 +35、生命 +300、法力回復 +2。普攻與技能讓目標灼燒（每秒 2% 最大生命）與重傷 10 秒。",
+   "simplified": ""
   },
   {
    "key": "ProtectorsVowRadiant",
@@ -1529,9 +2101,31 @@
     "mr": 50,
     "startMana": 40
    },
-   "passives": [],
-   "desc": "聖光版：屬性加倍。護甲 +25、法力回復 +1、魔抗 +25、起始法力 +20",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "passives": [
+    {
+     "on": "hpBelow",
+     "ops": [
+      {
+       "op": "mana",
+       "to": "self",
+       "value": 30
+      },
+      {
+       "op": "shield",
+       "to": "self",
+       "value": {
+        "selfMaxHp": 0.5
+       }
+      }
+     ],
+     "src": "item:ProtectorsVowRadiant",
+     "text": "保衛者護盾",
+     "n": 0.4,
+     "limit": 1
+    }
+   ],
+   "desc": "聖光版：護甲 +50、魔抗 +50、法力回復 +2。戰鬥開始獲得 40 法力；生命降至 40% 時，獲得 30 法力和 50% 最大生命的護盾。",
+   "simplified": "護盾持續時間官方沒寫，用預設值。"
   },
   {
    "key": "AdaptiveHelm_Radiant",
@@ -1543,8 +2137,8 @@
     "mr": 40
    },
    "passives": [],
-   "desc": "聖光版：屬性加倍。法力回復 +3、魔抗 +20",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：法力回復 +6、魔抗 +40。從所有來源獲得的法力 +30%。依職業再加成：坦克與鬥士雙防 +80，其他人攻擊與法強 +35%。",
+   "simplified": "依職業的額外加成與「法力 +30%」引擎沒有對應寫法，沒做，只留基本數值。"
   },
   {
    "key": "HandOfJusticeRadiant",
@@ -1552,15 +2146,43 @@
    "radiant": true,
    "base": "HandOfJustice",
    "stats": {
-    "adPct": 0.36,
-    "ap": 36,
+    "adPct": 0.7,
+    "ap": 70,
     "crit": 0.4,
     "manaRegen": 2,
-    "omnivamp": 0.24
+    "omnivamp": 0.25
    },
-   "passives": [],
-   "desc": "聖光版：屬性加倍。攻擊 +18%、法術強度 +18、暴擊率 +20%、法力回復 +1、全能吸血 +12%",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "passives": [
+    {
+     "on": "hpBelow",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "adPct",
+       "value": -0.35
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "ap",
+       "value": -35
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "omnivamp",
+       "value": 0.25
+      }
+     ],
+     "src": "item:HandOfJusticeRadiant",
+     "text": "正義手套切換",
+     "n": 0.5,
+     "limit": 1
+    }
+   ],
+   "desc": "聖光版：暴擊率 +40%、法力回復 +2。獲得兩項效果：攻擊 +35% 與法術強度 +35；全能吸血 +25%。生命高於 50% 時攻擊與法強加成翻倍；低於 50% 時全能吸血翻倍。",
+   "simplified": "生命高於 50% 時直接給雙倍攻擊與法強，第一次掉到 50% 以下就切成雙倍全能吸血，之後回血也不會切回來。"
   },
   {
    "key": "BrambleVestRadiant",
@@ -1569,11 +2191,31 @@
    "base": "BrambleVest",
    "stats": {
     "armor": 100,
+    "dr": 0.1,
     "hpPct": 0.12
    },
-   "passives": [],
-   "desc": "聖光版：屬性加倍。護甲 +50、生命 +6%",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "passives": [
+    {
+     "on": "every",
+     "ops": [
+      {
+       "op": "damage",
+       "to": {
+        "adjacent": "enemy"
+       },
+       "type": "magic",
+       "value": {
+        "flat": 200
+       }
+      }
+     ],
+     "src": "item:BrambleVestRadiant",
+     "text": "刺藤反傷",
+     "n": 2
+    }
+   ],
+   "desc": "聖光版：護甲 +100、最大生命 ×1.12。承受的普攻傷害 -10%；被普攻命中時，對相鄰敵人造成 200 魔法傷害（冷卻 2 秒）。",
+   "simplified": "普攻減傷這裡當成全部傷害減傷；反傷簡化成每 2 秒固定打一次相鄰敵人（官方是被普攻命中、冷卻 2 秒）。"
   },
   {
    "key": "DragonsClawRadiant",
@@ -1581,12 +2223,28 @@
    "radiant": true,
    "base": "DragonsClaw",
    "stats": {
-    "hpPct": 0.12,
+    "hpPct": 0.28,
     "mr": 120
    },
-   "passives": [],
-   "desc": "聖光版：屬性加倍。生命 +6%、魔抗 +60",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "passives": [
+    {
+     "on": "every",
+     "ops": [
+      {
+       "op": "heal",
+       "to": "self",
+       "value": {
+        "selfMaxHp": 0.05
+       }
+      }
+     ],
+     "src": "item:DragonsClawRadiant",
+     "text": "龍爪回血",
+     "n": 2
+    }
+   ],
+   "desc": "聖光版：魔抗 +120、最大生命 ×1.28。每 2 秒回復 5% 最大生命。",
+   "simplified": ""
   },
   {
    "key": "EvenshroudRadiant",
@@ -1597,9 +2255,49 @@
     "hp": 500,
     "mr": 40
    },
-   "passives": [],
-   "desc": "聖光版：屬性加倍。生命 +250、魔抗 +20",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "passives": [
+    {
+     "on": "every",
+     "ops": [
+      {
+       "op": "status",
+       "to": {
+        "around": "self",
+        "r": 3
+       },
+       "kind": "sunder",
+       "dur": 1.5,
+       "value": 0.3
+      }
+     ],
+     "src": "item:EvenshroudRadiant",
+     "text": "破甲",
+     "n": 1
+    },
+    {
+     "on": "start",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "armor",
+       "value": 50,
+       "dur": 20
+      },
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "mr",
+       "value": 50,
+       "dur": 20
+      }
+     ],
+     "src": "item:EvenshroudRadiant",
+     "text": "戰鬥開始雙防"
+    }
+   ],
+   "desc": "聖光版：生命 +500、魔抗 +40。3 格內的敵人護甲 -30%。戰鬥開始後 20 秒內，護甲與魔抗各 +50。",
+   "simplified": ""
   },
   {
    "key": "QuicksilverRadiant",
@@ -1607,7 +2305,7 @@
    "radiant": true,
    "base": "Quicksilver",
    "stats": {
-    "asPct": 0.3,
+    "asPct": 0.4,
     "crit": 0.4,
     "mr": 40
    },
@@ -1619,15 +2317,31 @@
        "op": "status",
        "to": "self",
        "kind": "ccImmune",
-       "dur": 8
+       "dur": 45
       }
      ],
-     "src": "item:Quicksilver",
-     "text": "免控"
+     "src": "item:QuicksilverRadiant",
+     "text": "無人能擋"
+    },
+    {
+     "on": "every",
+     "ops": [
+      {
+       "op": "buff",
+       "to": "self",
+       "stat": "asPct",
+       "value": 0.06,
+       "stackKey": "quicksilver",
+       "maxStacks": 99
+      }
+     ],
+     "src": "item:QuicksilverRadiant",
+     "text": "疊攻速",
+     "n": 1
     }
    ],
-   "desc": "聖光版：屬性加倍。攻速 +15%、暴擊率 +20%、魔抗 +20。開場 8 秒免疫控制。",
-   "simplified": "正式服聖光裝備的特效也會加強；這裡只把屬性加倍，特效照原版。"
+   "desc": "聖光版：攻速 +40%、暴擊率 +40%、魔抗 +40。戰鬥開始 45 秒免疫控制（無人能擋）；每秒攻速 +6%，可疊加。",
+   "simplified": "官方的「無人能擋」簡化成免疫暈眩與緩速。"
   }
  ]
 }

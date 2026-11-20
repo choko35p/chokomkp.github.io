@@ -1138,9 +1138,9 @@ export function showHelp(opts = {}) {
       el('p', { style: 'margin:0' }, el('button', { type: 'button', class: 'tt-btn tt-ghost', 'data-tt': 'open-unlocks', onclick: () => showUnlocks(api) }, '看每隻怎麼解鎖'))));
   }
   body.push(
-    el('div', { class: 'tt-notice' }, '這是站上自己做的練習版，不是官方模式。S19 還沒上 PBE，棋子的血量攻擊、部分技能和羈絆數字是推測的，PBE 開了會更新。部分羈絆有簡化，點羈絆可以看本頁的做法。'),
-    el('p', { class: 'muted', style: 'margin:0;font-size:var(--fs-s)' }, '名稱是暫譯，PBE 開了以後照官方繁中更新。'),
-    el('p', { class: 'muted', style: 'margin:0;font-size:var(--fs-s)' }, '非官方重製｜數值為推測，PBE 後更新'),
+    el('div', { class: 'tt-notice' }, '這是站上自己做的練習版，不是官方模式。數值照 PBE 11/20 的版本，少數羈絆還是簡化或推測，點羈絆可以看本頁的做法。'),
+    el('p', { class: 'muted', style: 'margin:0;font-size:var(--fs-s)' }, '名稱照 PBE 官方繁中，官方還沒翻的先用暫譯。'),
+    el('p', { class: 'muted', style: 'margin:0;font-size:var(--fs-s)' }, '非官方重製｜數值照 PBE 現在的版本（11/20），PBE 每天改，會再更新'),
     opts.onRestart ? el('div', {}, el('button', { type: 'button', class: 'tt-btn tt-ghost', 'data-tt': 'restart', onclick: (e) => {
       const b = e.currentTarget;
       if (b.dataset.armed !== '1') { b.dataset.armed = '1'; b.textContent = '真的要重來？目前進度會不見，再按一次'; return; }

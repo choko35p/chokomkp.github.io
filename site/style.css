@@ -1388,3 +1388,33 @@ a.lcard:hover { border-color: var(--accent); }
 .tc-req.rq, .tbx .tb-cell[data-tier="C"] .tc-req.rq, .tbx .tb-cell.watch .tc-req.rq { display: flex; align-items: center; gap: 4px; overflow: visible; }
 .rq-i { display: inline-flex; align-items: center; gap: 2px; }
 .dreq { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+
+/* 羈絆圖示（站主 2026-11-20：所有的羈絆都用圖示，滑鼠放上去或點一下才顯示文字）。六角底色照遊戲：灰＝未啟動、銅、銀、金、彩；啟動的圖示改深色（跟遊戲一樣） */
+.tbgs { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 5px; vertical-align: middle; }
+.tbg { position: relative; display: inline-grid; place-items: center; flex: none; width: 30px; height: 33px; padding: 0; margin: 0; border: 0; background: none; color: inherit; font: inherit; cursor: help; -webkit-tap-highlight-color: transparent; }
+button.tbg { cursor: pointer; }
+.tbg-hex { display: grid; place-items: center; width: 28px; height: 31px; background: #3b3f46; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.tbg .tr-ico { background-color: transparent; border-radius: 0; }
+.tbg.t-plain .tbg-hex { background: #2b2118; }
+.tbg.t-off .tbg-hex { background: #8a8f96; } .tbg.t-off { opacity: .6; }
+.tbg.t-bronze .tbg-hex { background: #b07a5c; }
+.tbg.t-silver .tbg-hex { background: #a9b4bd; }
+.tbg.t-gold .tbg-hex { background: #e2b84f; }
+.tbg.t-prism .tbg-hex { background: linear-gradient(135deg, #e9d5ff, #9ad8ff 55%, #ffd1f0); }
+.tbg.t-bronze .tr-ico, .tbg.t-silver .tr-ico, .tbg.t-gold .tr-ico, .tbg.t-prism .tr-ico { filter: brightness(0) opacity(.82); }
+.tbg-txt { font-style: normal; font-weight: 800; font-size: 13px; color: #fff; }
+.tbg.t-bronze .tbg-txt, .tbg.t-silver .tbg-txt, .tbg.t-gold .tbg-txt, .tbg.t-prism .tbg-txt { color: #1b1712; }
+.tbg > b { position: absolute; right: -4px; bottom: -3px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 8px; background: #1b1712; color: #fff; font-size: 11px; line-height: 16px; font-weight: 700; text-align: center; font-family: "Barlow Condensed", system-ui, sans-serif; }
+.tbg:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+.tbg:hover .tbg-hex { filter: brightness(1.12); }
+.case-tr.tbgs { gap: 3px; }
+.case-tr .tbg { width: 24px; height: 27px; } .case-tr .tbg-hex { width: 23px; height: 26px; } .case-tr .tbg > b { min-width: 14px; height: 14px; font-size: 10px; line-height: 14px; right: -3px; bottom: -2px; }
+.bd-tr { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.dk-trf { gap: 4px; margin: 4px 0; } .dk-trf .chip { min-height: 30px; }
+.dk-trf .tbg[aria-pressed="true"] .tbg-hex { background: var(--accent); }
+.dk-trf .tbg[aria-pressed="false"] .tbg-hex { background: #2b2118; }
+.wk-utr.tbgs { gap: 6px; }
+.wk-trh .tbg { cursor: default; }
+.ftip { position: fixed; z-index: 9999; max-width: min(280px, 90vw); padding: 5px 9px; border-radius: 6px; background: #1b1712; color: #fff; font-size: 13px; line-height: 1.35; font-weight: 600; pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+.ftip[hidden] { display: none; }
+.tbg > b { box-shadow: 0 0 0 1.5px rgba(255,255,255,.85); }

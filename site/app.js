@@ -1260,7 +1260,11 @@
   }
   /* ---------- 棋盤共用：神木植物、百戰老兵騎乘者、星級（站主 2026-11-04） ---------- */
   const ELDER = "Elderwood", SPRY = "Sprykin";
-  const PLANT = { stonebark: "石皮樹", lifebloom: "生命花", protector: "深林保護者" };
+  const PLANT = { stonebark: "石皮樹", lifebloom: "生命花", protector: "深林保護者", ins1: "樂器（雨笙／邦哥鼓／沙鈴選一）", ins2: "樂器（鋼鐵鼓／排笛／烏克麗麗選一）" };
+  // 站主 11/20「海灘有召喚物可以放，你去好好看有幾個」：S19 海灘流行樂的樂器（佔一格、不算人口）。PBE 戰績（11/17～18 還有記樂器的 1,411 場）：
+  // 3 隻＝1 個、5 隻＝2 個、7 隻還是 2 個（7 隻多的是海風）。第一個一定是雨笙／邦哥鼓／沙鈴其中之一，第二個是鋼鐵鼓／排笛／烏克麗麗其中之一，高手三種選得差不多平均。
+  const isIns = (u) => /^ins\d$/.test(u?.plant || "");
+  const BEACH = "BeachPop";
   const isPlant = (u) => !!u?.plant;
   /* ---------- 遊戲內「戰術規劃」分享碼（站主 2026-11-16：「每個陣容都要能匯出分享碼像是0241f4234363eb41040042143d3ec401TFTSet18」）
      格式：02＋10 格×3 位 16 進位棋子代碼（空格 000）＋TFTSet18。代碼表在 data/wiki.json 的 planner（官方 team_planner_code）。 ---------- */
@@ -1415,6 +1419,7 @@
   };
   // 神木精靈：3 隻＝石皮樹＋生命花、5 隻＝再一棵石皮樹、7 隻＝加深林保護者、9／11 隻＝植物 2／3 星（遊戲內特性說明）
   function plantPlan(units) {
+    if (S19) { const b = traitN(units, BEACH); return b >= 3 ? (b >= 5 ? ["ins1", "ins2"] : ["ins1"]).map((k) => ({ plant: k, star: 1 })) : []; }
     const n = traitN(units, ELDER);
     if (n < 3) return [];
     const star = n >= 11 ? 3 : n >= 9 ? 2 : 1, ks = ["stonebark", "lifebloom"];
@@ -1445,12 +1450,14 @@
   // 石皮樹和生命花在遊戲資料裡是同一隻單位、同一張頭像，所以兩棵樹左下角留一個小字（石／花）分辨
   const PLANT_IMG = { stonebark: "tree", lifebloom: "tree", protector: "protector" };
   const PLANT_MARK = { stonebark: "石", lifebloom: "花" };
-  const plantTile = (u) => h("span", { class: "plant pic", title: PLANT[u.plant], "aria-label": PLANT[u.plant] },
+  const plantTile = (u) => isIns(u) ? h("span", { class: "plant ins", "data-tip": PLANT[u.plant], "aria-label": PLANT[u.plant] },
+      h("span", { class: "tbg t-gold", "aria-hidden": "true" }, h("span", { class: "tbg-hex" }, traitIco(BEACH, 18))), h("span", { class: "pl-n" }, "樂器" + u.plant.slice(3)))
+    : h("span", { class: "plant pic", title: PLANT[u.plant], "aria-label": PLANT[u.plant] },
     h("img", { src: `icons/plants/${PLANT_IMG[u.plant] || "tree"}.webp`, alt: "", onerror: (e) => { e.target.closest(".plant")?.classList.remove("pic"); e.target.src = "icons/traits/Elderwood.png"; } }),
     PLANT_MARK[u.plant] ? h("span", { class: "pl-m", "aria-hidden": "true" }, PLANT_MARK[u.plant]) : null,
     h("span", { class: "pl-n" }, PLANT[u.plant]));
   function hexInner(u, showMark = true) {
-    if (isPlant(u)) return [starTag(u.star || 1), plantTile(u)];
+    if (isPlant(u)) return [isIns(u) ? null : starTag(u.star || 1), plantTile(u)];
     return [starTag(u.star), icon("champion", u.key), showMark && u.mark ? markBadge() : null, u.rider ? riderBadge() : null,
       h("span", { class: "its" }, (u.items || []).map((i) => icon("item", i, "xs")))];
   }
@@ -1495,7 +1502,7 @@
       h("div", { class: "bd-tr" }, h("span", { class: "small muted" }, cand ? "固定棋子的羈絆" : "啟動羈絆"), active.length ? traitBadges(active) : h("span", { class: "small" }, "—")),
       marks.length ? h("p", { class: "small" }, h("b", null, "首領標記："), marks.join("、")) : null,
       riders.length ? h("p", { class: "small" }, h("b", null, "騎乘者："), riders.join("、"), "（騎上毛茸茸大夥伴）") : null,
-      plants ? h("p", { class: "small" }, h("b", null, "神木植物："), plants) : null,
+      plants ? h("p", { class: "small" }, h("b", null, S19 ? "海灘樂器（佔一格、不算人口）：" : "神木植物："), plants) : null,
       // 戰鬥模擬器（2026-11-11）：把這個站位帶進模擬器
       c?.id && !S19 && c.boards?.["lv" + level] === b ? h("p", { class: "small" }, h("a", { class: "sim-link", href: `sim/#a=comp:${encodeURIComponent(c.id)}:lv${level}` }, "⚔️ 用戰鬥模擬器打打看")) : null,
       plannerRow(cs, c?.id ? `${c.id}:lv${level}` : "board",
@@ -1884,7 +1891,9 @@
   function floatBack(on) {
     $("#float-back")?.remove();
     if (!on) return;
-    document.body.append(h("a", { id: "float-back", class: "float-back", href: "#comps", "aria-label": "回陣容列表" }, "← 返回"));
+    // 讀者 11/20（手機）：「每次我點進去上面T度表陣容 按返回他都會跳到最下面」→ 是從首頁點進來的就用上一頁回去，回到原本看的位置
+    document.body.append(h("a", { id: "float-back", class: "float-back", href: "#comps", "aria-label": "回陣容列表",
+      onclick: (e) => { if (HOME_Y != null && history.length > 1) { e.preventDefault(); history.back(); } } }, "← 返回"));
   }
 
   // 站主 2026-11-06：詳細頁加上均名、前四率、勝率（T 表和卡片維持下限／上限）。數字跟下限、上限同一份主資料（台服優先、美服補），場數照實列出
@@ -2533,6 +2542,8 @@
     loadWiki().then(() => { QZ.loaded = true; if (!QZ.q && WK.d) qzStart(); else drawQuiz(); });
   }
 
+  let HOME_Y = null;   // 從首頁點進陣容頁時，首頁捲到哪裡（回來時捲回去）
+  let ROUTED = false;
   function route() {
     // 站主 2026-11-10「就是一樣的」：被併掉的陣容舊網址（例：#c-xayah）轉到併入的那套
     const al = Object.entries(D.aliases || {}).find(([from]) => slug(from) === location.hash.slice(1));
@@ -2543,6 +2554,8 @@
     const fromDetail = !$("#detail").hidden || !!$("#quizv")?.isConnected && !$("#quizv").hidden || !!$("#learnv")?.isConnected && !$("#learnv").hidden;
     const quiz = hsh === "quiz" || hsh === "learn-quiz";
     const lv = !c && !quiz ? learnViewOf(hsh) : null;
+    if (ROUTED && !$("#home").hidden && (c || quiz || lv)) HOME_Y = scrollY;   // 直接開陣容頁網址進來的不算（沒有上一頁可回）
+    ROUTED = true;
     $("#home").hidden = !!c || quiz || !!lv; $("#detail").hidden = !c;
     if ($("#quizv")) $("#quizv").hidden = !quiz;
     if (lv || $("#learnv")) ensureLearnV().hidden = !lv;
@@ -2554,7 +2567,9 @@
       // 站主 2026-11-07：在陣容詳細頁點最上面的「T 度表」會先跳出去、要再按一次才到 → 首頁顯示出來後直接捲到那一區
       // （詳細頁時首頁是隱藏的，瀏覽器原本的錨點跳轉找不到位置）
       const t = fromDetail && hsh ? document.getElementById(hsh) : null;
-      if (t && $("#home").contains(t)) requestAnimationFrame(() => t.scrollIntoView({ block: "start" }));
+      if (fromDetail && HOME_Y != null && (!hsh || hsh === "comps" || hsh === "tierlist")) {   // 返回：回到點進去之前看的位置（T 表、陣容列表都一樣）
+        const y = HOME_Y; requestAnimationFrame(() => { scrollTo(0, y); setTimeout(() => scrollTo(0, y), 60); });
+      } else if (t && $("#home").contains(t)) requestAnimationFrame(() => t.scrollIntoView({ block: "start" }));
     }
     if (c) { renderDetail(c.id); window.scrollTo(0, 0); }
   }

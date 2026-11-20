@@ -1418,3 +1418,5 @@ button.tbg { cursor: pointer; }
 .ftip { position: fixed; z-index: 9999; max-width: min(280px, 90vw); padding: 5px 9px; border-radius: 6px; background: #1b1712; color: #fff; font-size: 13px; line-height: 1.35; font-weight: 600; pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
 .ftip[hidden] { display: none; }
 .tbg > b { box-shadow: 0 0 0 1.5px rgba(255,255,255,.85); }
+.plant.ins { background: linear-gradient(160deg, #3fb6c4, #1f6f8b); border: 2px solid #8fdde6; cursor: help; }
+.plant.ins .tbg { width: 56%; height: auto; aspect-ratio: 28/31; } .plant.ins .tbg-hex { width: 100%; height: 100%; }

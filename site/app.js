@@ -1456,9 +1456,45 @@
     h("img", { src: `icons/plants/${PLANT_IMG[u.plant] || "tree"}.webp`, alt: "", onerror: (e) => { e.target.closest(".plant")?.classList.remove("pic"); e.target.src = "icons/traits/Elderwood.png"; } }),
     PLANT_MARK[u.plant] ? h("span", { class: "pl-m", "aria-hidden": "true" }, PLANT_MARK[u.plant]) : null,
     h("span", { class: "pl-n" }, PLANT[u.plant]));
+  // 站主 11/20「你弄一個東西要選誰我來選」：S19 心鋼 3 隻選一位本命、5 隻再選第二位（遊戲裡是「偏好選擇器 #1／#2」，強化那隻的技能）。
+  // 站主在預覽站選（資料庫 edits 的 bias19:<陣容id>），上線時寫進 site-data 每套的 bias19
+  const HS = "Heartsteel";
+  const bias19 = (c) => { const e = O.edits?.["bias19:" + c?.id]; if (e === null) return {}; if (e && (e.b1 || e.b2)) return { b1: e.b1 || null, b2: e.b2 || null, own: true }; return c?.bias19 || {}; };
+  const biasBadge = (n) => h("span", { class: "bias-b", "data-tip": `心鋼本命${n === 1 ? "一" : "二"}（強化他的技能）`, "aria-label": "心鋼本命" + n }, n === 1 ? "①" : "②");
+  function biasRow(c, cs) {
+    if (!S19 || !c?.id) return null;
+    const n = traitN(cs, HS); if (n < 3) return null;
+    const slots = n >= 5 ? 2 : 1;
+    const mems = [...new Set(cs.filter((u) => (CH[u.key]?.traits || []).includes(HS) || (u.items || []).some((i) => EM[i]?.trait === HS)).map((u) => u.key))];
+    const box = h("div", { class: "bias-row" });
+    if (!O.on && !bias19(c).b1 && !bias19(c).b2) return h("p", { class: "small" }, h("b", null, "心鋼本命："), "心鋼 3 隻選一位、5 隻再選第二位，被選到的技能會變強。");
+    const paint = () => {
+      box.textContent = "";
+      const cur = bias19(c);
+      box.append(h("span", { class: "small muted" }, "心鋼本命"));
+      for (let i = 1; i <= slots; i++) {
+        const k = cur["b" + i];
+        box.append(h("span", { class: "bias-pick", tabindex: "0", "data-tip": k ? `本命${i === 1 ? "一" : "二"}：${champName(k)}（強化他的技能）` : `心鋼 ${i === 1 ? 3 : 5} 隻可以選一位本命（強化他的技能），站主還沒選` },
+          h("b", null, i === 1 ? "①" : "②"), k ? icon("champion", k, "sm") : h("span", { class: "xs muted" }, "未定")));
+      }
+      if (!(O.on && O.db)) return;
+      const save = async (i, k) => {
+        const now = bias19(c), nb = { b1: now.b1 || null, b2: now.b2 || null }; nb["b" + i] = k;
+        if (nb.b1 && nb.b1 === nb.b2) nb["b" + (i === 1 ? 2 : 1)] = null;   // 同一隻不能兩個都選
+        const key = "bias19:" + c.id, empty = !nb.b1 && !nb.b2;
+        const doc = empty ? null : { key, b1: nb.b1, b2: nb.b2, before: "", after: `${nb.b1 || ""},${nb.b2 || ""}`, note: "S19 心鋼本命", at: new Date().toISOString(), where: location.hash || "#home" };
+        try { if (doc) await O.db.doc("edits/" + docId(key)).set(doc); else await O.db.doc("edits/" + docId(key)).delete(); O.edits[key] = doc; ownerNotice(doc ? "本命已儲存，下次更新正式站會一起上線。" : "本命已清掉。"); rerender(); }
+        catch (err) { ownerNotice("儲存失敗：" + (err?.message || "請再試一次")); }
+      };
+      for (let i = 1; i <= slots; i++) box.append(h("div", { class: "bias-own" }, h("span", { class: "xs" }, `站主：本命${i === 1 ? "一" : "二"}選誰`),
+        mems.map((k) => h("button", { type: "button", class: "bias-opt", "aria-pressed": cur["b" + i] === k ? "true" : "false", title: champName(k), onclick: () => save(i, cur["b" + i] === k ? null : k) }, icon("champion", k, "sm"))),
+        cur["b" + i] ? h("button", { type: "button", class: "btn sm ghost", onclick: () => save(i, null) }, "清掉") : null));
+    };
+    paint(); return box;
+  }
   function hexInner(u, showMark = true) {
     if (isPlant(u)) return [isIns(u) ? null : starTag(u.star || 1), plantTile(u)];
-    return [starTag(u.star), icon("champion", u.key), showMark && u.mark ? markBadge() : null, u.rider ? riderBadge() : null,
+    return [starTag(u.star), icon("champion", u.key), showMark && u.mark ? markBadge() : null, u.rider ? riderBadge() : null, u.biasN ? biasBadge(u.biasN) : null,
       h("span", { class: "its" }, (u.items || []).map((i) => icon("item", i, "xs")))];
   }
   const plantSummary = (units) => {
@@ -1488,6 +1524,7 @@
     const isCand = (u) => { const i = candKeys.indexOf(u?.key); if (i < 0 || isPlant(u)) return false; candKeys.splice(i, 1); return true; };
     const hasPos = cs.every((u) => Array.isArray(u.pos));
     const all = hasPos ? withPlants(units.map((u) => ({ ...u }))) : cs;
+    if (S19 && hasPos && c && traitN(cs, HS) >= 3) { const bb = bias19(c), two = traitN(cs, HS) >= 5; for (const u of all) if (!isPlant(u)) u.biasN = u.key === bb.b1 ? 1 : two && u.key === bb.b2 ? 2 : 0; }
     const traits = {};
     const tcs = cand ? cand.fixed : cs;
     for (const u of tcs) for (const t of CH[u.key]?.traits || []) traits[t] = (traits[t] || 0) + 1;
@@ -1503,6 +1540,7 @@
       marks.length ? h("p", { class: "small" }, h("b", null, "首領標記："), marks.join("、")) : null,
       riders.length ? h("p", { class: "small" }, h("b", null, "騎乘者："), riders.join("、"), "（騎上毛茸茸大夥伴）") : null,
       plants ? h("p", { class: "small" }, h("b", null, S19 ? "海灘樂器（佔一格、不算人口）：" : "神木植物："), plants) : null,
+      biasRow(c, cs),
       // 戰鬥模擬器（2026-11-11）：把這個站位帶進模擬器
       c?.id && !S19 && c.boards?.["lv" + level] === b ? h("p", { class: "small" }, h("a", { class: "sim-link", href: `sim/#a=comp:${encodeURIComponent(c.id)}:lv${level}` }, "⚔️ 用戰鬥模擬器打打看")) : null,
       plannerRow(cs, c?.id ? `${c.id}:lv${level}` : "board",

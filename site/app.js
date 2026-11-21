@@ -3719,7 +3719,7 @@
     clearTimeout(timer);
     CH = Object.fromEntries(D.gamedata.champions.map((c) => [c.key, c]));
     IT = Object.fromEntries(D.gamedata.items.map((i) => [i.key, i]));
-    XI = Object.fromEntries((D.gamedata.extraItems || []).map((i) => [i.key, i]));
+    XI = Object.fromEntries([...(D.gamedata.components || []), ...(D.gamedata.extraItems || [])].map((i) => [i.key, i]));  // 散件也要有中文名（站主 11/21：隨手速查「為什麼適合」顯示 RecurveBow）
     EM = Object.fromEntries((D.gamedata.emblems || []).map((i) => [i.key, i]));
     TR = Object.fromEntries(D.gamedata.traits.map((t) => [t.key, t]));
     $("#loading").remove();

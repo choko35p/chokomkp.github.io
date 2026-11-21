@@ -1426,3 +1426,11 @@ button.tbg { cursor: pointer; }
 .bias-own { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; width: 100%; padding: 4px 6px; border: 1px dashed var(--focus); border-radius: 8px; }
 button.bias-opt { padding: 1px; border: 2px solid transparent; border-radius: 8px; background: none; cursor: pointer; } button.bias-opt[aria-pressed="true"] { border-color: var(--accent); background: var(--cream); }
 .bias-b { position: absolute; bottom: 14px; left: -6px; z-index: 2; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; background: #b8326a; color: #fff; font-size: 12px; font-weight: 800; border: 2px solid #ffd1e3; cursor: help; }
+
+/* 單件排名（站主 2026-11-22：含神器、聖光） */
+.isg-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px; }
+.isg-row { align-items: center; min-width: 0; }
+.isg-n { min-width: 1.6em; text-align: right; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+.isg-row .tag { margin-left: 6px; }
+.tag.isg-a { background: var(--warn-bg); border-color: var(--warn-line); }
+.tag.isg-r { background: var(--ok-bg); border-color: var(--ok-line); }

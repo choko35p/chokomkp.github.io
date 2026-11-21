@@ -1616,6 +1616,34 @@
   /* 站主 2026-11-04：裝備只看 MetaTFT 的評價、名次變動、頻率 */
   const chgText = (v) => (v == null ? "—" : (v > 0 ? "+" : "") + v.toFixed(2));
   const metrics = (b) => `評價 ${b.tier || "—"}｜名次變動 ${chgText(b.chg)}｜頻率 ${b.share != null ? pct(b.share) : "—"}${b.n < 30 ? "｜場數少，僅供參考" : ""}`;
+  /* 單件排名（站主 2026-11-22：「裝備推薦那邊做個單件的排名，裡面包括神器跟聖光裝」）：MetaTFT 單件評價，這套陣容的範圍；
+     資料在 S19 items.json 的 heroes[英雄].singles＝[key, 場數, 評價, 名次變動, 頻率, 種類 s／a／r]。只顯示評價、名次變動、頻率（站主 11/04）。 */
+  const SGSTATE = {};
+  function singlesBlock(c, hero) {
+    const box = h("div", { class: "isingles" });
+    if (!S19) return box;
+    loadItems(c.id).then((d) => {
+      const list = d?.heroes?.[hero.key]?.singles;
+      if (!list?.length) return;
+      const st = SGSTATE[c.id + hero.key] ||= { k: "all" };
+      const KIND = { s: "一般", a: "神器", r: "聖光" };
+      const draw = () => {
+        box.textContent = "";
+        const rows = list.filter((r) => st.k === "all" || r[5] === st.k);
+        const mk = (r, i) => h("div", { class: "unit isg-row" }, h("span", { class: "isg-n", "aria-hidden": "true" }, String(i + 1)), icon("item", r[0], "sm"),
+          h("span", null, h("b", null, itemName(r[0])), r[5] !== "s" ? h("span", { class: "tag " + (r[5] === "a" ? "isg-a" : "isg-r") }, KIND[r[5]]) : null,
+            h("span", { class: "xs muted", style: "display:block" }, metrics({ tier: r[2], chg: r[3], share: r[4], n: r[1] }))));
+        box.append(h("h4", { class: "irecs-h" }, `單件排名・${champName(hero.key)}（含神器、聖光）`),
+          h("div", { class: "row pcats", role: "group", "aria-label": "裝備種類" }, ["all", "s", "a", "r"].filter((k) => k === "all" || list.some((r) => r[5] === k)).map((k) =>
+            h("button", { class: "chip", type: "button", "aria-pressed": st.k === k ? "true" : "false", onclick: () => { st.k = k; draw(); } }, k === "all" ? "全部" : KIND[k]))),
+          h("div", { class: "ilist isg-list" }, rows.slice(0, 10).map(mk)),
+          rows.length > 10 ? h("details", null, h("summary", null, `再看 ${rows.length - 10} 件`), h("div", { class: "in ilist isg-list" }, rows.slice(10).map((r, i) => mk(r, i + 10)))) : null,
+          h("p", { class: "xs muted" }, "照 MetaTFT 單件評價排（同評價再看名次變動，負的＝拿了比較好）；只算這套陣容核心棋子在場的對局。"));
+      };
+      draw();
+    });
+    return box;
+  }
   function itemArea(c) {
     const area = h("div", { class: "itemarea" });
     const heroes = c.itemModel || [];
@@ -1640,12 +1668,14 @@
         area.append(h("p", { class: "small muted" }, `${champName(hero.key)}（${hero.role}）的推薦裝（${hero.src === "pbe" ? "PBE 高手實際帶的" : `${hero.src || "攻略網"}，PBE 前預測`}）：`),
           h("div", { class: "irecs" }, h("div", { class: "irec first" }, h("div", { class: "irec-h" }, h("b", null, "推薦")),
             h("div", { class: "irec-i" }, hero.bis.map((k) => h("span", { class: "irec-it" }, icon("item", k, "sm"), h("span", { class: "xs" }, itemName(k))))))));
+        area.append(singlesBlock(c, hero));
         return;
       }
       if (hero.itemsOnly) {
         area.append(h("p", { class: "notice small" }, hero.generic ? `${champName(hero.key)}（${hero.role}）在高手對局裡幾乎不拿裝，先列所有${/坦/.test(hero.role) ? "坦" : "輸出"}最常拿的裝備：`
           : `${champName(hero.key)}（${hero.role}）三件套紀錄不夠，先列最常拿的裝備：`),
           h("div", { class: "ilist" }, hero.itemsOnly.map((x) => h("div", { class: "unit" }, icon("item", x.key, "sm"), h("span", null, h("b", null, itemName(x.key)), h("span", { class: "xs muted", style: "display:block" }, `持有率 ${pct(x.rate)}`))))));
+        area.append(singlesBlock(c, hero));
         return;
       }
       if (hero.pooled) area.append(h("p", { class: "notice small" }, /坦/.test(hero.role) ? `這套陣容裡${champName(hero.key)}拿三件裝的場數不夠，改用所有陣容裡${champName(hero.key)}當坦的三件套（坦裝和陣容關係較小，可以參考）。`
@@ -1680,6 +1710,7 @@
         h("div", { class: "irec-h" }, h("b", null, `推薦 ${i + 1}`), b.promoted ? h("span", { class: "tag up" }, "評級高、場數夠，排前面") : null),
         h("div", { class: "irec-i" }, b.items.map((k) => h("span", { class: "irec-it" }, icon("item", k, "sm"), h("span", { class: "xs" }, itemName(k))))),
         h("div", { class: "xs muted" }, metrics(b))))));
+      area.append(singlesBlock(c, hero));
 
       if (hero.detail) {
         const slot = h("div", null, h("p", { class: "small muted" }, "「選裝備看搭配」載入中…"));

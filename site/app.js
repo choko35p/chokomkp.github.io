@@ -1309,7 +1309,7 @@
           const btn = h("button", { type: "button", class: "btn tp-copy", onclick: async () => { track("planner", label || "board"); const ok = await copyText(sc.code, codeEl);
             msg.textContent = ok ? "已複製！到遊戲的「戰術規劃」按匯入貼上。" : "瀏覽器不讓複製，請長按／選取上面的代碼複製。"; } }, "📋 複製分享碼");
           codeEl.addEventListener("click", () => btn.click()); codeEl.style.cursor = "pointer";
-          row.append(h("div", { class: "tp-line" }, btn, codeEl), msg, sc.auto ? h("p", { class: "xs muted" }, "這組是用站主填過的代碼推算的。") : null);
+          row.append(h("div", { class: "tp-line" }, btn, codeEl), msg, ...(sc.auto ? [h("p", { class: "xs muted" }, "這組是用站主填過的代碼推算的。")] : []));  // append(null) 會印出「null」
         } else if (!O.on) row.append(h("p", { class: "xs muted" }, "S19 的分享碼還沒放。"));
         if (O.on && cid) {
           const inp = h("input", { type: "text", class: "tp-in", placeholder: "在遊戲「戰術規劃」排好按匯出，把代碼貼這裡", value: sc?.own ? sc.code : "", spellcheck: "false", autocomplete: "off" });
@@ -3036,11 +3036,21 @@
       if (u.pos) continue;
       const r = ref?.find((x) => x.key === u.key && x.pos && !taken.has(x.pos.join(",")));
       if (r) { u.pos = [...r.pos]; taken.add(u.pos.join(",")); continue; }
-      const front = tank.has(u.key) || (u.items || []).some((i) => TANKY.test(i));
-      const rows = front ? [0, 1, 2, 3] : car.has(u.key) || (u.items || []).length ? [3, 2, 1, 0] : [1, 0, 2, 3];
-      const cols = rows[0] === 3 ? [0, 6, 1, 5, 2, 4, 3] : [3, 2, 4, 1, 5, 0, 6];
-      outer: for (const rr of rows) for (const cc of cols) if (!taken.has(rr + "," + cc)) { u.pos = [rr, cc]; taken.add(rr + "," + cc); break outer; }
     }
+    // 站主 2026-11-21：「後排單位就要放在後排，前排單位就要放在前排；有石像鬼就讓它第一個擋的前排」
+    // 照射程分：近戰（射程 ≤2）放第一排、遠程放最後一排；拿石像鬼磐核的放第一排正中間（最先被打），其他坦再往兩邊；
+    // 主C、副C 放最後一排角落。站主存過的位置（有 pos）和同陣容其他等級站主排過的位置（ref）照舊不動。
+    const rest = units.filter((u) => !u.pos && !isPlant(u));
+    const rng = (u) => CH[u.key]?.range;
+    const tanky = (u) => tank.has(u.key) || (u.items || []).some((i) => TANKY.test(i));
+    const garg = (u) => (u.items || []).some((i) => /Gargoyle/.test(i));
+    const isFront = (u) => garg(u) || (rng(u) != null ? rng(u) <= 2 : tanky(u));
+    const front = rest.filter(isFront).sort((a, b) => (garg(b) - garg(a)) || (tanky(b) - tanky(a)));
+    const back = rest.filter((u) => !isFront(u)).sort((a, b) => (car.has(b.key) - car.has(a.key)) || ((b.items || []).length - (a.items || []).length));
+    const put = (u, rows, cols) => { outer: for (const rr of rows) for (const cc of cols) if (!taken.has(rr + "," + cc)) { u.pos = [rr, cc]; taken.add(rr + "," + cc); break outer; } };
+    for (const u of front) put(u, [0, 1, 2, 3], [3, 2, 4, 1, 5, 0, 6]);
+    for (const u of back) put(u, [3, 2, 1, 0], [0, 6, 1, 5, 2, 4, 3]);
+    for (const u of units) if (!u.pos) put(u, [1, 2, 0, 3], [3, 2, 4, 1, 5, 0, 6]);
     return units;
   }
   function freshState(c, useSaved) {

@@ -95,6 +95,50 @@
       : svgEl("path", { d: "M13.8 1.2 7.6 7.4l1 1 6.2-6.2zM2.4 9.6l1.3-1.3 4 4-1.3 1.3-.9-.9-2 2-1.1-1.1 2-2z M6.6 8.4l1 1-2.2 2.2-1-1z", fill: "currentColor" }));
     return g;
   }
+  /* 站主 2026-11-22：「所有有轉職的地方都要有圖」→ 全站文字裡的「（○○轉）」「・○○轉」前面自動補上徽章圖。
+     ○○ 對到徽章：先看陣容名稱「（○○轉）」配 required 的徽章，再看羈絆名稱（全名或開頭）。輸入框、程式碼、按鈕提示不動。 */
+  let EMB_ALIAS = null;
+  const embAlias = () => {
+    if (EMB_ALIAS) return EMB_ALIAS;
+    const m = new Map(), has = (k) => !!(EM[k] || IT[k] || XI[k]);
+    for (const c of D.comps || []) {
+      const x = /（(.+?)轉）/.exec(c.name || ""), r = (c.required || []).find((q) => q.type === "emblem" && q.key);
+      if (x && r && !m.has(x[1])) m.set(x[1], r.key);
+    }
+    for (const t of Object.values(TR || {})) { const k = t.key + "Emblem"; if (has(k)) { if (t.zh && !m.has(t.zh)) m.set(t.zh, k); if (t.en && !m.has(t.en)) m.set(t.en, k); } }
+    return (EMB_ALIAS = m);
+  };
+  const embKey = (name) => {
+    const m = embAlias();
+    if (m.has(name)) return m.get(name);
+    const hits = Object.values(TR || {}).filter((t) => (t.zh || "").startsWith(name) && (EM[t.key + "Emblem"] || IT[t.key + "Emblem"] || XI[t.key + "Emblem"]));
+    return hits.length === 1 ? hits[0].key + "Emblem" : null;
+  };
+  const EMB_RE = /（([^（）]{1,14}?)轉）|[・·]\s*([^\s・·（）]{1,14}?)轉(?![^\s]*徽章)/g;
+  function decorateEmblems(root) {
+    if (!root || !D) return;
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: (n) => {
+      const el = n.parentElement;
+      if (!el || !/轉/.test(n.nodeValue) || el.closest("script,style,textarea,input,code,.emb-w,[contenteditable=true],.ico,option")) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT; } });
+    const nodes = []; let n; while ((n = w.nextNode())) nodes.push(n);
+    for (const t of nodes) {
+      const txt = t.nodeValue; EMB_RE.lastIndex = 0; let m, last = 0; const frag = document.createDocumentFragment(); let any = false;
+      while ((m = EMB_RE.exec(txt))) {
+        const key = embKey(m[1] || m[2]);
+        if (!key) continue;
+        any = true;
+        const start = m.index + (m[1] ? 0 : m[0].search(/[^・·\s]/));
+        frag.append(txt.slice(last, start), h("span", { class: "emb-w" }, icon("item", key, "xs"), txt.slice(start, m.index + m[0].length)));
+        last = m.index + m[0].length;
+      }
+      if (!any) continue;
+      frag.append(txt.slice(last));
+      t.replaceWith(frag);
+    }
+  }
+  let embTimer = 0;
+  const embObserver = new MutationObserver(() => { clearTimeout(embTimer); embTimer = setTimeout(() => decorateEmblems(document.body), 60); });
   function icon(kind, key, size = "") {
     const isChamp = kind === "champion";
     const c = isChamp ? CH[key] : null;
@@ -3766,6 +3810,7 @@
     XI = Object.fromEntries([...(D.gamedata.components || []), ...(D.gamedata.extraItems || [])].map((i) => [i.key, i]));  // 散件也要有中文名（站主 11/21：隨手速查「為什麼適合」顯示 RecurveBow）
     EM = Object.fromEntries((D.gamedata.emblems || []).map((i) => [i.key, i]));
     TR = Object.fromEntries(D.gamedata.traits.map((t) => [t.key, t]));
+    EMB_ALIAS = null; embObserver.observe(document.body, { childList: true, subtree: true });
     $("#loading").remove();
     adaptLayout();
     if (S19 && S19FULL() && !D.updateNotes?.length) $("#updates-sec")?.remove();

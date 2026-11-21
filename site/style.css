@@ -1434,3 +1434,6 @@ button.bias-opt { padding: 1px; border: 2px solid transparent; border-radius: 8p
 .isg-row .tag { margin-left: 6px; }
 .tag.isg-a { background: var(--warn-bg); border-color: var(--warn-line); }
 .tag.isg-r { background: var(--ok-bg); border-color: var(--ok-line); }
+/* 轉職文字前面的徽章圖（站主 2026-11-22） */
+.emb-w { white-space: nowrap; }
+.emb-w > .ico { display: inline-flex; vertical-align: -0.25em; margin-right: 2px; width: 1.25em; height: 1.25em; }

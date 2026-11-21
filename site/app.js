@@ -193,7 +193,7 @@
     if ($("#ssw")) return;
     const mk = (s, label, sub) => h("a", { class: "ssw-b" + (SEASON === s ? " on" : ""), href: seasonHref(s), "aria-current": SEASON === s ? "true" : "false",
       onclick: () => track("season", s) }, h("b", null, label), h("small", null, sub));
-    const sw = h("div", { id: "ssw", class: "ssw", role: "group", "aria-label": "切換賽季" }, mk(18, "S18", "現行"), mk(19, "S19", "PBE"));
+    const sw = h("div", { id: "ssw", class: "ssw", role: "group", "aria-label": "切換賽季" }, mk(18, "S18", "停更"), mk(19, "S19", "PBE"));
     $(".top .brand")?.after(sw);
     // 觀眾 2026-11-16：點左上的圖或站名就回首頁
     const br = $(".top .brand");
@@ -210,6 +210,9 @@
         h("b", null, n.title || "S19 PBE 前預測"), " ", h("span", null, n.text || "陣容與評級為攻略網預測，名稱暫譯，數值 PBE 後補。"))));
       const f = document.querySelector(".foot p");
       if (f && n.foot) f.replaceChildren(h("b", null, "巧克力MKP的戰棋研究室"), "｜", n.foot);
+    } else if (D.seasonNote?.title) {  // 站主 2026-11-21：S18 已停止研究，資料停在 18.6，要標給大家看
+      const n = D.seasonNote;
+      $(".nav")?.after(h("div", { class: "s19-banner s18-stop", role: "note" }, h("div", { class: "wrap" }, h("b", null, n.title), " ", h("span", null, n.text || ""))));
     }
   }
 

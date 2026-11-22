@@ -64,18 +64,36 @@
   const trTip = (k, n) => { const bp = TR[k]?.breakpoints || [], next = bp.find((x) => x > n);
     return n == null ? traitName(k) : `${traitName(k)} ${n}${next ? "／" + next : ""}`; };
   const traitBadge = (k, n, o = {}) => { const tip = o.tip || trTip(k, n), ico = traitIco(k, o.px || 18);
-    return h(o.tag || "span", { class: "tbg t-" + (n == null ? "plain" : trTier(k, n)) + (o.cls ? " " + o.cls : ""), "data-tip": tip, "aria-label": tip,
+    return h(o.tag || "span", { class: "tbg t-" + (n == null ? "plain" : trTier(k, n)) + (o.cls ? " " + o.cls : ""), "data-tip": tip, "aria-label": tip, "data-trait": k, "data-tn": n == null ? "" : String(n),
       ...(o.tag === "button" ? { type: "button", onclick: o.onclick } : { tabindex: "0", role: "img" }) },
       h("span", { class: "tbg-hex", "aria-hidden": "true" }, ico || h("i", { class: "tbg-txt" }, traitName(k).slice(0, 1))), n == null ? null : h("b", { "aria-hidden": "true" }, n)); };
   const traitBadges = (list, o = {}) => h("span", { class: "tbgs" + (o.cls ? " " + o.cls : "") }, list.map((t) => traitBadge(t.k, t.n, { px: o.px })));
   const activeTraits = (counts) => Object.entries(counts).map(([k, n]) => ({ k, n })).filter((t) => (TR[t.k]?.breakpoints || []).some((x) => x <= t.n))
     .sort((a, b) => ({ prism: 4, gold: 3, silver: 2, bronze: 1, off: 0 }[trTier(b.k, b.n)] - { prism: 4, gold: 3, silver: 2, bronze: 1, off: 0 }[trTier(a.k, a.n)]) || b.n - a.n);
+  // 羈絆浮動提示的完整效果（站主 2026-11-22）：小百科的 wiki.json 還沒載入時先顯示名稱和斷點，載入後自動換成完整效果
+  const trTipBody = (k, n) => {
+    const w = (WK.d?.traits || []).find((x) => x.key === k), bp = TR[k]?.breakpoints || w?.breakpoints || [];
+    const next = n == null ? null : bp.find((x) => x > n), lv = (w?.levels || []).filter((l) => l.text);
+    const same = lv.every((l) => l.n == null || bp.includes(l.n)), cur = n == null || !same ? null : Math.max(-1, ...lv.map((l) => (l.n != null && l.n <= n ? l.n : -1)));  // 階數不是照人數算的羈絆（例 K/DA 看總星數）不亮
+    return h("div", { class: "ft-tr" },
+      h("div", { class: "ft-h" }, h("b", null, traitName(k)), n != null ? h("span", { class: "ft-n" }, `${n} 隻` + (next ? `（下一階 ${next}）` : bp.length && n >= bp[bp.length - 1] ? "（最高階）" : "")) : null),
+      w?.desc ? h("p", { class: "ft-d" }, w.desc) : null,
+      lv.length ? h("ul", { class: "ft-lv" }, lv.map((l) => h("li", { class: l.n != null && l.n === cur ? "on" : cur != null && l.n != null && l.n > n ? "off" : null },
+        l.n != null ? h("b", null, String(l.n)) : null, h("span", null, l.text))))
+        : bp.length ? h("p", { class: "ft-d" }, "斷點：" + bp.join("／") + (WK.d || WK.failed ? "" : "（效果載入中…）")) : null);
+  };
   const FTIP = (() => { const t = h("div", { class: "ftip", role: "tooltip", hidden: "" }); let on = null, pin = false;
     const hide = () => { t.hidden = true; on = null; pin = false; };
-    const show = (el) => { if (!t.isConnected) document.body.append(t); t.textContent = el.dataset.tip; t.hidden = false; on = el;
+    const show = (el) => { if (!t.isConnected) document.body.append(t); on = el;
+      if (el.dataset.trait) { t.classList.add("rich"); t.replaceChildren(trTipBody(el.dataset.trait, el.dataset.tn === "" ? null : +el.dataset.tn));
+        if (el.tagName === "BUTTON") t.append(h("p", { class: "ft-act" }, el.dataset.tip));   // 小百科那種點了會跳說明的按鈕，保留原本的提示
+        if (!WK.d && !WK.tried) { WK.tried = true; loadWiki().then(() => { if (!WK.d) WK.failed = true; else if (on === el && !t.hidden) show(el); }); } }
+      else { t.classList.remove("rich"); t.textContent = el.dataset.tip; }
+      t.hidden = false;
       const r = el.getBoundingClientRect(), w = t.offsetWidth, hh = t.offsetHeight;
       t.style.left = Math.max(6, Math.min(innerWidth - w - 6, r.left + r.width / 2 - w / 2)) + "px";
-      t.style.top = (r.top - hh - 6 < 4 ? r.bottom + 6 : r.top - hh - 6) + "px"; };
+      const top = r.top - hh - 6 < 4 ? r.bottom + 6 : r.top - hh - 6;
+      t.style.top = Math.max(4, Math.min(innerHeight - hh - 4, top)) + "px"; };
     const tgt = (e) => e.target?.closest?.("[data-tip]");
     document.addEventListener("mouseover", (e) => { const el = tgt(e); if (el) show(el); else if (!pin && on) hide(); });
     document.addEventListener("focusin", (e) => { const el = tgt(e); if (el) show(el); });

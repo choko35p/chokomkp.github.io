@@ -1866,8 +1866,11 @@
       h("div", { class: "swlist" }, xs.map((s) => {
         const t = D.comps.find((y) => y.id === s.id);
         const keys = [...new Set((t.core || [t.carrier]).filter(Boolean))].slice(0, 3);
+        // 站主 2026-11-22「轉職的圖呢?」：要拿徽章才轉得過去的（轉職版），前面放那個徽章的圖
+        const ems = (Array.isArray(t.required) ? t.required : []).filter((x) => x.type === "emblem" && x.key);
         return h("a", { class: "swcard", href: "#" + slug(s.id), onclick: () => track("switch", c.id + ">" + s.id) },
-          h("span", { class: "picons" }, keys.map((k, j) => icon("champion", k, j ? "xs" : "sm"))),
+          h("span", { class: "picons" }, ems.map((x) => h("span", { class: "sw-em", title: `要拿到${itemName(x.key)}`, "aria-label": `要拿到${itemName(x.key)}` }, icon("item", x.key, "sm"))),
+            keys.map((k, j) => icon("champion", k, j || ems.length ? "xs" : "sm"))),
           h("span", { class: "pmeta" }, h("span", { class: "nm" }, t.name, " ", t.tier ? h("span", { class: "tag tier" }, t.tier + " 級") : null),
             s.when ? h("span", { class: "small" }, tx(`comp:${c.id}:switch.${s.id}`, s.when)) : null));
       })));

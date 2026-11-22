@@ -1471,3 +1471,6 @@ button.bias-opt { padding: 1px; border: 2px solid transparent; border-radius: 8p
 .fx-code-units { display: flex; flex-wrap: wrap; gap: .35rem .6rem; margin: .25rem 0 .4rem; }
 .fx-code-see .warn { color: #a3411f; }
 .fx-code-u { display: inline-flex; align-items: center; gap: 3px; font-weight: 600; }
+/* 不順時轉哪套：轉職版前面放徽章（站主 2026-11-22） */
+.sw-em { position: relative; display: inline-flex; margin-right: 4px; }
+.sw-em .ico { border-color: var(--c5, #d9a441); }

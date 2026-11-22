@@ -80,7 +80,8 @@
       w?.desc ? h("p", { class: "ft-d" }, w.desc) : null,
       lv.length ? h("ul", { class: "ft-lv" }, lv.map((l) => h("li", { class: l.n != null && l.n === cur ? "on" : cur != null && l.n != null && l.n > n ? "off" : null },
         l.n != null ? h("b", null, String(l.n)) : null, h("span", null, l.text))))
-        : bp.length ? h("p", { class: "ft-d" }, "斷點：" + bp.join("／") + (WK.d || WK.failed ? "" : "（效果載入中…）")) : null);
+        : bp.length ? h("p", { class: "ft-d" }, "斷點：" + bp.join("／") + (WK.d || WK.failed ? "" : "（效果載入中…）")) : null,
+      w?.levelsNote ? h("p", { class: "ft-note" }, w.levelsNote) : null);
   };
   const FTIP = (() => { const t = h("div", { class: "ftip", role: "tooltip", hidden: "" }); let on = null, pin = false;
     const hide = () => { t.hidden = true; on = null; pin = false; };
@@ -2507,6 +2508,7 @@
             t.en && t.en !== t.zh ? h("span", { class: "xs muted" }, t.en) : null,
             h("span", { class: "wk-bps" }, (t.breakpoints || []).map((n) => h("span", { class: "wk-bp" }, String(n))))),
           t.desc ? h("p", { class: "small wk-pre" }, t.desc) : null,
+          t.levelsNote ? h("p", { class: "xs muted" }, t.levelsNote) : null,
           t.levels?.length ? h("ul", { class: "wk-lv small" }, t.levels.filter((l) => l.text).map((l) => h("li", null, l.n != null ? h("b", { class: "wk-bp" }, String(l.n)) : null, h("span", { class: "wk-pre" }, l.text)))) : null,
           h("div", { class: "wk-mem" }, (t.units || []).map((k) => h("button", { type: "button", class: "wk-memb", title: champName(k), "aria-label": champName(k),
             onclick: () => { WK.tab = "units"; WK.uopen = k; WK.uq = ""; WK.scrollTo = true; drawWiki(); } }, icon("champion", k, "xs")))))))));

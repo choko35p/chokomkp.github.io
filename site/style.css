@@ -1488,3 +1488,4 @@ button.bias-opt { padding: 1px; border: 2px solid transparent; border-radius: 8p
 .ftip.rich .ft-lv li.on { color: #ffd27a; }
 .ftip.rich .ft-lv li.on b { background: #d9a441; color: #1b1712; }
 .ftip.rich .ft-lv li.off { opacity: .55; }
+.ftip.rich .ft-note { margin: 5px 0 0; font-size: 11.5px; opacity: .65; }

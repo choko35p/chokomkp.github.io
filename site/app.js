@@ -1431,14 +1431,32 @@
     return ks.map((k) => ({ plant: k, star }));
   }
   // 植物數量跟著神木人數自動增減；已經放好的位置保留，新的放在前排空格
+  // 棋盤六角格相鄰（第 2、4 排往右錯半格，跟畫面一樣）
+  const hexNbrs = (r, c) => (r % 2 ? [[r - 1, c], [r - 1, c + 1], [r, c - 1], [r, c + 1], [r + 1, c], [r + 1, c + 1]]
+    : [[r - 1, c - 1], [r - 1, c], [r, c - 1], [r, c + 1], [r + 1, c - 1], [r + 1, c]]).filter(([a, b]) => a >= 0 && a < 4 && b >= 0 && b < 7);
   function withPlants(units) {
     const champs = champsOnly(units), pool = (units || []).filter(isPlant), out = [];
-    const taken = new Set(champs.filter((u) => u.pos).map((u) => u.pos.join(",")));
+    const champAt = new Set(champs.filter((u) => u.pos).map((u) => u.pos.join(",")));
+    const taken = new Set([...champAt, ...pool.filter((u) => u.pos).map((u) => u.pos.join(","))]);   // 其他樂器存過的位置也先佔住
+    const covered = new Set();   // 已經被前一個樂器蓋到的棋子（Fable 11/22：第二個樂器優先蓋沒被蓋到的人）
     for (const p of plantPlan(units)) {
       const i = pool.findIndex((x) => x.plant === p.plant);
       const x = i >= 0 ? pool.splice(i, 1)[0] : { plant: p.plant, pos: null };
       x.key = "plant:" + p.plant; x.star = p.star; x.items = [];
-      if (x.pos && taken.has(x.pos.join(","))) x.pos = null;
+      if (x.pos && champAt.has(x.pos.join(","))) x.pos = null;   // 存過的位置被棋子佔了才重挑
+      else if (x.pos) taken.delete(x.pos.join(","));
+      // 站主 2026-11-22「海灘的樂器要放在能覆蓋到最多人的地方」：樂器強化相鄰的友軍 → 挑相鄰棋子最多的空格（同數先看海灘流行樂的棋子，再照原本的順序）
+      if (!x.pos && isIns(x)) {
+        const at = new Map(champs.filter((u) => u.pos).map((u) => [u.pos.join(","), u]));
+        let best = null;
+        for (const r of [0, 1, 2, 3]) for (const c of [3, 2, 4, 1, 5, 0, 6]) {
+          if (taken.has(r + "," + c)) continue;
+          const ns = hexNbrs(r, c).map(([a, b]) => at.get(a + "," + b)).filter(Boolean);
+          const sc = ns.filter((u) => !covered.has(u)).length * 100 + ns.length * 10 + ns.filter((u) => (CH[u.key]?.traits || []).includes(BEACH)).length;
+          if (!best || sc > best[0]) best = [sc, [r, c], ns];
+        }
+        if (best) { x.pos = best[1]; best[2].forEach((u) => covered.add(u)); }
+      }
       if (!x.pos) { outer: for (const r of [0, 1, 2, 3]) for (const c of [3, 2, 4, 1, 5, 0, 6]) if (!taken.has(r + "," + c)) { x.pos = [r, c]; break outer; } }
       if (x.pos) taken.add(x.pos.join(","));
       out.push(x);
@@ -1942,8 +1960,27 @@
     const box = h("div", { class: "stack" }, h("p", { class: "small muted" }, "載入中…"));
     loadCases().then((d) => {
       box.textContent = "";
-      const xs = d?.cases?.[c.id] || [];
-      if (!xs.length) { box.append(h("p", { class: "small muted" }, "目前沒有可以公開的對戰紀錄。")); return; }
+      // 站主 2026-11-22「你下面的戰績要可以選是哪個公式的」：有公式的陣容，對戰紀錄上面可以選公式（公式分頁預設選自己）
+      const fb = c.formulaOf ? compById(c.formulaOf) : c;
+      const all = d?.cases?.[fb?.id || c.id] || d?.cases?.[c.id] || [];
+      const fl = (fb?.formulas || []).filter((f) => all.some((x) => x.fx === f.id));
+      if (fl.length > 1) {
+        let cur = c.formulaOf && fl.some((f) => f.id === c.id) ? c.id : "all";
+        const list = h("div", { class: "stack" });
+        const chips = h("div", { class: "chips fm-chips", role: "group", "aria-label": "對戰紀錄的公式" }, [{ id: "all", name: "全部" }, ...fl].map((f) =>
+          h("button", { type: "button", class: "chip", "aria-pressed": f.id === cur ? "true" : "false", "data-fid": f.id, onclick: () => { cur = f.id; chips.querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", x.dataset.fid === cur ? "true" : "false")); draw(); } },
+            f.id === "all" ? "全部" : f.name, h("span", { class: "xs muted" }, ` ${f.id === "all" ? all.length : all.filter((x) => x.fx === f.id).length}`))));
+        const draw = () => { list.textContent = ""; list.append(caseList(all.filter((x) => cur === "all" || x.fx === cur), d, c)); };
+        box.append(chips, list); draw(); return;
+      }
+      box.append(caseList(all, d, c));
+    });
+    return box;
+  }
+  function caseList(xs, d, c) {
+    const box = h("div", { class: "stack" });
+    {
+      if (!xs.length) { box.append(h("p", { class: "small muted" }, "目前沒有可以公開的對戰紀錄。")); return box; }
       const nT = xs.filter((x) => x.timeline).length, nR = xs.filter((x) => x.replay).length;
       box.append(h("p", { class: "small" }, `${d.patch ? d.patch + " " : ""}高手用這套打進前四的對局 ${xs.length} 場（${nT || nR ? `有時間軸 ${nT} 場${nR ? `、有重播 ${nR} 場` : ""}排在前面，其他照時間新到舊` : "照時間新到舊"}；同一位高手最多 2 場）。點一場到 MetaTFT，可以看那場的完整紀錄。`));
       box.append(h("div", { class: "cases" }, xs.map((x) => h("a", { class: "case", href: x.url, target: "_blank", rel: "noopener", onclick: () => track("case", c.id) },
@@ -1956,7 +1993,7 @@
         (() => { const ts = (x.traits ? x.traits.map(([k, n]) => ({ k, n })) : traitsOf(x.units).filter((t) => t.on)).filter((t) => t.n > 1).slice(0, 10);   // 只有 1 隻就開的小羈絆不列，太雜
           return ts.length ? traitBadges(ts.slice().sort((a, b) => b.n - a.n), { cls: "case-tr", px: 15 }) : null; })(),
         h("div", { class: "case-units" }, x.units.map((u) => h("span", { class: "cu" }, h("span", { class: "stars" }, "★".repeat(u.star)), icon("champion", u.key, "sm"), h("span", { class: "its" }, (u.items || []).map((i) => icon("item", i, "xs"))))))))));
-    });
+    }
     return box;
   }
   /* 手機：攻略頁的返回鈕跟著畫面，不用滑回最上面 */

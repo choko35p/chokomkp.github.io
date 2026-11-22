@@ -1004,16 +1004,18 @@
   }
   // 六角頭像（費用色框）；corner＝換掉的那隻（左上小圖）、badge＝第幾等補（左上數字）
   // 站主 2026-11-04：「牌上面也要推薦裝備」→ 頭像下面放推薦裝備；站主編輯時可以點選（onPick）
-  function fhex(key, { corner = null, badge = null, name = true, items = null, onPick = null, sel = false } = {}) {
+  function fhex(key, { corner = null, badge = null, name = true, items = null, onPick = null, sel = false, star = null } = {}) {
     const cost = CH[key]?.cost || 1;
     const its = (items || []).slice(0, 3);
     const attrs = { class: "fhex c" + cost + (onPick ? " pick" : "") + (sel ? " sel" : ""), title: champName(key) + (corner ? `（換掉${champName(corner)}）` : badge ? `（${badge} 等補上）` : "") + (its.length ? "｜推薦裝備：" + its.map(itemName).join("、") : "") };
-    const kids = [h("span", { class: "fhex-in" }, icon("champion", key)),
+    const kids = [h("span", { class: "fhex-in" }, icon("champion", key)), lockBadge(key),
       corner ? h("span", { class: "fhex-corner" }, icon("champion", corner, "xs")) : null,
       badge ? h("span", { class: "fhex-lv" }, String(badge)) : null,
       its.length ? h("span", { class: "fhex-items" }, its.map((i) => icon("item", i, "xs"))) : null,
       name ? h("span", { class: "fhex-name" }, champName(key)) : null];
-    return onPick ? h("button", { ...attrs, type: "button", "aria-pressed": sel ? "true" : "false", onclick: onPick }, kids) : h("span", attrs, kids);
+    // 站主 2026-11-22「右上角那邊的升等也要加入…顯示解鎖條件的功能」：旁邊一區的棋子也能滑過／點開小卡（技能、數值、解鎖條件、推薦裝備）
+    return onPick ? h("button", { ...attrs, type: "button", "aria-pressed": sel ? "true" : "false", onclick: onPick }, kids)
+      : h("span", { ...attrs, title: null, "aria-label": attrs.title, "data-ckey": key, "data-cstar": String(star || 1), "data-citems": its.join(","), tabindex: "0", role: "button" }, kids);
   }
   const miniRow = (keys) => h("span", { class: "fx-minis" }, keys.map((k) => h("span", { class: "fx-mini" }, icon("champion", k, "xs"), champName(k))));
   /* 旁邊一區：升等要補、可以替換。ed＝站主編輯（站主 2026-11-04：「你這邊也要讓我可以修改，包括加甚麼牌，牌上面也要推薦裝備」） */
@@ -1029,7 +1031,7 @@
     const isSel = (k) => ed?.sel && ed.sel.kind === k.kind && ed.sel.lv === k.lv && ed.sel.key === k.key && ed.sel.i === k.i;
     const pickOf = (k) => (ed ? () => ed.select(isSel(k) ? null : k) : null);
     const selBox = (k) => (ed && isSel(k) ? ed.selPanel(k) : null);
-    const stepUnits = (s, lv) => s.add.map((u) => fhex(u.key, { badge: lv, items: u.items, onPick: pickOf({ kind: "step", lv, key: u.key }), sel: isSel({ kind: "step", lv, key: u.key }) }));
+    const stepUnits = (s, lv) => s.add.map((u) => fhex(u.key, { badge: lv, items: u.items, star: u.star, onPick: pickOf({ kind: "step", lv, key: u.key }), sel: isSel({ kind: "step", lv, key: u.key }) }));
     const stepSel = (lv, us) => us.map((u) => selBox({ kind: "step", lv, key: u.key })).find(Boolean) || null;
     // 站主 2026-11-10 截圖「你旁邊的不能改」：「拿掉」的那幾隻、還沒到主圖等級時先放的，站主編輯時也都可以點
     const remRow = (keys, lv) => (ed ? h("span", { class: "fx-minis" }, keys.map((k) => h("button", { type: "button", class: "fx-mini pick" + (isSel({ kind: "rem", lv, key: k }) ? " sel" : ""),
@@ -1044,7 +1046,7 @@
         const lv = s.level;
         box.append(h("div", { class: "fx-group" },
           h("div", { class: "fx-gh" }, h("span", { class: "fx-lvtag" }, `${lv} 等`), `還沒到 ${M} 等時先放`),
-          h("div", { class: "fx-units" }, s.early.map((u) => fhex(u.key, { badge: lv, items: u.items, onPick: pickOf({ kind: "step", lv, key: u.key }), sel: isSel({ kind: "step", lv, key: u.key }) })), stepBtns(lv)),
+          h("div", { class: "fx-units" }, s.early.map((u) => fhex(u.key, { badge: lv, items: u.items, star: u.star, onPick: pickOf({ kind: "step", lv, key: u.key }), sel: isSel({ kind: "step", lv, key: u.key }) })), stepBtns(lv)),
           s.later.length ? h("p", { class: "fx-cap" }, `${M} 等時改放 `, s.later.map(champName).join("、")) : null, stepSel(lv, s.early)));
       }
       const ups = steps.filter((s) => !s.below);
@@ -1055,7 +1057,7 @@
         const addBtn = stepBtns(lv);
         const candBox = s.cands ? h("div", { class: "fx-group fx-cand" },
           h("div", { class: "fx-gh" }, h("span", { class: "fx-lvtag" }, `${lv} 等`), `挑 ${s.pick} 隻放（放哪${s.pick > 1 ? "幾" : ""}隻都可以）`),
-          h("div", { class: "fx-units" }, s.cands.map((u) => fhex(u.key, { badge: lv, items: u.items, onPick: pickOf({ kind: "step", lv, key: u.key }), sel: isSel({ kind: "step", lv, key: u.key }) }))),
+          h("div", { class: "fx-units" }, s.cands.map((u) => fhex(u.key, { badge: lv, items: u.items, star: u.star, onPick: pickOf({ kind: "step", lv, key: u.key }), sel: isSel({ kind: "step", lv, key: u.key }) }))),
           stepSel(lv, s.cands)) : null;
         const afterCap = s.after ? h("p", { class: "fx-cap" }, `${s.after.level} 等已經放了其中 ${s.after.pick} 隻，${lv} 等把其他的補上`) : null;
         if (s.cands && !s.add.length && !s.rem.length) {
@@ -1441,10 +1443,13 @@
   // 棋盤六角格相鄰（第 2、4 排往右錯半格，跟畫面一樣）
   const hexNbrs = (r, c) => (r % 2 ? [[r - 1, c], [r - 1, c + 1], [r, c - 1], [r, c + 1], [r + 1, c], [r + 1, c + 1]]
     : [[r - 1, c - 1], [r - 1, c], [r, c - 1], [r, c + 1], [r + 1, c - 1], [r + 1, c]]).filter(([a, b]) => a >= 0 && a < 4 && b >= 0 && b < 7);
-  function withPlants(units) {
+  // idolAt：資料裡煉獄偶像的格子（站主 2026-11-22「TFTACADEMY也有站位圖，你以這個為優先」→ 照 TFT Academy 的圖，board.idolPos）
+  function withPlants(units, idolAt = null) {
     const champs = champsOnly(units), pool = (units || []).filter(isPlant), out = [];
     const champAt = new Set(champs.filter((u) => u.pos).map((u) => u.pos.join(",")));
     const taken = new Set([...champAt, ...pool.filter((u) => u.pos).map((u) => u.pos.join(","))]);   // 其他樂器存過的位置也先佔住
+    const idolK = Array.isArray(idolAt) && !taken.has(idolAt.join(",")) && !pool.some(isIdol) ? idolAt.join(",") : null;
+    if (idolK) taken.add(idolK);   // 先留給偶像，樂器不要搶
     const covered = new Set();   // 已經被前一個樂器蓋到的棋子（Fable 11/22：第二個樂器優先蓋沒被蓋到的人）
     for (const p of plantPlan(units)) {
       const i = pool.findIndex((x) => x.plant === p.plant);
@@ -1452,6 +1457,7 @@
       x.key = "plant:" + p.plant; x.star = p.star; x.items = [];
       if (x.pos && champAt.has(x.pos.join(","))) x.pos = null;   // 存過的位置被棋子佔了才重挑
       else if (x.pos) taken.delete(x.pos.join(","));
+      if (!x.pos && isIdol(x) && idolK) { taken.delete(idolK); x.pos = idolK.split(",").map(Number); }
       // 站主 2026-11-22「海灘的樂器要放在能覆蓋到最多人的地方」：樂器強化相鄰的友軍 → 挑相鄰棋子最多的空格（同數先看海灘流行樂的棋子，再照原本的順序）
       if (!x.pos && isIns(x)) {
         const at = new Map(champs.filter((u) => u.pos).map((u) => [u.pos.join(","), u]));
@@ -1523,9 +1529,11 @@
     };
     paint(); return box;
   }
+  // 站主 2026-11-22「需要解鎖的牌要標一個鎖讓別人知道」：要解鎖的棋子左上角一個鎖（gamedata 的 lock，來自小百科的解鎖條件；滑過／點棋子看條件）
+  const lockBadge = (k) => { if (!CH[k]?.lock) return null; const e = h("span", { class: "lock-b", title: "要先解鎖（點棋子看條件）", role: "img", "aria-label": "要先解鎖" }); e.innerHTML = LOCK_SVG; return e; };
   function hexInner(u, showMark = true) {
     if (isPlant(u)) return [isIns(u) ? null : starTag(u.star || 1), plantTile(u)];
-    return [starTag(u.star), icon("champion", u.key), showMark && u.mark ? markBadge() : null, u.rider ? riderBadge() : null, u.biasN ? biasBadge(u.biasN) : null,
+    return [starTag(u.star), icon("champion", u.key), lockBadge(u.key), showMark && u.mark ? markBadge() : null, u.rider ? riderBadge() : null, u.biasN ? biasBadge(u.biasN) : null,
       h("span", { class: "its" }, (u.items || []).map((i) => icon("item", i, "xs")))];
   }
   const plantSummary = (units) => {
@@ -1554,7 +1562,7 @@
     const candKeys = cand ? cand.cands.map((u) => u.key) : [];
     const isCand = (u) => { const i = candKeys.indexOf(u?.key); if (i < 0 || isPlant(u)) return false; candKeys.splice(i, 1); return true; };
     const hasPos = cs.every((u) => Array.isArray(u.pos));
-    const all = hasPos ? withPlants(units.map((u) => ({ ...u }))) : cs;
+    const all = hasPos ? withPlants(units.map((u) => ({ ...u })), b.idolPos) : cs;
     if (S19 && hasPos && c && traitN(cs, HS) >= 3) { const bb = bias19(c), two = traitN(cs, HS) >= 5; for (const u of all) if (!isPlant(u)) u.biasN = u.key === bb.b1 ? 1 : two && u.key === bb.b2 ? 2 : 0; }
     const traits = {};
     const tcs = cand ? cand.fixed : cs;
@@ -2389,7 +2397,7 @@
       const draw = () => { if (on !== el) return; t.replaceChildren(...body(key, star, items).filter(Boolean)); t.hidden = false; place(el); };
       if (WK.d) draw(); else { t.replaceChildren(h("p", { class: "small muted" }, "載入中…")); t.hidden = false; place(el); loadWiki().then(draw); }
     };
-    const tgt = (e) => e.target?.closest?.(".board:not(.edit) [data-ckey]");
+    const tgt = (e) => e.target?.closest?.(".board:not(.edit) [data-ckey], .fxpanel:not(.editing) [data-ckey]");
     const fine = matchMedia("(hover: hover)").matches;
     document.addEventListener("mouseover", (e) => { if (!fine || pin) return; const el = tgt(e); if (el) { if (on !== el) show(el); } else if (on && !t.contains(e.target)) hide(); });
     document.addEventListener("click", (e) => {
@@ -3204,12 +3212,13 @@
     // 站主存過的：沒存的等級才用資料的棋盤；資料裡「站主的棋盤」是建置時套上去的（可能換過人口），站主存的那份已經有了，不重複拿
     const dataB = (lv) => { const b = c.boards?.["lv" + lv]; return b?.units && !(sv && b.source === "owner") ? b : null; };
     const pick = (lv) => (sv?.["lv" + lv]?.units ? clone(sv["lv" + lv].units).map((u) => (u.plant ? { ...u, key: "plant:" + u.plant, items: [] } : u)) : (dataB(lv) ? clone(dataB(lv).units).map((u) => ({ ...u, items: u.items || [], pos: Array.isArray(u.pos) ? u.pos : null })) : []));
-    const d8 = withPlants(autoPlace(pick(8), c, null));
-    const data = { 8: d8, 9: withPlants(autoPlace(pick(9), c, d8)) };
-    if (c.rerollLevel) data[c.rerollLevel] = withPlants(autoPlace(pick(c.rerollLevel), c, d8));
-    for (const lv of levelsOf(c)) if (!data[lv]) data[lv] = withPlants(autoPlace(pick(lv), c, d8));
+    const ip = (lv) => (sv?.["lv" + lv]?.units ? null : dataB(lv)?.idolPos);
+    const d8 = withPlants(autoPlace(pick(8), c, null), ip(8));
+    const data = { 8: d8, 9: withPlants(autoPlace(pick(9), c, d8), ip(9)) };
+    if (c.rerollLevel) data[c.rerollLevel] = withPlants(autoPlace(pick(c.rerollLevel), c, d8), ip(c.rerollLevel));
+    for (const lv of levelsOf(c)) if (!data[lv]) data[lv] = withPlants(autoPlace(pick(lv), c, d8), ip(lv));
     // 站主 2026-11-08：人口跟著棋子走 → 存過或資料裡有的其他人口（例：拿到剩 7 隻的 8-4 盤＝7 人口）也要載入
-    for (const lv of [5, 6, 7, 8, 9]) if (!data[lv] && (sv?.["lv" + lv]?.units?.length || dataB(lv)?.units?.length)) data[lv] = withPlants(autoPlace(pick(lv), c, d8));
+    for (const lv of [5, 6, 7, 8, 9]) if (!data[lv] && (sv?.["lv" + lv]?.units?.length || dataB(lv)?.units?.length)) data[lv] = withPlants(autoPlace(pick(lv), c, d8), ip(lv));
     // 站主存的棋盤人口和等級對不上（例：存在 8 人口、其實只有 7 隻）→ 跟建置（owner_content.apply_boards）一樣，當作實際人口那一等（那一等沒存過才搬）
     let moved = null;
     // 主圖等級：站主存過的（sv.main）；舊的存檔沒有 main，用資料的主圖等級（不看建置換過的 ownerMain），打開編輯器時再整條一起移（boardEditor 的 relevel）

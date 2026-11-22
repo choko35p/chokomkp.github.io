@@ -1263,11 +1263,12 @@
   }
   /* ---------- 棋盤共用：神木植物、百戰老兵騎乘者、星級（站主 2026-11-04） ---------- */
   const ELDER = "Elderwood", SPRY = "Sprykin";
-  const PLANT = { stonebark: "石皮樹", lifebloom: "生命花", protector: "深林保護者", ins1: "樂器（雨笙／邦哥鼓／沙鈴選一）", ins2: "樂器（鋼鐵鼓／排笛／烏克麗麗選一）" };
+  const PLANT = { stonebark: "石皮樹", lifebloom: "生命花", protector: "深林保護者", ins1: "樂器（雨笙／邦哥鼓／沙鈴選一）", ins2: "樂器（鋼鐵鼓／排笛／烏克麗麗選一）", idol: "煉獄偶像（厄薩斯）" };
   // 站主 11/20「海灘有召喚物可以放，你去好好看有幾個」：S19 海灘流行樂的樂器（佔一格、不算人口）。PBE 戰績（11/17～18 還有記樂器的 1,411 場）：
   // 3 隻＝1 個、5 隻＝2 個、7 隻還是 2 個（7 隻多的是海風）。第一個一定是雨笙／邦哥鼓／沙鈴其中之一，第二個是鋼鐵鼓／排笛／烏克麗麗其中之一，高手三種選得差不多平均。
   const isIns = (u) => /^ins\d$/.test(u?.plant || "");
-  const BEACH = "BeachPop";
+  const BEACH = "BeachPop", ROCK = "Rock";
+  const isIdol = (u) => u?.plant === "idol";
   const isPlant = (u) => !!u?.plant;
   /* ---------- 遊戲內「戰術規劃」分享碼（站主 2026-11-16：「每個陣容都要能匯出分享碼像是0241f4234363eb41040042143d3ec401TFTSet18」）
      格式：02＋10 格×3 位 16 進位棋子代碼（空格 000）＋TFTSet18。代碼表在 data/wiki.json 的 planner（官方 team_planner_code）。 ---------- */
@@ -1422,7 +1423,13 @@
   };
   // 神木精靈：3 隻＝石皮樹＋生命花、5 隻＝再一棵石皮樹、7 隻＝加深林保護者、9／11 隻＝植物 2／3 星（遊戲內特性說明）
   function plantPlan(units) {
-    if (S19) { const b = traitN(units, BEACH); return b >= 3 ? (b >= 5 ? ["ins1", "ins2"] : ["ins1"]).map((k) => ({ plant: k, star: 1 })) : []; }
+    if (S19) {
+      const b = traitN(units, BEACH), out = b >= 3 ? (b >= 5 ? ["ins1", "ins2"] : ["ins1"]).map((k) => ({ plant: k, star: 1 })) : [];
+      // 站主 2026-11-22「搖滾會多一隻厄薩斯出來…他還會根據搖滾的級數升星」：搖滾樂 3／4／5／7 → 煉獄偶像 1／2／3／4 星（遊戲資料的 tier）
+      const r = traitN(units, ROCK);
+      if (r >= 3) out.push({ plant: "idol", star: r >= 7 ? 4 : r >= 5 ? 3 : r >= 4 ? 2 : 1 });
+      return out;
+    }
     const n = traitN(units, ELDER);
     if (n < 3) return [];
     const star = n >= 11 ? 3 : n >= 9 ? 2 : 1, ks = ["stonebark", "lifebloom"];
@@ -1452,12 +1459,14 @@
         for (const r of [0, 1, 2, 3]) for (const c of [3, 2, 4, 1, 5, 0, 6]) {
           if (taken.has(r + "," + c)) continue;
           const ns = hexNbrs(r, c).map(([a, b]) => at.get(a + "," + b)).filter(Boolean);
-          const sc = ns.filter((u) => !covered.has(u)).length * 100 + ns.length * 10 + ns.filter((u) => (CH[u.key]?.traits || []).includes(BEACH)).length;
+          // 站主 11/22「後排帶裝的人一定要吃滿」：後排（第 3、4 排）帶裝的先蓋，再來是其他帶裝的，最後才是沒帶裝的；已經被蓋到的不重複算
+          const wt = (u) => ((u.items || []).length ? (u.pos[0] >= 2 ? 1000 : 300) : 10) + ((CH[u.key]?.traits || []).includes(BEACH) ? 1 : 0);
+          const sc = ns.filter((u) => !covered.has(u)).reduce((a, u) => a + wt(u), 0) * 10 + ns.length;
           if (!best || sc > best[0]) best = [sc, [r, c], ns];
         }
         if (best) { x.pos = best[1]; best[2].forEach((u) => covered.add(u)); }
       }
-      if (!x.pos) { outer: for (const r of [0, 1, 2, 3]) for (const c of [3, 2, 4, 1, 5, 0, 6]) if (!taken.has(r + "," + c)) { x.pos = [r, c]; break outer; } }
+      if (!x.pos) { outer: for (const r of [0, 1, 2, 3]) for (const c of [3, 2, 4, 1, 5, 0, 6]) if (!taken.has(r + "," + c)) { x.pos = [r, c]; break outer; } }   // 煉獄偶像是近戰坦（射程 1）：前排中間先放
       if (x.pos) taken.add(x.pos.join(","));
       out.push(x);
     }
@@ -1471,7 +1480,8 @@
   // 石皮樹和生命花在遊戲資料裡是同一隻單位、同一張頭像，所以兩棵樹左下角留一個小字（石／花）分辨
   const PLANT_IMG = { stonebark: "tree", lifebloom: "tree", protector: "protector" };
   const PLANT_MARK = { stonebark: "石", lifebloom: "花" };
-  const plantTile = (u) => isIns(u) ? h("span", { class: "plant ins", "data-tip": PLANT[u.plant], "aria-label": PLANT[u.plant] },
+  const plantTile = (u) => isIdol(u) ? h("span", { class: "plant pic idol", "aria-label": `${PLANT.idol} ${u.star} 星` }, h("img", { src: "icons/s19/idol.webp", alt: "" }), h("span", { class: "pl-n" }, "煉獄偶像"))
+    : isIns(u) ? h("span", { class: "plant ins", "data-tip": PLANT[u.plant], "aria-label": PLANT[u.plant] },
       h("span", { class: "tbg t-gold", "aria-hidden": "true" }, h("span", { class: "tbg-hex" }, traitIco(BEACH, 18))), h("span", { class: "pl-n" }, "樂器" + u.plant.slice(3)))
     : h("span", { class: "plant pic", title: PLANT[u.plant], "aria-label": PLANT[u.plant] },
     h("img", { src: `icons/plants/${PLANT_IMG[u.plant] || "tree"}.webp`, alt: "", onerror: (e) => { e.target.closest(".plant")?.classList.remove("pic"); e.target.src = "icons/traits/Elderwood.png"; } }),
@@ -1560,7 +1570,7 @@
       h("div", { class: "bd-tr" }, h("span", { class: "small muted" }, cand ? "固定棋子的羈絆" : "啟動羈絆"), active.length ? traitBadges(active) : h("span", { class: "small" }, "—")),
       marks.length ? h("p", { class: "small" }, h("b", null, "首領標記："), marks.join("、")) : null,
       riders.length ? h("p", { class: "small" }, h("b", null, "騎乘者："), riders.join("、"), "（騎上毛茸茸大夥伴）") : null,
-      plants ? h("p", { class: "small" }, h("b", null, S19 ? "海灘樂器（佔一格、不算人口）：" : "神木植物："), plants) : null,
+      plants ? h("p", { class: "small" }, h("b", null, S19 ? "海灘樂器、煉獄偶像（佔一格、不算人口）：" : "神木植物："), plants) : null,
       biasRow(c, cs),
       // 戰鬥模擬器（2026-11-11）：把這個站位帶進模擬器
       c?.id && !S19 && c.boards?.["lv" + level] === b ? h("p", { class: "small" }, h("a", { class: "sim-link", href: `sim/#a=comp:${encodeURIComponent(c.id)}:lv${level}` }, "⚔️ 用戰鬥模擬器打打看")) : null,
@@ -1574,7 +1584,8 @@
           const u = all.find((x) => x.pos && x.pos[0] === r && x.pos[1] === col);
           const tip = u && !isPlant(u) ? `${champName(u.key)} ${u.star} 星${starMixText(u)}${u.seen != null ? `｜出現 ${Math.round(u.seen * 100)}%` : ""}${(u.items || []).length ? "｜" + u.items.map(itemName).join("、") : ""}` : null;
           const cd = u && isCand(u);
-          row.append(h("div", { class: "hex" + (u ? " has" : "") + (isPlant(u) ? " is-plant" : "") + (cd ? " cand" : ""), role: "gridcell", title: tip && (cd ? tip + "｜候選" : tip), "aria-label": tip && (cd ? tip + "｜候選" : tip) }, u ? hexInner(u) : null));
+          row.append(h("div", { class: "hex" + (u ? " has" : "") + (isPlant(u) ? " is-plant" : "") + (cd ? " cand" : ""), role: "gridcell", title: u && !isPlant(u) ? null : tip, "aria-label": tip && (cd ? tip + "｜候選" : tip),
+            ...(u && (!isPlant(u) || isIdol(u)) ? { "data-ckey": isIdol(u) ? "__idol" : u.key, "data-cstar": String(u.star || 1), "data-citems": (u.items || []).join(","), tabindex: "0" } : {}) }, u ? hexInner(u) : null));
         }
         grid.append(row);
       }
@@ -2323,6 +2334,73 @@
         row("射程", u.range != null ? `${u.range} 格` : null), row("法力（起始／上限）", u.mana?.length === 2 ? `${u.mana[0]} / ${u.mana[1]}` : null)),
       u.ability?.name || u.ability?.desc ? h("div", { class: "wk-abil" }, h("p", null, h("b", null, "技能："), u.ability.name || ""), h("p", { class: "small wk-pre" }, u.ability.desc || "")) : null);
   }
+  /* 站主 2026-11-22「我滑鼠指上去站位或是點擊他的時候要顯示那個角色的技能跟數值還有解鎖條件」：棋盤上的棋子滑過／點一下 → 小卡（技能、數值、解鎖條件、這盤帶的裝備）。
+     數值：S19 小百科只有 1 星，2、3 星照遊戲規則（生命、物攻每升一星 ×1.8）算。資料是 wiki.json（跟小百科同一份）。 */
+  const UCARD = (() => {
+    const t = h("div", { class: "ucard", role: "dialog", "aria-label": "棋子資料", hidden: "" }); let on = null, pin = false;
+    const hide = () => { t.hidden = true; on = null; pin = false; };
+    const stars = (v, mult) => (Array.isArray(v) ? v : v == null ? null : [v, v * mult, v * mult * mult]);
+    const fmt = (xs, s) => (xs ? xs.map((v, i) => { const x = String(Math.round(v)); return i + 1 === s ? h("b", { class: "uc-cur" }, x) : x; }).flatMap((x, i) => (i ? [" / ", x] : [x])) : ["—"]);
+    const body = (key, star, items) => {
+      if (key === "__idol") return idolBody(star);
+      const u = (WK.d?.units || []).find((x) => x.key === key);
+      if (!u) return [h("b", null, champName(key)), h("p", { class: "small muted" }, "小百科還沒有這隻的資料。")];
+      const row = (l, ...v) => h("div", { class: "uc-st" }, h("span", { class: "uc-stl" }, l), h("span", { class: "uc-stv" }, ...v));
+      return [
+        h("div", { class: "uc-h" }, icon("champion", key, "md"), h("div", null, h("b", null, u.zh || champName(key)), " ", starTag(star),
+          h("div", { class: "xs muted" }, `${u.cost} 費`, u.role ? `・${u.role}` : ""), h("div", { class: "tbgs uc-tr" }, (u.traits || []).map((tk) => traitBadge(tk, null, { tip: trName(tk) }))))),
+        u.unlock ? h("p", { class: "uc-lock small" }, lockIco("wk-lk"), h("b", null, "解鎖條件："), u.unlock.text, u.unlock.temp ? h("span", { class: "tag unv" }, "暫譯") : null) : null,
+        h("div", { class: "uc-stats" },
+          row("生命（1/2/3 星）", ...fmt(stars(u.hp, 1.8), star)), row("物攻（1/2/3 星）", ...fmt(stars(u.ad, 1.8), star)),
+          row("攻速", u.as != null ? String(u.as) : "—"), row("射程", u.range != null ? `${u.range} 格` : "—"),
+          row("護甲／魔抗", `${u.armor ?? "—"} / ${u.mr ?? "—"}`), row("法力", u.mana?.length === 2 ? `${u.mana[0]} / ${u.mana[1]}` : "—")),
+        u.ability?.name || u.ability?.desc ? h("div", { class: "uc-ab" }, h("p", null, h("b", null, "技能："), u.ability.name || ""), h("p", { class: "small wk-pre" }, u.ability.desc || "")) : null,
+        items.length ? h("p", { class: "small uc-it" }, h("b", null, "這盤帶："), items.map((k) => h("span", { class: "uc-iti" }, icon("item", k, "xs"), itemName(k)))) : null];
+    };
+    // 煉獄偶像（遊戲資料：MetaTFT lookups TFTSet19_pbe 的 TFT19_Demonvision_InfernalIdol＋搖滾樂羈絆 CT_DemonVision19，2026-11-22 抓）
+    const IDOL = { ad: [40, 60, 90, 135], slam: [50, 75, 115, 175], slamHeal: [30, 50, 75, 100], blast: [null, null, 450, 600], blastHeal: [null, null, 200, 275] };
+    const idolBody = (star) => {
+      const i = Math.min(4, Math.max(1, star)) - 1, sv = (xs) => xs.map((v, k) => (v == null ? "—" : k === i ? h("b", { class: "uc-cur" }, String(v)) : String(v))).flatMap((x, k) => (k ? [" / ", x] : [x]));
+      const row = (l, ...v) => h("div", { class: "uc-st" }, h("span", { class: "uc-stl" }, l), h("span", { class: "uc-stv" }, ...v));
+      return [
+        h("div", { class: "uc-h" }, h("span", { class: "ico md" }, h("img", { src: "icons/s19/idol.webp", alt: "", width: 48, height: 48 })), h("div", null, h("b", null, "煉獄偶像（厄薩斯）"), " ", starTag(i + 1),
+          h("div", { class: "xs muted" }, "搖滾樂 3 召喚・近戰坦・佔一格、不算人口"), h("div", { class: "tbgs uc-tr" }, traitBadge(ROCK, null, { tip: trName(ROCK) })))),
+        h("p", { class: "small uc-lock" }, h("b", null, "怎麼升星："), "搖滾樂 3／4／5／7 → 1／2／3／4 星。生命會跟著我方搖滾樂英雄的總星數變高。"),
+        h("div", { class: "uc-stats" }, row("物攻（1/2/3/4 星）", ...sv(IDOL.ad)), row("攻速", "0.7"), row("護甲／魔抗", "60 / 60"), row("射程", "1 格"), row("法力", "10 / 70"), row("生命", "350 起，隨搖滾樂英雄星數增加")),
+        h("div", { class: "uc-ab" }, h("p", null, h("b", null, "技能：地獄煞星")),
+          h("p", { class: "small" }, "被動：每第 3 次普攻變成猛擊，對直線上的敵人造成 ", ...sv(IDOL.slam), " 物理傷害，並回復 ", ...sv(IDOL.slamHeal), " 生命。"),
+          h("p", { class: "small" }, "搖滾樂 5 起（3 星以上）：施放技能時發射巨大光束，穿過最多敵人的方向，造成 ", ...sv(IDOL.blast), " 魔法傷害（每多打到一個敵人傷害少 40%），並回復 ", ...sv(IDOL.blastHeal), " 生命。"),
+          h("p", { class: "small" }, "搖滾樂 4：回復搖滾樂英雄造成傷害 10% 的生命。搖滾樂 7：每 3 秒 2 道閃電打附近敵人，重複搖滾樂英雄造成傷害的 18%（魔法傷害）。"))];
+    };
+    const place = (el) => {
+      // 上面放得下放上面、不然放下面；上下都放不下（卡片比較長）就放左右，不要蓋住棋子
+      const r = el.getBoundingClientRect(), w = t.offsetWidth, hh = t.offsetHeight, clampX = (x) => Math.max(6, Math.min(innerWidth - w - 6, x)), clampY = (y) => Math.max(6, Math.min(innerHeight - hh - 6, y));
+      let x, y;
+      if (r.top - hh - 8 >= 6) { x = clampX(r.left + r.width / 2 - w / 2); y = r.top - hh - 8; }
+      else if (r.bottom + 8 + hh <= innerHeight - 6) { x = clampX(r.left + r.width / 2 - w / 2); y = r.bottom + 8; }
+      else if (r.right + 8 + w <= innerWidth - 6) { x = r.right + 8; y = clampY(r.top + r.height / 2 - hh / 2); }
+      else if (r.left - 8 - w >= 6) { x = r.left - 8 - w; y = clampY(r.top + r.height / 2 - hh / 2); }
+      else { x = clampX(r.left + r.width / 2 - w / 2); y = r.bottom + 8 > innerHeight / 2 ? 6 : clampY(r.bottom + 8); }   // 手機：放在另一半的畫面
+      t.style.left = x + "px"; t.style.top = y + "px";
+    };
+    const show = (el) => {
+      if (!t.isConnected) document.body.append(t);
+      on = el; const key = el.dataset.ckey, star = +el.dataset.cstar || 1, items = (el.dataset.citems || "").split(",").filter(Boolean);
+      const draw = () => { if (on !== el) return; t.replaceChildren(...body(key, star, items).filter(Boolean)); t.hidden = false; place(el); };
+      if (WK.d) draw(); else { t.replaceChildren(h("p", { class: "small muted" }, "載入中…")); t.hidden = false; place(el); loadWiki().then(draw); }
+    };
+    const tgt = (e) => e.target?.closest?.(".board:not(.edit) [data-ckey]");
+    const fine = matchMedia("(hover: hover)").matches;
+    document.addEventListener("mouseover", (e) => { if (!fine || pin) return; const el = tgt(e); if (el) { if (on !== el) show(el); } else if (on && !t.contains(e.target)) hide(); });
+    document.addEventListener("click", (e) => {
+      const el = tgt(e);
+      if (el) { if (pin && on === el) hide(); else { show(el); pin = true; } return; }
+      if (on && !t.contains(e.target)) hide();
+    });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && on) hide(); if ((e.key === "Enter" || e.key === " ") && tgt(e)) { e.preventDefault(); show(tgt(e)); pin = true; } });
+    addEventListener("scroll", () => { if (on && !pin) hide(); else if (on) place(on); }, { passive: true }); addEventListener("resize", () => on && hide());
+    return { hide };
+  })();
   function wkUnits() {
     const d = WK.d, box = h("div", { class: "wk-units" });
     const q = h("input", { type: "search", class: "wk-q", placeholder: "搜尋棋子或羈絆名稱", "aria-label": "搜尋棋子", value: WK.uq });

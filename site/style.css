@@ -1434,3 +1434,23 @@ button.bias-opt { padding: 1px; border: 2px solid transparent; border-radius: 8p
 .isg-row .tag { margin-left: 6px; }
 .tag.isg-a { background: var(--warn-bg); border-color: var(--warn-line); }
 .tag.isg-r { background: var(--ok-bg); border-color: var(--ok-line); }
+
+/* 棋盤棋子小卡（站主 2026-11-22：滑過／點一下看技能、數值、解鎖條件） */
+.board:not(.edit) .hex.has[data-ckey] { cursor: pointer; }
+.ucard { position: fixed; z-index: 9998; width: min(340px, calc(100vw - 12px)); max-height: min(70vh, 520px); overflow: auto; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); box-shadow: 0 8px 28px rgba(0,0,0,.22); font-size: 14px; line-height: 1.45; }
+.ucard[hidden] { display: none; }
+.ucard .uc-h { display: flex; gap: 10px; align-items: flex-start; }
+.ucard .uc-h .stars { position: static; display: inline-block; margin-left: 4px; }
+.ucard .uc-tr { margin-top: 4px; }
+.ucard .uc-lock { margin: 8px 0 0; padding: 6px 8px; border-radius: 8px; background: color-mix(in srgb, var(--accent) 7%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line)); }
+.ucard .uc-lock .wk-lk { vertical-align: -2px; margin-right: 4px; }
+.ucard .uc-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 8px; margin: 8px 0; }
+.ucard .uc-st { display: flex; flex-direction: column; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; }
+.ucard .uc-stl { font-size: .72rem; color: var(--muted); }
+.ucard .uc-stv { font-variant-numeric: tabular-nums; font-size: .9rem; }
+.ucard .uc-cur { color: var(--accent); }
+.ucard .uc-ab p { margin: 3px 0; }
+.ucard .uc-it { margin: 6px 0 0; }
+.ucard .uc-iti { display: inline-flex; align-items: center; gap: 3px; margin-right: 8px; }
+.plant.idol img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+.plant.idol { border: 2px solid #b33a2c; }

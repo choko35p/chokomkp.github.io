@@ -1460,3 +1460,8 @@ button.bias-opt { padding: 1px; border: 2px solid transparent; border-radius: 8p
 .fhex .lock-b { top: -4px; left: auto; right: -4px; }
 .fxpanel [data-ckey] { cursor: pointer; }
 .fxpanel [data-ckey]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* 坦裝給誰（兩個主坦都常見，站主 2026-11-22） */
+.fx-tank { margin-bottom: .75rem; padding-bottom: .6rem; border-bottom: 1px dashed color-mix(in srgb, var(--text) 18%, transparent); }
+.fx-tank .fx-units { align-items: center; }
+.fx-or { font-weight: 800; color: var(--muted); padding: 0 .25rem; align-self: center; }
+.fx-tank-t { margin: .4rem 0 0; line-height: 1.55; }

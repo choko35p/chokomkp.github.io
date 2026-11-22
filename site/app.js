@@ -1026,8 +1026,13 @@
     if (ed) for (const lv of ed.flexLevels) if (!fx.some(([l]) => l === lv)) fx.push([lv, []]);
     fx.sort((a, b) => a[0] - b[0]);
     const upLvs = ed ? ed.stepLevels : [];
-    if (!steps.length && !fx.some(([, xs]) => xs.length) && !ed) return null;
+    const tn = S19 ? c.tankNote : null;
+    if (!steps.length && !fx.some(([, xs]) => xs.length) && !ed && !tn) return null;
     const box = h("aside", { class: "fxpanel" + (ed ? " editing" : ""), "aria-label": "升等要補與可以替換" });
+    // 站主 2026-11-22「如果會有兩個主坦的可能那就在旁邊標明，誰三星誰帶坦裝或是四費誰二星誰帶坦裝」（tools/s19_itemsets.py 從實戰算）
+    if (tn) box.append(h("div", { class: "fx-tank" }, h("p", { class: "fx-h" }, "坦裝給誰"),
+      h("div", { class: "fx-units" }, fhex(tn.main, { name: true }), h("span", { class: "fx-or", "aria-hidden": "true" }, "或"), fhex(tn.alt, { name: true })),
+      h("p", { class: "small fx-tank-t" }, tn.text)));
     const isSel = (k) => ed?.sel && ed.sel.kind === k.kind && ed.sel.lv === k.lv && ed.sel.key === k.key && ed.sel.i === k.i;
     const pickOf = (k) => (ed ? () => ed.select(isSel(k) ? null : k) : null);
     const selBox = (k) => (ed && isSel(k) ? ed.selPanel(k) : null);

@@ -1181,6 +1181,23 @@
     }
   }
   const CN_NUM = "一二三四五六七八九十";
+  // 遊戲戰術規劃分享碼 → 棋子（D.codeTable19＝MetaTFT 遊戲資料的棋子代碼）。同一個代碼對到幾隻（遊戲資料重複）時，挑這套盤上有的那隻
+  function decode19(text, base) {
+    const t = D.codeTable19?.codes || {}, m = /02([0-9a-f]{30})/i.exec(String(text || "").replace(/\s+/g, ""));
+    if (!m) return null;
+    const onBase = new Set(Object.values(base?.boards || {}).flatMap((b) => (b?.units || []).map((u) => u.key)));
+    const keys = [], odd = [];
+    for (let i = 0; i < 10; i++) {
+      const v = parseInt(m[1].slice(i * 3, i * 3 + 3), 16);
+      if (!v) continue;
+      const ks = (t[String(v)] || []).filter((k) => CH[k]);
+      if (!ks.length) { odd.push(`第 ${i + 1} 格認不出來（代碼 ${v}）`); continue; }
+      const k = ks.find((x) => onBase.has(x) && !keys.includes(x)) || ks.find((x) => !keys.includes(x)) || ks[0];
+      if (ks.length > 1) odd.push(`${champName(k)}（同一個代碼也可能是${ks.filter((x) => x !== k).map(champName).join("、")}）`);
+      keys.push(k);
+    }
+    return { keys, odd, pop: keys.reduce((n, k) => n + (CH[k]?.slots || 1), 0) };
+  }
   // 站主編輯：這套的公式（加公式、從哪個公式複製、改名、刪掉自己加的）
   function formulaTools(c) {
     const base = c.formulaOf ? compById(c.formulaOf) : c;
@@ -1205,18 +1222,34 @@
       const from = h("select", { class: "fx-from", "aria-label": "從哪個公式複製" }, [...(fs.length ? fs : [{ id: base.id, name: "公式一（目前的盤面）" }]).map((f) => h("option", { value: f.id }, `複製「${f.name}」`)),
         h("option", { value: "" }, "空白盤面（自己放）")]);
       from.value = c.id;
+      // 站主 2026-11-22「加入公式要能辨識棋子」：貼遊戲「戰術規劃」的分享碼，自動認出棋子當這個公式的盤面（站位之後在公式頁排，裝備上線時照一套坦裝兩套輸出裝放）
+      const code = h("input", { type: "text", class: "fx-code-in", placeholder: "或貼上遊戲戰術規劃的分享碼（02 開頭）", "aria-label": "遊戲戰術規劃的分享碼", autocomplete: "off", spellcheck: "false" });
+      const seen = h("div", { class: "fx-code-see", "aria-live": "polite" });
+      let got = null;
+      code.addEventListener("input", () => {
+        got = decode19(code.value, base); seen.textContent = "";
+        if (!code.value.trim()) { from.disabled = false; return; }
+        if (!got || !got.keys.length) { seen.append(h("p", { class: "xs warn" }, "認不出這個分享碼：要是遊戲裡戰術規劃「匯出」的那串（02 開頭）。")); from.disabled = false; return; }
+        from.disabled = true;
+        seen.append(h("p", { class: "xs muted" }, `認出 ${got.keys.length} 隻（${got.pop} 人口），會用這些棋子當新公式的盤面：`),
+          h("div", { class: "fx-code-units" }, got.keys.map((k) => h("span", { class: "fx-code-u" }, icon("champion", k, "xs"), champName(k)))),
+          got.odd.length ? h("p", { class: "xs warn" }, "要確認：", got.odd.join("；"), "。放錯的話到新公式頁換掉。") : null);
+      });
       const add = async () => {
         const nm = name.value.trim(); if (!nm) { msg.textContent = "先取個名字。"; return; }
         const fid = "o" + Date.now().toString(36), id = `${base.id}__fx_${fid}`;
         msg.textContent = "新增中…";
         try {
-          const bd = from.value ? copyDoc(from.value, id) : { compId: id, at: new Date().toISOString() };
+          const L = got?.keys.length ? Math.max(3, Math.min(10, got.pop)) : null;
+          const bd = L ? { compId: id, main: L, ["lv" + L]: { units: got.keys.map((k) => ({ key: k, star: (CH[k]?.cost || 1) >= 5 ? 1 : 2, items: [], pos: null })) }, at: new Date().toISOString() }
+            : from.value ? copyDoc(from.value, id) : { compId: id, at: new Date().toISOString() };
           await O.db.doc("boards/" + id).set(bd); O.boards[id] = bd;
           await save({ ...doc, compId: base.id + "__formulas", of: base.id, ...(fs.length ? {} : { mainName: doc.mainName || "公式一" }), formulas: [...(doc.formulas || []), { id: fid, name: nm }] }, () => { location.hash = "#" + slug(id); });
         } catch (err) { msg.textContent = "新增失敗：" + (err?.message || "請再試一次"); }
       };
-      return h("div", { class: "fx-form row" }, name, from, h("button", { class: "btn primary", type: "button", onclick: add }, "加上去"),
-        h("button", { class: "btn ghost", type: "button", onclick: () => { box.replaceWith(formulaTools(c)); } }, "取消"));
+      return h("div", { class: "fx-form" }, h("div", { class: "row" }, name, from), h("div", { class: "row" }, code), seen,
+        h("div", { class: "row" }, h("button", { class: "btn primary", type: "button", onclick: add }, "加上去"),
+          h("button", { class: "btn ghost", type: "button", onclick: () => { box.replaceWith(formulaTools(c)); } }, "取消")));
     };
     const rename = () => {
       const inp = h("input", { type: "text", class: "fx-name-in", value: me.name, "aria-label": "公式名稱", maxlength: "40" });

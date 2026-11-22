@@ -1465,3 +1465,9 @@ button.bias-opt { padding: 1px; border: 2px solid transparent; border-radius: 8p
 .fx-tank .fx-units { align-items: center; }
 .fx-or { font-weight: 800; color: var(--muted); padding: 0 .25rem; align-self: center; }
 .fx-tank-t { margin: .4rem 0 0; line-height: 1.55; }
+/* 加公式：貼分享碼認棋子（站主 2026-11-22） */
+.fx-form .row { flex-wrap: wrap; gap: .5rem; margin-bottom: .4rem; }
+.fx-code-in { flex: 1 1 18rem; min-width: 0; font-family: var(--mono, ui-monospace, monospace); }
+.fx-code-units { display: flex; flex-wrap: wrap; gap: .35rem .6rem; margin: .25rem 0 .4rem; }
+.fx-code-see .warn { color: #a3411f; }
+.fx-code-u { display: inline-flex; align-items: center; gap: 3px; font-weight: 600; }

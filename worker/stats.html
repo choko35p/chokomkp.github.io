@@ -118,7 +118,7 @@ ul.lim li+li{margin-top:4px}
       <div id="sources"></div>
     </section>
     <section class="card">
-      <h2>陣容被打開的次數</h2>
+      <h2>陣容被打開的次數（S18）</h2>
       <p class="note" id="comps-note">從陣容頁載入的裝備資料推算。同一位讀者沒重新整理前重複打開同一套只算一次。</p>
       <div id="comps"></div>
     </section>
@@ -126,6 +126,11 @@ ul.lim li+li{margin-top:4px}
       <h2>手機還是電腦</h2>
       <p class="note">「點開陣容」＝打開網站後，至少看了一套陣容頁的比例；「看幾套」＝這些人平均看了幾套。</p>
       <div id="devices"></div>
+    </section>
+    <section class="card">
+      <h2>S18 現行／S19 預測</h2>
+      <p class="note">從兩季各自的資料檔推算。「打開」＝打開網站或切換賽季一次。上面的造訪、來源、裝置是兩季合計，分不開。</p>
+      <div id="seasons"></div>
     </section>
     <section class="card">
       <h2>瀏覽器與 App</h2>
@@ -376,12 +381,22 @@ ul.lim li+li{margin-top:4px}
         "手機讀者可能只看 T 表就夠了。",
         "確認手機上陣容卡片看起來可以點（有箭頭或按鈕感），改完比較一週。");
     }
+    // 賽季
+    renderSeasons(d);
+
     // 速度
     const slow = d.perf.filter((p) => p.n >= 10 && p.load90 > 3e6);
     if (slow.length) add("todo", "部分讀者載入偏慢，可以讓圖示和字型在讀者的瀏覽器裡留久一點",
       slow.map((p) => `${DEVICE(p.device)}最慢一成要 ${(p.load90 / 1e6).toFixed(1)} 秒`).join("、") + "。",
       "也可能是少數讀者網路很差，或混進了海外的測試流量。",
       "替圖示和字型設定長時間快取（跟我說就能改，不用動網站內容），一週後比較「最慢一成」。");
+    // S19
+    const s18o = d.sessions.filter((x) => x.path === "/data/site-data.json").reduce((a2, x) => a2 + x.n, 0);
+    const s19o = d.sessions.filter((x) => x.path === "/data/s19/site-data.json").reduce((a2, x) => a2 + x.n, 0);
+    if (s18o + s19o >= 30 && s19o / (s18o + s19o) >= 0.2) add("info", "S19 預測版很多人看",
+      `打開網站的 ${fmt.format(s18o + s19o)} 次裡，${pctf(s19o / (s18o + s19o))} 是 S19 預測版。`,
+      "可能是你發了 S19 的貼文，讀者是一次性的好奇。",
+      "持續看「S18 現行／S19 預測」每天的占比；如果一直升高，S19 的內容可以優先補。");
     // 時段
     if (d.range === "7d" || d.range === "30d") {
       const byH = new Array(24).fill(0);
@@ -410,6 +425,33 @@ ul.lim li+li{margin-top:4px}
     box.replaceChildren(...items.map((x) => el("div", { class: "adv" + (x.kind === "good" ? " good" : "") },
       el("h3", null, el("span", { class: "tag" + (x.kind === "good" ? " good" : "") }, x.kind === "good" ? "做得好" : x.kind === "info" ? "參考" : "建議"), x.title),
       el("dl", null, el("dt", null, "依據"), el("dd", null, x.basis), el("dt", null, "其他可能"), el("dd", null, x.alt), el("dt", null, "怎麼驗證"), el("dd", null, x.verify)))));
+  }
+
+
+  function renderSeasons(d) {
+    const box = $("#seasons");
+    const n = (path, dev) => d.sessions.filter((x) => x.path === path && (!dev || x.device === dev)).reduce((a, x) => a + x.n, 0);
+    const rows = [
+      { label: "S18 現行", open: n("/data/site-data.json"), mob: n("/data/site-data.json", "mobile"), comp: n("/data/vods.json") },
+      { label: "S19 預測", open: n("/data/s19/site-data.json"), mob: n("/data/s19/site-data.json", "mobile"), comp: n("/data/s19/items.json") },
+    ];
+    const tot = rows[0].open + rows[1].open;
+    if (!tot) { box.replaceChildren(el("p", { class: "empty" }, "這段時間沒有資料。")); return; }
+    const kids = [el("table", null,
+      el("thead", null, el("tr", null, el("th", null, "賽季"), el("th", { style: "text-align:right" }, "打開"), el("th", { style: "text-align:right" }, "占比"), el("th", { style: "text-align:right" }, "手機"), el("th", { style: "text-align:right" }, "點開陣容"))),
+      el("tbody", null, rows.map((r) => el("tr", null, el("td", null, r.label), el("td", { class: "n" }, fmt.format(r.open)),
+        el("td", { class: "n" }, Math.round((r.open / tot) * 100) + "%"), el("td", { class: "n" }, r.open ? Math.round((r.mob / r.open) * 100) + "%" : "—"),
+        el("td", { class: "n" }, r.open ? Math.round((Math.min(r.comp, r.open) / r.open) * 100) + "%" : "—")))))];
+    if (d.range === "7d" || d.range === "30d") {
+      const m = new Map();
+      for (const x of d.seasonTrend || []) { const k = twDayKey(Date.parse(x.t)); const o = m.get(k) || { 18: 0, 19: 0 }; o[x.season] += x.n; m.set(k, o); }
+      const days = [...m.keys()].sort();
+      kids.push(el("table", { style: "margin-top:12px" },
+        el("thead", null, el("tr", null, el("th", null, "日期"), el("th", { style: "text-align:right" }, "S18"), el("th", { style: "text-align:right" }, "S19"), el("th", { style: "text-align:right" }, "S19 占比"))),
+        el("tbody", null, days.map((k) => { const o = m.get(k), t = o[18] + o[19]; return el("tr", null, el("td", null, k.slice(5).replace("-", "/")), el("td", { class: "n" }, fmt.format(o[18])), el("td", { class: "n" }, fmt.format(o[19])), el("td", { class: "n" }, t ? Math.round((o[19] / t) * 100) + "%" : "—")); }))));
+    }
+    kids.push(el("p", { class: "note", style: "margin:8px 0 0" }, "S19 每一套陣容各被打開幾次目前量不到：S19 的裝備資料是整包一次載入，看不出讀者點了哪一套。"));
+    box.replaceChildren(...kids);
   }
 
   async function render(d) {

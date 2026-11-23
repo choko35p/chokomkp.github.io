@@ -130,6 +130,9 @@ const DEFAULT_SINCE = "2026-11-05T02:00:00Z";
 // Cloudflare 的統計：一次查 7 天以內是逐筆精確，超過 7 天會改成抽樣估算（數字變成 10 的倍數）。
 // 所以長範圍切成每段 7 天以內分開查再加總。每次查詢的項目數也有上限，所以分成好幾個查詢一起送。
 const CHUNK = 7 * 86400e3;
+// 每次打開網站都會載入該賽季的 site-data.json；S18 打開陣容頁會載入 vods.json，S19 第一次打開陣容頁會載入整包 items.json
+// （網址帶 ?s=19 的 S19 預測版，Web Analytics 只記路徑「/」，所以賽季要從這些資料檔分）
+const SESSION_FILES = JSON.stringify(["/data/site-data.json", "/data/vods.json", "/data/s19/site-data.json", "/data/s19/items.json"]);
 
 export function chunks(a, b, size = CHUNK) {
   const out = [];
@@ -173,7 +176,8 @@ export function buildQueries(env, w, tw) {
     const zf = (x) => `filter: { datetime_geq: "${iso(a)}", datetime_lt: "${iso(b)}", edgeResponseStatus_lt: 400${zc}${x} }`;
     return `{ viewer { zones(filter: { zoneTag: "${env.ZONE_ID}" }) {
   comps: httpRequestsAdaptiveGroups(limit: 500, ${zf(`, clientRequestPath_like: "/data/items/%"`)}, orderBy: [count_DESC]) { count avg { sampleInterval } dimensions { clientRequestPath clientDeviceType } }
-  sessions: httpRequestsAdaptiveGroups(limit: 20, ${zf(`, clientRequestPath_in: ["/data/site-data.json", "/data/vods.json"]`)}, orderBy: [count_DESC]) { count avg { sampleInterval } dimensions { clientRequestPath clientDeviceType } }
+  sessions: httpRequestsAdaptiveGroups(limit: 40, ${zf(`, clientRequestPath_in: ${SESSION_FILES}`)}, orderBy: [count_DESC]) { count avg { sampleInterval } dimensions { clientRequestPath clientDeviceType } }
+  seasonHours: httpRequestsAdaptiveGroups(limit: 1000, ${zf(`, clientRequestPath_in: ["/data/site-data.json", "/data/s19/site-data.json"]`)}, orderBy: [datetimeHour_ASC]) { count dimensions { clientRequestPath datetimeHour } }
 } } }`;
   });
   return { account, misc, zone, start: s0, prevStart: p0, zoneStart: zStart, perfStart, nPrev: prev.length };
@@ -223,6 +227,7 @@ export async function buildStats(env, range, tw, fetchImpl = fetch, now = Date.n
   const one = (rows) => ({ visits: rows.reduce((s, x) => s + x.sum.visits, 0), views: rows.reduce((s, x) => s + x.count, 0) });
   const prevRows = Array.from({ length: q.nPrev }, (_, i) => misc[`p${i}`] || []).flat();
   const zc = zones.flatMap((z) => z.comps || []), zs = zones.flatMap((z) => z.sessions || []);
+  const zh = zones.flatMap((z) => z.seasonHours || []);
   const zmerge = (rows) => merge(rows, (d) => d.clientRequestPath + "|" + d.clientDeviceType).map((x) => ({ path: x.clientRequestPath, device: x.clientDeviceType, n: x.views }));
   return {
     generatedAt: new Date(now).toISOString(),
@@ -237,6 +242,7 @@ export async function buildStats(env, range, tw, fetchImpl = fetch, now = Date.n
     perf: (misc.perf || []).map((x) => ({ device: x.dimensions.deviceType, n: x.count, load50: x.quantiles.pageLoadTimeP50, load90: x.quantiles.pageLoadTimeP90, fcp50: x.quantiles.firstContentfulPaintP50 })),
     comps: zmerge(zc),
     sessions: zmerge(zs),
+    seasonTrend: zh.map((x) => ({ t: x.dimensions.datetimeHour, season: x.dimensions.clientRequestPath.includes("/s19/") ? 19 : 18, n: x.count })),
     sampled: sampledRows(hours) || sampledRows(all("sources")),
     compsSampled: sampledRows(zc, 1.5),
     queries: q.account.length + (q.misc ? 1 : 0) + q.zone.length,

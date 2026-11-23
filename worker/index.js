@@ -13,6 +13,13 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const p = url.pathname;
+    if (p === "/" || p === "/index.html") return withTracker(request, env);
+    if (p === "/e/t.js") return new Response(TRACKER_JS, { headers: { "content-type": "text/javascript; charset=utf-8", "cache-control": "public, max-age=3600", "x-content-type-options": "nosniff" } });
+    if (p.startsWith("/e/")) {
+      // 首頁功能的點擊紀錄。不存任何東西，次數從 Cloudflare 的網站流量統計算（網址就是點了什麼）。
+      const ok = /^\/e\/v\/[A-Za-z0-9-]{1,80}$/.test(p);
+      return new Response(null, { status: ok ? 204 : 404, headers: { "cache-control": "no-store", "x-robots-tag": "noindex" } });
+    }
     if (p !== "/stats" && !p.startsWith("/stats/")) return env.ASSETS.fetch(request);
 
     const auth = await verifyAccess(request, env);
@@ -30,6 +37,25 @@ export default {
     return new Response("找不到這個頁面", { status: 404, headers: secureHeaders("text/plain; charset=utf-8") });
   },
 };
+
+/* ---------------- 首頁各功能的點擊次數 ----------------
+   首頁是單頁程式，換到陣容頁、新手教學、小百科只改網址的 #，Cloudflare 的統計看不到；
+   S19 的裝備資料又是整包一次載入，看不出讀者點了哪一套。所以首頁多載入一支很小的程式：
+   網址的 # 變了就對 /e/v/<#後面那段> 送一個空請求；同一次瀏覽同一個只送一次。
+   不用 cookie、不帶任何讀者資料。放在 worker 裡而不是 site/app.js，網站重新建置也不會被蓋掉。 */
+const TRACKER_JS = `(()=>{try{const seen=new Set();const hit=()=>{const h=location.hash.slice(1);if(!/^[A-Za-z0-9-]{1,80}$/.test(h)||seen.has(h))return;seen.add(h);fetch("/e/v/"+h,{keepalive:true,cache:"no-store",credentials:"omit"}).catch(()=>{});};addEventListener("hashchange",hit);hit();}catch(e){}})();`;
+
+async function withTracker(request, env) {
+  // 不用條件請求：舊的快取沒有這支程式，回 304 的話讀者會一直用舊的首頁
+  const h = new Headers(request.headers);
+  h.delete("if-none-match"); h.delete("if-modified-since");
+  const res = await env.ASSETS.fetch(new Request(request, { headers: h }));
+  const type = res.headers.get("content-type") || "";
+  if (!res.ok || !type.includes("text/html")) return res;
+  const out = new Response(res.body, res);
+  out.headers.delete("etag"); out.headers.delete("last-modified");
+  return new HTMLRewriter().on("body", { element(el) { el.append('<script src="/e/t.js" defer></script>', { html: true }); } }).transform(out);
+}
 
 /* ---------------- 權限 ---------------- */
 
@@ -161,6 +187,7 @@ export function buildQueries(env, w, tw) {
     grp("devices", "deviceType", a, b),
     grp("browsers", "userAgentBrowser userAgentOS", a, b),
     grp("countries", "countryName", a, b),
+    grp("pages", "requestPath", a, b, "sum_visits_DESC", 100),
   ]));
   const extra = prev.map(([a, b], i) => tot(`p${i}`, a, b));
   const lh = Math.max(w.end - 3600e3, since);
@@ -177,6 +204,7 @@ export function buildQueries(env, w, tw) {
     return `{ viewer { zones(filter: { zoneTag: "${env.ZONE_ID}" }) {
   comps: httpRequestsAdaptiveGroups(limit: 500, ${zf(`, clientRequestPath_like: "/data/items/%"`)}, orderBy: [count_DESC]) { count avg { sampleInterval } dimensions { clientRequestPath clientDeviceType } }
   sessions: httpRequestsAdaptiveGroups(limit: 40, ${zf(`, clientRequestPath_in: ${SESSION_FILES}`)}, orderBy: [count_DESC]) { count avg { sampleInterval } dimensions { clientRequestPath clientDeviceType } }
+  views: httpRequestsAdaptiveGroups(limit: 1000, ${zf(`, clientRequestPath_like: "/e/v/%"`)}, orderBy: [count_DESC]) { count dimensions { clientRequestPath clientDeviceType } }
   seasonHours: httpRequestsAdaptiveGroups(limit: 1000, ${zf(`, clientRequestPath_in: ["/data/site-data.json", "/data/s19/site-data.json"]`)}, orderBy: [datetimeHour_ASC]) { count dimensions { clientRequestPath datetimeHour } }
 } } }`;
   });
@@ -228,6 +256,7 @@ export async function buildStats(env, range, tw, fetchImpl = fetch, now = Date.n
   const prevRows = Array.from({ length: q.nPrev }, (_, i) => misc[`p${i}`] || []).flat();
   const zc = zones.flatMap((z) => z.comps || []), zs = zones.flatMap((z) => z.sessions || []);
   const zh = zones.flatMap((z) => z.seasonHours || []);
+  const zv = zones.flatMap((z) => z.views || []);
   const zmerge = (rows) => merge(rows, (d) => d.clientRequestPath + "|" + d.clientDeviceType).map((x) => ({ path: x.clientRequestPath, device: x.clientDeviceType, n: x.views }));
   return {
     generatedAt: new Date(now).toISOString(),
@@ -239,9 +268,11 @@ export async function buildStats(env, range, tw, fetchImpl = fetch, now = Date.n
     devices: merge(all("devices"), (d) => d.deviceType).map((x) => ({ device: x.deviceType, visits: x.visits, views: x.views })),
     browsers: merge(all("browsers"), (d) => d.userAgentBrowser + "|" + d.userAgentOS).map((x) => ({ browser: x.userAgentBrowser, os: x.userAgentOS, visits: x.visits, views: x.views })),
     countries: merge(all("countries"), (d) => d.countryName).map((x) => ({ country: x.countryName, visits: x.visits, views: x.views })),
+    pages: merge(all("pages"), (d) => d.requestPath).map((x) => ({ path: x.requestPath, visits: x.visits, views: x.views })),
     perf: (misc.perf || []).map((x) => ({ device: x.dimensions.deviceType, n: x.count, load50: x.quantiles.pageLoadTimeP50, load90: x.quantiles.pageLoadTimeP90, fcp50: x.quantiles.firstContentfulPaintP50 })),
     comps: zmerge(zc),
     sessions: zmerge(zs),
+    views: zmerge(zv).map((x) => ({ ...x, path: x.path.replace(/^\/e\/v\//, "") })),
     seasonTrend: zh.map((x) => ({ t: x.dimensions.datetimeHour, season: x.dimensions.clientRequestPath.includes("/s19/") ? 19 : 18, n: x.count })),
     sampled: sampledRows(hours) || sampledRows(all("sources")),
     compsSampled: sampledRows(zc, 1.5),

@@ -11,8 +11,8 @@
   "assets": {
     "directory": "./site",
     "binding": "ASSETS",
-    // 只有 /stats 會先經過程式；其他網址照舊直接給靜態檔案，不算 Worker 用量
-    "run_worker_first": ["/stats", "/stats/*"]
+    // 首頁（加 S19 陣容紀錄程式）、/e/（S19 陣容紀錄）、/stats 會先經過程式；其他網址照舊直接給靜態檔案
+    "run_worker_first": ["/", "/index.html", "/e/*", "/stats", "/stats/*"]
   },
   "vars": {
     // 這些都不是密碼。讀取金鑰 CF_API_TOKEN 是放在 Cloudflare 後台的「密鑰」，不在這裡。

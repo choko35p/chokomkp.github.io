@@ -128,8 +128,18 @@ ul.lim li+li{margin-top:4px}
       <div id="devices"></div>
     </section>
     <section class="card">
+      <h2>各頁面</h2>
+      <p class="note">「瀏覽」含從首頁點過去的；「直接進來」＝讀者一進網站就是這頁（從外面的連結點進來）。</p>
+      <div id="pages"></div>
+    </section>
+    <section class="card">
+      <h2>首頁裡點了什麼</h2>
+      <p class="note">同一次瀏覽同一個功能只算一次。從 11/23 晚上開始記錄，之前沒有資料。</p>
+      <div id="views"></div>
+    </section>
+    <section class="card">
       <h2>S18 現行／S19 預測</h2>
-      <p class="note">從兩季各自的資料檔推算。「打開」＝打開網站或切換賽季一次。上面的造訪、來源、裝置是兩季合計，分不開。</p>
+      <p class="note">從兩季各自的資料檔推算。「打開」＝打開網站或切換賽季一次。上面的造訪、來源、裝置是兩季合計，分不開。S19 各套陣容從 11/23 晚上開始記錄。</p>
       <div id="seasons"></div>
     </section>
     <section class="card">
@@ -381,8 +391,10 @@ ul.lim li+li{margin-top:4px}
         "手機讀者可能只看 T 表就夠了。",
         "確認手機上陣容卡片看起來可以點（有箭頭或按鈕感），改完比較一週。");
     }
-    // 賽季
+    // 賽季、各頁面、首頁功能
     renderSeasons(d);
+    renderPages(d);
+    renderViews(d);
 
     // 速度
     const slow = d.perf.filter((p) => p.n >= 10 && p.load90 > 3e6);
@@ -450,8 +462,61 @@ ul.lim li+li{margin-top:4px}
         el("thead", null, el("tr", null, el("th", null, "日期"), el("th", { style: "text-align:right" }, "S18"), el("th", { style: "text-align:right" }, "S19"), el("th", { style: "text-align:right" }, "S19 占比"))),
         el("tbody", null, days.map((k) => { const o = m.get(k), t = o[18] + o[19]; return el("tr", null, el("td", null, k.slice(5).replace("-", "/")), el("td", { class: "n" }, fmt.format(o[18])), el("td", { class: "n" }, fmt.format(o[19])), el("td", { class: "n" }, t ? Math.round((o[19] / t) * 100) + "%" : "—")); }))));
     }
-    kids.push(el("p", { class: "note", style: "margin:8px 0 0" }, "S19 每一套陣容各被打開幾次目前量不到：S19 的裝備資料是整包一次載入，看不出讀者點了哪一套。"));
     box.replaceChildren(...kids);
+    renderS19Comps(d, box);
+  }
+
+
+  const PAGE = (p) => {
+    const seg = "/" + ((p || "/").split("/")[1] || "");
+    return { "/": "首頁（T 表、陣容攻略）", "/index.html": "首頁（T 表、陣容攻略）", "/pros": "高手教學庫", "/trials": "滴答克的試煉", "/sim": "陣容編輯器／戰鬥模擬", "/learn": "新手教學" }[seg] || seg;
+  };
+  const VIEW = (h) => {
+    if (h === "learn") return "新手教學（首頁那一區）";
+    if (h === "learn-route") return "從 2-1 選路線";
+    if (h.startsWith("learn-lab")) return "決策實驗室";
+    if (h === "learn-quiz" || h === "quiz") return "小測驗";
+    return { "wiki-sec": "小百科", "rp-sec": "高手 RP", "picker": "隨手速查", "tierlist": "T 度表", "comps": "陣容攻略列表", "version": "版本主軸", "updates-sec": "本次更新", "top": "回到最上面" }[h] || "#" + h;
+  };
+  let NAMES19 = null;
+  async function loadNames19() {
+    if (NAMES19) return NAMES19;
+    try {
+      const d = await fetch("/data/s19/site-data.json").then((r) => r.json());
+      const m = {};
+      for (const c of d.comps || []) { m["c-" + String(c.id).replace(/[^A-Za-z0-9]+/g, "-")] = { name: c.name, tier: c.tier || null }; for (const v of c.variants || []) m["c-" + String(v.id).replace(/[^A-Za-z0-9]+/g, "-")] = { name: v.name, tier: null, branch: true }; }
+      NAMES19 = m;
+    } catch { NAMES19 = {}; }
+    return NAMES19;
+  }
+  function renderPages(d) {
+    const rows = new Map();
+    for (const x of d.pages || []) { const k = PAGE(x.path); const o = rows.get(k) || { label: k, views: 0, visits: 0 }; o.views += x.views; o.visits += x.visits; rows.set(k, o); }
+    const list = [...rows.values()].sort((a, b) => b.views - a.views);
+    if (!list.length) { $("#pages").replaceChildren(el("p", { class: "empty" }, "這段時間沒有資料。")); return; }
+    const max = list[0].views || 1;
+    $("#pages").replaceChildren(el("table", null,
+      el("thead", null, el("tr", null, el("th", null, "頁面"), el("th", null, el("span", { class: "sr" }, "長條")), el("th", { style: "text-align:right" }, "瀏覽"), el("th", { style: "text-align:right" }, "直接進來"))),
+      el("tbody", null, list.map((r) => el("tr", null, el("td", null, r.label), el("td", { class: "b" }, el("div", { class: "hb", style: `width:${(r.views / max) * 100}%` })), el("td", { class: "n" }, fmt.format(r.views)), el("td", { class: "n" }, fmt.format(r.visits)))))));
+  }
+  function renderViews(d) {
+    const rows = group((d.views || []).filter((x) => !x.path.startsWith("c-")), (x) => VIEW(x.path), (x) => x.n);
+    const comps = (d.views || []).filter((x) => x.path.startsWith("c-")).reduce((a, x) => a + x.n, 0);
+    if (comps) rows.push({ label: "陣容詳細頁（兩季合計，各套見下面）", value: comps });
+    rows.sort((a, b) => b.value - a.value);
+    $("#views").replaceChildren(barTable(rows, ["功能", "次數"]));
+  }
+  async function renderS19Comps(d, box) {
+    const v = (d.views || []).filter((x) => x.path.startsWith("c-s19-"));
+    if (!v.length) { box.append(el("p", { class: "note", style: "margin:8px 0 0" }, "S19 各套陣容的打開次數從 11/23 晚上開始記錄，這段時間還沒有資料。")); return; }
+    const names = await loadNames19();
+    const rows = group(v, (x) => x.path, (x) => x.n);
+    const max = rows[0].value;
+    box.append(el("h3", { style: "font-size:1rem;margin:16px 0 4px" }, "S19 陣容被打開的次數"),
+      el("table", null,
+        el("thead", null, el("tr", null, el("th", null, "評級"), el("th", null, "陣容"), el("th", null, el("span", { class: "sr" }, "長條")), el("th", { style: "text-align:right" }, "次數"))),
+        el("tbody", null, rows.slice(0, 25).map((c) => { const m = names[c.label] || { name: c.label.replace(/^c-s19-/, "") };
+          return el("tr", null, el("td", { class: "n" }, el("span", { class: "tier" + (m.tier ? "" : " none") }, m.branch ? "分支" : m.tier || "研究中")), el("td", null, m.name), el("td", { class: "b" }, el("div", { class: "hb", style: `width:${(c.value / max) * 100}%` })), el("td", { class: "n" }, fmt.format(c.value))); }))));
   }
 
   async function render(d) {

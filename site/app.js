@@ -52,6 +52,10 @@
     const i = IT[k] || XI[k]; return i ? (i.zh || i.en) : k;
   };
   const traitName = (k) => { const t = TR[k]; return t ? (t.zh || t.en) : k; };
+  // 站主 2026-11-23「我場上KDA有4你KDA怎麼沒開」：K/DA 看 K/DA 英雄的總星數（遊戲說明「等級括號內為隊伍中 K/DA 英雄的總星數」），不是隻數
+  const STARTR = new Set(S19 ? ["KDA"] : []);
+  const starTraitN = (units, k) => (units || []).filter((u) => u && u.key && !u.plant).reduce((n, u) => n + (((CH[u.key]?.traits || []).includes(k)
+    || (u.items || []).some((it) => (EM[it]?.trait || (it.endsWith("Emblem") ? it.slice(0, -6) : null)) === k)) ? (u.star || 1) : 0), 0);
   /* 羈絆小圖示精靈圖（小百科用；站主 2026-11-16：「羈絆要有小圖示」）。index 內嵌，不多一次請求；key 對不上就不畫圖、只留文字。
      S18＝32px 格、S19＝64px 格，都是 8 欄；來源 research/data/traits_sprite_s18.webp、research/data/s19/traits_sprite_s19.webp（tools/build_*.py 複製進 icons/） */
   const TRSP = {"18":{"src":"icons/traits_s18.webp","cols":8,"rows":5,"index":{"Riftbeast":0,"Blossom":1,"Elderwood":2,"Sprykin":3,"Inferno":4,"Coven":5,"Blackthorn":6,"Fae":7,"Solar":8,"Lunar":9,"Primal":10,"Rival":11,"FloraFatalis":12,"Spellweaver":13,"Juggernaut":14,"Vanguard":15,"Ravager":16,"Defender":17,"Brawler":18,"Adaptor":19,"Hunter":20,"Invoker":21,"Executioner":22,"Rapidfire":23,"Summoner":24,"OldGrowth":25,"Monolith":26,"Greenfather":27,"EmeraldAspect":28,"Avatar":29,"Caustic":30,"Thornmaiden":31,"Attuned":32,"BountySeeker":33,"ApexPredator":34}},"19":{"src":"icons/s19/traits.webp","cols":8,"rows":7,"index":{"IonicSpark":0,"KDA":1,"BeachPop":2,"Classical":3,"Heartsteel":4,"Rock":5,"Pentakill":6,"TrueDamage":7,"Hyperpop":8,"ILLBEATS":9,"GuFeng":10,"Jazz":11,"RAndB":12,"EDM":13,"Frontman":14,"Juggernaut":15,"Slayer":16,"Swiftstriker":17,"Choreographer":18,"Bodyguard":19,"Arcanist":20,"Encore":21,"Prodigy":22,"Renegade":23,"Collab":24,"Trickshot":25,"Hitmaker":26,"Manager":27,"8Bit":28,"OneMonsterBand":29,"Composer":30,"Synthwave":31,"Goth":32,"RecordMogul":33,"Emo":34,"Tango":35,"MelodicHeart":36,"HypeMan":37,"Indie":38,"BoyBand":39,"BeatMaster":40,"Freestyle":41,"Producer":42,"Disco":43,"Country":44,"Windblessed":45,"Mariachi":46,"RisingStar":47,"Superstar":48}}};
@@ -76,7 +80,7 @@
     const next = n == null ? null : bp.find((x) => x > n), lv = (w?.levels || []).filter((l) => l.text);
     const same = lv.every((l) => l.n == null || bp.includes(l.n)), cur = n == null || !same ? null : Math.max(-1, ...lv.map((l) => (l.n != null && l.n <= n ? l.n : -1)));  // 階數不是照人數算的羈絆（例 K/DA 看總星數）不亮
     return h("div", { class: "ft-tr" },
-      h("div", { class: "ft-h" }, h("b", null, traitName(k)), n != null ? h("span", { class: "ft-n" }, `${n} 隻` + (next ? `（下一階 ${next}）` : bp.length && n >= bp[bp.length - 1] ? "（最高階）" : "")) : null),
+      h("div", { class: "ft-h" }, h("b", null, traitName(k)), n != null ? h("span", { class: "ft-n" }, `${n} ${STARTR.has(k) ? "星" : "隻"}` + (next ? `（下一階 ${next}）` : bp.length && n >= bp[bp.length - 1] ? "（最高階）" : "")) : null),
       w?.desc ? h("p", { class: "ft-d" }, w.desc) : null,
       lv.length ? h("ul", { class: "ft-lv" }, lv.map((l) => h("li", { class: l.n != null && l.n === cur ? "on" : cur != null && l.n != null && l.n > n ? "off" : null },
         l.n != null ? h("b", null, String(l.n)) : null, h("span", null, l.text))))
@@ -1625,6 +1629,7 @@
     const tcs = cand ? cand.fixed : cs;
     for (const u of tcs) for (const t of CH[u.key]?.traits || []) traits[t] = (traits[t] || 0) + 1;
     for (const u of tcs) for (const it of u.items || []) if (it.endsWith("Emblem")) { const t = it.slice(0, -6); traits[t] = (traits[t] || 0) + 1; }
+    for (const k of STARTR) if (traits[k]) traits[k] = starTraitN(tcs, k);
     const active = activeTraits(traits);
     const marks = cs.filter((u) => u.mark).map((u) => champName(u.key));
     const riders = spryOn(cs) ? cs.filter((u) => u.rider && isSpry(u.key)).map((u) => champName(u.key)) : [];
@@ -3310,6 +3315,7 @@
     units = champsOnly(units);
     for (const u of units) for (const k of CH[u.key]?.traits || []) t[k] = (t[k] || 0) + 1;
     for (const u of units) for (const it of u.items || []) { const tk = EM[it]?.trait || (it.endsWith("Emblem") ? it.slice(0, -6) : null); if (tk) t[tk] = (t[tk] || 0) + 1; }
+    for (const k of STARTR) if (t[k]) t[k] = starTraitN(units, k);
     return Object.entries(t).map(([k, n]) => { const bp = TR[k]?.breakpoints || []; const hit = bp.filter((x) => x <= n); const next = bp.find((x) => x > n);
       return { k, n, on: hit.length > 0, label: `${traitName(k)} ${n}${next ? "/" + next : ""}` }; })
       .sort((a, b) => b.on - a.on || b.n - a.n);

@@ -1736,7 +1736,7 @@
           h("div", { class: "row pcats", role: "group", "aria-label": "裝備種類" }, ["all", "s", "a", "r"].filter((k) => k === "all" || list.some((r) => r[5] === k)).map((k) =>
             h("button", { class: "chip", type: "button", "aria-pressed": st.k === k ? "true" : "false", onclick: () => { st.k = k; draw(); } }, k === "all" ? "全部" : KIND[k]))),
           h("div", { class: "ilist isg-list" }, rows.slice(0, 10).map(mk)),
-          rows.length > 10 ? h("details", null, h("summary", null, `再看 ${rows.length - 10} 件`), h("div", { class: "in ilist isg-list" }, rows.slice(10).map((r, i) => mk(r, i + 10)))) : null,
+          rows.length > 10 ? h("details", null, h("summary", null, `再看 ${rows.length - 10} 件`), h("div", { class: "in ilist isg-list" }, rows.slice(10).map((r, i) => mk(r, i + 10)))) : "",
           h("p", { class: "xs muted" }, "照 MetaTFT 單件評價排（同評價再看名次變動，負的＝拿了比較好）；只算這套陣容核心棋子在場的對局。"));
       };
       draw();

@@ -65,7 +65,7 @@ t("no TW filter", !calls.slice(-11).some(q => q.includes('"TW"')));
 let err=null; try { await buildStats(env,"today",true, async()=> new Response(JSON.stringify({errors:[{message:"bad"}]}),{status:200}), N);} catch(e){err=e.message}
 t("gql error surfaced", /bad/.test(err||""));
 let e2=null; try { await buildStats({...env, CF_API_TOKEN:""},"today",true,fake,N);} catch(e){e2=e.message} t("no token msg", /金鑰/.test(e2||""));
-const e1 = await worker.fetch(new Request("https://chokomkp.com/e/v/c-s19-edm-jax-reroll"), env); t("tracker hit 204", e1.status === 204);
-const e2 = await worker.fetch(new Request("https://chokomkp.com/e/v/bad%21"), env); t("tracker junk 404", e2.status === 404);
-const e3 = await worker.fetch(new Request("https://chokomkp.com/e/t.js"), env); t("tracker js", /hashchange/.test(await e3.text()));
+const tr1 = await worker.fetch(new Request("https://chokomkp.com/e/v/c-s19-edm-jax-reroll"), env); t("tracker hit 204", tr1.status === 204);
+const tr2 = await worker.fetch(new Request("https://chokomkp.com/e/v/bad%21"), env); t("tracker junk 404", tr2.status === 404);
+const tr3 = await worker.fetch(new Request("https://chokomkp.com/e/t.js"), env); t("tracker js", /hashchange/.test(await tr3.text()));
 console.log("ok",ok,"fail",bad);

@@ -151,8 +151,8 @@
   // 站主 2026-11-04 的版面（T 表往上、改動一覽、本次更新收起來、導覽順序）用程式調整，不動已發布的 index.html
   function adaptLayout() {
     const ul = document.querySelector(".nav ul");
-    if (ul) ul.replaceChildren(...[["#tierlist", "nav.tier", "T 度表"], ["#updates-sec", "nav.updates", "本次更新"],
-      ["#version", "nav.version", "版本主軸"], ["#picker", "nav.picker", "隨手速查"], ["#learn", "nav.learn", "新手教學"], ["#comps", "nav.comps", "陣容攻略"], ["sim/", "nav.editor", "陣容編輯器"], ["sim/", "nav.sim", "戰鬥模擬"], ["trials/", "nav.trials", "滴答克的試煉"], ["pros/", "nav.pros", "高手教學庫"]].filter(([href]) => !S19 || (S19FULL() ? href !== "sim/" && (href !== "#updates-sec" || D.updateNotes?.length) : href === "#tierlist" || href === "#learn" || href === "#comps" || href === "trials/" || href === "pros/")).map(([href, k, t]) => h("li", null, h("a", { href, "data-tx": k }, t))));  // 戰鬥模擬器 2026-11-11
+    if (ul) ul.replaceChildren(...[["#tierlist", "nav.tier", "T 度表"], ...(S19 ? [["#items19", "nav.items19", "裝備改動"]] : []), ["#updates-sec", "nav.updates", "本次更新"],
+      ["#version", "nav.version", "版本主軸"], ["#picker", "nav.picker", "隨手速查"], ["#learn", "nav.learn", "新手教學"], ["#comps", "nav.comps", "陣容攻略"], ["sim/", "nav.editor", "陣容編輯器"], ["sim/", "nav.sim", "戰鬥模擬"], ["trials/", "nav.trials", "滴答克的試煉"], ["pros/", "nav.pros", "高手教學庫"]].filter(([href]) => !S19 || (S19FULL() ? href !== "sim/" && (href !== "#updates-sec" || D.updateNotes?.length) : href === "#tierlist" || href === "#items19" || href === "#learn" || href === "#comps" || href === "trials/" || href === "pros/")).map(([href, k, t]) => h("li", null, h("a", { href, "data-tx": k }, t))));  // 戰鬥模擬器 2026-11-11
     const up = $("#updates-sec"), tl = $("#tierlist");
     if (up && !$("#updates-fold")) {
       up.classList.add("slim");
@@ -311,6 +311,33 @@
       h("span", { class: "pb-icons", "aria-hidden": "true" }, ics.map(pIcon)),
       h("span", { class: "pb-txt" }, h("span", { class: "pb-main" }, `${pc.patch} 改動一覽`),
         h("span", { class: "pb-sub" }, h("span", { class: "dirtag up" }, `↑ ${n("up")}`), h("span", { class: "dirtag down" }, `↓ ${n("down")}`), pc.btnSub || "增幅、神火都在這"))));
+  }
+
+  /* ---------- S19 裝備改動（站主 2026-11-24：「s19甚麼時候偷改裝備我都不知道」→「放到正式網上面，弄一區固定的」）
+     資料在 data/s19/item-changes.json（跟 site-data.json 分開，重建 S19 資料不會蓋掉）。T 表下面一區，導覽列「裝備改動」。 */
+  function renderItems19() {
+    if (!S19 || $("#items19")) return;
+    const sec = h("section", { class: "block", id: "items19" }, h("h2", { "data-tx": "h2.items19" }, "S19 裝備改動"), h("p", { class: "small muted" }, "載入中…"));
+    ($("#tierlist") || $("#comps"))?.after(sec);
+    fetch(dataUrl("item-changes.json")).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
+      if (!d?.groups?.length) { sec.remove(); $('.nav a[href="#items19"]')?.closest("li")?.remove(); return; }
+      const card = (it) => h("div", { class: "pcard " + it.dir },
+        icon("item", it.key, "sm"),
+        h("div", { class: "pc-txt" },
+          h("div", { class: "pc-head" }, h("b", null, it.name), h("span", { class: "dirtag " + it.dir }, DIRS[it.dir][0] + " " + DIRS[it.dir][1])),
+          ...it.rows.map((r) => h("div", { class: "pc-row" }, h("span", { class: "small" }, r.what), h("span", { class: "pc-ft" }, h("s", null, r.from), " → ", h("b", null, r.to)))),
+          it.note ? h("div", { class: "xs muted" }, it.note) : null));
+      const body = [h("p", { class: "pc-sum" }, ui("items19.intro", d.intro))];
+      if (d.highlights?.length) body.push(h("div", { class: "i19-hl" }, h("b", null, "重點"), h("ul", { class: "list" }, d.highlights.map((x) => h("li", null, x)))));
+      for (const g of d.groups) {
+        const grid = h("div", { class: "pgrid2" }, g.items.map(card));
+        const head = [g.label, g.remember ? h("span", { class: "tag remember" }, "沒公告") : null, h("span", { class: "xs muted" }, ` ${g.items.length} 件`)];
+        if (g.collapsed) body.push(h("details", { class: "pgroup" }, h("summary", null, `${g.label}（${g.items.length} 件）`), h("div", { class: "in" }, grid)));
+        else body.push(h("div", { class: "pgroup" }, h("h3", null, ...head), g.sub ? h("p", { class: "xs muted i19-sub" }, g.sub) : null, grid));
+      }
+      if (d.basis) body.push(h("p", { class: "xs muted" }, d.basis, d.updated ? `（整理：${d.updated.slice(5).replace("-", "/")}）` : ""));
+      sec.replaceChildren(sec.firstChild, h("div", { class: "pchart" }, body));
+    });
   }
 
   /* 版本主軸：練線路線（先練→再練）。同一步裡左強右弱，點陣容看完整攻略。 */
@@ -4050,9 +4077,9 @@
     if (S19 && S19FULL() && !D.updateNotes?.length) $("#updates-sec")?.remove();
     if (S19 && !S19FULL()) {  // S19 預測版：沒有高手資料，本次更新、版本主軸、隨手速查、定陣路線、高手 RP 都不放
       for (const id of ["#updates-sec", "#version", "#picker"]) $(id)?.remove();
-      renderTop(); renderTiers(); renderPatch(); renderLearnHub(); renderCompList(); renderResearch(); renderRp(); renderWiki(); applyDataTx();  // 站主 11/19：S19 也要有「改動一覽」、「高手的RP呢?」
+      renderTop(); renderTiers(); renderItems19(); renderPatch(); renderLearnHub(); renderCompList(); renderResearch(); renderRp(); renderWiki(); applyDataTx();  // 站主 11/19：S19 也要有「改動一覽」、「高手的RP呢?」
     } else {
-      renderTop(); if ($("#updates")) renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderPicker(); renderRoute(); if (S19) renderLearnHub(); renderCompList(); renderResearch(); renderRp(); renderWiki(); applyDataTx();
+      renderTop(); if ($("#updates")) renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderItems19(); renderPicker(); renderRoute(); if (S19) renderLearnHub(); renderCompList(); renderResearch(); renderRp(); renderWiki(); applyDataTx();
     }
     document.querySelectorAll("a.out").forEach((a) => a.addEventListener("click", () => track("out", a.dataset.ch)));
     addEventListener("hashchange", route); route();

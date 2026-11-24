@@ -352,6 +352,11 @@ details.fold[open] .fold-hint { display: none; }
 .pc-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
 .pc-row + .pc-row { margin-top: 2px; }
 .pcard.up .pc-ft b { color: #1f6b35; } .pcard.down .pc-ft b { color: #9a3226; }
+.pcard.adj .pc-ft b { color: #7a5a12; }
+/* S19 裝備改動（站主 2026-11-24） */
+.i19-hl { margin: var(--s2) 0 var(--s4); padding: var(--s2) var(--s3); border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); }
+.i19-hl .list { margin-top: 4px; }
+.i19-sub { margin: -4px 0 var(--s2); }
 .ico.pico { border-radius: 8px; }
 .ico.pico.wisp { background: #3b2a52; }
 details.pgroup > .in { padding-top: var(--s2); }
@@ -359,6 +364,7 @@ details.pgroup > .in { padding-top: var(--s2); }
   .dirtag.up { background: #1d3a24; color: #9fe0b0; } .dirtag.down { background: #47211c; color: #ffb3a8; }
   .dirtag.adj { background: #3d3216; color: #f0d58a; } .dirtag.fix { background: #1e2d45; color: #a9c4f0; }
   .pcard.up .pc-ft b { color: #9fe0b0; } .pcard.down .pc-ft b { color: #ffb3a8; }
+  .pcard.adj .pc-ft b { color: #f0d58a; }
 }
 
 /* ---------- T 度表：一頁看完（站主 2026-11-04 第二版：減少框線、名稱放大、下限上限做成色塊） ---------- */

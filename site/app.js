@@ -755,6 +755,46 @@
     const cp = tierCopyBtn(c, el); if (cp) el.append(cp);
     return el;
   }
+  // 站主 2026-11-24：S19 T 表「前期過渡」分頁＝7 等前的過渡版面排行＋單卡強度（高手 PBE 對局裡每一回合實際上場的棋子；data 在 site-data.json 的 early）
+  const EARLY_ON = () => S19 && D.early?.stages?.length && !O.tmode;
+  let EP_ST = null;
+  function earlyPanel() {
+    const E = D.early;
+    const panel = h("div", { class: "tb-panel ep", role: "tabpanel", "data-lane": "early", id: "tbp-early" });
+    const pc = (v) => Math.round(v * 100) + "%";
+    const sgn = (v) => (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v).toFixed(1);
+    const unitIco = (k, s) => h("span", { class: "cu" }, h("span", { class: "stars" }, s > 1 ? "★".repeat(s) : ""), icon("champion", k, "sm"));
+    const draw = () => {
+      const st = E.stages.find((s) => s.id === EP_ST) || E.stages[0]; EP_ST = st.id;
+      panel.textContent = "";
+      panel.append(h("p", { class: "ep-note small" }, ui("early.note", "高手在 PBE 打的對局，照每一回合實際上場的棋子算，7 等前的回合才算；盤上有三星的（賭狗成型）不算。勝率＝那一回合打贏的比例，名次＝那場最後的平均名次。故意連敗存錢的開法勝率會偏低，要一起看名次。PBE 才開幾天、樣本不多，看趨勢就好。"),
+        " ", h("span", { class: "muted" }, `${E.games} 場、${E.players} 位高手（${E.label}）`)));
+      panel.append(h("div", { class: "ep-seg", role: "group", "aria-label": "選階段" }, E.stages.map((s) => h("button", { type: "button", "aria-pressed": s.id === st.id ? "true" : "false",
+        onclick: () => { EP_ST = s.id; track("early", s.id); draw(); } }, s.label, h("span", { class: "xs" }, s.sub)))));
+      const bl = h("ol", { class: "ep-bl" }, st.boards.length ? st.boards.map((b, i) => h("li", { class: "ep-b" },
+        h("span", { class: "ep-rk" }, i + 1),
+        h("span", { class: "ep-u" }, b.u.map(([k, s]) => unitIco(k, s)),
+          b.with?.length ? h("span", { class: "ep-w", "data-tip": "常一起上場：" + b.with.map(([k, f]) => `${champName(k)} ${pc(f)}`).join("、") }, h("span", { class: "ep-plus", "aria-hidden": "true" }, "＋"), b.with.map(([k]) => icon("champion", k, "xs"))) : null),
+        h("span", { class: "ep-s" }, h("b", { class: b.wr >= st.avgWr ? "good" : "bad" }, pc(b.wr)), h("span", null, `名次 ${b.avg.toFixed(2)}`), h("span", null, `${b.n} 場`))))
+        : h("li", { class: "empty" }, "這個階段還沒有場數夠的版面。"));
+      const tiers = ["S", "A", "B", "C"].map((t) => {
+        const us = st.units.filter((u) => u.t === t);
+        if (!us.length) return null;
+        return h("div", { class: "ep-t" }, h("span", { class: "ep-tl t-" + t }, t),
+          h("div", { class: "ep-us" }, us.map((u) => h("span", { class: "ep-uc", tabindex: "0",
+            "data-tip": `${champName(u.k)}（${CH[u.k]?.cost ?? "?"} 費）：回合勝率 ${pc(u.wr)}，比同等級${u.d >= 0 ? "高" : "低"} ${Math.abs(u.d).toFixed(1)}%；名次 ${u.avg.toFixed(2)}；${u.n} 場 ${u.r} 回合${u.s2 >= 0.05 ? `，${pc(u.s2)} 的回合是兩星` : ""}${st.id === "2" && CH[u.k]?.cost >= 3 ? "。2 階段的三費要抽到才有，抽到就上" : ""}` },
+            icon("champion", u.k, "sm"), h("span", { class: "ep-d " + (u.d > 0 ? "good" : u.d < 0 ? "bad" : "") }, sgn(u.d))))));
+      }).filter(Boolean);
+      panel.append(h("div", { class: "ep-cols" },
+        h("section", { class: "ep-sec" }, h("h3", null, ui("early.boards", "過渡版面排行")),
+          h("p", { class: "ep-hint" }, `盤上有這 ${st.core} 隻（不看星數）的回合都算，至少 ${st.min} 場才排；右邊淡色的是常一起上場的牌。照勝率排，這個階段平均 ${pc(st.avgWr)}。`), bl),
+        h("section", { class: "ep-sec" }, h("h3", null, ui("early.units", "單卡強度")),
+          h("p", { class: "ep-hint" }, "這張卡在場上的回合，跟同一回合、同等級的人比，勝率高或低多少（等級高本來就比較會贏，所以只跟同等級比）。會被同隊的牌影響，當參考；滑過或點一下看場數。"),
+          tiers.length ? tiers : h("p", { class: "empty" }, "樣本還不夠。"))));
+    };
+    draw();
+    return panel;
+  }
   let TB_LANE = "normal";  // T 度表目前的分頁（站主 2026-11-06：三個分區各自一頁）
   function renderTiers() {
     const root = $("#tiers"); root.textContent = "";
@@ -782,7 +822,7 @@
     // 站主 2026-11-06：「9等五費跟條件陣容不要放在跟普通的放在一起，每個自己弄個分頁，我電腦一個頁面要能看完全部的陣容」
     // → 三個分區各一個分頁；分頁裡每個評級一列，卡片由左往右照順序排（站主前一句：「不要弄成兩行，看不出從左往右還是從上往下」）。
     // 站主調 T 表時三個分區全部攤開，方便搬來搬去。
-    if (!lanes.some((l) => l.id === TB_LANE)) TB_LANE = lanes[0].id;
+    if (!lanes.some((l) => l.id === TB_LANE) && !(TB_LANE === "early" && EARLY_ON())) TB_LANE = lanes[0].id;
     const tabs = h("div", { class: "tb-tabs", role: "tablist", "aria-label": "陣容分區" });
     const panels = [];
     for (const l of lanes) {
@@ -810,6 +850,16 @@
           if (!O.tmode) panels.forEach((p) => { p.hidden = p.dataset.lane !== l.id; });
         } },
         h("span", { class: "tb-tl" }, h("b", null, ui(`lane.${l.id}`, l.label)), h("span", { class: "xs" }, ` ${n + ws.length}`)), h("span", { class: "tb-sub" }, ui(`lane.${l.id}.sub`, l.sub))));
+    }
+    if (EARLY_ON()) {
+      const ep = earlyPanel(); ep.hidden = TB_LANE !== "early"; panels.push(ep);
+      tabs.append(h("button", { type: "button", role: "tab", class: "tb-tab", "data-lane": "early", "aria-controls": "tbp-early", "aria-selected": TB_LANE === "early" ? "true" : "false",
+        onclick: () => {
+          TB_LANE = "early"; track("lane", "early");
+          tabs.querySelectorAll(".tb-tab").forEach((b) => b.setAttribute("aria-selected", b.dataset.lane === "early" ? "true" : "false"));
+          panels.forEach((p) => { p.hidden = p.dataset.lane !== "early"; });
+        } },
+        h("span", { class: "tb-tl" }, h("b", null, ui("lane.early", "前期過渡"))), h("span", { class: "tb-sub" }, ui("lane.early.sub", "7 等前用什麼撐血"))));
     }
     if (O.tmode) tabs.hidden = true;
     root.append(tabs, ...panels);

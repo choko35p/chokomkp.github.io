@@ -144,30 +144,6 @@
    "guess": false
   },
   {
-   "key": "Galio",
-   "cond": {
-    "type": "all",
-    "of": [
-     {
-      "type": "level",
-      "min": 7
-     },
-     {
-      "type": "activeTraits",
-      "min": 2,
-      "traits": [
-       "Bodyguard",
-       "Juggernaut",
-       "Frontman"
-      ]
-     }
-    ]
-   },
-   "text": "玩家等級 7。保鑣、重裝戰士、主唱這三個羈絆啟動所需的數量。",
-   "local": "官方還沒公布要幾個，本頁先用 2 個。",
-   "guess": true
-  },
-  {
    "key": "Syndra",
    "cond": {
     "type": "traitStars",

@@ -1394,6 +1394,15 @@ a.lcard:hover { border-color: var(--accent); }
 .wk-unlock .tag { margin-left: 6px; }
 .wk-unlock-free { margin: var(--s3) 0 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+/* 站主 2026-11-18：決策實驗室在修改模式下的按鈕（換評語、站主會這樣選、追問答案、公開待確認的題目） */
+.lab-own { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: var(--s3); padding-top: var(--s2); border-top: 1px dashed var(--line); }
+button.lab-ownb { font: inherit; font-weight: 700; padding: 4px 10px; min-height: 32px; border: 1px dashed var(--focus); border-radius: 999px; background: var(--surface); color: var(--text); cursor: pointer; }
+button.lab-ownb[aria-pressed="true"] { border-style: solid; border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
+.lab-ownok { font-weight: 700; color: var(--ok-line, #1f7a45); }
+.lab-fb button.lab-ownb { margin-top: var(--s2); }
+/* S19 分享碼：站主填寫框（站主 2026-11-19） */
+.tp-own { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-top: .4rem; padding: .45rem .55rem; border: 1px dashed var(--line, #d9cfc4); border-radius: 8px; }
+.tp-own .tp-in { flex: 1 1 18rem; min-width: 0; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; padding: .35rem .5rem; border: 1px solid var(--line, #d9cfc4); border-radius: 6px; }
 
 /* 對戰紀錄每場的羈絆（站主 2026-11-19） */
 .case-tr { margin: 4px 0 2px; }
@@ -1433,6 +1442,9 @@ button.tbg { cursor: pointer; }
 .ftip { position: fixed; z-index: 9999; max-width: min(280px, 90vw); padding: 5px 9px; border-radius: 6px; background: #1b1712; color: #fff; font-size: 13px; line-height: 1.35; font-weight: 600; pointer-events: none; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
 .ftip[hidden] { display: none; }
 .tbg > b { box-shadow: 0 0 0 1.5px rgba(255,255,255,.85); }
+
+.owner-fab .rel-det summary { cursor: pointer; list-style: none; } .owner-fab .rel-det summary::-webkit-details-marker { display: none; }
+.owner-fab .rel-det[open] { max-height: 40vh; overflow: auto; }
 .plant.ins { background: linear-gradient(160deg, #3fb6c4, #1f6f8b); border: 2px solid #8fdde6; cursor: help; }
 .plant.ins .tbg { width: 56%; height: auto; aspect-ratio: 28/31; } .plant.ins .tbg-hex { width: 100%; height: 100%; }
 /* 心鋼本命（站主 11/20） */
@@ -1449,6 +1461,9 @@ button.bias-opt { padding: 1px; border: 2px solid transparent; border-radius: 8p
 .isg-row .tag { margin-left: 6px; }
 .tag.isg-a { background: var(--warn-bg); border-color: var(--warn-line); }
 .tag.isg-r { background: var(--ok-bg); border-color: var(--ok-line); }
+/* 轉職文字前面的徽章圖（站主 2026-11-22） */
+.emb-w { white-space: nowrap; }
+.emb-w > .ico { display: inline-flex; vertical-align: -0.25em; margin-right: 2px; width: 1.25em; height: 1.25em; }
 
 /* 棋盤棋子小卡（站主 2026-11-22：滑過／點一下看技能、數值、解鎖條件） */
 .board:not(.edit) .hex.has[data-ckey] { cursor: pointer; }

@@ -123,6 +123,50 @@
       : svgEl("path", { d: "M13.8 1.2 7.6 7.4l1 1 6.2-6.2zM2.4 9.6l1.3-1.3 4 4-1.3 1.3-.9-.9-2 2-1.1-1.1 2-2z M6.6 8.4l1 1-2.2 2.2-1-1z", fill: "currentColor" }));
     return g;
   }
+  /* 站主 2026-11-22：「所有有轉職的地方都要有圖」→ 全站文字裡的「（○○轉）」「・○○轉」前面自動補上徽章圖。
+     ○○ 對到徽章：先看陣容名稱「（○○轉）」配 required 的徽章，再看羈絆名稱（全名或開頭）。輸入框、程式碼、按鈕提示不動。 */
+  let EMB_ALIAS = null;
+  const embAlias = () => {
+    if (EMB_ALIAS) return EMB_ALIAS;
+    const m = new Map(), has = (k) => !!(EM[k] || IT[k] || XI[k]);
+    for (const c of D.comps || []) {
+      const x = /（(.+?)轉）/.exec(c.name || ""), r = (c.required || []).find((q) => q.type === "emblem" && q.key);
+      if (x && r && !m.has(x[1])) m.set(x[1], r.key);
+    }
+    for (const t of Object.values(TR || {})) { const k = t.key + "Emblem"; if (has(k)) { if (t.zh && !m.has(t.zh)) m.set(t.zh, k); if (t.en && !m.has(t.en)) m.set(t.en, k); } }
+    return (EMB_ALIAS = m);
+  };
+  const embKey = (name) => {
+    const m = embAlias();
+    if (m.has(name)) return m.get(name);
+    const hits = Object.values(TR || {}).filter((t) => (t.zh || "").startsWith(name) && (EM[t.key + "Emblem"] || IT[t.key + "Emblem"] || XI[t.key + "Emblem"]));
+    return hits.length === 1 ? hits[0].key + "Emblem" : null;
+  };
+  const EMB_RE = /（([^（）]{1,14}?)轉）|[・·]\s*([^\s・·（）]{1,14}?)轉(?![^\s]*徽章)/g;
+  function decorateEmblems(root) {
+    if (!root || !D) return;
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: (n) => {
+      const el = n.parentElement;
+      if (!el || !/轉/.test(n.nodeValue) || el.closest("script,style,textarea,input,code,.emb-w,[contenteditable=true],.ico,option")) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT; } });
+    const nodes = []; let n; while ((n = w.nextNode())) nodes.push(n);
+    for (const t of nodes) {
+      const txt = t.nodeValue; EMB_RE.lastIndex = 0; let m, last = 0; const frag = document.createDocumentFragment(); let any = false;
+      while ((m = EMB_RE.exec(txt))) {
+        const key = embKey(m[1] || m[2]);
+        if (!key) continue;
+        any = true;
+        const start = m.index + (m[1] ? 0 : m[0].search(/[^・·\s]/));
+        frag.append(txt.slice(last, start), h("span", { class: "emb-w" }, icon("item", key, "xs"), txt.slice(start, m.index + m[0].length)));
+        last = m.index + m[0].length;
+      }
+      if (!any) continue;
+      frag.append(txt.slice(last));
+      t.replaceWith(frag);
+    }
+  }
+  let embTimer = 0;
+  const embObserver = new MutationObserver(() => { clearTimeout(embTimer); embTimer = setTimeout(() => decorateEmblems(document.body), 60); });
   function icon(kind, key, size = "") {
     const isChamp = kind === "champion";
     const c = isChamp ? CH[key] : null;
@@ -505,7 +549,9 @@
     return { v: 1, play: { done: [], last: null }, lab: { done: [], picks: {} } };
   };
   const lpSet = (o) => store.set(LK, JSON.stringify(o));
-  const labList = () => LAB.scenarios.filter((s) => !s.confirm || O.on);
+  // 待確認的題目只有站主看得到；站主在題目裡按「我確認好了」（存成 ui:lab:<id>:ok＝1）才對訪客公開
+  const labPend = (s) => !!s.confirm && uiStr(`lab:${s.id}:ok`, "0") !== "1";
+  const labList = () => LAB.scenarios.filter((s) => !labPend(s) || O.on);
   const labDone = () => { const ids = new Set(lpGet().lab.done); return labList().filter((s) => ids.has(s.id)).length; };
   function clearProgress(label = "清除進度") {
     const b = h("button", { type: "button", class: "lc-clear xs", onclick: () => {
@@ -540,14 +586,14 @@
     };
     const S19note = S19 ? h("p", { class: "xs muted lc-note" }, "觀念每一季都一樣；邊玩邊學、決策實驗室示範用的是 S18 的牌。") : null;
     sec.replaceChildren(
-      h("h2", null, tx("learn:title", "新手教學")),
-      h("p", { class: "rlead" }, tx("learn:lead", "剛開始玩先看這邊。照順序玩一輪，大概半小時。")),
+      h("h2", null, ui("learn.title", "新手教學")),
+      h("p", { class: "rlead" }, ui("learn.lead", "剛開始玩先看這邊。照順序玩一輪，大概半小時。")),
       h("div", { class: "lcards" },
-        card("play", "learn/", [face(byName("鄂爾")), face(byName("剎雅"))], tx("learn:play.t", "邊玩邊學"), tx("learn:play.d", "12 關，直接動手玩。買牌、站位、利息、D 牌一次學會。"), P.play.done.length ? `${P.play.done.length} / 12 關` : null),
-        card("lab", "#learn-lab", h("span", { class: "lc-coin" }, "？"), tx("learn:lab.t", "決策實驗室"), tx("learn:lab.d", `${L.length} 個常見狀況，這時候該存錢還是該 D？`), nDone ? `${nDone} / ${L.length} 題` : null),
-        card("route", "#learn-route", h("span", { class: "lc-bands" }, [1, 2, 3, 4, 5].map((c) => h("i", { style: `--cc:var(--c${c});width:${30 + c * 12}%` }))), tx("learn:route.t", "定陣路線"),
-          routeOk() ? tx("learn:route.d", "從 2-1 開始，什麼裝備走哪一條、幾等定下來。") : "S19 上線後補", null, !routeOk()),
-        card("quiz", "#learn-quiz", qzFaces.map((k) => face(k)), tx("learn:quiz.t", "新手認卡"), tx("learn:quiz.d", "這季的棋子幾費、什麼羈絆，用小測驗記起來。"), best ? `最佳 ${best} / 10` : null)),
+        card("play", "learn/", [face(byName("鄂爾")), face(byName("剎雅"))], ui("learn.play.t", "邊玩邊學"), ui("learn.play.d", "12 關，直接動手玩。買牌、站位、利息、D 牌一次學會。"), P.play.done.length ? `${P.play.done.length} / 12 關` : null),
+        card("lab", "#learn-lab", h("span", { class: "lc-coin" }, "？"), ui("learn.lab.t", "決策實驗室"), ui("learn.lab.d", `${L.length} 個常見狀況，這時候該存錢還是該 D？`), nDone ? `${nDone} / ${L.length} 題` : null),
+        card("route", "#learn-route", h("span", { class: "lc-bands" }, [1, 2, 3, 4, 5].map((c) => h("i", { style: `--cc:var(--c${c});width:${30 + c * 12}%` }))), ui("learn.route.t", "定陣路線"),
+          routeOk() ? ui("learn.route.d", "從 2-1 開始，什麼裝備走哪一條、幾等定下來。") : "S19 上線後補", null, !routeOk()),
+        card("quiz", "#learn-quiz", qzFaces.map((k) => face(k)), ui("learn.quiz.t", "新手認卡"), ui("learn.quiz.d", "這季的棋子幾費、什麼羈絆，用小測驗記起來。"), best ? `最佳 ${best} / 10` : null)),
       h("div", { class: "lc-foot" }, S19note, (nDone || P.play.done.length) ? clearProgress() : null));
     applyDataTx();
   }
@@ -586,19 +632,38 @@
     drawLabQ(v, pa.q);
   }
   let LAB_CAT = "all";
+  /* 站主 2026-11-18：「為甚麼題目內容不能改，讓我改」
+     題目每一段文字都走 ui()（鍵 ui:lab:<題目id>:<欄位>），預覽站「改文字」模式點虛線框就能改，跟首頁文字同一條同步、建置流程（正式站讀 uiText）。
+     評語等級（推薦／看情況／不建議）、「站主會這樣選」、追問哪個是對的、「待確認」也存在 edits，修改模式下直接點按鈕切換。 */
+  const lt = (q, f, def) => ui(`lab:${q.id}:${f}`, def);
+  const lsv = (q, f, def) => uiStr(`lab:${q.id}:${f}`, def);
+  const labUi = (k, def) => ui("lab." + k, def);
+  const labLabel = (k) => labUi("label." + k, LAB.labels[k]);
+  const labCat = (k) => labUi("cat." + k, LAB.cats[k]);
+  const labG = (q, p, v) => { const d = q.grid[p][v].g, g = lsv(q, `g:${p}:${v}`, d); return LAB_G[g] ? g : d; };
+  const labPick = (q, v) => { const d = q.pick[v], p = lsv(q, `pick:${v}`, d); return q.plans.some((x) => x.id === p) ? p : d; };
+  const labGood = (q) => { const d = q.follow.opts.findIndex((o) => o.good), i = +lsv(q, "good", String(d)); return q.follow.opts[i] ? i : d; };
+  const labEditing = () => O.on && O.mode;
+  async function labSet(q, f, val, def) {
+    const key = `ui:lab:${q.id}:${f}`;
+    const doc = { key, after: String(val), before: String(def), note: "決策實驗室設定", at: new Date().toISOString(), where: location.hash || "#home" };
+    try { await O.db.doc("edits/" + docId(key)).set(doc); O.edits[key] = doc; ownerNotice("已儲存。下次更新時會套到正式站。"); return true; }
+    catch (err) { ownerNotice("儲存失敗：" + (err?.message || "請再試一次")); return false; }
+  }
   function drawLabList(v) {
     const L = labList(), P = lpGet(), done = new Set(P.lab.done), nDone = labDone();
-    const cats = [["all", "全部"], ...Object.entries(LAB.cats)];
+    const cats = [["all", labUi("cat.all", "全部")], ...Object.keys(LAB.cats).map((k) => [k, labCat(k)])];
     const shown = L.filter((s) => LAB_CAT === "all" || s.cat === LAB_CAT);
     v.replaceChildren(...[
       learnBack(),
-      h("div", { class: "lab-headrow" }, h("h2", null, tx("learn:lab.t", "決策實驗室")), h("span", { class: "tag" }, `${nDone} / ${L.length} 題`)),
-      h("p", { class: "rlead" }, tx("learn:lab.lead", "同一個狀況，換一個條件，答案就不一樣。每題兩三分鐘。")),
+      h("div", { class: "lab-headrow" }, h("h2", null, ui("learn.lab.t", "決策實驗室")), h("span", { class: "tag" }, `${nDone} / ${L.length} 題`)),
+      h("p", { class: "rlead" }, ui("learn.lab.lead", "同一個狀況，換一個條件，答案就不一樣。每題兩三分鐘。")),
+      O.on ? h("p", { class: "notice small lab-ownhint" }, O.mode ? "修改模式開著：點進題目，有虛線框的字都能改；評語、站主會這樣選、追問答案用按鈕換。" : "要改題目：先打開站主工具的「改文字」，再點進題目。") : null,
       L.length && nDone >= L.length ? h("div", { class: "ok lab-all" }, h("b", null, `${L.length} 題都看過了。`), " ", h("a", { href: routeOk() ? "#learn-route" : "#learn-quiz" }, routeOk() ? "看定陣路線 →" : "去新手認卡 →")) : null,
       h("div", { class: "tabs lab-cats", role: "group", "aria-label": "分類" }, cats.map(([k, t]) => h("button", { type: "button", "aria-pressed": LAB_CAT === k ? "true" : "false", "aria-selected": LAB_CAT === k ? "true" : "false", onclick: () => { LAB_CAT = k; drawLabList(v); } }, t))),
       h("div", { class: "lab-grid" }, shown.map((s) => h("a", { class: "lab-card" + (done.has(s.id) ? " done" : ""), href: "#learn-lab-" + s.id },
-        h("span", { class: "lab-cat tag" }, LAB.cats[s.cat]), s.confirm ? h("span", { class: "tag lab-pend" }, "待確認") : null,
-        h("b", { class: "lab-ct" }, s.title), h("span", { class: "small muted" }, s.sub), done.has(s.id) ? h("span", { class: "lab-ck xs", "aria-label": "做過了" }, "✓ 做過了") : null))),
+        h("span", { class: "lab-cat tag" }, labCat(s.cat)), labPend(s) ? h("span", { class: "tag lab-pend" }, "待確認") : null,
+        h("b", { class: "lab-ct" }, lt(s, "title", s.title)), h("span", { class: "small muted" }, lt(s, "sub", s.sub)), done.has(s.id) ? h("span", { class: "lab-ck xs", "aria-label": "做過了" }, "✓ 做過了") : null))),
       h("div", { class: "lc-foot" }, nDone ? clearProgress() : null)].filter(Boolean));
   }
   function labShare(q, btn, v) {
@@ -607,41 +672,53 @@
     try { navigator.clipboard.writeText(url).then(() => { btn.textContent = "已複製"; setTimeout(() => { btn.textContent = "分享這題"; }, 2000); }, fallback); } catch { fallback(); }
   }
   function drawLabQ(v, q) {
-    const L = labList(), idx = L.findIndex((x) => x.id === q.id), cur = LB.plan, P = LAB.labels;
+    const L = labList(), idx = L.findIndex((x) => x.id === q.id), cur = LB.plan, ed = labEditing();
     if (cur) LB.seen.add(LB.v);
     const redraw = (focus) => { labSave(q); drawLabQ(v, q); if (focus) v.querySelector(focus)?.focus({ preventScroll: true }); };
-    const st = q.stats, bothSeen = LB.seen.has(0) && LB.seen.has(1);
-    const stat = (cls, k, val) => h("div", { class: "lab-st " + cls }, h("span", { class: "lab-sti", "aria-hidden": "true" }), h("span", { class: "lab-stk xs" }, k), h("b", null, val));
-    const ev = cur ? q.grid[cur][LB.v] : null;
-    const evCard = ev ? h("div", { class: "lab-ev lab-fade g-" + ev.g, role: "status" },
-      h("div", { class: "lab-evh" }, h("b", { class: "lab-lv" }, P[ev.g]), q.pick[LB.v] === cur ? h("span", { class: "lab-pick" }, P.pick) : null),
-      h("p", { class: "lab-why" }, ev.why), h("p", { class: "lab-flip small" }, h("b", null, P.flip + "："), ev.flip)) : null;
-    const allPlans = cur ? h("details", { class: "lab-all3" }, h("summary", null, "三個計畫一起看"),
-      h("div", { class: "lab-cols" }, q.plans.map((p) => { const e = q.grid[p.id][LB.v]; return h("div", { class: "lab-col g-" + e.g }, h("b", null, p.label), h("span", { class: "lab-lv xs" }, P[e.g]), h("p", { class: "small" }, e.why)); }))) : null;
+    const set = async (f, val, def) => { if (await labSet(q, f, val, def)) { drawLabQ(v, q); renderLearnHub(); } };
+    const st = q.stats, bothSeen = LB.seen.has(0) && LB.seen.has(1), hp = +lsv(q, "st.hp", String(st.hp));
+    const stat = (cls, k, f, val) => h("div", { class: "lab-st " + cls }, h("span", { class: "lab-sti", "aria-hidden": "true" }), h("span", { class: "lab-stk xs" }, k), h("b", null, lt(q, "st." + f, String(val))));
+    const ev = cur ? q.grid[cur][LB.v] : null, evG = cur ? labG(q, cur, LB.v) : null;
+    const gradeBar = cur && ed ? h("div", { class: "lab-own", role: "group", "aria-label": "改評語" }, h("span", { class: "xs" }, "改評語："),
+      ["ok", "dep", "bad"].map((g) => h("button", { type: "button", class: "xs lab-ownb", "aria-pressed": evG === g ? "true" : "false", onclick: () => set(`g:${cur}:${LB.v}`, g, ev.g) }, LAB.labels[g])),
+      labPick(q, LB.v) === cur ? h("span", { class: "xs lab-ownok" }, "✓ 這個情境站主選這個")
+        : h("button", { type: "button", class: "xs lab-ownb", onclick: () => set(`pick:${LB.v}`, cur, q.pick[LB.v]) }, "設成「站主會這樣選」")) : null;
+    const evCard = ev ? h("div", { class: "lab-ev lab-fade g-" + evG, role: "status" },
+      h("div", { class: "lab-evh" }, h("b", { class: "lab-lv" }, labLabel(evG)), labPick(q, LB.v) === cur ? h("span", { class: "lab-pick" }, labLabel("pick")) : null),
+      h("p", { class: "lab-why" }, lt(q, `why:${cur}:${LB.v}`, ev.why)), h("p", { class: "lab-flip small" }, h("b", null, labLabel("flip"), "："), lt(q, `flip:${cur}:${LB.v}`, ev.flip)), gradeBar) : null;
+    const allPlans = cur ? h("details", { class: "lab-all3", open: ed || null }, h("summary", null, labUi("ui.all3", "三個計畫一起看")),
+      h("div", { class: "lab-cols" }, q.plans.map((p) => { const e = q.grid[p.id][LB.v], g = labG(q, p.id, LB.v); return h("div", { class: "lab-col g-" + g }, h("b", null, lt(q, `plan:${p.id}`, p.label)), h("span", { class: "lab-lv xs" }, labLabel(g)), h("p", { class: "small" }, lt(q, `why:${p.id}:${LB.v}`, e.why))); }))) : null;
     let follow = null;
-    if (cur && !bothSeen) follow = h("p", { class: "lab-need small muted" }, "先切到另一個情境看一下，再往下。");
+    if (cur && !bothSeen && !ed) follow = h("p", { class: "lab-need small muted" }, labUi("ui.need", "先切到另一個情境看一下，再往下。"));
     else if (cur) {
-      const f = q.follow;
-      follow = h("div", { class: "lab-follow" }, h("h3", null, "追問"), h("p", null, f.q),
-        h("div", { class: "lab-opts" }, f.opts.map((o, i) => h("button", { type: "button", class: "lab-opt" + (LB.follow === i ? " on" : ""), disabled: LB.follow != null, onclick: () => { LB.follow = i; redraw(); } }, o.label))),
-        LB.follow != null ? h("div", { class: "lab-fbs" }, f.opts.map((o) => h("div", { class: "lab-fb" + (o.good ? " good" : "") }, o.good ? h("span", { class: "lab-pick" }, "站主會這樣做") : null, h("p", { class: "small" }, o.fb)))) : null);
+      const f = q.follow, good = labGood(q), shownFb = LB.follow != null || ed;
+      follow = h("div", { class: "lab-follow" }, h("h3", null, labUi("ui.follow", "追問")), h("p", null, lt(q, "fq", f.q)),
+        h("div", { class: "lab-opts" }, f.opts.map((o, i) => h("button", { type: "button", class: "lab-opt" + (LB.follow === i ? " on" : ""), disabled: LB.follow != null && !ed, onclick: (e) => { if (e.target.closest(".editable")) return; LB.follow = i; redraw(); } }, lt(q, `opt${i}`, o.label)))),
+        shownFb ? h("div", { class: "lab-fbs" }, f.opts.map((o, i) => h("div", { class: "lab-fb" + (i === good ? " good" : "") }, i === good ? h("span", { class: "lab-pick" }, labUi("ui.wouldDo", "站主會這樣做")) : null, h("p", { class: "small" }, lt(q, `fb${i}`, o.fb)),
+          ed && i !== good ? h("button", { type: "button", class: "xs lab-ownb", onclick: () => set("good", i, f.opts.findIndex((x) => x.good)) }, "改成這個才對") : null))) : null);
     }
     const next = L[idx + 1];
-    const take = LB.follow != null ? h("div", { class: "lab-take" }, h("p", { class: "lab-tk" }, q.takeaway),
+    const take = LB.follow != null || (cur && ed) ? h("div", { class: "lab-take" }, h("p", { class: "lab-tk" }, lt(q, "take", q.takeaway)),
       h("div", { class: "lab-act" }, next ? h("a", { class: "btn", href: "#learn-lab-" + next.id }, "下一題 →") : h("a", { class: "btn", href: "#learn-lab" }, "回題目清單"),
         h("button", { type: "button", class: "btn ghost", onclick: () => { LB.plan = null; LB.follow = null; LB.v = 0; LB.seen = new Set(); redraw(); window.scrollTo(0, 0); } }, "再玩一次"))) : null;
     const share = h("button", { type: "button", class: "btn ghost lab-share", onclick: () => labShare(q, share, v) }, "分享這題");
+    const pend = labPend(q);
+    const confirmBox = q.confirm && O.on ? h("div", { class: "notice small lab-confirm" },
+      pend ? [h("b", null, "待站主確認："), " ", q.confirm, h("br"), h("span", { class: "xs" }, "訪客現在看不到這題。照你的打法把下面的字改好，再按："), " ",
+        h("button", { type: "button", class: "xs lab-ownb", onclick: () => set("ok", "1", "0") }, "我確認好了，公開這題")]
+        : [h("b", null, "已確認："), " 這題訪客看得到。 ", h("button", { type: "button", class: "xs lab-ownb", onclick: () => set("ok", "0", "1") }, "改回待確認（先藏起來）")]) : null;
     v.replaceChildren(...[
       h("div", { class: "lab-bar" }, h("a", { class: "back btn ghost", href: "#learn-lab" }, "← 回決策實驗室"), h("span", { class: "small muted" }, `第 ${idx + 1} / ${L.length} 題`), share),
-      h("p", null, h("span", { class: "tag" }, LAB.cats[q.cat]), q.confirm ? h("span", { class: "tag lab-pend" }, "待確認") : null),
-      h("h2", { class: "lab-title" }, q.title), h("p", { class: "rlead" }, q.sub),
-      q.confirm && O.on ? h("p", { class: "notice small lab-confirm" }, h("b", null, "待站主確認："), " ", q.confirm) : null,
-      h("div", { class: "lab-stats" }, stat("stage", "回合", st.stage), stat("lvl", "等級", st.level), stat("gold", "金幣", st.gold), stat("hp" + (st.hp <= 40 ? " low" : ""), "血量", st.hp)),
-      h("ul", { class: "list lab-facts" }, q.facts.map((x) => h("li", null, x))),
-      h("div", { class: "lab-var" }, h("span", { class: "lab-vn small" }, q.varName), h("div", { class: "lab-vb", role: "group", "aria-label": q.varName }, q.vars.map((x, i) => h("button", { type: "button", class: "lab-vbtn", "data-v": i, "aria-pressed": LB.v === i ? "true" : "false", onclick: () => { LB.v = i; redraw(`.lab-vbtn[data-v="${i}"]`); } }, x.label)))),
-      h("h3", { class: "lab-q" }, q.question),
-      h("div", { class: "lab-plans" }, q.plans.map((p, i) => h("button", { type: "button", class: "lab-plan", "data-p": p.id, "aria-pressed": cur === p.id ? "true" : "false", onclick: () => { if (LB.plan !== p.id && LB.follow != null) LB.follow = null; LB.plan = p.id; track("lab_plan", q.id + "_" + p.id); redraw(`.lab-plan[data-p="${p.id}"]`); } }, h("kbd", null, "ABC"[i]), h("span", null, p.label)))),
-      evCard, cur ? h("p", { class: "lab-hint small muted" }, "換一下上面的情境看看 ↑") : null, allPlans, follow, take].filter(Boolean));
+      h("p", null, h("span", { class: "tag" }, labCat(q.cat)), pend ? h("span", { class: "tag lab-pend" }, "待確認") : null),
+      h("h2", { class: "lab-title" }, lt(q, "title", q.title)), h("p", { class: "rlead" }, lt(q, "sub", q.sub)),
+      confirmBox,
+      O.on && !O.mode ? h("p", { class: "xs muted lab-ownhint" }, "要改這題：打開站主工具的「改文字」。") : null,
+      h("div", { class: "lab-stats" }, stat("stage", "回合", "stage", st.stage), stat("lvl", "等級", "level", st.level), stat("gold", "金幣", "gold", st.gold), stat("hp" + (hp <= 40 ? " low" : ""), "血量", "hp", st.hp)),
+      h("ul", { class: "list lab-facts" }, q.facts.map((x, i) => h("li", null, lt(q, `fact${i}`, x)))),
+      h("div", { class: "lab-var" }, h("span", { class: "lab-vn small" }, lt(q, "varName", q.varName)), h("div", { class: "lab-vb", role: "group", "aria-label": lsv(q, "varName", q.varName) }, q.vars.map((x, i) => h("button", { type: "button", class: "lab-vbtn", "data-v": i, "aria-pressed": LB.v === i ? "true" : "false", onclick: (e) => { if (e.target.closest(".editable")) return; LB.v = i; redraw(`.lab-vbtn[data-v="${i}"]`); } }, lt(q, `var${i}`, x.label))))),
+      h("h3", { class: "lab-q" }, lt(q, "question", q.question)),
+      h("div", { class: "lab-plans" }, q.plans.map((p, i) => h("button", { type: "button", class: "lab-plan", "data-p": p.id, "aria-pressed": cur === p.id ? "true" : "false", onclick: (e) => { if (e.target.closest(".editable")) return; if (LB.plan !== p.id && LB.follow != null) LB.follow = null; LB.plan = p.id; track("lab_plan", q.id + "_" + p.id); redraw(`.lab-plan[data-p="${p.id}"]`); } }, h("kbd", null, "ABC"[i]), h("span", null, lt(q, `plan:${p.id}`, p.label))))),
+      evCard, cur ? h("p", { class: "lab-hint small muted" }, labUi("ui.hint", "換一下上面的情境看看 ↑")) : null, ed && !cur ? h("p", { class: "lab-hint small muted" }, "先選一個計畫，下面的評語、追問、重點才會出來給你改。") : null, allPlans, follow, take].filter(Boolean));
     if (!LB_KEYS) {
       LB_KEYS = true;
       addEventListener("keydown", (e) => {
@@ -2310,7 +2387,7 @@
       ["和主陣容比較", "和主陣容比較", c.baseOf?.length && !c.variantKind ? h("div", { class: "small stack" },
         h("p", null, "這個分支：", rangeLine(c)),
         ul(c.baseOf.map((b) => [h("a", { href: "#" + slug(b.id) }, b.name), "（主陣容）：", b.status === "ready" ? rangeLine(b) : "研究中"]))) : null],
-      ...(O.on ? [[`${boardTitle(c, mainLevel(c) || 8)}（站主編輯：站位、星級、裝備）`, "棋盤", h("div", { class: "stack" }, formulaOf(c) ? formulaLinks(c) : null, c.variantKind && c.variantKind !== "formula" ? null : formulaTools(c), boardEditor(c))]]
+      ...(O.on ? [[`${boardTitle(c, mainLevel(c) || 8)}（站主編輯：站位、星級、裝備）`, "棋盤", h("div", { class: "stack" }, formulaOf(c) ? formulaLinks(c) : null, c.variantKind && c.variantKind !== "formula" ? null : formulaTools(c), boardEditor(c), S19 ? plannerRow([], `${c.id}:lv${mainLevel(c) || 8}`) : null)]]
         : [formulaOf(c) ? [`站位圖（${formulasOf(formulaOf(c)).length} 個公式，點上面切換）`, "棋盤", formulaArea(c)]
           : mainLevel(c) ? [boardTitle(c, mainLevel(c)), "棋盤", boardArea(c, mainLevel(c))] : null]),
       ["升等放什麼（各人口的棋子）", "升等", levelUpBox(c)],
@@ -3036,6 +3113,7 @@
   function rerender() {
     applyOwnerNames(); applyDataTx(); renderTop();
     if (S19 && !S19FULL()) { renderTiers(); renderPatch(); renderCompList(); } else { if ($("#updates")) renderUpdates(); renderPatch(); renderVersion(); renderTiers(); renderRoute(); if (S19) renderCompList(); }  // S19 還沒有高手資料時沒有本次更新、版本主軸那幾區
+    renderLearnHub(); renderLearnView();  // 站主 2026-11-18：新手教學、決策實驗室的字也要能改
     const hsh = location.hash.slice(1), c = D.comps.find((x) => slug(x.id) === hsh) || (O.on ? O.custom.map(customToComp).find((x) => slug(x.id) === hsh) : null);
     if (c) { const y = scrollY; renderDetail(c.id); scrollTo(0, y); }
     ownerPanel();
@@ -3049,9 +3127,13 @@
       const db = await window.claude.use("db");
       if (!db) return;
       O.db = db;
-      const timer = new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000));
+      // 站主 2026-11-18「為甚麼站主工具沒辦法載入?」：預覽站變大後資料庫讀取常超過 10 秒 → 等 30 秒，逾時或失敗自動再試一次
       const opt = (c) => db.collection(c).get().catch(() => ({ docs: [] }));  // T 表與手動陣容是新集合，讀不到就當作空的
-      const [es, ts, bs, tis, cus, rel] = await Promise.race([Promise.all([db.collection("edits").get(), db.collection("terms").get(), db.collection("boards").get(), opt("tiers"), opt("customComps"), opt("releases")]), timer]);
+      const readAll = () => Promise.race([Promise.all([db.collection("edits").get(), db.collection("terms").get(), db.collection("boards").get(), opt("tiers"), opt("customComps"), opt("releases")]),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("資料庫讀取逾時")), 30000))]);
+      let got;
+      try { got = await readAll(); } catch { ownerNotice("站主工具載入中，資料庫比較慢，再試一次…"); got = await readAll(); }
+      const [es, ts, bs, tis, cus, rel] = got;
       O.releases = (rel.docs || []).map((d) => d.data()).filter((x) => x?.at).sort((a, b) => (b.at > a.at ? 1 : -1));
       for (const d of es.docs || []) { const x = d.data(); if (x?.key) O.edits[x.key] = x; }
       O.terms = (ts.docs || []).map((d) => d.data()).filter((x) => x?.from);
@@ -3076,6 +3158,8 @@
      按下確定：先在資料庫 releases/ 記一筆要求，再自動通知 Claude（sendToClaude；這是唯一能叫醒對話的管道，站主不用看留言）。
      Claude 更新完把 status 改成 done、寫 summary（這次更新了什麼），結果直接顯示在按鈕下面。
      Claude 收不到（對話沒連上）時要求留在資料庫，Claude 下次在對話裡做任何事之前會先查這裡、照這筆更新。 */
+  // 2026-11-18：別的工作把 summary 寫成一整段文字，.slice().map 出錯，站主工具整個載不出來。文字或清單都接受。
+  const relSum = (r) => (Array.isArray(r?.summary) ? r.summary : r?.summary ? [r.summary] : []).filter(Boolean).map(String);
   function releaseBox() {
     const rs = O.releases || [];
     const done = rs.find((x) => x.status === "done");
@@ -3110,8 +3194,12 @@
       pending.length ? h("p", { class: "xs rel-st rel-wait", role: "status" }, pending[0].sent === false
         ? `已記下更新要求（${fmtTime(pending[0].at)}）；Claude 當時收不到，下次動工前會先處理。`
         : `已通知 Claude 更新（${fmtTime(pending[0].at)}），處理中。`) : null,
-      done ? h("div", { class: "xs muted rel-st", role: "status" }, `正式站最後更新：${fmtTime(done.doneAt || done.at)}`,
-        (done.summary || []).length ? h("ul", { class: "rel-sum" }, done.summary.slice(0, 6).map((t) => h("li", null, t))) : null) : null);
+      // 站主 11/20「你擋到我了」：上線內容預設收起來，只留一行時間；點了才展開
+      done ? (relSum(done).length
+        ? h("details", { class: "xs muted rel-st rel-det", role: "status", open: O.relOpen || null, ontoggle: (e) => { O.relOpen = e.target.open; } },
+            h("summary", null, `正式站最後更新：${fmtTime(done.doneAt || done.at)}（點開看內容）`),
+            h("ul", { class: "rel-sum" }, relSum(done).slice(0, 6).map((t) => h("li", null, t))))
+        : h("div", { class: "xs muted rel-st", role: "status" }, `正式站最後更新：${fmtTime(done.doneAt || done.at)}`)) : null);
   }
   function ownerPanel() {
     $("#owner-fab")?.remove();
@@ -3228,7 +3316,15 @@
       sel("分區", LANES.map((l) => [l.id, l.label]), c.lane, setL),
       h("button", { class: "linkbtn", type: "button", "aria-label": "往前", onclick: () => move(-1) }, "◀"),
       h("button", { class: "linkbtn", type: "button", "aria-label": "往後", onclick: () => move(1) }, "▶"),
-      O.tiers[c.id] && !c.custom ? h("button", { class: "linkbtn", type: "button", onclick: () => run(async () => { await O.db.doc("tiers/" + docId(c.id)).delete(); delete O.tiers[c.id]; }, "已恢復資料算出的評級。") }, "恢復") : null,
+      // 站主 11/20 19:23「要有一個鍵可以反為你的默認」：只清掉站主改的評級／分區，名稱、角色圖、順序留著
+      (() => {
+        if (c.custom) return null;
+        const t = O.tiers[c.id] || {}, base = D.comps.find((x) => x.id === c.id);
+        if (!t.tier && !t.lane) return null;
+        const auto = base?.tier ? `${base.tier} 級` : "研究中";
+        return h("button", { class: "btn ghost xs tc-reset", type: "button", title: "評級和分區回到 Claude 算的",
+          onclick: () => run(() => saveTier(c.id, { tier: null, lane: null, order: 999 }), `已恢復成 Claude 算的評級（${auto}）。`) }, `↺ 恢復成 Claude 算的（${auto}）`);
+      })(),
       c.custom ? null : h("button", { class: "linkbtn", type: "button", onclick: (ev) => { ev.stopPropagation(); ev.currentTarget.closest(".tc-own").replaceWith(nameForm(c)); } }, "改名"),
       c.custom ? null : h("button", { class: "linkbtn", type: "button", onclick: (ev) => { ev.stopPropagation(); openPicker(`${c.name}：T 表的角色圖`, champGroups(new Set([compIcon(c)])), (key) => runAll(() => saveTier(c.id, { icon: key }), "已換角色圖。")); } }, "換圖"),
       c.custom ? h("button", { class: "linkbtn", type: "button", onclick: () => openCustom(O.custom.find((y) => y.id === c.id)) }, "編輯") : null);
@@ -3552,6 +3648,7 @@
       put(ec ? h("p", { class: "small" }, `人口 ${st.lv}：固定 ${ec.fixed.length} 隻（和 ${ec.from} 人口一樣）＋虛線框的 ${ec.cands.length} 隻是候選，挑 ${ec.pick} 隻放（放哪${ec.pick > 1 ? "幾" : ""}隻都可以）`)
         : h("p", { class: "small" }, `人口 ${pop}／${st.lv}`, pop > st.lv ? h("b", { class: "warn" }, "（超出人口）") : null),
         traitBadges(traitsOf(units)));
+      put(biasRow(c, champsOnly(units)));   // 站主 11/20：心鋼本命在編輯器裡選
       const rOn = riftOn(units);
       if (rOn) put(markBox(units));
       if (spryOn(units)) put(riderBox(units));
@@ -4101,6 +4198,7 @@
     XI = Object.fromEntries([...(D.gamedata.components || []), ...(D.gamedata.extraItems || [])].map((i) => [i.key, i]));  // 散件也要有中文名（站主 11/21：隨手速查「為什麼適合」顯示 RecurveBow）
     EM = Object.fromEntries((D.gamedata.emblems || []).map((i) => [i.key, i]));
     TR = Object.fromEntries(D.gamedata.traits.map((t) => [t.key, t]));
+    EMB_ALIAS = null; embObserver.observe(document.body, { childList: true, subtree: true });
     $("#loading").remove();
     adaptLayout();
     if (S19 && S19FULL() && !D.updateNotes?.length) $("#updates-sec")?.remove();

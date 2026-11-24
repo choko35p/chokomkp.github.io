@@ -346,9 +346,11 @@ details.fold[open] .fold-hint { display: none; }
 .pcard { display: grid; grid-template-columns: 36px 1fr; gap: var(--s3); align-items: start; padding: var(--s2) var(--s3); border: 1px solid var(--line); border-left-width: 5px; border-radius: var(--r); background: var(--surface); }
 .pcard.up { border-left-color: #3f9a5a; } .pcard.down { border-left-color: #c2493a; } .pcard.adj { border-left-color: #c99a2e; } .pcard.fix { border-left-color: #6b8fc7; }
 .pc-head { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.pc-txt { min-width: 0; line-height: 1.55; }
+.pc-txt { min-width: 0; line-height: 1.55; overflow-wrap: anywhere; }  /* 站主 2026-11-24：長數字串不能被切掉 */
 .pc-ft { font-size: var(--fs-s); font-variant-numeric: tabular-nums; }
 .pc-ft s { color: var(--muted); }
+.pc-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; }
+.pc-row + .pc-row { margin-top: 2px; }
 .pcard.up .pc-ft b { color: #1f6b35; } .pcard.down .pc-ft b { color: #9a3226; }
 .ico.pico { border-radius: 8px; }
 .ico.pico.wisp { background: #3b2a52; }

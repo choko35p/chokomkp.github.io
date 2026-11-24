@@ -1080,7 +1080,7 @@
   }
   // 六角頭像（費用色框）；corner＝換掉的那隻（左上小圖）、badge＝第幾等補（左上數字）
   // 站主 2026-11-04：「牌上面也要推薦裝備」→ 頭像下面放推薦裝備；站主編輯時可以點選（onPick）
-  function fhex(key, { corner = null, badge = null, name = true, items = null, onPick = null, sel = false, star = null } = {}) {
+  function fhex(key, { corner = null, badge = null, name = true, items = null, onPick = null, sel = false, star = null, onCtx = null } = {}) {
     const cost = CH[key]?.cost || 1;
     const its = (items || []).slice(0, 3);
     const attrs = { class: "fhex c" + cost + (onPick ? " pick" : "") + (sel ? " sel" : ""), title: champName(key) + (corner ? `（換掉${champName(corner)}）` : badge ? `（${badge} 等補上）` : "") + (its.length ? "｜推薦裝備：" + its.map(itemName).join("、") : "") };
@@ -1090,8 +1090,18 @@
       its.length ? h("span", { class: "fhex-items" }, its.map((i) => icon("item", i, "xs"))) : null,
       name ? h("span", { class: "fhex-name" }, champName(key)) : null];
     // 站主 2026-11-22「右上角那邊的升等也要加入…顯示解鎖條件的功能」：旁邊一區的棋子也能滑過／點開小卡（技能、數值、解鎖條件、推薦裝備）
-    return onPick ? h("button", { ...attrs, type: "button", "aria-pressed": sel ? "true" : "false", onclick: onPick }, kids)
-      : h("span", { ...attrs, title: null, "aria-label": attrs.title, "data-ckey": key, "data-cstar": String(star || 1), "data-citems": its.join(","), tabindex: "0", role: "button" }, kids);
+    if (onPick) {
+      // 站主 2026-11-24「我右鍵這邊的棋子的時候要像編輯器那樣」：站主編輯時右鍵（手機長按）點棋子＝拿掉牠，點下面的裝備小圖＝只拿掉那一件
+      let ctxAt = 0;
+      const b = h("button", { ...attrs, type: "button", "aria-pressed": sel ? "true" : "false", onclick: (ev) => { if (Date.now() - ctxAt < 700) return; onPick(ev); } }, kids);
+      if (onCtx) b.addEventListener("contextmenu", (ev) => {
+        ev.preventDefault(); ctxAt = Date.now();
+        const ic = ev.target.closest?.(".fhex-items > *"), i = ic ? [...ic.parentNode.children].indexOf(ic) : -1;
+        onCtx(i);
+      });
+      return b;
+    }
+    return h("span", { ...attrs, title: null, "aria-label": attrs.title, "data-ckey": key, "data-cstar": String(star || 1), "data-citems": its.join(","), tabindex: "0", role: "button" }, kids);
   }
   const miniRow = (keys) => h("span", { class: "fx-minis" }, keys.map((k) => h("span", { class: "fx-mini" }, icon("champion", k, "xs"), champName(k))));
   /* 旁邊一區：升等要補、可以替換。ed＝站主編輯（站主 2026-11-04：「你這邊也要讓我可以修改，包括加甚麼牌，牌上面也要推薦裝備」） */
@@ -1111,8 +1121,9 @@
       h("p", { class: "small fx-tank-t" }, tn.text)));
     const isSel = (k) => ed?.sel && ed.sel.kind === k.kind && ed.sel.lv === k.lv && ed.sel.key === k.key && ed.sel.i === k.i;
     const pickOf = (k) => (ed ? () => ed.select(isSel(k) ? null : k) : null);
+    const ctxOf = (k) => (ed?.ctx ? (i) => ed.ctx(k, i) : null);
     const selBox = (k) => (ed && isSel(k) ? ed.selPanel(k) : null);
-    const stepUnits = (s, lv) => s.add.map((u) => fhex(u.key, { badge: lv, items: u.items, star: u.star, onPick: pickOf({ kind: "step", lv, key: u.key }), sel: isSel({ kind: "step", lv, key: u.key }) }));
+    const stepUnits = (s, lv) => s.add.map((u) => fhex(u.key, { badge: lv, items: u.items, star: u.star, onPick: pickOf({ kind: "step", lv, key: u.key }), onCtx: ctxOf({ kind: "step", lv, key: u.key }), sel: isSel({ kind: "step", lv, key: u.key }) }));
     const stepSel = (lv, us) => us.map((u) => selBox({ kind: "step", lv, key: u.key })).find(Boolean) || null;
     // 站主 2026-11-10 截圖「你旁邊的不能改」：「拿掉」的那幾隻、還沒到主圖等級時先放的，站主編輯時也都可以點
     const remRow = (keys, lv) => (ed ? h("span", { class: "fx-minis" }, keys.map((k) => h("button", { type: "button", class: "fx-mini pick" + (isSel({ kind: "rem", lv, key: k }) ? " sel" : ""),
@@ -1127,7 +1138,7 @@
         const lv = s.level;
         box.append(h("div", { class: "fx-group" },
           h("div", { class: "fx-gh" }, h("span", { class: "fx-lvtag" }, `${lv} 等`), `還沒到 ${M} 等時先放`),
-          h("div", { class: "fx-units" }, s.early.map((u) => fhex(u.key, { badge: lv, items: u.items, star: u.star, onPick: pickOf({ kind: "step", lv, key: u.key }), sel: isSel({ kind: "step", lv, key: u.key }) })), stepBtns(lv)),
+          h("div", { class: "fx-units" }, s.early.map((u) => fhex(u.key, { badge: lv, items: u.items, star: u.star, onPick: pickOf({ kind: "step", lv, key: u.key }), onCtx: ctxOf({ kind: "step", lv, key: u.key }), sel: isSel({ kind: "step", lv, key: u.key }) })), stepBtns(lv)),
           s.later.length ? h("p", { class: "fx-cap" }, `${M} 等時改放 `, s.later.map(champName).join("、")) : null, stepSel(lv, s.early)));
       }
       const ups = steps.filter((s) => !s.below);
@@ -1138,7 +1149,7 @@
         const addBtn = stepBtns(lv);
         const candBox = s.cands ? h("div", { class: "fx-group fx-cand" },
           h("div", { class: "fx-gh" }, h("span", { class: "fx-lvtag" }, `${lv} 等`), `挑 ${s.pick} 隻放（放哪${s.pick > 1 ? "幾" : ""}隻都可以）`),
-          h("div", { class: "fx-units" }, s.cands.map((u) => fhex(u.key, { badge: lv, items: u.items, star: u.star, onPick: pickOf({ kind: "step", lv, key: u.key }), sel: isSel({ kind: "step", lv, key: u.key }) }))),
+          h("div", { class: "fx-units" }, s.cands.map((u) => fhex(u.key, { badge: lv, items: u.items, star: u.star, onPick: pickOf({ kind: "step", lv, key: u.key }), onCtx: ctxOf({ kind: "step", lv, key: u.key }), sel: isSel({ kind: "step", lv, key: u.key }) }))),
           stepSel(lv, s.cands)) : null;
         const afterCap = s.after ? h("p", { class: "fx-cap" }, `${s.after.level} 等已經放了其中 ${s.after.pick} 隻，${lv} 等把其他的補上`) : null;
         if (s.cands && !s.add.length && !s.rem.length) {
@@ -1164,7 +1175,7 @@
           const meta = h("p", { class: "fx-meta" }, x.share != null ? [`高手 ${Math.round(x.share * 100)}% 這樣換`, h("span", { class: "brchg " + (x.chg < -0.05 ? "good" : x.chg > 0.05 ? "bad" : "") }, `名次 ${fmtChg(x.chg)}`)] : "站主推薦",
             ed ? h("button", { class: "linkbtn fx-del", type: "button", onclick: () => ed.delFlex(lv, i) }, "刪除這組") : null);
           const unitOf = (k) => fhex(k, { corner: x.out.length === 1 && x.in.length === 1 ? x.out[0] : null, name: !(x.out.length === 1 && x.in.length === 1), items: x.items?.[k],
-            onPick: pickOf({ kind: "flex", lv, i, key: k }), sel: isSel({ kind: "flex", lv, i, key: k }) });
+            onPick: pickOf({ kind: "flex", lv, i, key: k }), onCtx: ctxOf({ kind: "flex", lv, i, key: k }), sel: isSel({ kind: "flex", lv, i, key: k }) });
           const sel = x.in.map((k) => selBox({ kind: "flex", lv, i, key: k })).find(Boolean) || null;
           // 候選盤（站主 2026-11-09「放這些都可以」）：拿掉的全是候選＝候選之外也可以放這幾隻
           const cdx = candOf(boards, lv);
@@ -1187,7 +1198,7 @@
       }
       box.append(h("p", { class: "xs muted fx-note" }, "「可以替換」是高手同等級的終局棋盤裡，和這張圖比最常見的換法；名次是換了之後平均名次的變化（負的＝比較好）。頭像下面是推薦裝備。"));
     }
-    if (ed) box.append(h("p", { class: "xs muted fx-note" }, "站主編輯：點旁邊的頭像可以改裝備或拿掉；點「拿掉」那排的棋子可以放回來；「＋ 加棋子」加在那個等級（更高等級也會一起加；還沒到主圖等級的只改那一等）；「⇄ 換棋子」把那一等場上的棋子換掉或拿掉（更高等級也會一起換）。改完按棋盤下面的「儲存棋盤」。"));
+    if (ed) box.append(h("p", { class: "xs muted fx-note" }, "站主編輯：點旁邊的頭像可以改裝備或拿掉；右鍵（手機長按）點頭像＝直接拿掉，點頭像下面的裝備小圖＝只拿掉那一件；點「拿掉」那排的棋子可以放回來；「＋ 加棋子」加在那個等級（更高等級也會一起加；還沒到主圖等級的只改那一等）；「⇄ 換棋子」把那一等場上的棋子換掉或拿掉（更高等級也會一起換）。改完按棋盤下面的「儲存棋盤」。"));
     return box;
   }
   function boardTitle(c, M) {
@@ -3466,7 +3477,7 @@
       const main = h("div", { class: "be-main" });
       const live = Object.fromEntries(edLv().filter((lv) => champsOnly(st.data[lv]).length).map((lv) => ["lv" + lv, { status: "ok", units: st.data[lv] }]));
       const ed = { flex: st.flex, flexLevels: edLv().filter((lv) => lv === M || (lv > M && (champsOnly(st.data[lv]).length || levelsOf(c).includes(lv)))), stepLevels: edLv().filter((lv) => lv > M),
-        sel: st.side, select: (k) => { st.side = k; st.flexForm = null; draw(); }, selPanel: sideSelPanel, addStep: pickStep, swapStep: pickSwap,
+        sel: st.side, select: (k) => { st.side = k; st.flexForm = null; draw(); }, selPanel: sideSelPanel, ctx: sideCtx, addStep: pickStep, swapStep: pickSwap,
         delFlex: (lv, i) => { ownFlex(); st.flex["lv" + lv].splice(i, 1); st.side = null; changed("已刪除這組替換。"); },
         flexForm: st.flexForm, openFlexForm: (lv) => { st.flexForm = { lv, out: [], in: [] }; st.side = null; draw(); }, flexFormBox };
       const side = sidePanel(c, M, live, ed);
@@ -3640,6 +3651,30 @@
         h("div", { class: "row" },
           h("button", { class: "btn ghost", type: "button", onclick: back }, "放回來"),
           h("button", { class: "btn ghost", type: "button", onclick: () => { st.side = null; draw(); } }, "完成")));
+    }
+    // 旁邊一區右鍵（站主 2026-11-24「要像編輯器那樣」）：i>=0＝只拿掉那件裝備，否則拿掉棋子；範圍和「拿掉」按鈕一樣
+    function sideCtx(k, i) {
+      if (k.kind === "step") {
+        const below = k.lv < st.main, lvs = below ? [k.lv] : edLv().filter((L) => L >= k.lv);
+        const u = champsOnly(st.data[k.lv]).find((x) => x.key === k.key);
+        if (!u) return;
+        if (i >= 0 && u.items?.[i]) {
+          const it = u.items.splice(i, 1)[0];
+          if (!below) edLv().filter((L) => L > k.lv).map((L) => champsOnly(st.data[L]).find((x) => x.key === k.key)).filter(Boolean).forEach((x) => (x.items = [...u.items]));
+          changed(`已拿掉${champName(k.key)}的${itemName(it)}。`); return;
+        }
+        for (const L of lvs) { const arr = st.data[L] || []; const j = arr.findIndex((x) => x.key === k.key); if (j >= 0) arr.splice(j, 1); }
+        st.side = null; changed(below ? `已從 ${k.lv} 等拿掉${champName(k.key)}。` : `已從 ${k.lv} 等以上拿掉${champName(k.key)}。`);
+      } else if (k.kind === "flex") {
+        ownFlex();
+        const list = st.flex["lv" + k.lv], opt = list?.[k.i];
+        if (!opt) return;
+        const its = opt.items?.[k.key];
+        if (i >= 0 && its?.[i]) { const it = its.splice(i, 1)[0]; changed(`已拿掉${champName(k.key)}的${itemName(it)}。`); return; }
+        opt.in = opt.in.filter((x) => x !== k.key); if (opt.items) delete opt.items[k.key];
+        if (!opt.in.length) list.splice(k.i, 1);
+        st.side = null; changed(opt.in.length ? `這組替換拿掉${champName(k.key)}。` : `已刪除這組替換（換上的都拿掉了）。`);
+      }
     }
     function sideSelPanel(k) {
       let u, remove = null, after = null;

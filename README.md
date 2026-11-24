@@ -34,3 +34,12 @@
 - 資料：`site/data/s19/item-changes.json`（手動整理，**建置不會產生**）；程式：`site/app.js` 的 `renderItems19()`，CSS 在 `style.css` 的「S19 裝備改動」。
 - **重建網站時要保留**：換 `site/` 前先把 `site/data/s19/item-changes.json` 留下來；`app.js` 用建置版時要把 `renderItems19` 和導覽那一行補回去。
 - 分組：官方每天公告沒寫的（S18 正式服 vs S19 PBE 遊戲資料比對）／PBE 第 N 天有公告的（Truexy 改動圖）／只改說明文字。之後 PBE 再改裝備，照日期加一組。
+
+## 2026-11-25 S18→S19 改動區擴大、布蕾爾併進維爾戈、預覽站新手教學
+
+- 站主 11/25：「反正只要s18到s19有改的東西都要寫出來不管是不是偷改」，範圍選「裝備＋增幅＋系統」。
+  - `site/data/s19/item-changes.json` 改成分頁格式（tabs：系統／裝備／增幅），每列有公告的標日期（ann），沒標＝沒公告。導覽列改叫「S19 改動」。
+  - 裝備、增幅：S18 正式服（MetaTFT TFTSet18_latest）vs S19 PBE（TFTSet19_pbe）逐項比 curveTable；系統：攻略網（tftflow、senseos、elo-boost）整理的 PBE 資料。
+  - **預覽站放不下新檔（512 檔上限）**：同一份資料放在預覽站 `data/s19/wiki.json` 的 `changes19`，`renderItems19` 找不到 item-changes.json 會改讀 wiki.json。
+- 站主 11/25：「布雷爾跟賭維爾戈不是同一套嗎為甚麼你分成兩套了」→ `s19_the_blood_hunter_briar`（殺戮布蕾爾）併進 `s19_viego_flex_with_friends`（殺戮維爾戈）：場次分佈相加重算均名／前四／勝率（189 場），對戰紀錄合併取最新 20 場，舊網址用 `aliases` 轉過去，其他陣容指向布蕾爾的轉陣拿掉。**之後重算 S19 T 表要保持合併**（兩套的對局都是維爾戈三星＋布蕾爾三星）。
+- 站主 11/25：「為甚麼我預覽網站不能開新手教學」→ 預覽站沒有 `learn/`、`trials/`（512 檔上限），點了 404。`app.js` 加 `sitePath()`：不在 chokomkp.com 時這兩個連到正式站、開新分頁；正式站照舊相對路徑。

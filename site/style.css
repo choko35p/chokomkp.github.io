@@ -357,6 +357,13 @@ details.fold[open] .fold-hint { display: none; }
 .i19-hl { margin: var(--s2) 0 var(--s4); padding: var(--s2) var(--s3); border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); }
 .i19-hl .list { margin-top: 4px; }
 .i19-sub { margin: -4px 0 var(--s2); }
+.i19-tabs { margin: var(--s3) 0 var(--s2); }
+.i19-ann { font-size: var(--fs-xs); padding: 0 6px; border-color: #6b8fc7; color: #3d5f96; background: transparent; }
+.i19-sym { display: inline-grid; place-items: center; width: 36px; height: 36px; background: var(--surface-2, #eee); color: var(--muted); font-weight: 700; font-size: 13px; }
+.i19-aug { display: inline-block; width: 36px; height: 36px; background-repeat: no-repeat; }
+.i19-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.i19-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px 2px 2px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); font-size: var(--fs-s); max-width: 100%; overflow-wrap: anywhere; }
+.i19-chip .i19-aug, .i19-chip .i19-sym { width: 22px; height: 22px; font-size: 10px; }
 .ico.pico { border-radius: 8px; }
 .ico.pico.wisp { background: #3b2a52; }
 details.pgroup > .in { padding-top: var(--s2); }

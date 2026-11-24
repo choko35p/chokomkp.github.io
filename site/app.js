@@ -37,6 +37,11 @@
   })();
   const S19 = SEASON === 19;
   const dataUrl = (p) => (S19 ? "data/s19/" : "data/") + p;
+  // 站主 2026-11-25「為甚麼我預覽網站不能開新手教學」：預覽站有 512 個檔的上限，放不下 learn/（邊玩邊學）、trials/（滴答克的試煉）
+  // → 不在正式站（chokomkp.com）時，這兩個連到正式站那一頁、開新分頁
+  const ON_LIVE = /(^|\.)chokomkp\.com$/.test(location.hostname);
+  const sitePath = (p) => (ON_LIVE || !/^(learn|trials)\//.test(p) ? p : "https://chokomkp.com/" + p);
+  const extAttrs = (p) => (sitePath(p) !== p ? { target: "_blank", rel: "noopener" } : {});
   const seasonHref = (s) => { const u = new URL(location.href); if (s === SEASON_DEFAULT) u.searchParams.delete("s"); else u.searchParams.set("s", String(s)); u.hash = ""; return u.pathname + u.search; };
 
   let D, CH, IT, TR, XI = {}, EM = {}, ICONS = new Set();
@@ -151,8 +156,8 @@
   // 站主 2026-11-04 的版面（T 表往上、改動一覽、本次更新收起來、導覽順序）用程式調整，不動已發布的 index.html
   function adaptLayout() {
     const ul = document.querySelector(".nav ul");
-    if (ul) ul.replaceChildren(...[["#tierlist", "nav.tier", "T 度表"], ...(S19 ? [["#items19", "nav.items19", "裝備改動"]] : []), ["#updates-sec", "nav.updates", "本次更新"],
-      ["#version", "nav.version", "版本主軸"], ["#picker", "nav.picker", "隨手速查"], ["#learn", "nav.learn", "新手教學"], ["#comps", "nav.comps", "陣容攻略"], ["sim/", "nav.editor", "陣容編輯器"], ["sim/", "nav.sim", "戰鬥模擬"], ["trials/", "nav.trials", "滴答克的試煉"], ["pros/", "nav.pros", "高手教學庫"]].filter(([href]) => !S19 || (S19FULL() ? href !== "sim/" && (href !== "#updates-sec" || D.updateNotes?.length) : href === "#tierlist" || href === "#items19" || href === "#learn" || href === "#comps" || href === "trials/" || href === "pros/")).map(([href, k, t]) => h("li", null, h("a", { href, "data-tx": k }, t))));  // 戰鬥模擬器 2026-11-11
+    if (ul) ul.replaceChildren(...[["#tierlist", "nav.tier", "T 度表"], ...(S19 ? [["#items19", "nav.items19", "S19 改動"]] : []), ["#updates-sec", "nav.updates", "本次更新"],
+      ["#version", "nav.version", "版本主軸"], ["#picker", "nav.picker", "隨手速查"], ["#learn", "nav.learn", "新手教學"], ["#comps", "nav.comps", "陣容攻略"], ["sim/", "nav.editor", "陣容編輯器"], ["sim/", "nav.sim", "戰鬥模擬"], ["trials/", "nav.trials", "滴答克的試煉"], ["pros/", "nav.pros", "高手教學庫"]].filter(([href]) => !S19 || (S19FULL() ? href !== "sim/" && (href !== "#updates-sec" || D.updateNotes?.length) : href === "#tierlist" || href === "#items19" || href === "#learn" || href === "#comps" || href === "trials/" || href === "pros/")).map(([href, k, t]) => h("li", null, h("a", { href: sitePath(href), "data-tx": k, ...extAttrs(href) }, t))));  // 戰鬥模擬器 2026-11-11
     const up = $("#updates-sec"), tl = $("#tierlist");
     if (up && !$("#updates-fold")) {
       up.classList.add("slim");
@@ -313,31 +318,55 @@
         h("span", { class: "pb-sub" }, h("span", { class: "dirtag up" }, `↑ ${n("up")}`), h("span", { class: "dirtag down" }, `↓ ${n("down")}`), pc.btnSub || "增幅、神火都在這"))));
   }
 
-  /* ---------- S19 裝備改動（站主 2026-11-24：「s19甚麼時候偷改裝備我都不知道」→「放到正式網上面，弄一區固定的」）
-     資料在 data/s19/item-changes.json（跟 site-data.json 分開，重建 S19 資料不會蓋掉）。T 表下面一區，導覽列「裝備改動」。 */
+  /* ---------- S18 → S19 改了什麼（站主 2026-11-24：「s19甚麼時候偷改裝備我都不知道」→「放到正式網上面，弄一區固定的」；
+     11/25：「只要s18到s19有改的東西都要寫出來不管是不是偷改」，裝備＋增幅＋系統都要）
+     資料在 data/s19/item-changes.json（跟 site-data.json 分開，重建 S19 資料不會蓋掉）；預覽站放在 data/s19/wiki.json 的 changes19。T 表下面一區，導覽列「S19 改動」。
+     有公告的那一列標日期（ann），沒標的就是沒公告、從遊戲資料比出來的。 */
+  let I19 = null;
   function renderItems19() {
     if (!S19 || $("#items19")) return;
-    const sec = h("section", { class: "block", id: "items19" }, h("h2", { "data-tx": "h2.items19" }, "S19 裝備改動"), h("p", { class: "small muted" }, "載入中…"));
+    const sec = h("section", { class: "block", id: "items19" }, h("h2", null, "S18 → S19 改了什麼"), h("p", { class: "small muted" }, "載入中…"));
     ($("#tierlist") || $("#comps"))?.after(sec);
-    fetch(dataUrl("item-changes.json")).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d) => {
-      if (!d?.groups?.length) { sec.remove(); $('.nav a[href="#items19"]')?.closest("li")?.remove(); return; }
-      const card = (it) => h("div", { class: "pcard " + it.dir },
-        icon("item", it.key, "sm"),
-        h("div", { class: "pc-txt" },
-          h("div", { class: "pc-head" }, h("b", null, it.name), h("span", { class: "dirtag " + it.dir }, DIRS[it.dir][0] + " " + DIRS[it.dir][1])),
-          ...it.rows.map((r) => h("div", { class: "pc-row" }, h("span", { class: "small" }, r.what), h("span", { class: "pc-ft" }, h("s", null, r.from), " → ", h("b", null, r.to)))),
-          it.note ? h("div", { class: "xs muted" }, it.note) : null));
-      const body = [h("p", { class: "pc-sum" }, ui("items19.intro", d.intro))];
-      if (d.highlights?.length) body.push(h("div", { class: "i19-hl" }, h("b", null, "重點"), h("ul", { class: "list" }, d.highlights.map((x) => h("li", null, x)))));
-      for (const g of d.groups) {
-        const grid = h("div", { class: "pgrid2" }, g.items.map(card));
-        const head = [g.label, g.remember ? h("span", { class: "tag remember" }, "沒公告") : null, h("span", { class: "xs muted" }, ` ${g.items.length} 件`)];
-        if (g.collapsed) body.push(h("details", { class: "pgroup" }, h("summary", null, `${g.label}（${g.items.length} 件）`), h("div", { class: "in" }, grid)));
-        else body.push(h("div", { class: "pgroup" }, h("h3", null, ...head), g.sub ? h("p", { class: "xs muted i19-sub" }, g.sub) : null, grid));
-      }
-      if (d.basis) body.push(h("p", { class: "xs muted" }, d.basis, d.updated ? `（整理：${d.updated.slice(5).replace("-", "/")}）` : ""));
-      sec.replaceChildren(sec.firstChild, h("div", { class: "pchart" }, body));
+    // 預覽站檔案數到上限，放不下 item-changes.json → 改讀 wiki.json 的 changes19（跟 planner 代碼表一樣的做法）
+    fetch(dataUrl("item-changes.json")).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+      .then((d) => d || loadWiki().then((w) => w?.changes19 || null)).then((d) => {
+      if (!d?.tabs?.length) { sec.remove(); $('.nav a[href="#items19"]')?.closest("li")?.remove(); return; }
+      I19 = { d, tab: d.tabs[0].id };
+      drawItems19(sec);
     });
+  }
+  function drawItems19(sec) {
+    const { d } = I19, sp = d.augSprite;
+    const augIco = (n, S = 36) => {
+      if (n == null || !sp) return h("span", { class: "ico sm pico i19-sym", "aria-hidden": "true" }, "增");
+      const c = n % sp.cols, r = Math.floor(n / sp.cols);
+      return h("span", { class: "ico sm pico i19-aug", "aria-hidden": "true", style: `width:${S}px;height:${S}px;background-image:url(${sp.src});background-size:${sp.cols * S}px ${sp.rows * S}px;background-position:-${c * S}px -${r * S}px` });
+    };
+    const ico = (it) => it.key ? icon("item", it.key, "sm") : it.sp != null ? augIco(it.sp) : h("span", { class: "ico sm pico i19-sym", "aria-hidden": "true" }, it.sym || "・");
+    const card = (it) => h("div", { class: "pcard " + it.dir },
+      ico(it),
+      h("div", { class: "pc-txt" },
+        h("div", { class: "pc-head" }, h("b", null, it.name), h("span", { class: "dirtag " + it.dir }, DIRS[it.dir][0] + " " + DIRS[it.dir][1])),
+        ...it.rows.map((r) => h("div", { class: "pc-row" }, h("span", { class: "small" }, r.what),
+          h("span", { class: "pc-ft" }, r.from ? [h("s", null, r.from), " → "] : null, h("b", null, r.to)),
+          r.ann ? h("span", { class: "tag i19-ann" }, r.ann) : null)),
+        it.note ? h("div", { class: "xs muted" }, it.note) : null));
+    const chip = (c) => h("span", { class: "i19-chip" }, c.key ? icon("item", c.key, "xs") : c.sp != null ? augIco(c.sp, 22) : null,
+      c.tier ? h("span", { class: "xs muted" }, c.tier) : null, c.name);
+    const tabs = h("div", { class: "tabs i19-tabs", role: "group", "aria-label": "改動分類" }, d.tabs.map((t) =>
+      h("button", { type: "button", "aria-pressed": I19.tab === t.id ? "true" : "false", onclick: () => { I19.tab = t.id; drawItems19(sec); } }, t.label)));
+    const t = d.tabs.find((x) => x.id === I19.tab) || d.tabs[0];
+    const body = [h("p", { class: "pc-sum" }, d.intro)];
+    if (d.highlights?.length) body.push(h("div", { class: "i19-hl" }, h("b", null, "重點"), h("ul", { class: "list" }, d.highlights.map((x) => h("li", null, x)))));
+    body.push(tabs);
+    for (const g of t.groups) {
+      const n = (g.items || g.chips || []).length;
+      const inner = g.items ? h("div", { class: "pgrid2" }, g.items.map(card)) : h("div", { class: "i19-chips" }, g.chips.map(chip));
+      if (g.collapsed) body.push(h("details", { class: "pgroup" }, h("summary", null, /（\d+ [件個]）$/.test(g.label) ? g.label : `${g.label}（${n}）`), h("div", { class: "in" }, g.sub ? h("p", { class: "xs muted i19-sub" }, g.sub) : null, inner)));
+      else body.push(h("div", { class: "pgroup" }, h("h3", null, g.label, h("span", { class: "xs muted" }, ` ${n} 項`)), g.sub ? h("p", { class: "xs muted i19-sub" }, g.sub) : null, inner));
+    }
+    if (d.basis) body.push(h("p", { class: "xs muted" }, d.basis, d.updated ? `（整理：${d.updated.slice(5).replace("-", "/")}）` : ""));
+    sec.replaceChildren(h("h2", null, d.title || "S18 → S19 改了什麼"), h("div", { class: "pchart" }, body));
   }
 
   /* 版本主軸：練線路線（先練→再練）。同一步裡左強右弱，點陣容看完整攻略。 */
@@ -507,7 +536,7 @@
     const qzFaces = [1, 2, 3].map((c) => champs.find((x) => x.cost === c)?.key).filter(Boolean);
     const card = (cls, href, pic, title, desc, prog, off) => {
       const body = [h("span", { class: "lc-pic", "aria-hidden": "true" }, pic), h("span", { class: "lc-txt" }, h("b", { class: "lc-t" }, title), h("span", { class: "lc-d small" }, desc), prog ? h("span", { class: "lc-p xs" }, prog) : null)];
-      return off ? h("div", { class: "lcard off " + cls, "aria-disabled": "true" }, body) : h("a", { class: "lcard " + cls, href, onclick: () => track("learn", cls) }, body);
+      return off ? h("div", { class: "lcard off " + cls, "aria-disabled": "true" }, body) : h("a", { class: "lcard " + cls, href: sitePath(href), ...extAttrs(href), onclick: () => track("learn", cls) }, body);
     };
     const S19note = S19 ? h("p", { class: "xs muted lc-note" }, "觀念每一季都一樣；邊玩邊學、決策實驗室示範用的是 S18 的牌。") : null;
     sec.replaceChildren(

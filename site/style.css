@@ -1566,3 +1566,7 @@ button.bias-opt { padding: 1px; border: 2px solid transparent; border-radius: 8p
 body.tdragging,body.tdragging *{user-select:none;-webkit-user-select:none;cursor:grabbing!important}
 .tdrag .tb-cell>.tc{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .tdrag .tc img{-webkit-user-drag:none;pointer-events:none}
+
+/* 站主 2026-11-25「你這圖片有高有低」：前期過渡排行的頭像，一星沒有星星那行會塌掉 → 星星那行固定高度、整排底部對齊 */
+.ep-u{align-items:flex-end}
+.ep-u .cu .stars{display:block;height:.85rem;line-height:.85rem}

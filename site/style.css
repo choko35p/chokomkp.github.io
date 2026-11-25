@@ -1575,3 +1575,10 @@ body.tdragging,body.tdragging *{user-select:none;-webkit-user-select:none;cursor
 .pcard .pc-row.r-up .pc-ft b{color:#1f6b35}.pcard .pc-row.r-down .pc-ft b{color:#9a3226}.pcard .pc-row.r-adj .pc-ft b{color:#7a5a12}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .pcard .pc-row.r-up .pc-ft b{color:#9fe0b0}:root:not([data-theme="light"]) .pcard .pc-row.r-down .pc-ft b{color:#ffb3a8}:root:not([data-theme="light"]) .pcard .pc-row.r-adj .pc-ft b{color:#f0d58a}}
 :root[data-theme="dark"] .pcard .pc-row.r-up .pc-ft b{color:#9fe0b0}:root[data-theme="dark"] .pcard .pc-row.r-down .pc-ft b{color:#ffb3a8}:root[data-theme="dark"] .pcard .pc-row.r-adj .pc-ft b{color:#f0d58a}
+
+/* 站主 2026-11-26「削多少削幾%小削弱還是大削弱你要標出來」：每行新值後面的變動 % 與大小 */
+.pc-pct{display:inline-block;margin-left:.45em;padding:0 .4em;border-radius:6px;font-size:.78rem;font-weight:700;line-height:1.5;white-space:nowrap;background:#f1ece6;color:#5b4a3c}
+.pc-pct.p-up{background:#e3f3e7;color:#1f6b35}.pc-pct.p-down{background:#f8e2de;color:#9a3226}.pc-pct.p-adj{background:#f6edd6;color:#7a5a12}
+.pc-legend{margin:-.4rem 0 var(--s3)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .pc-pct{background:#3a3129;color:#e8dccf}:root:not([data-theme="light"]) .pc-pct.p-up{background:#1f3a27;color:#9fe0b0}:root:not([data-theme="light"]) .pc-pct.p-down{background:#432420;color:#ffb3a8}:root:not([data-theme="light"]) .pc-pct.p-adj{background:#3d3219;color:#f0d58a}}
+:root[data-theme="dark"] .pc-pct{background:#3a3129;color:#e8dccf}:root[data-theme="dark"] .pc-pct.p-up{background:#1f3a27;color:#9fe0b0}:root[data-theme="dark"] .pc-pct.p-down{background:#432420;color:#ffb3a8}:root[data-theme="dark"] .pc-pct.p-adj{background:#3d3219;color:#f0d58a}

@@ -297,6 +297,23 @@
 
   /* ---------- 改動一覽（站主 2026-11-04：增強、削弱、調整一眼看懂，特別是增幅跟神火） ---------- */
   const DIRS = { up: ["↑", "加強"], down: ["↓", "削弱"], adj: ["↔", "調整"], fix: ["✓", "修正"] };
+  // 站主 2026-11-26「削多少削幾%小削弱還是大削弱你要標出來」：舊值→新值每個數字各算變動 %，取變最多的那個決定大小（小 <10%、中 10～25%、大 ≥25%）。
+  // 方向照那一行的 dir（數字變大不一定是加強，例：魔力、解鎖門檻）；調整（adj）只寫 %。數字個數對不上、回合（4-1）、純文字的不標。
+  const PCT_NOTE = "幅度：小＝變動不到 10%、中＝10～25%、大＝25% 以上（有好幾個數字時看變最多的那個）";
+  function pctTag(from, to, dir) {
+    const f = String(from ?? ""), t = String(to ?? "");
+    if (/\d-\d/.test(f + " " + t)) return null;
+    const num = (x) => (x.match(/\d+(?:,\d{3})*(?:\.\d+)?/g) || []).map((v) => +v.replace(/,/g, ""));
+    const a = num(f), b = num(t);
+    if (!a.length || a.length !== b.length) return null;
+    const ps = a.map((v, i) => (v ? (b[i] - v) / v * 100 : null)).filter((p) => p !== null && Math.abs(p) >= 0.5);
+    if (!ps.length) return null;
+    const r = (p) => (p > 0 ? "+" : "−") + Math.round(Math.abs(p)) + "%";
+    const lo = Math.min(...ps), hi = Math.max(...ps), big = Math.round(Math.max(...ps.map(Math.abs)));   // 用畫面上看到的整數判斷大小，免得顯示 −10% 卻寫小削弱
+    const txt = r(lo) === r(hi) ? r(lo) : hi <= 0 ? `${r(hi)}～${r(lo)}` : `${r(lo)}～${r(hi)}`;   // 全部往下時從變少的寫到變多的（−3%～−7%）
+    const word = dir === "up" ? (big < 10 ? "小" : big < 25 ? "中" : "大") + "加強" : dir === "down" ? (big < 10 ? "小" : big < 25 ? "中" : "大") + "削弱" : "調整";
+    return h("span", { class: "pc-pct" + (dir ? " p-" + dir : "") }, `${txt}・${word}`);
+  }
   function pIcon(it) {
     if (it.unit && CH[it.unit]) return icon("champion", it.unit, "sm");
     const box = h("span", { class: "ico sm item pico" + (/set18_mechanicicon/.test(it.icon || "") ? " wisp" : /^traits\//.test(it.icon || "") ? " trait" : ""), role: "img", "aria-label": it.name });
@@ -310,16 +327,17 @@
     const all = pc.groups.filter((g) => g.id !== "fix").flatMap((g) => g.items);
     const n = (d) => all.filter((x) => x.dir === d).length;
     body.append(h("p", { class: "pc-sum" }, ui("patch.summary", pc.summary)),
-      h("div", { class: "pc-count", "aria-label": "改動統計" }, ["up", "down", "adj"].filter((d) => n(d)).map((d) => h("span", { class: "dirtag " + d }, `${DIRS[d][0]} ${DIRS[d][1]} ${n(d)}`))));
+      h("div", { class: "pc-count", "aria-label": "改動統計" }, ["up", "down", "adj"].filter((d) => n(d)).map((d) => h("span", { class: "dirtag " + d }, `${DIRS[d][0]} ${DIRS[d][1]} ${n(d)}`))),
+      pc.history?.length ? h("p", { class: "xs muted pc-legend" }, PCT_NOTE) : null);
     const card = (it) => h("div", { class: "pcard " + it.dir },
       pIcon(it),
       h("div", { class: "pc-txt" },
         h("div", { class: "pc-head" }, h("b", null, it.name), h("span", { class: "dirtag " + it.dir }, DIRS[it.dir][0] + " " + DIRS[it.dir][1])),
         ...(it.more?.length  // 站主 2026-11-24：同一張卡有好幾項數字時，每一項都要有舊值劃線、新值上色；11/25「275到250是增強你怎麼弄紅色的」→ 跟整張卡方向不同的那一行自己標 dir（主行用 rowDir），顏色照那一行
           ? [it, ...it.more].map((r) => h("div", { class: "pc-row" + ((r === it ? it.rowDir : r.dir) ? " r-" + (r === it ? it.rowDir : r.dir) : "") }, r.what ? h("span", { class: "small" }, r.what) : null,
-              r.from || r.to ? h("span", { class: "pc-ft" }, h("s", null, r.from), " → ", h("b", null, r.to)) : null))
+              r.from || r.to ? h("span", { class: "pc-ft" }, h("s", null, r.from), " → ", h("b", null, r.to), pctTag(r.from, r.to, (r === it ? it.rowDir : r.dir) || it.dir)) : null))
           : [h("div", { class: "small" }, it.what),
-             it.from || it.to ? h("div", { class: "pc-ft" }, h("s", null, it.from), " → ", h("b", null, it.to)) : null]),
+             it.from || it.to ? h("div", { class: "pc-ft" }, h("s", null, it.from), " → ", h("b", null, it.to), pctTag(it.from, it.to, it.rowDir || it.dir)) : null]),
         it.note ? h("div", { class: "xs muted" }, it.note) : null));
     for (const g of pc.groups) {
       const grid = h("div", { class: "pgrid2" }, g.items.map(card));
@@ -392,7 +410,7 @@
       h("div", { class: "pc-txt" },
         h("div", { class: "pc-head" }, h("b", null, it.name), h("span", { class: "dirtag " + it.dir }, DIRS[it.dir][0] + " " + DIRS[it.dir][1])),
         ...it.rows.map((r) => h("div", { class: "pc-row" }, h("span", { class: "small" }, r.what),
-          h("span", { class: "pc-ft" }, r.from ? [h("s", null, r.from), " → "] : null, h("b", null, r.to)),
+          h("span", { class: "pc-ft" }, r.from ? [h("s", null, r.from), " → "] : null, h("b", null, r.to), r.from ? pctTag(r.from, r.to, r.dir || it.dir) : null),
           r.ann ? h("span", { class: "tag i19-ann" }, r.ann) : null)),
         it.note ? h("div", { class: "xs muted" }, it.note) : null));
     const chip = (c) => h("span", { class: "i19-chip" }, c.key ? icon("item", c.key, "xs") : c.sp != null ? augIco(c.sp, 22) : null,
@@ -400,7 +418,7 @@
     const tabs = h("div", { class: "tabs i19-tabs", role: "group", "aria-label": "改動分類" }, d.tabs.map((t) =>
       h("button", { type: "button", "aria-pressed": I19.tab === t.id ? "true" : "false", onclick: () => { I19.tab = t.id; drawItems19(sec); } }, t.label)));
     const t = d.tabs.find((x) => x.id === I19.tab) || d.tabs[0];
-    const body = [h("p", { class: "pc-sum" }, d.intro)];
+    const body = [h("p", { class: "pc-sum" }, d.intro), h("p", { class: "xs muted pc-legend" }, PCT_NOTE)];
     if (d.highlights?.length) body.push(h("div", { class: "i19-hl" }, h("b", null, "重點"), h("ul", { class: "list" }, d.highlights.map((x) => h("li", null, x)))));
     body.push(tabs);
     for (const g of t.groups) {

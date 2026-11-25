@@ -844,6 +844,14 @@
   // 站主 2026-11-08：「你這種按鈕的下面都按不到，你要步那個框框就不要框到下面按不到的部分，要不就下面那邊也做成按的到」
   // → 整張卡片都按得到：主按鈕撐滿卡片高度；分支那行的空白處（不是分支按鈕）也連到這套。站主調 T 表時不動（卡片上有控制項）
   const cardClick = (id) => (O.tmode ? null : (ev) => { if (!ev.target.closest("button, a, select, input, label, textarea")) go(id); });
+  // 站主 2026-11-25「這版本有英雄專屬增幅…要有專屬增幅的圖示」：英雄增幅陣容卡片放增幅圖示（增幅圖在 S19 裝備精靈圖下面，wiki.json augments 的 sp）
+  function heroAugIco(c, S = 20) {
+    const a = c.heroAug, sp = D.itemSprite19;
+    if (!a || a.sp == null || !sp) return null;
+    const col = a.sp % sp.cols, row = Math.floor(a.sp / sp.cols);
+    return h("span", { class: "ha-ico", role: "img", "aria-label": `英雄增幅：${a.name}`, "data-tip": `英雄增幅：${a.name}`, title: `英雄增幅：${a.name}`,
+      style: `width:${S}px;height:${S}px;background-image:url(${sp.src});background-size:${sp.cols * S}px ${sp.rows * S}px;background-position:-${col * S}px -${row * S}px` });
+  }
   function tcard(c, pool) {
     const showReq = c.lane === "conditional" && c.required?.length;
     // 站主 2026-11-04：分支標「名次變動」（和主陣容比），不標評級、不標加強削弱（跟主陣容一樣，多餘）
@@ -854,7 +862,7 @@
       h("button", { class: "tc-main", type: "button", onclick: () => go(c.id) },
         icon("champion", compIcon(c), "sm"),
         h("span", { class: "tc-txt" },
-          h("span", { class: "tc-nm" }, h("span", { class: "nm" }, c.name), impArrow(c),
+          h("span", { class: "tc-nm" }, h("span", { class: "nm" }, c.name), heroAugIco(c), impArrow(c),
             c.patchImpact?.tierFrom && D.inference && c.tierSource !== "owner" ? h("span", { class: "was", title: `推測前是 ${c.patchImpact.tierFrom} 級` }, "原" + c.patchImpact.tierFrom) : null,
             c.custom ? h("span", { class: "tag todo" }, "待補資料") : null),
           r.ceil ? h("span", { class: "tc-sub" }, c.watch ? h("b", { class: "tag watch" }, "研究中") : null, lvPill("下限", r.floor), lvPill("上限", r.ceil), c.watch ? h("span", { class: "tag few" }, `樣本少：${c.watch.n} 場`) : c.freq != null ? h("span", { class: "tc-freq" }, `頻率 ${pct(c.freq)}`) : null)
@@ -880,7 +888,7 @@
       h("button", { class: "tc-main", type: "button", onclick: () => go(c.id) },
         icon("champion", compIcon(c), "sm"),
         h("span", { class: "tc-txt" },
-          h("span", { class: "tc-nm" }, h("span", { class: "nm" }, c.name)),
+          h("span", { class: "tc-nm" }, h("span", { class: "nm" }, c.name), heroAugIco(c)),
           // T 度表只用下限／上限（站主 11/4）；均名、前四率在詳細頁
           h("span", { class: "tc-sub" }, c.range?.floor ? [lvPill("下限", c.range.floor), lvPill("上限", c.range.ceil)] : null,
             h("span", { class: "tag few" }, `樣本少：${w.n} 場・${w.players} 位`), c.pbe ? h("span", { class: "tc-freq" }, `均名 ${c.pbe.avg.toFixed(1)}`) : null),
@@ -931,6 +939,7 @@
   let TB_LANE = "normal";  // T 度表目前的分頁（站主 2026-11-06：三個分區各自一頁）
   function renderTiers() {
     const root = $("#tiers"); root.textContent = "";
+    root.classList.toggle("tdrag", !!O.tmode);
     $("#tierlist > p.small")?.remove();
     const pool = tierPool();
     const ids = new Set(pool.filter((c) => !c.hidden || O.tmode).map((c) => c.id));
@@ -967,7 +976,9 @@
         grid.append(h("div", { class: "tb-tier t-" + (t === "?" ? "Q" : t), role: "rowheader" }, t === "?" ? "未分級" : t),
           h("div", { class: "tb-cell", role: "cell", "data-lane": l.id, "data-tier": t }, cs.length ? cs.map((c) => tcard(c, pool)) : h("span", { class: "tb-none", "aria-label": "沒有" }, "—")));
       }
-      const ws = watch.filter((c) => c.lane === l.id).sort((a, b) => a.watch.rank - b.watch.rank).slice(0, 4);  // 站主規格：電腦一個畫面看完一個分區 → 研究中每區只列最有希望的 4 套
+      const ws0 = watch.filter((c) => c.lane === l.id).sort((a, b) => a.watch.rank - b.watch.rank);
+      // 站主 2026-11-25：英雄增幅「很爛數據很少也要標出來」→ 不受研究中每區 4 套的限制
+      const ws = [...ws0.slice(0, 4), ...ws0.slice(4).filter((c) => c.heroAug)];  // 站主規格：電腦一個畫面看完一個分區 → 研究中每區只列最有希望的 4 套
       if (ws.length) grid.append(h("div", { class: "tb-tier t-R", role: "rowheader", id: "tier-watch-" + l.id }, "研究中"),
         h("div", { class: "tb-cell watch", role: "cell", "data-lane": l.id, "data-tier": "R" }, ws.map(wcard)));
       const panel = h("div", { class: "tb-panel", role: "tabpanel", "data-lane": l.id, id: "tbp-" + l.id },
@@ -996,7 +1007,92 @@
     }
     if (O.tmode) tabs.hidden = true;
     root.append(tabs, ...panels);
-    if (O.tmode) root.append(ownerTierBar());
+    if (O.tmode) { root.append(ownerTierBar()); tierDrag(root, pool); }
+  }
+  // 站主 2026-11-25「你直接讓我可以移動這個框框調整位置，然後你要幫我自動對齊」：站主調 T 表時卡片直接拖。
+  // 同一列拖＝換順序；拖到別的評級列／分區＝換評級／分區；放開自動排進格子（整列重新存順序）。手機長按 0.35 秒再拖。
+  const TD = { st: null, root: null, pool: null, on: false };
+  function tierDrag(root, pool) {
+    TD.root = root; TD.pool = pool;
+    if (TD.on) return; TD.on = true;
+    const cells = () => [...TD.root.querySelectorAll(".tb-cell[data-tier]")].filter((x) => x.dataset.tier !== "R");
+    const slotAt = (x, y) => {
+      const cell = cells().find((c) => { const r = c.getBoundingClientRect(); return x >= r.left - 4 && x <= r.right + 4 && y >= r.top - 8 && y <= r.bottom + 8; });
+      if (!cell) return null;
+      const cards = [...cell.querySelectorAll(":scope > .tc:not(.tc-ph)")];
+      let i = cards.length;
+      for (let k = 0; k < cards.length; k++) {
+        const r = cards[k].getBoundingClientRect();
+        if (y < r.top || (y <= r.bottom && x < r.left + r.width / 2)) { i = k; break; }
+      }
+      return { cell, ref: cards[i] || null };
+    };
+    const start = (st, x, y) => {
+      st.moved = true;
+      const el = st.el, r = el.getBoundingClientRect();
+      st.ph = h("div", { class: "tc tc-ph", style: `height:${r.height}px` });
+      el.after(st.ph);
+      el.classList.add("tc-drag"); el.style.width = r.width + "px"; el.style.left = x - st.dx + "px"; el.style.top = y - st.dy + "px";
+      document.body.append(el); document.body.classList.add("tdragging");
+    };
+    document.addEventListener("pointerdown", (ev) => {
+      const el = ev.target.closest?.(".tdrag .tb-cell > .tc");
+      if (!O.tmode || TD.busy || !el || el.classList.contains("tc-ph") || (ev.pointerType === "mouse" && ev.button !== 0)) return;
+      const btn = ev.target.closest("button"); if (btn && !btn.classList.contains("tc-main")) return;   // 卡片主體（tc-main）可以拖，其他按鈕照常按
+      if (ev.target.closest("a, select, input, label, textarea, .tc-own")) return;
+      const r = el.getBoundingClientRect();
+      TD.st = { el, id: el.dataset.id, cell0: el.parentElement, order0: [...el.parentElement.querySelectorAll(":scope > .tc")].map((x) => x.dataset.id), x0: ev.clientX, y0: ev.clientY, dx: ev.clientX - r.left, dy: ev.clientY - r.top, pid: ev.pointerId, moved: false, touch: ev.pointerType === "touch", armed: ev.pointerType !== "touch" };
+      if (TD.st.touch) { const s0 = TD.st; s0.timer = setTimeout(() => { if (TD.st === s0) { s0.armed = true; navigator.vibrate?.(15); start(s0, s0.x0, s0.y0); } }, 350); }
+    });
+    document.addEventListener("click", (ev) => { if (TD.noClick && Date.now() - TD.noClick < 400) { ev.preventDefault(); ev.stopPropagation(); TD.noClick = 0; } }, true);
+    document.addEventListener("dragstart", (ev) => { if (TD.st) ev.preventDefault(); });   // 圖片的原生拖曳會中斷（Fable 5.2 檢查）
+    document.addEventListener("contextmenu", (ev) => { if (TD.st) ev.preventDefault(); });
+    document.addEventListener("touchmove", (ev) => { if (TD.st?.moved) ev.preventDefault(); }, { passive: false });
+    document.addEventListener("pointermove", (ev) => {
+      const st = TD.st; if (!st || ev.pointerId !== st.pid) return;
+      if (!st.moved) {
+        if (Math.hypot(ev.clientX - st.x0, ev.clientY - st.y0) < 6) return;
+        if (!st.armed) { clearTimeout(st.timer); TD.st = null; return; }   // 手機：還沒長按就滑＝捲動頁面
+        start(st, ev.clientX, ev.clientY);
+      }
+      ev.preventDefault();
+      st.el.style.left = ev.clientX - st.dx + "px"; st.el.style.top = ev.clientY - st.dy + "px";
+      const s = slotAt(ev.clientX, ev.clientY);
+      if (s) { s.cell.querySelector(":scope > .tb-none")?.remove(); s.ref ? s.ref.before(st.ph) : s.cell.append(st.ph); }
+      if (ev.clientY < 70) scrollBy(0, -14); else if (ev.clientY > innerHeight - 70) scrollBy(0, 14);
+    }, { passive: false });
+    const end = async (ev) => {
+      const st = TD.st; if (!st || ev.pointerId !== st.pid) return;
+      TD.st = null; clearTimeout(st.timer);
+      if (!st.moved) return;
+      TD.noClick = Date.now();   // 放開時那一下 click 不要當成點進陣容
+      document.body.classList.remove("tdragging");
+      st.el.classList.remove("tc-drag"); st.el.style.cssText = "";
+      const cell = st.ph.parentElement; st.ph.replaceWith(st.el);
+      if (ev.type === "pointercancel" || !cell) { renderTiers(); return; }
+      const lane = cell.dataset.lane, tier = cell.dataset.tier, pool = TD.pool;
+      const me = pool.find((x) => x.id === st.id); if (!me) { renderTiers(); return; }
+      const order = [...cell.querySelectorAll(":scope > .tc")].map((x) => x.dataset.id);
+      // 放回原位＝不存；有評級的卡丟進「未分級」列＝彈回不存（Fable 5.2 檢查）
+      if (cell === st.cell0 && order.join() === st.order0.join()) { renderTiers(); return; }
+      if (tier === "?" && st.cell0.dataset.tier !== "?") { renderTiers(); ownerNotice("「未分級」不能拖進去；要拿掉評級請用卡片下面的選單或「恢復成 Claude 算的」。"); return; }
+      // 隱藏的卡：同一列只換順序，拖到別的評級列才算換評級（會變回公開）
+      const tierChg = tier !== "?" && cell !== st.cell0 && tier !== st.cell0.dataset.tier || (!me.hidden && tier !== "?" && tier !== me.tier), laneChg = lane && lane !== me.lane;
+      TD.busy = true;
+      try {
+        await Promise.all(order.map((id, k) => {
+          const x = pool.find((y) => y.id === id); if (!x) return null;
+          const patch = { order: k };
+          if (id === st.id) { if (tierChg) patch.tier = tier; if (laneChg) patch.lane = lane; }
+          if (!x.custom && (x.ownerOrder ?? 999) === k && Object.keys(patch).length === 1) return null;
+          return x.custom ? saveCustom({ ...O.custom.find((y) => y.id === id), ...patch }) : saveTier(id, patch);
+        }));
+        renderTiers();
+        ownerNotice(tierChg || laneChg ? `已把「${me.name}」移到${laneChg ? uiStr(`lane.${lane}`, (LANES.find((l) => l.id === lane) || {}).label || lane) + " " : ""}${tierChg ? tier + " 級" : ""}，順序已對齊。` : "已調整順序。");
+      } catch (e) { renderTiers(); ownerNotice("儲存失敗：" + (e?.message || "請再試一次")); }
+      finally { TD.busy = false; }
+    };
+    document.addEventListener("pointerup", end); document.addEventListener("pointercancel", end);
   }
 
   /* ---------- 隨手速查 ---------- */
@@ -2353,6 +2449,7 @@
             : c.status === "branch" && c.branchOf ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag watch" }, "加分版面"), h("span", { class: "small muted" }, "不另外評級；評級看"), h("a", { class: "small", href: "#" + slug(c.branchOf) }, nameOf(c.branchOf)))
             : h("div", { class: "small muted" }, c.status === "custom" ? "站主新增，待補資料" : "研究中，尚無合資格數據"),
           c.lane === "conditional" && reqHasEmblem(c.required) && c.status !== "branch" ? h("div", { class: "dreq" }, h("b", null, "需要"), reqIcons(c.required.filter((x) => x.type === "emblem")), h("span", { class: "small muted" }, reqText(c.required))) : null,
+          c.heroAug ? h("div", { class: "dreq" }, h("b", null, "英雄增幅"), heroAugIco(c, 28), h("span", { class: "small muted" }, c.heroAug.name + (c.heroAug.desc ? "：" + c.heroAug.desc : ""))) : null,
           c.status === "ready" || c.status === "branch" || c.variantKind === "formula" ? dStats(c) : c.watch ? dStats(c, true) : null)));
     if (c.status === "custom") {
       v.append(h("div", { class: "notice", style: "margin-top:16px" }, h("b", null, "站主手動加的陣容"),

@@ -914,7 +914,7 @@
         onclick: () => { EP_ST = s.id; track("early", s.id); draw(); } }, s.label, h("span", { class: "xs" }, s.sub)))));
       const bl = h("ol", { class: "ep-bl" }, st.boards.length ? st.boards.map((b, i) => h("li", { class: "ep-b" },
         h("span", { class: "ep-rk" }, i + 1),
-        h("span", { class: "ep-u" }, b.u.map(([k, s]) => unitIco(k, s)),
+        h("span", { class: "ep-u" }, [...b.u].sort((x, y) => (y[1] || 1) - (x[1] || 1)).map(([k, s]) => unitIco(k, s)),   // 站主 2026-11-25「你二星的要放前面」
           b.with?.length ? h("span", { class: "ep-w", "data-tip": "常一起上場：" + b.with.map(([k, f]) => `${champName(k)} ${pc(f)}`).join("、") }, h("span", { class: "ep-plus", "aria-hidden": "true" }, "＋"), b.with.map(([k]) => icon("champion", k, "xs"))) : null),
         h("span", { class: "ep-s" }, h("b", { class: b.wr >= st.avgWr ? "good" : "bad" }, pc(b.wr)), h("span", null, `名次 ${b.avg.toFixed(2)}`), h("span", null, `${b.n} 場`))))
         : h("li", { class: "empty" }, "這個階段還沒有場數夠的版面。"));

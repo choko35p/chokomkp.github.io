@@ -315,8 +315,8 @@
       pIcon(it),
       h("div", { class: "pc-txt" },
         h("div", { class: "pc-head" }, h("b", null, it.name), h("span", { class: "dirtag " + it.dir }, DIRS[it.dir][0] + " " + DIRS[it.dir][1])),
-        ...(it.more?.length  // 站主 2026-11-24：同一張卡有好幾項數字時，每一項都要有舊值劃線、新值上色
-          ? [it, ...it.more].map((r) => h("div", { class: "pc-row" }, r.what ? h("span", { class: "small" }, r.what) : null,
+        ...(it.more?.length  // 站主 2026-11-24：同一張卡有好幾項數字時，每一項都要有舊值劃線、新值上色；11/25「275到250是增強你怎麼弄紅色的」→ 跟整張卡方向不同的那一行自己標 dir（主行用 rowDir），顏色照那一行
+          ? [it, ...it.more].map((r) => h("div", { class: "pc-row" + ((r === it ? it.rowDir : r.dir) ? " r-" + (r === it ? it.rowDir : r.dir) : "") }, r.what ? h("span", { class: "small" }, r.what) : null,
               r.from || r.to ? h("span", { class: "pc-ft" }, h("s", null, r.from), " → ", h("b", null, r.to)) : null))
           : [h("div", { class: "small" }, it.what),
              it.from || it.to ? h("div", { class: "pc-ft" }, h("s", null, it.from), " → ", h("b", null, it.to)) : null]),

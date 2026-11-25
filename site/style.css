@@ -1570,3 +1570,8 @@ body.tdragging,body.tdragging *{user-select:none;-webkit-user-select:none;cursor
 /* 站主 2026-11-25「你這圖片有高有低」：前期過渡排行的頭像，一星沒有星星那行會塌掉 → 星星那行固定高度、整排底部對齊 */
 .ep-u{align-items:flex-end}
 .ep-u .cu .stars{display:block;height:.85rem;line-height:.85rem}
+
+/* 站主 2026-11-25「275到250是增強你怎麼弄紅色的」：改動一覽同一張卡裡，方向跟整張卡不同的那一行照自己的方向上色 */
+.pcard .pc-row.r-up .pc-ft b{color:#1f6b35}.pcard .pc-row.r-down .pc-ft b{color:#9a3226}.pcard .pc-row.r-adj .pc-ft b{color:#7a5a12}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .pcard .pc-row.r-up .pc-ft b{color:#9fe0b0}:root:not([data-theme="light"]) .pcard .pc-row.r-down .pc-ft b{color:#ffb3a8}:root:not([data-theme="light"]) .pcard .pc-row.r-adj .pc-ft b{color:#f0d58a}}
+:root[data-theme="dark"] .pcard .pc-row.r-up .pc-ft b{color:#9fe0b0}:root[data-theme="dark"] .pcard .pc-row.r-down .pc-ft b{color:#ffb3a8}:root[data-theme="dark"] .pcard .pc-row.r-adj .pc-ft b{color:#f0d58a}

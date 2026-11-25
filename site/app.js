@@ -3257,10 +3257,56 @@
      Claude 收不到（對話沒連上）時要求留在資料庫，Claude 下次在對話裡做任何事之前會先查這裡、照這筆更新。 */
   // 2026-11-18：別的工作把 summary 寫成一整段文字，.slice().map 出錯，站主工具整個載不出來。文字或清單都接受。
   const relSum = (r) => (Array.isArray(r?.summary) ? r.summary : r?.summary ? [r.summary] : []).filter(Boolean).map(String);
+  /* 站主 2026-11-26：「想辦法改到我按下去就能開始更新到正式網站」
+     以前按鈕只能留言通知「最後發布預覽站的那個對話」，那個對話常常叫不醒或沒有正式站的權限。
+     現在按下確定：先在 releases/ 記一筆要求，再直接啟動「按鈕更新正式站」這個工作（Claude Code Remote 的 fire_trigger，用站主自己的登入，頁面裡沒有任何金鑰）。
+     那個工作自己接權限、上線，把這筆改成 processing → done／failed 並寫 summary；這裡每 30 秒看一次，不用重新整理。
+     啟動不了（沒按允許、連不上）才退回舊方式（留言通知 Claude）。 */
+  const REL_TRIGGER = "trig_01YNQJhGFnCdH4qkKNiAm2h2", REL_SERVER = "Claude Code Remote";
+  const REL_WHY = { no_mcp: "這個畫面沒辦法啟動更新工作", not_in_manifest: "你沒有允許這個頁面啟動更新工作", approval_required: "跳出來的詢問沒有按允許", consent_required: "跳出來的詢問沒有按允許",
+    not_granted: "這個畫面沒有啟動更新工作的權限", server_not_connected: "Claude 的排程功能沒連上", needs_reauth: "Claude 的排程功能要重新登入", selection_required: "Claude 的排程功能有兩個同名的，要先選一個",
+    blocked_by_policy: "帳號設定擋住了", tool_error: "更新工作回報錯誤", server_unavailable: "Claude 那邊暫時連不上", upstream_error: "Claude 那邊暫時連不上" };
+  async function fireRelease(id) {
+    let mcp = null;
+    try { mcp = await window.claude.use("mcp"); } catch { mcp = null; }
+    if (!mcp) return { ok: false, code: "no_mcp" };
+    const call = () => mcp.callTool(REL_SERVER, "fire_trigger", { trigger_id: REL_TRIGGER, text: `站主剛在預覽站按了「更新到正式站」（要求 ${id}）。` });
+    try { await call(); return { ok: true }; }
+    catch (e) {
+      // 只有「詢問還沒問到就被擋掉」這種（retryable，工作還沒啟動）才再試一次
+      if (e?.retryable && e?.code === "upstream_error") {
+        await new Promise((r) => setTimeout(r, Math.min(e.retryAfterMs || 2000, 8000)));
+        try { await call(); return { ok: true }; } catch (e2) { return { ok: false, code: String(e2?.code || "upstream_error") }; }
+      }
+      return { ok: false, code: String(e?.code || "upstream_error") };
+    }
+  }
+  const relLive = (x) => x && (x.status === "requested" || x.status === "processing");
+  const relSig = (rs) => (rs || []).slice(0, 8).map((x) => x.id + ":" + x.status).join("|");
+  let relTimer = null;
+  function relPoll() {
+    if (relTimer || !O.db) return;
+    const t0 = Date.now();
+    relTimer = setInterval(async () => {
+      if (!(O.releases || []).some(relLive) || Date.now() - t0 > 45 * 60000) { clearInterval(relTimer); relTimer = null; return; }
+      if (document.hidden) return;
+      try {
+        const rel = await O.db.collection("releases").get();
+        const rs = (rel.docs || []).map((d) => d.data()).filter((x) => x?.at).sort((a, b) => (b.at > a.at ? 1 : -1));
+        if (rs.length && relSig(rs) !== relSig(O.releases)) { O.releases = rs; if (!O.relAsk && !O.relBusy) ownerPanel(); }
+      } catch { /* 這次讀不到，下次再看 */ }
+    }, 30000);
+  }
   function releaseBox() {
     const rs = O.releases || [];
     const done = rs.find((x) => x.status === "done");
-    const pending = rs.filter((x) => x.status === "requested" && (!done || x.at > (done.doneAt || done.at)));
+    const after = (x) => !done || x.at > (done.doneAt || done.at);
+    const pending = rs.filter((x) => relLive(x) && after(x));
+    const failed = rs.find((x) => x.status === "failed" && after(x) && !pending.some((p) => p.at > x.at));
+    const p0 = pending[0];
+    // 更新工作已經啟動、25 分鐘內：按鈕先鎖著，免得連按開出好幾個工作
+    const running = !!p0 && (p0.status === "processing" || p0.fired) && Date.now() - Date.parse(p0.claimedAt || p0.at) < 25 * 60000;
+    if (pending.length) relPoll();
     const send = async (ev) => {
       const anchorEl = ev.currentTarget.closest(".rel-box") || ev.currentTarget;
       O.relAsk = false; O.relBusy = true; ownerPanel();
@@ -3268,29 +3314,42 @@
       const req = { id, at, status: "requested", where: location.hash || "#home" };
       try { await O.db.doc("releases/" + id).set(req); O.releases = [req, ...rs]; }
       catch (err) { O.relBusy = false; ownerPanel(); ownerNotice("送出失敗：" + (err?.message || "請再試一次")); return; }
+      const fr = await fireRelease(id);
+      const more = { fired: fr.ok };
+      if (!fr.ok) more.fireErr = fr.code;
       let sent = false;
-      try {
-        const cm = await window.claude.use("comments");
-        if (cm && (await cm.canSendToClaude().catch(() => "off")) === "available") {
-          const anchor = await cm.anchorFor(document.body.contains(anchorEl) ? anchorEl : document.body);
-          await cm.sendToClaude({ anchor, text: `【站主按鈕】更新正式站（要求 ${id}）：請把預覽站的修改同步並更新到正式站 chokomkp.com。結果寫在按鈕下面和對話裡，不要回在留言。` });
-          sent = true;
-        }
-      } catch { sent = false; }
-      req.sent = sent;
-      try { await O.db.doc("releases/" + id).set(req); } catch { /* 記不到也沒關係，要求本身已經存了 */ }
+      if (!fr.ok) {
+        try {
+          const cm = await window.claude.use("comments");
+          if (cm && (await cm.canSendToClaude().catch(() => "off")) === "available") {
+            const anchor = await cm.anchorFor(document.body.contains(anchorEl) ? anchorEl : document.body);
+            await cm.sendToClaude({ anchor, text: `【站主按鈕】更新正式站（要求 ${id}）：請把預覽站的修改同步並更新到正式站 chokomkp.com。結果寫在按鈕下面和對話裡，不要回在留言。` });
+            sent = true;
+          }
+        } catch { sent = false; }
+      }
+      more.sent = sent;
+      Object.assign(req, more);
+      // 只補這幾個欄位（update），不整筆重寫：更新工作可能已經把 status 改成 processing 了
+      try { await O.db.doc("releases/" + id).update(more); } catch { /* 記不到也沒關係，要求本身已經存了 */ }
       O.relBusy = false; ownerPanel();
-      ownerNotice(sent ? "已自動通知 Claude 更新正式站，好了這裡會顯示時間和更新了什麼。"
-        : "已記下更新要求，但 Claude 現在收不到（對話沒連上）。Claude 下次在對話裡動工前會先照這筆更新。");
+      ownerNotice(fr.ok ? "已經開始更新正式站，通常 10～20 分鐘。好了這裡會顯示時間和更新了什麼。"
+        : sent ? `更新工作沒啟動成功（${REL_WHY[fr.code] || fr.code}），已改用舊方式通知 Claude。`
+        : `已記下更新要求，但更新工作沒啟動成功（${REL_WHY[fr.code] || fr.code}）。再按一次試試。`);
     };
+    const waitText = !p0 ? "" : p0.status === "processing" ? `更新中（${fmtTime(p0.claimedAt || p0.at)} 開始），好了這裡會顯示。`
+      : p0.fired ? `已經開始更新（${fmtTime(p0.at)} 按的），通常 10～20 分鐘上線，好了這裡會顯示。`
+      : p0.sent ? `更新工作沒啟動成功（${REL_WHY[p0.fireErr] || p0.fireErr || "原因不明"}），已改用舊方式通知 Claude（${fmtTime(p0.at)}）。`
+      : p0.fireErr ? `已記下更新要求（${fmtTime(p0.at)}），但更新工作沒啟動成功（${REL_WHY[p0.fireErr] || p0.fireErr}）。再按一次試試。`
+      : `已記下更新要求（${fmtTime(p0.at)}）；Claude 當時收不到，再按一次就會直接開始更新。`;
     return h("div", { class: "rel-box" },
       O.relAsk ? [h("p", { class: "xs rel-q" }, "把預覽站的修改（文字、棋盤、T 表）更新到正式站？"),
         h("div", { class: "row" }, h("button", { class: "btn", type: "button", onclick: send }, "確定更新"),
           h("button", { class: "btn ghost", type: "button", onclick: () => { O.relAsk = false; ownerPanel(); } }, "取消"))]
-        : h("button", { class: "btn ghost", type: "button", disabled: O.relBusy || null, onclick: () => { O.relAsk = true; ownerPanel(); } }, O.relBusy ? "送出中…" : "⇪ 更新到正式站"),
-      pending.length ? h("p", { class: "xs rel-st rel-wait", role: "status" }, pending[0].sent === false
-        ? `已記下更新要求（${fmtTime(pending[0].at)}）；Claude 當時收不到，下次動工前會先處理。`
-        : `已通知 Claude 更新（${fmtTime(pending[0].at)}），處理中。`) : null,
+        : h("button", { class: "btn ghost", type: "button", disabled: O.relBusy || running || null, onclick: () => { O.relAsk = true; ownerPanel(); } }, O.relBusy ? "送出中…" : running ? "更新中…" : "⇪ 更新到正式站"),
+      p0 ? h("p", { class: "xs rel-st rel-wait", role: "status" }, waitText) : null,
+      failed ? h("div", { class: "xs rel-st rel-wait", role: "status" }, `${fmtTime(failed.failedAt || failed.at)} 那次沒上線。`,
+        relSum(failed).length ? h("ul", { class: "rel-sum" }, relSum(failed).slice(0, 4).map((t) => h("li", null, t))) : null) : null,
       // 站主 11/20「你擋到我了」：上線內容預設收起來，只留一行時間；點了才展開
       done ? (relSum(done).length
         ? h("details", { class: "xs muted rel-st rel-det", role: "status", open: O.relOpen || null, ontoggle: (e) => { O.relOpen = e.target.open; } },

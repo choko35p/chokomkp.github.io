@@ -1599,3 +1599,6 @@ button.bias-tok[aria-pressed="true"] { border-style: solid; background: var(--ac
 .fx-give .give-more input { width: 100%; }
 .fx-give .give-list { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; max-height: 14rem; overflow: auto; }
 .fx-give .give-cost { width: 100%; margin-top: 2px; }
+
+/* 站主 2026-11-26 輸出推薦最多 5 隻：手機上頭像縮小，盡量一排放得下 */
+@media (max-width: 480px) { .tabs.hero-tabs { gap: .3rem; } .tabs.hero-tabs .htab { padding: 2px; } .tabs.hero-tabs .htab .ico.sm { width: 1.9rem; } }

@@ -2168,7 +2168,7 @@
       const hero = heroes.find((x) => x.key === st.hero) || heroes[0];
       // 站主 2026-11-09：「標籤不要用文字要用圖」→ 頭像＋角標（劍＝輸出、盾＝坦；角標數字＝第幾隻），輸出在左、坦在右；名字和角色放在滑過提示與讀屏
       const tabOf = (x) => {
-        const tank = /坦/.test(x.role), rank = { 主C: 1, 副C: 2, 第二副C: 3, 主坦: 1, 副坦: 2, 第三坦: 3 }[x.role];
+        const tank = /坦/.test(x.role), rank = { 主C: 1, 副C: 2, 第二副C: 3, 第三副C: 4, 第四副C: 5, 主坦: 1, 副坦: 2, 第三坦: 3 }[x.role];
         const label = `${champName(x.key)}・${x.role}`;
         return h("button", { type: "button", role: "tab", class: "htab " + (tank ? "tank" : "carry") + (x.role === "可換主C" ? " alt" : ""), title: label, "aria-label": label,
           "aria-selected": x.key === hero.key ? "true" : "false", onclick: () => { st.hero = x.key; st.sel = []; st.msg = ""; draw(); } },

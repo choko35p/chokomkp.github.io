@@ -76,7 +76,10 @@
     return h(o.tag || "span", { class: "tbg t-" + (n == null ? "plain" : trTier(k, n)) + (o.cls ? " " + o.cls : ""), "data-tip": tip, "aria-label": tip, "data-trait": k, "data-tn": n == null ? "" : String(n),
       ...(o.tag === "button" ? { type: "button", onclick: o.onclick } : { tabindex: "0", role: "img" }) },
       h("span", { class: "tbg-hex", "aria-hidden": "true" }, ico || h("i", { class: "tbg-txt" }, traitName(k).slice(0, 1))), n == null ? null : h("b", { "aria-hidden": "true" }, n)); };
-  const traitBadges = (list, o = {}) => h("span", { class: "tbgs" + (o.cls ? " " + o.cls : "") }, list.map((t) => traitBadge(t.k, t.n, { px: o.px })));
+  // 站主 2026-11-26「這種金色幾乎出現在五費的專屬的羈絆要排在最前面」：只有一個斷點、一隻就開的專屬羈絆（金色 1）一律排最前面，其他照原本順序
+  const uniqTr = (t) => { const bp = TR[t.k]?.breakpoints || []; return bp.length === 1 && t.n != null && t.n >= bp[0]; };
+  const uniqFirst = (list) => [...list.filter(uniqTr), ...list.filter((t) => !uniqTr(t))];
+  const traitBadges = (list, o = {}) => h("span", { class: "tbgs" + (o.cls ? " " + o.cls : "") }, uniqFirst(list).map((t) => traitBadge(t.k, t.n, { px: o.px })));
   const activeTraits = (counts) => Object.entries(counts).map(([k, n]) => ({ k, n })).filter((t) => (TR[t.k]?.breakpoints || []).some((x) => x <= t.n))
     .sort((a, b) => ({ prism: 4, gold: 3, silver: 2, bronze: 1, off: 0 }[trTier(b.k, b.n)] - { prism: 4, gold: 3, silver: 2, bronze: 1, off: 0 }[trTier(a.k, a.n)]) || b.n - a.n);
   // 羈絆浮動提示的完整效果（站主 2026-11-22）：小百科的 wiki.json 還沒載入時先顯示名稱和斷點，載入後自動換成完整效果
@@ -1318,7 +1321,8 @@
       else if (add.length || rem.length) out.push({ level: lv, add, rem, after: pc ? { level: prev, pick: pc.pick } : null });
       prev = lv;
     }
-    for (const lv of lvs.filter((x) => x < M).reverse()) {
+    // 站主 2026-11-26「95不需要8等的這些東西」：主圖 9 等（九等五費）不列「還沒到 9 等時先放」
+    for (const lv of lvs.filter((x) => x < M && M < 9).reverse()) {
       const a = keysOf(boards["lv" + M]), b = keysOf(boards["lv" + lv]);
       const early = msDiffU(champsOnly(boards["lv" + lv]?.units), a), later = msDiff(a, b);
       if (early.length) out.push({ level: lv, early, later, below: true });
@@ -1359,13 +1363,11 @@
     if (ed) for (const lv of ed.flexLevels) if (!fx.some(([l]) => l === lv)) fx.push([lv, []]);
     fx.sort((a, b) => a[0] - b[0]);
     const upLvs = ed ? ed.stepLevels : [];
-    const tn = S19 ? c.tankNote : null;
-    if (!steps.length && !fx.some(([, xs]) => xs.length) && !ed && !tn) return null;
+    const gv = S19 ? giveArea(c, M, boards) : null;
+    if (!steps.length && !fx.some(([, xs]) => xs.length) && !ed && !gv) return null;
     const box = h("aside", { class: "fxpanel" + (ed ? " editing" : ""), "aria-label": "升等要補與可以替換" });
     // 站主 2026-11-22「如果會有兩個主坦的可能那就在旁邊標明，誰三星誰帶坦裝或是四費誰二星誰帶坦裝」（tools/s19_itemsets.py 從實戰算）
-    if (tn) box.append(h("div", { class: "fx-tank" }, h("p", { class: "fx-h" }, "坦裝給誰"),
-      h("div", { class: "fx-units" }, fhex(tn.main, { name: true }), h("span", { class: "fx-or", "aria-hidden": "true" }, "或"), fhex(tn.alt, { name: true })),
-      h("p", { class: "small fx-tank-t" }, tn.text)));
+    if (gv) box.append(gv);
     const isSel = (k) => ed?.sel && ed.sel.kind === k.kind && ed.sel.lv === k.lv && ed.sel.key === k.key && ed.sel.i === k.i;
     const pickOf = (k) => (ed ? () => ed.select(isSel(k) ? null : k) : null);
     const ctxOf = (k) => (ed?.ctx ? (i) => ed.ctx(k, i) : null);
@@ -1373,9 +1375,16 @@
     const stepUnits = (s, lv) => s.add.map((u) => fhex(u.key, { badge: lv, items: u.items, star: u.star, onPick: pickOf({ kind: "step", lv, key: u.key }), onCtx: ctxOf({ kind: "step", lv, key: u.key }), sel: isSel({ kind: "step", lv, key: u.key }) }));
     const stepSel = (lv, us) => us.map((u) => selBox({ kind: "step", lv, key: u.key })).find(Boolean) || null;
     // 站主 2026-11-10 截圖「你旁邊的不能改」：「拿掉」的那幾隻、還沒到主圖等級時先放的，站主編輯時也都可以點
-    const remRow = (keys, lv) => (ed ? h("span", { class: "fx-minis" }, keys.map((k) => h("button", { type: "button", class: "fx-mini pick" + (isSel({ kind: "rem", lv, key: k }) ? " sel" : ""),
-      "aria-pressed": isSel({ kind: "rem", lv, key: k }) ? "true" : "false", title: `${champName(k)}（${lv} 等拿掉；點一下可以放回來）`, onclick: pickOf({ kind: "rem", lv, key: k }) }, icon("champion", k, "xs"), champName(k))))
-      : miniRow(keys));
+    // 站主 2026-11-26「我右鍵這邊也要讓他能取消阿」：右鍵（手機長按）「拿掉」裡的棋子＝取消拿掉（直接放回來，跟按「放回來」一樣）
+    const remBtn = (k, lv) => {
+      let ctxAt = 0;
+      const b = h("button", { type: "button", class: "fx-mini pick" + (isSel({ kind: "rem", lv, key: k }) ? " sel" : ""),
+        "aria-pressed": isSel({ kind: "rem", lv, key: k }) ? "true" : "false", title: `${champName(k)}（${lv} 等拿掉；點一下或右鍵可以放回來）`,
+        onclick: (ev) => { if (Date.now() - ctxAt < 700) return; pickOf({ kind: "rem", lv, key: k })(ev); } }, icon("champion", k, "xs"), champName(k));
+      if (ed?.ctx) b.addEventListener("contextmenu", (ev) => { ev.preventDefault(); ctxAt = Date.now(); ed.ctx({ kind: "rem", lv, key: k }, -1); });
+      return b;
+    };
+    const remRow = (keys, lv) => (ed ? h("span", { class: "fx-minis" }, keys.map((k) => remBtn(k, lv))) : miniRow(keys));
     const remSel = (lv, keys) => keys.map((k) => selBox({ kind: "rem", lv, key: k })).find(Boolean) || null;
     const stepBtns = (lv) => (ed ? [h("button", { class: "chip add fx-add", type: "button", onclick: () => ed.addStep(lv) }, "＋ 加棋子"),
       ed.swapStep ? h("button", { class: "chip add fx-add fx-swap", type: "button", onclick: () => ed.swapStep(lv) }, "⇄ 換棋子") : null] : null);
@@ -1445,7 +1454,7 @@
       }
       box.append(h("p", { class: "xs muted fx-note" }, "「可以替換」是高手同等級的終局棋盤裡，和這張圖比最常見的換法；名次是換了之後平均名次的變化（負的＝比較好）。頭像下面是推薦裝備。"));
     }
-    if (ed) box.append(h("p", { class: "xs muted fx-note" }, "站主編輯：點旁邊的頭像可以改裝備或拿掉；右鍵（手機長按）點頭像＝直接拿掉，點頭像下面的裝備小圖＝只拿掉那一件；點「拿掉」那排的棋子可以放回來；「＋ 加棋子」加在那個等級（更高等級也會一起加；還沒到主圖等級的只改那一等）；「⇄ 換棋子」把那一等場上的棋子換掉或拿掉（更高等級也會一起換）。改完按棋盤下面的「儲存棋盤」。"));
+    if (ed) box.append(h("p", { class: "xs muted fx-note" }, "站主編輯：點旁邊的頭像可以改裝備或拿掉；右鍵（手機長按）點頭像＝直接拿掉，點頭像下面的裝備小圖＝只拿掉那一件；點或右鍵「拿掉」那排的棋子可以放回來；「＋ 加棋子」加在那個等級（更高等級也會一起加；還沒到主圖等級的只改那一等）；「⇄ 換棋子」把那一等場上的棋子換掉或拿掉（更高等級也會一起換）。改完按棋盤下面的「儲存棋盤」。"));
     return box;
   }
   function boardTitle(c, M) {
@@ -1887,6 +1896,32 @@
           h("b", null, i === 1 ? "①" : "②"), k ? icon("champion", k, "sm") : h("span", { class: "xs muted" }, "未定")));
       }
       if (!(O.on && O.db)) return;
+      // 站主 2026-11-26「心剛本命給我一的標誌裝上去棋子不是這樣選在旁邊」：①②是標誌，拖到盤上的棋子（或點一下再點棋子）就裝上去
+      for (let i = 1; i <= slots; i++) {
+        const armed = O.biasArm?.cid === c.id && O.biasArm.i === i;
+        const tok = h("button", { type: "button", class: "bias-tok", "aria-pressed": armed ? "true" : "false",
+          title: `把本命${i === 1 ? "一" : "二"}的標誌拖到盤上的心鋼棋子（或點一下再點棋子）`,
+          onclick: () => { O.biasArm = armed ? null : { cid: c.id, i }; paint(); if (!armed) ownerNotice(`點盤上的心鋼棋子，把${i === 1 ? "①" : "②"}裝上去。`); } }, i === 1 ? "①" : "②");
+        tok.addEventListener("pointerdown", (ev) => {
+          if (ev.pointerType === "touch" || ev.button > 0) return;
+          const sx = ev.clientX, sy = ev.clientY; let ghost = null;
+          const mv = (e) => { if (!ghost && Math.hypot(e.clientX - sx, e.clientY - sy) > 8) { ghost = h("span", { class: "dk-ghost bias-b" }, i === 1 ? "①" : "②"); document.body.append(ghost); }
+            if (ghost) { e.preventDefault(); ghost.style.left = e.clientX - 10 + "px"; ghost.style.top = e.clientY - 10 + "px"; } };
+          const up = (e) => {
+            window.removeEventListener("pointermove", mv); window.removeEventListener("pointerup", up);
+            if (!ghost) return; ghost.remove();
+            const cell = document.elementFromPoint(e.clientX, e.clientY)?.closest(".board.edit .hex.has");
+            const k = cell && biasAt?.(c, +cell.dataset.r, +cell.dataset.c);
+            if (k === undefined) return;
+            if (!k || !mems.includes(k)) { ownerNotice("本命只能裝在心鋼的棋子上。"); return; }
+            O.biasArm = null; saveBias(c, i, k, slots);
+          };
+          window.addEventListener("pointermove", mv); window.addEventListener("pointerup", up);
+        });
+        box.append(tok);
+      }
+      if (cur.b1 || cur.b2) box.append(h("button", { type: "button", class: "btn sm ghost", onclick: () => { O.biasArm = null; saveBias(c, 1, null, slots, true); } }, "清掉本命"));
+      return;
       const save = async (i, k) => {
         const now = bias19(c), nb = { b1: now.b1 || null, b2: now.b2 || null }; nb["b" + i] = k;
         if (nb.b1 && nb.b1 === nb.b2) nb["b" + (i === 1 ? 2 : 1)] = null;   // 同一隻不能兩個都選
@@ -1900,6 +1935,75 @@
         cur["b" + i] ? h("button", { type: "button", class: "btn sm ghost", onclick: () => save(i, null) }, "清掉") : null));
     };
     paint(); return box;
+  }
+  // 本命存檔（①② 標誌裝到棋子上時呼叫）；all＝兩個都清掉
+  let biasAt = null;   // 棋盤編輯器設定：(c, r, col) → 那格棋子的 key（沒有棋子回 null）
+  async function saveBias(c, i, k, slots = 2, all = false) {
+    const now = bias19(c), nb = all ? { b1: null, b2: null } : { b1: now.b1 || null, b2: now.b2 || null };
+    if (!all) { nb["b" + i] = k; if (k && nb.b1 === nb.b2) nb["b" + (i === 1 ? 2 : 1)] = null; }
+    if (slots < 2) nb.b2 = null;
+    const key = "bias19:" + c.id, empty = !nb.b1 && !nb.b2;
+    const doc = empty ? null : { key, b1: nb.b1, b2: nb.b2, before: "", after: `${nb.b1 || ""},${nb.b2 || ""}`, note: "S19 心鋼本命", at: new Date().toISOString(), where: location.hash || "#home" };
+    try { if (doc) await O.db.doc("edits/" + docId(key)).set(doc); else await O.db.doc("edits/" + docId(key)).delete(); O.edits[key] = doc;
+      ownerNotice(doc ? `${k ? champName(k) + "裝上" + (i === 1 ? "①" : "②") + "，" : ""}本命已儲存，下次更新正式站會一起上線。` : "本命已清掉。"); rerender(); }
+    catch (err) { ownerNotice("儲存失敗：" + (err?.message || "請再試一次")); }
+  }
+  // 「裝備可以給誰」（站主 2026-11-26「你就幫我多個區域寫說誰的裝可以給誰，然後讓我選。不要這個甚麼坦裝給誰，我甚至還不能刪掉這個區域」）
+  // 一組＝{from, to}：「○○的裝可以給△△」。站主改的存預覽站資料庫 edits 的 give19:<陣容id>（欄位 pairs；空陣列＝整區刪掉）；
+  // 上線時寫成 research/data/s19/pbe/owner_give.json → tools/s19_itemsets.py 寫進 site-data 的 give19。沒改過的陣容先用實戰的兩個主坦（tankNote）當第一組。
+  const give19 = (c) => { const e = O.edits?.["give19:" + c?.id]; if (e && Array.isArray(e.pairs)) return e.pairs;
+    if (Array.isArray(c?.give19)) return c.give19; const tn = c?.tankNote; return tn?.main && tn?.alt ? [{ from: tn.main, to: tn.alt }] : []; };
+  function giveArea(c, M, boards) {
+    const pairs = give19(c), own = O.on && O.db;
+    if (!pairs.length && !own) return null;
+    const lvs = Object.keys(boards || {}).map((k) => +k.slice(2)).filter((L) => L >= (M || 8)).sort((a, b) => a - b);
+    const keys = [...new Set(lvs.flatMap((L) => champsOnly(boards["lv" + L]?.units || []).map((u) => u.key)))];
+    const box = h("div", { class: "fx-give" });
+    const save = async (next, msg) => {
+      const key = "give19:" + c.id;
+      const doc = { key, pairs: next, before: "", after: next.map((p) => p.from + ">" + p.to).join(","), note: "S19 裝備可以給誰", at: new Date().toISOString(), where: location.hash || "#home" };
+      try { await O.db.doc("edits/" + docId(key)).set(doc); O.edits[key] = doc; O.giveDraft = null; ownerNotice(msg + "下次更新正式站會一起上線。"); rerender(); }
+      catch (err) { ownerNotice("儲存失敗：" + (err?.message || "請再試一次")); }
+    };
+    if (pairs.length || own) box.append(h("p", { class: "fx-h" }, "裝備可以給誰"));
+    for (const [i, p] of pairs.entries()) box.append(h("div", { class: "fx-give-row" },
+      fhex(p.from, { name: true }), h("span", { class: "fx-give-arr", "aria-hidden": "true" }, "→"), fhex(p.to, { name: true }),
+      h("span", { class: "small fx-give-t" }, `${champName(p.from)}的裝可以給${champName(p.to)}`),
+      own ? h("button", { class: "linkbtn fx-del", type: "button", onclick: () => save(pairs.filter((_, k) => k !== i), `已刪除「${champName(p.from)}的裝可以給${champName(p.to)}」，`) }, "刪除") : null));
+    if (!own) return box;
+    // 站主：加一組＝先點誰的裝，再點給誰
+    const dr = O.giveDraft?.cid === c.id ? O.giveDraft : null;
+    if (dr) {
+      const row = (label, pick, skip) => h("div", { class: "bias-own" }, h("span", { class: "xs" }, label),
+        keys.filter((k) => k !== skip).map((k) => h("button", { type: "button", class: "bias-opt", title: champName(k), "aria-pressed": dr.from === k ? "true" : "false", onclick: () => pick(k) }, icon("champion", k, "sm"))));
+      // 站主 2026-11-26「換裝備不只要能換到場上其他人的還要能換到不在版面上的其他的」：給誰＝盤上的＋其他所有棋子（照費用分，可以搜尋）
+      const addTo = (k) => save([...pairs, { from: dr.from, to: k }], `已加「${champName(dr.from)}的裝可以給${champName(k)}」，`);
+      const others = () => {
+        const wrap = h("div", { class: "give-more" });
+        const q = h("input", { type: "search", placeholder: "搜尋其他棋子", "aria-label": "搜尋其他棋子", value: dr.q || "" });
+        const list = h("div", { class: "give-list" });
+        const fill = () => {
+          list.textContent = "";
+          const term = (q.value || "").trim().toLowerCase(); dr.q = q.value;
+          const xs = D.gamedata.champions.filter((x) => !keys.includes(x.key) && x.key !== dr.from && (!term || champName(x.key).toLowerCase().includes(term) || x.key.toLowerCase().includes(term)));
+          for (const n of [1, 2, 3, 4, 5, 6, 7]) {
+            const g = xs.filter((x) => (x.cost || 0) === n); if (!g.length) continue;
+            list.append(h("span", { class: "xs muted give-cost" }, `${n} 費`), ...g.map((x) => h("button", { type: "button", class: "bias-opt", title: champName(x.key), onclick: () => addTo(x.key) }, icon("champion", x.key, "sm"))));
+          }
+          if (!list.childNodes.length) list.append(h("span", { class: "xs muted" }, "找不到。"));
+        };
+        q.addEventListener("input", fill); fill();
+        wrap.append(h("span", { class: "xs" }, "不在盤上的："), q, list);
+        return wrap;
+      };
+      box.append(...(dr.from
+        ? [row(`${champName(dr.from)}的裝可以給誰（盤上的）`, addTo, dr.from), others()]
+        : [row("誰的裝", (k) => { O.giveDraft = { cid: c.id, from: k }; rerender(); })]),
+        h("button", { class: "btn sm ghost", type: "button", onclick: () => { O.giveDraft = null; rerender(); } }, "取消"));
+    } else box.append(h("div", { class: "row" },
+      h("button", { class: "chip add fx-add", type: "button", onclick: () => { O.giveDraft = { cid: c.id, from: null }; rerender(); } }, "＋ 加一組"),
+      pairs.length ? h("button", { class: "linkbtn fx-del", type: "button", onclick: () => save([], "已刪掉「裝備可以給誰」這一區，") }, "刪掉這一區") : null));
+    return box;
   }
   // 站主 2026-11-22「需要解鎖的牌要標一個鎖讓別人知道」：要解鎖的棋子左上角一個鎖（gamedata 的 lock，來自小百科的解鎖條件；滑過／點棋子看條件）
   const lockBadge = (k) => { if (!CH[k]?.lock) return null; const e = h("span", { class: "lock-b", title: "要先解鎖（點棋子看條件）", role: "img", "aria-label": "要先解鎖" }); e.innerHTML = LOCK_SVG; return e; };
@@ -3249,7 +3353,7 @@
       let got;
       try { got = await readAll(); } catch { ownerNotice("站主工具載入中，資料庫比較慢，再試一次…"); got = await readAll(); }
       const [es, ts, bs, tis, cus, rel] = got;
-      O.releases = (rel.docs || []).map((d) => d.data()).filter((x) => x?.at).sort((a, b) => (b.at > a.at ? 1 : -1));
+      O.releases = relSort((rel.docs || []).map((d) => d.data()));
       for (const d of es.docs || []) { const x = d.data(); if (x?.key) O.edits[x.key] = x; }
       O.terms = (ts.docs || []).map((d) => d.data()).filter((x) => x?.from);
       for (const d of bs.docs || []) { const x = d.data(); if (x?.compId) O.boards[x.compId] = x; }
@@ -3300,6 +3404,10 @@
     }
   }
   const relLive = (x) => x && (x.status === "requested" || x.status === "processing");
+  // 2026-11-26：對話裡直接推正式站寫的紀錄沒有 at（只有 requestedAt、doneAt），以前被濾掉，按鈕下面一直顯示比較舊的那次 → 用 at／requestedAt／doneAt 排
+  const relAt = (x) => x?.at || x?.requestedAt || x?.doneAt || "";
+  const relSort = (xs) => xs.filter((x) => x && relAt(x)).map((x) => (x.at ? x : { ...x, at: relAt(x) })).sort((a, b) => (b.at > a.at ? 1 : -1));
+  const fmtShort = (iso) => { try { return new Date(iso).toLocaleString("zh-TW", { timeZone: "Asia/Taipei", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }); } catch { return iso; } };
   const relSig = (rs) => (rs || []).slice(0, 8).map((x) => x.id + ":" + x.status).join("|");
   let relTimer = null;
   function relPoll() {
@@ -3310,14 +3418,14 @@
       if (document.hidden) return;
       try {
         const rel = await O.db.collection("releases").get();
-        const rs = (rel.docs || []).map((d) => d.data()).filter((x) => x?.at).sort((a, b) => (b.at > a.at ? 1 : -1));
+        const rs = relSort((rel.docs || []).map((d) => d.data()));
         if (rs.length && relSig(rs) !== relSig(O.releases)) { O.releases = rs; if (!O.relAsk && !O.relBusy) ownerPanel(); }
       } catch { /* 這次讀不到，下次再看 */ }
     }, 30000);
   }
   function releaseBox() {
     const rs = O.releases || [];
-    const done = rs.find((x) => x.status === "done");
+    const done = rs.filter((x) => x.status === "done").sort((a, b) => ((b.doneAt || b.at) > (a.doneAt || a.at) ? 1 : -1))[0];
     const after = (x) => !done || x.at > (done.doneAt || done.at);
     const pending = rs.filter((x) => relLive(x) && after(x));
     const failed = rs.find((x) => x.status === "failed" && after(x) && !pending.some((p) => p.at > x.at));
@@ -3371,9 +3479,10 @@
       // 站主 11/20「你擋到我了」：上線內容預設收起來，只留一行時間；點了才展開
       done ? (relSum(done).length
         ? h("details", { class: "xs muted rel-st rel-det", role: "status", open: O.relOpen || null, ontoggle: (e) => { O.relOpen = e.target.open; } },
-            h("summary", null, `正式站最後更新：${fmtTime(done.doneAt || done.at)}（點開看內容）`),
+            // 站主 11/26「你那段文字還是會卡到，整個縮起來」：收起來時只剩一行短字（不換行），點了才展開內容
+            h("summary", { title: `正式站最後更新：${fmtTime(done.doneAt || done.at)}（點開看內容）` }, `✓ 正式站 ${fmtShort(done.doneAt || done.at)} ▸`),
             h("ul", { class: "rel-sum" }, relSum(done).slice(0, 6).map((t) => h("li", null, t))))
-        : h("div", { class: "xs muted rel-st", role: "status" }, `正式站最後更新：${fmtTime(done.doneAt || done.at)}`)) : null);
+        : h("div", { class: "xs muted rel-st rel-one", role: "status", title: `正式站最後更新：${fmtTime(done.doneAt || done.at)}` }, `✓ 正式站 ${fmtShort(done.doneAt || done.at)}`)) : null);
   }
   function ownerPanel() {
     $("#owner-fab")?.remove();
@@ -3752,6 +3861,10 @@
     const root = h("div", { class: "be" });
     const st = BSTATE[c.id] ||= freshState(c, true);
     beDismissInit(); beKeysInit();
+    // 編輯器盤上也畫①②（站主 2026-11-26 本命標誌裝在棋子上）
+    const biasN = (u) => { if (!S19 || isPlant(u)) return 0; const us = st.data[st.lv] || []; if (traitN(us, HS) < 3) return 0; const bb = bias19(c);
+      return u.key === bb.b1 ? 1 : traitN(us, HS) >= 5 && u.key === bb.b2 ? 2 : 0; };
+    biasAt = (cc, r, col) => (cc.id !== c.id ? undefined : (st.data[st.lv] || []).find((x) => !isPlant(x) && x.pos && x.pos[0] === r && x.pos[1] === col)?.key ?? null);
     // 編輯器的等級：資料的等級＋現在有棋子的等級（人口跟著棋子走，可能換到 5～9 任何一等）
     // 站主 2026-11-13：「5人口的話就有要有升等要補，6、7、8等」→ 主圖以上每一等都列（升等要補、調整其他人口）
     const edLv = () => [...new Set([...levelsOf(c), st.main, ...[5, 6, 7, 8, 9].filter((L) => L > st.main), ...Object.keys(st.data).map(Number).filter((L) => champsOnly(st.data[L]).length)])].filter((L) => L >= 5 && L <= 9).sort((a, b) => a - b);
@@ -3821,7 +3934,8 @@
       const ecs = ec ? [...ec.cands] : [];
       put(ec ? h("p", { class: "small" }, `人口 ${st.lv}：固定 ${ec.fixed.length} 隻（和 ${ec.from} 人口一樣）＋虛線框的 ${ec.cands.length} 隻是候選，挑 ${ec.pick} 隻放（放哪${ec.pick > 1 ? "幾" : ""}隻都可以）`)
         : h("p", { class: "small" }, `人口 ${pop}／${st.lv}`, pop > st.lv ? h("b", { class: "warn" }, "（超出人口）") : null),
-        traitBadges(traitsOf(units)));
+        // 站主 2026-11-26「預覽頁點擊這排羈絆的時候不要再是顯示效果，要變成像旁邊那樣的篩選」：點了＝右邊棋子只列這個羈絆（再點一次取消）
+        trFilterRow(traitsOf(units)));
       put(biasRow(c, champsOnly(units)));   // 站主 11/20：心鋼本命在編輯器裡選
       const rOn = riftOn(units);
       if (rOn) put(markBox(units));
@@ -3837,7 +3951,7 @@
           const cd = u && ecs.includes(u);
           const cell = h("div", { class: "hex" + (u ? " has" : "") + (isPlant(u) ? " is-plant" : "") + (cd ? " cand" : "") + (u && st.sel === u ? " sel" : "") + (!u && st.pend && st.pend[0] === r && st.pend[1] === col ? " pend" : ""), role: "gridcell", tabindex: "0", "data-r": r, "data-c": col,
             "aria-label": `${"ABCD"[r]}${col + 1}${u ? "：" + (isPlant(u) ? PLANT[u.plant] : champName(u.key)) + " " + u.star + " 星" + (rOn && u.mark ? "（首領標記）" : "") + (u.rider ? "（騎乘者）" : "") : "：空格"}` },
-            u ? hexInner({ ...u, rider: u.rider && spryOn(units) && isSpry(u.key) }, rOn && isRift(u.key)) : h("span", { class: "hexlbl" }, `${"ABCD"[r]}${col + 1}`));
+            u ? hexInner({ ...u, rider: u.rider && spryOn(units) && isSpry(u.key), biasN: biasN(u) }, rOn && isRift(u.key)) : h("span", { class: "hexlbl" }, `${"ABCD"[r]}${col + 1}`));
           cell.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); tapCell(r, col); } });
           if (u) dragable(cell, u); else cell.addEventListener("click", () => tapCell(r, col));
           // 站主 2026-11-08：「我在版面上右鍵點那隻角色就可以把他移出盤面」（手機長按也會觸發）；神木植物張數自動算，不能移出
@@ -3959,9 +4073,9 @@
       });
     }
     // 「換一組：拿掉」裡的棋子：點了可以放回來（這一等以上，站回前一等的位置、帶前一等的星級裝備）
-    function remSelPanel(k) {
+    function remBack(k) {
       const prevU = () => edLv().filter((L) => L < k.lv).reverse().map((L) => champsOnly(st.data[L]).find((x) => x.key === k.key)).find(Boolean);
-      const back = () => {
+      {
         const p = prevU() || { key: k.key, star: 2, items: recItems(k.key), pos: null };
         for (const L of spanLv(k.lv)) {
           const arr = ensureBoard(L);
@@ -3971,7 +4085,10 @@
           if (taken || !p.pos) autoPlace(arr, c, null);
         }
         st.side = null; changed(`${k.lv} 等起把${champName(k.key)}放回來。`);
-      };
+      }
+    }
+    function remSelPanel(k) {
+      const back = () => remBack(k);
       return h("div", { class: "card selp fx-selp" },
         h("b", { class: "small" }, `${k.lv} 等拿掉了${champName(k.key)}`),
         h("p", { class: "xs muted", style: "margin:0" }, `要留著就按「放回來」（${k.lv} 等以上都放回去）；要換成別隻用「⇄ 換棋子」。`),
@@ -3981,6 +4098,7 @@
     }
     // 旁邊一區右鍵（站主 2026-11-24「要像編輯器那樣」）：i>=0＝只拿掉那件裝備，否則拿掉棋子；範圍和「拿掉」按鈕一樣
     function sideCtx(k, i) {
+      if (k.kind === "rem") { remBack(k); return; }
       if (k.kind === "step") {
         const below = k.lv < st.main, lvs = below ? [k.lv] : edLv().filter((L) => L >= k.lv);
         const u = champsOnly(st.data[k.lv]).find((x) => x.key === k.key);
@@ -4056,6 +4174,12 @@
     function tapCell(r, col) {
       if (Date.now() - (st.noTap || 0) < 700) return;  // 長按移出後手指放開，不要接著開「放新棋子」
       const units = st.data[st.lv], u = units.find((x) => x.pos && x.pos[0] === r && x.pos[1] === col);
+      if (O.biasArm?.cid === c.id) {   // 拿著心鋼本命標誌：點棋子＝裝上去
+        const arm = O.biasArm, hs = champsOnly(units).filter((x) => (CH[x.key]?.traits || []).includes(HS) || (x.items || []).some((i) => EM[i]?.trait === HS));
+        if (!u || isPlant(u)) { O.biasArm = null; draw(); return; }
+        if (!hs.some((x) => x.key === u.key)) { ownerNotice("本命只能裝在心鋼的棋子上。"); return; }
+        O.biasArm = null; saveBias(c, arm.i, u.key, traitN(units, HS) >= 5 ? 2 : 1); return;
+      }
       if (u) { st.sel = st.sel === u ? null : u; st.side = null; st.pend = null; draw(); return; }
       // 站主 2026-11-10：「選定一個棋子之後，我按其他的格子妳不要讓棋子跳過去，要直接幫我按完成然後執行下一個動作，我按空白的格子就是要加棋子」
       // → 有選取時點空格＝先按完成、再在那格放新棋子；要換位置用拖的
@@ -4236,6 +4360,18 @@
       if ((u.items || []).length >= 3) { ownerNotice(`${champName(u.key)}已經三件了。先拿掉一件（右鍵點裝備小圖），或把裝備拖到棋子上換掉一件。`); return; }
       dockGiveItem(key, u);
     }
+    function trFilterRow(list) {
+      const dk = () => (st.dk ||= { tab: "champ", q: "", cost: "all", trait: "", kind: 0, iq: "", cat: "all" });
+      const row = h("span", { class: "tbgs be-trf", role: "group", "aria-label": "點羈絆篩選右邊的棋子" });
+      const mark = () => row.querySelectorAll("button[data-trait]").forEach((b) => b.setAttribute("aria-pressed", dk().tab === "champ" && dk().trait === b.dataset.trait ? "true" : "false"));
+      for (const t of uniqFirst(list)) row.append(traitBadge(t.k, t.n, { tag: "button", cls: "be-trb", tip: `${trTip(t.k, t.n)}（點了篩選棋子）`, onclick: () => {
+        const d = dk(); d.trait = d.tab === "champ" && d.trait === t.k ? "" : t.k; d.tab = "champ"; d.cost = "all"; d.q = "";
+        renderDock(); mark();
+        if (d.trait && window.innerWidth < 760) dock?.scrollIntoView?.({ behavior: "smooth", block: "nearest" });
+      } }));
+      mark(); st.trMark = mark;
+      return row;
+    }
     function renderDock() {
       dock.textContent = ""; dkList = null;
       const tab = (id, label) => h("button", { type: "button", role: "tab", "aria-selected": String(DK.tab === id), onclick: () => { DK.tab = id; renderDock(); dockNote(); } }, label);
@@ -4249,8 +4385,8 @@
         const costs = [["all", "全部"], ...[1, 2, 3, 4, 5].map((n) => [n, `${n} 費`]), ["other", "其他"]];
         const traitKeys = [...new Set(D.gamedata.champions.flatMap((x) => x.traits || []))].sort((a, b) => traitName(a).localeCompare(traitName(b), "zh-Hant"));
         const sel = h("div", { class: "tbgs dk-trf", role: "group", "aria-label": "羈絆篩選" },
-          h("button", { type: "button", class: "chip", "aria-pressed": DK.trait ? "false" : "true", onclick: () => { DK.trait = ""; mark(); fill(); } }, "全部羈絆"),
-          traitKeys.map((k) => traitBadge(k, null, { tag: "button", cls: "dk-trb", tip: traitName(k), onclick: () => { DK.trait = DK.trait === k ? "" : k; mark(); fill(); } })));
+          h("button", { type: "button", class: "chip", "aria-pressed": DK.trait ? "false" : "true", onclick: () => { DK.trait = ""; renderDock(); } }, "全部羈絆"),
+          traitKeys.map((k) => traitBadge(k, null, { tag: "button", cls: "dk-trb", tip: traitName(k), onclick: () => { DK.trait = DK.trait === k ? "" : k; renderDock(); } })));
         const mark = () => { sel.querySelectorAll("button").forEach((b, i) => b.setAttribute("aria-pressed", (i === 0 ? !DK.trait : traitKeys[i - 1] === DK.trait) ? "true" : "false")); };
         mark();
         const fill = () => {
@@ -4266,8 +4402,11 @@
           }
           if (!any) list.append(h("p", { class: "small muted", style: "grid-column:1/-1" }, "找不到。"));
         };
-        search.addEventListener("input", () => { DK.q = search.value.trim().toLowerCase(); fill(); });
-        dock.append(h("div", { class: "dk-filters" }, search, sel), h("div", { class: "row pcats", role: "group", "aria-label": "費用" }, costs.map(([v, l]) => chipBtn(l, DK.cost === v, () => { DK.cost = v; renderDock(); }))), dkNote, list);
+        search.addEventListener("input", () => { DK.q = search.value.trim().toLowerCase(); fill(); const on = !!(DK.q || DK.trait || DK.cost !== "all"); dock.querySelector(".dk-clear")?.toggleAttribute("disabled", !on); });
+        // 站主 2026-11-26「然後要加一個清除鍵清除所有篩選」：名稱、羈絆、費用一次清掉
+        const anyF = !!(DK.q || DK.trait || DK.cost !== "all");
+        const clr = h("button", { class: "chip dk-clear", type: "button", disabled: anyF ? null : "", onclick: () => { DK.q = ""; DK.trait = ""; DK.cost = "all"; renderDock(); } }, "✕ 清除篩選");
+        dock.append(h("div", { class: "dk-filters" }, search, sel), h("div", { class: "row pcats", role: "group", "aria-label": "費用" }, costs.map(([v, l]) => chipBtn(l, DK.cost === v, () => { DK.cost = v; renderDock(); })), clr), dkNote, list);
         fill();
       } else {
         const groups = itemGroups(); if (DK.kind >= groups.length) DK.kind = 0;
@@ -4282,14 +4421,16 @@
           list.append(...nodes);
           if (!nodes.length) list.append(h("p", { class: "small muted", style: "grid-column:1/-1" }, "找不到。"));
         };
-        search.addEventListener("input", () => { DK.iq = search.value.trim().toLowerCase(); fill(); });
-        dock.append(h("div", { class: "dk-filters" }, search),
+        search.addEventListener("input", () => { DK.iq = search.value.trim().toLowerCase(); fill(); dock.querySelector(".dk-clear")?.toggleAttribute("disabled", !(DK.iq || DK.kind || DK.cat !== "all")); });
+        const iclr = h("button", { class: "chip dk-clear", type: "button", disabled: DK.iq || DK.kind || DK.cat !== "all" ? null : "", onclick: () => { DK.iq = ""; DK.kind = 0; DK.cat = "all"; renderDock(); } }, "✕ 清除篩選");
+        dock.append(h("div", { class: "dk-filters" }, search, iclr),
           h("div", { class: "row pcats", role: "group", "aria-label": "裝備種類" }, groups.map((g, i) => chipBtn(g.label, DK.kind === i, () => { DK.kind = i; DK.cat = "all"; renderDock(); }))),
           grp.cats ? catChips(grp.items, DK.cat, (id) => { DK.cat = id; renderDock(); }) : null, dkNote, list);
         fill();
       }
       dkList = list;
       dockNote();
+      st.trMark?.();   // 編輯器那排羈絆跟著亮
     }
     // 點（手機也可以）：放／給；按住拖（滑鼠）：放到那格或給那隻。拖曳結束後瀏覽器還會補一個 click，用 DK.sup 擋掉。
     dock.addEventListener("click", (ev) => { const k = ev.target.closest?.(".dk-card"); if (!k || DK.sup) return; dockTap(k.dataset.kind, k.dataset.key); });

@@ -1582,3 +1582,20 @@ body.tdragging,body.tdragging *{user-select:none;-webkit-user-select:none;cursor
 .pc-legend{margin:-.4rem 0 var(--s3)}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .pc-pct{background:#3a3129;color:#e8dccf}:root:not([data-theme="light"]) .pc-pct.p-up{background:#1f3a27;color:#9fe0b0}:root:not([data-theme="light"]) .pc-pct.p-down{background:#432420;color:#ffb3a8}:root:not([data-theme="light"]) .pc-pct.p-adj{background:#3d3219;color:#f0d58a}}
 :root[data-theme="dark"] .pc-pct{background:#3a3129;color:#e8dccf}:root[data-theme="dark"] .pc-pct.p-up{background:#1f3a27;color:#9fe0b0}:root[data-theme="dark"] .pc-pct.p-down{background:#432420;color:#ffb3a8}:root[data-theme="dark"] .pc-pct.p-adj{background:#3d3219;color:#f0d58a}
+/* 站主 2026-11-26「你那段文字還是會卡到，整個縮起來」：正式站最後更新收起來時只有一行短字，不換行 */
+.owner-fab .rel-det summary, .owner-fab .rel-one { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 16rem; }
+.owner-fab .rel-det[open] summary { white-space: normal; }
+/* 站主 2026-11-26「你就幫我多個區域寫說誰的裝可以給誰，然後讓我選」 */
+.fx-give { margin-bottom: .75rem; padding-bottom: .6rem; border-bottom: 1px dashed color-mix(in srgb, var(--text) 18%, transparent); display: grid; gap: .45rem; }
+.fx-give-row { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .5rem; }
+.fx-give-arr { font-weight: 800; opacity: .7; }
+.fx-give-t { flex: 1 1 8rem; min-width: 0; }
+/* 站主 2026-11-26「心剛本命給我一的標誌裝上去棋子」：①② 標誌（拖到棋子上，或點一下再點棋子） */
+button.bias-tok { width: 30px; height: 30px; border-radius: 50%; border: 2px dashed var(--accent); background: var(--surface); color: var(--accent); font-weight: 800; font-size: 1rem; cursor: grab; touch-action: none; }
+button.bias-tok[aria-pressed="true"] { border-style: solid; background: var(--accent); color: var(--on-accent); }
+.dk-ghost.bias-b { position: fixed; z-index: 99; pointer-events: none; }
+.dk-clear[disabled] { opacity: .45; cursor: default; }
+.fx-give .give-more { display: grid; gap: 4px; padding: 4px 6px; border: 1px dashed var(--focus); border-radius: 8px; }
+.fx-give .give-more input { width: 100%; }
+.fx-give .give-list { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; max-height: 14rem; overflow: auto; }
+.fx-give .give-cost { width: 100%; margin-top: 2px; }

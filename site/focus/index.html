@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-Hant" class="tt-game">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f8f5ed">
+<title>S19 戰棋練習手冊｜巧克力的戰棋研究室</title>
+<link rel="stylesheet" href="./native-ui.css">
+<link rel="stylesheet" href="./course.css">
+<link rel="stylesheet" href="./student-keys.css">
+</head>
+<body class="focus-page at-catalog">
+<main id="course-home" class="academy" aria-labelledby="home-heading">
+  <div class="academy-sheet">
+    <header class="academy-mast">
+      <a class="academy-name" href="../#learn" title="回研究室的新手教學"><span class="academy-seal" aria-hidden="true">棋</span><span>巧克力的戰棋研究室</span></a>
+      <div class="academy-meta"><button id="home-resume" type="button" hidden>繼續上次練習</button><div class="academy-progress"><span id="home-progress">已完成 0 題</span><progress id="home-progress-meter" value="0" aria-label="已開放課題的練習進度"></progress></div></div>
+    </header>
+    <div class="academy-intro">
+      <p class="academy-edition">S19 <span>戰棋練習手冊</span></p>
+      <h1 id="home-heading" tabindex="-1">選擇課題</h1>
+      <a id="signed-course-link" href="?practice=coach" hidden>練教練定稿題</a>
+      <a href="./replays/index.html">原局對照 · 實戰影片與取捨</a>
+      
+    </div>
+    <div class="academy-spread">
+      <div class="course-availability">
+        <section class="published-courses" aria-labelledby="published-heading"><h2 id="published-heading">已開放課題</h2><nav id="course-list" aria-labelledby="published-heading"></nav></section>
+        <section class="pending-courses" aria-labelledby="pending-heading" hidden><h2 id="pending-heading">待定課題</h2><ul id="pending-course-list"></ul></section>
+      </div>
+      <section class="academy-detail" aria-labelledby="home-module-name">
+        <div class="course-selection-head"><h2 id="home-module-name">最強盤面與利息</h2><span id="home-recommend">建議起點</span></div>
+        <p id="home-skill-description"></p>
+        <figure id="lesson-preview" class="lesson-preview" aria-label="所選題目的開局預覽">
+          <figcaption><span>開局預覽</span><strong id="preview-stage"></strong></figcaption>
+          <div class="preview-inner">
+            <div id="preview-grid" class="preview-grid" aria-hidden="true"></div>
+            <div class="preview-inventory"><span>起始金幣</span><div class="preview-gold"><img id="preview-coin" alt=""><b id="preview-gold"></b></div><div id="preview-bench"></div></div>
+          </div>
+        </figure>
+        <fieldset class="academy-tier"><legend>練習難度</legend><div id="home-difficulty"></div></fieldset>
+        <label class="academy-field" for="home-question">手動選題</label>
+        <select id="home-question"></select>
+        <div class="academy-launch"><button id="course-start" type="button">開始練習</button><button id="home-review-wrong" type="button" hidden>複習錯題</button><span id="home-selection-status" role="status"></span></div>
+      </section>
+    </div>
+  </div>
+</main>
+<header class="lesson-bar" aria-label="本題" hidden>
+  <button type="button" id="course-open" class="course-trigger"><span aria-hidden="true">‹</span> 課題目錄</button>
+  <div class="lesson-copy"><div class="lesson-heading"><strong>本題目標</strong><span id="lesson-meta"></span></div><div class="lesson-task"><h1 id="lesson-goal" tabindex="-1"></h1><button type="button" id="lesson-hint-toggle" aria-controls="lesson-hints" aria-expanded="false" hidden>小提示</button></div></div>
+  <div class="lesson-tools" aria-label="練習操作">
+    <button type="button" id="lesson-undo" class="course-action" disabled><span>復原上一步</span><kbd id="lesson-undo-key">Ctrl+Z</kbd></button>
+    <button type="button" id="lesson-keys" class="course-action">快捷鍵設定</button>
+    <button type="button" id="lesson-help" class="course-action">看教學</button>
+  </div>
+  <span class="tt-sr" role="status" id="undo-status"></span>
+</header>
+<aside id="lesson-hints" aria-label="小提示" hidden>
+  <div class="hint-message" aria-live="polite" aria-atomic="true"><strong id="lesson-hint-count"></strong><span id="lesson-hint-text"></span></div>
+  <div class="hint-actions"><button type="button" id="lesson-hint-prev">上一個提示</button><button type="button" id="lesson-hint-next">下一個提示</button><button type="button" id="lesson-hint-close">收起提示</button></div>
+</aside>
+<section id="route-workbench" aria-label="本回合的陣容方向" hidden>
+  <div class="route-bar-inner">
+    <span id="route-selection" role="status"></span>
+    <button id="route-toggle" type="button" aria-controls="route-picker" aria-expanded="false">選擇陣容方向</button>
+    <button id="route-scout-toggle" type="button" aria-controls="route-scout-panel" aria-expanded="false" hidden>偵查同行</button>
+  </div>
+  <div id="route-picker" role="region" aria-label="可選的三個陣容方向" hidden>
+    
+    <div id="route-cards"></div>
+  </div>
+  <div id="route-contest" hidden>
+    <label for="route-contest-count" id="route-contest-label">這個陣容有幾家同行？</label>
+    <select id="route-contest-count">
+      <option value="" disabled>選擇家數</option>
+      <option value="0">0 家</option><option value="1">1 家</option><option value="2">2 家</option><option value="3">3 家</option>
+      <option value="4">4 家</option><option value="5">5 家</option><option value="6">6 家</option><option value="7">7 家</option>
+    </select>
+  </div>
+  <section id="route-scout-panel" aria-labelledby="route-scout-title" hidden>
+    <header class="route-scout-head">
+      <div class="scout-heading"><h2 id="route-scout-title">偵查對手</h2><span id="route-scout-progress"></span></div>
+      <div class="scout-head-actions"><button type="button" id="route-scout-demo" hidden>看下一步</button><button type="button" id="route-scout-close">回到我的棋盤</button></div>
+    </header>
+    <div id="route-scout-rivals" role="group" aria-label="切換對手"></div>
+    <div id="route-scout-detail"></div>
+  </section>
+</section>
+<div id="lesson-note" role="status" hidden></div>
+<main id="focus-game" aria-label="滴答克的試煉棋盤" hidden></main>
+<dialog id="lesson-dialog" class="course-dialog" aria-labelledby="dialog-title">
+  <div class="course-dialog-head"><h2 id="dialog-title"></h2><button id="dialog-close" type="button" aria-label="關閉視窗">×</button></div>
+  <div id="dialog-content"></div>
+</dialog>
+<noscript>請開啟 JavaScript 來操作棋盤和商店。</noscript>
+<script src="./catalog-data.js"></script>
+<script src="./practice-data.js"></script>
+<script src="./public-lessons.js"></script>
+<script src="./course-visibility.js"></script>
+<script src="./course-order.js"></script>
+<script src="./native-runtime.js"></script>
+<script src="./native-battle.js"></script>
+<script src="./engine.js"></script>
+<script src="./focus-engine.js"></script>
+<script src="./native-renderers.js"></script>
+<script src="./native-ui.js"></script>
+<script src="./coach-rounds.js"></script>
+<script src="./coach-grading.js"></script>
+<script src="./coach-store.js"></script>
+<script src="./student-keys.js"></script>
+<script src="./app.js"></script>
+</body>
+</html>

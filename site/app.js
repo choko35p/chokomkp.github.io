@@ -40,7 +40,7 @@
   // 站主 2026-11-25「為甚麼我預覽網站不能開新手教學」：預覽站有 512 個檔的上限，放不下 learn/（邊玩邊學）、trials/（滴答克的試煉）
   // → 不在正式站（chokomkp.com）時，這兩個連到正式站那一頁、開新分頁
   const ON_LIVE = /(^|\.)chokomkp\.com$/.test(location.hostname);
-  const sitePath = (p) => (ON_LIVE || !/^(learn|trials)\//.test(p) ? p : "https://chokomkp.com/" + p);
+  const sitePath = (p) => (ON_LIVE || !/^(learn|trials|focus)\//.test(p) ? p : "https://chokomkp.com/" + p);  // focus/（S19 單項練習，2026-11-27）也一樣只在正式站
   const extAttrs = (p) => (sitePath(p) !== p ? { target: "_blank", rel: "noopener" } : {});
   const seasonHref = (s) => { const u = new URL(location.href); if (s === SEASON_DEFAULT) u.searchParams.delete("s"); else u.searchParams.set("s", String(s)); u.hash = ""; return u.pathname + u.search; };
 
@@ -592,6 +592,7 @@
     if (!k || v.hidden) return;
     if (k === "route") drawRouteView(v); else drawLab(v, hsh);
   }
+  const FOCUS_N = 59;  // focus/course-order.js 公開的題數（站主 11/27 拿掉留牌挑戰 9）
   function renderLearnHub() {
     if (!LAB) return;
     let sec = $("#learn");
@@ -612,6 +613,8 @@
       h("div", { class: "lcards" },
         card("play", "learn/", [face(byName("鄂爾")), face(byName("剎雅"))], ui("learn.play.t", "邊玩邊學"), ui("learn.play.d", "12 關，直接動手玩。買牌、站位、利息、D 牌一次學會。"), P.play.done.length ? `${P.play.done.length} / 12 關` : null),
         card("lab", "#learn-lab", h("span", { class: "lc-coin" }, "？"), ui("learn.lab.t", "決策實驗室"), ui("learn.lab.d", `${L.length} 個常見狀況，這時候該存錢還是該 D？`), nDone ? `${nDone} / ${L.length} 題` : null),
+        // 站主 2026-11-27：GPT 做的 S19 練習（最強盤面與利息、留牌）放進新手教學。棋子換位只能用拖的
+        card("focus", "focus/", S19 ? [face(byName("柔依")), face(byName("塔里克"))] : h("span", { class: "lc-coin" }, "19"), ui("learn.focus.t", "S19 單項練習"), ui("learn.focus.d", `擺最強盤面、吃利息、留牌，兩科 ${FOCUS_N} 題。自己買賣、換人、合裝。`), null),
         card("route", "#learn-route", h("span", { class: "lc-bands" }, [1, 2, 3, 4, 5].map((c) => h("i", { style: `--cc:var(--c${c});width:${30 + c * 12}%` }))), ui("learn.route.t", "定陣路線"),
           routeOk() ? ui("learn.route.d", "從 2-1 開始，什麼裝備走哪一條、幾等定下來。") : "S19 上線後補", null, !routeOk()),
         card("quiz", "#learn-quiz", qzFaces.map((k) => face(k)), ui("learn.quiz.t", "新手認卡"), ui("learn.quiz.d", "這季的棋子幾費、什麼羈絆，用小測驗記起來。"), best ? `最佳 ${best} / 10` : null)),

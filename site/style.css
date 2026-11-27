@@ -1277,8 +1277,9 @@ button.bcard { font: inherit; color: inherit; text-align: left; cursor: pointer;
 .qz-big { font-size: 3rem; font-weight: 900; margin: 0; }
 @media (max-width: 640px) { .qz-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .qz-opts:not(.qz-grid) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-/* 新手教學：首頁四張卡、決策實驗室 */
-.lcards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s3); }
+/* 新手教學：首頁五張卡、決策實驗室 */
+.lcards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s3); }
+@media (max-width: 1180px) and (min-width: 901px) { .lcards { grid-template-columns: repeat(3, minmax(0, 1fr)); } }  /* 2026-11-27 多了 S19 單項練習，第五張 */
 .lcard { display: grid; grid-template-rows: auto 1fr; gap: var(--s2); align-content: start; min-height: 72px; padding: var(--s3); border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--text); text-decoration: none; }
 a.lcard:hover { border-color: var(--accent); }
 .lcard.off { opacity: .6; background: var(--surface-2); cursor: default; }

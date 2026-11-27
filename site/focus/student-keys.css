@@ -1,0 +1,21 @@
+#signed-course-link { color:#834426; font-weight:700; margin-inline-end:1rem; }
+.signed-sheet { max-width:55rem; margin:auto; padding:clamp(18px,5vw,54px); }
+.signed-sheet a { color:#814921; }
+.signed-sheet h1 { color:#192d32; font-size:clamp(1.55rem,4vw,2.3rem); }
+.signed-sheet p { color:#34494a; }
+.signed-sheet .course-buttons { display:flex; align-items:center; flex-wrap:wrap; gap:.65rem; }
+.signed-sheet select,.signed-sheet button { font:inherit; border:1px solid #85938a; background:#fffdf6; color:#182e32; border-radius:5px; padding:.55rem .8rem; }
+.signed-sheet #signed-start { background:#1c5151; color:white; border-color:#1c5151; font-weight:700; }
+.signed-bar { align-items:center; }
+.signed-bar .lesson-copy { display:grid; gap:2px; }
+.signed-bar .lesson-copy span { color:#cab28d; font-size:.84rem; }
+.signed-bar .lesson-copy strong { color:#faf2de; }
+.signed-options { flex:0 0 auto; display:flex; gap:.5rem; padding:.45rem clamp(8px,3vw,60px); background:#21383d; }
+.signed-options[hidden] { display:none; }
+.signed-options button { flex:1; padding:.5rem; border:1px solid #b5c2b2; border-radius:5px; background:#f6f2e7; color:#173038; font:inherit; }
+.signed-options button[aria-pressed="true"] { outline:2px solid #4bddb1; background:#d1f2dd; }
+@media (max-width:760px) {
+  .signed-bar>.lesson-copy { grid-column:1 / -1; grid-row:2; }
+  .signed-bar>.lesson-tools { justify-self:end; }
+  .signed-sheet .course-buttons select { width:100%; }
+}

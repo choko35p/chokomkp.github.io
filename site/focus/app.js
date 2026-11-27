@@ -901,7 +901,9 @@
     const row = actions();
     row.classList.add("course-result-actions");
     function continueCourse() {
-      const next=progress.courseNext(questions,chapterOf(current)).question;
+      // 站主 2026-11-27：答完這題就接下一題（照課表順序），不要跳回第一題沒答過的。
+      const order=questions.filter(q=>chapterOf(q)===chapterOf(current)), at=order.findIndex(q=>q.id===current.id);
+      const next=(at>=0 && order[at+1]) || progress.courseNext(questions,chapterOf(current)).question;  // 最後一題才回去補沒答過的
       if(next){
         const forward=button("繼續・"+questionLabel(next),()=>startUnanswered(next),row,true);
         forward.dataset.courseNext=next.id;

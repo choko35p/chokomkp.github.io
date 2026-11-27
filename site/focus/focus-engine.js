@@ -223,6 +223,8 @@
       return "偵查七家，再選陣容方向。";
     }
     function lessonAllows(type) {
+      // 站主 2026-11-28「為什麼不讓我上裝」：裝備欄有裝備（賣棋收回、拆下來的）就一律能裝，跟遊戲一樣
+      if (type==="equip" && skillActions[q.skill].includes("move") && sim.state.items.length>0) return true;
       return skillActions[q.skill].includes(type) && (step().allowed || skillActions[q.skill]).includes(type);
     }
     function can(type) {

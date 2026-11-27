@@ -844,13 +844,15 @@
       lane: t.lane || c.lane, ownerOrder: typeof t.order === "number" ? t.order : c.ownerOrder, tierSource: t.tier ? "owner" : c.tierSource };
   };
   const customToComp = (x) => ({ id: x.id, name: x.name, carrier: x.carrier, core: [x.carrier, ...(x.units || []).filter((u) => u !== x.carrier)].slice(0, 3), units: x.units || [],
-    status: "custom", custom: true, lane: x.lane || "normal", tier: x.tier || null, ownerOrder: x.order ?? 999, ownerNote: x.note || "", required: [], rank: 999, cats: [],
+    status: "custom", custom: true, lane: x.lane || "normal", tier: x.tier || null, hidden: !!(x.hidden || ("tier" in x && x.tier === null)), ownerOrder: x.order ?? 999, ownerNote: x.note || "", required: [], rank: 999, cats: [],
     boards: docBoards(O.boards[x.id]), ownerMain: O.boards[x.id]?.main || null });  // 站主 2026-11-27：手動加的陣容也有自己的棋盤（存在 boards/<陣容 id>）
   // 站主 2026-11-27「預覽站看不到這些數據」：補過數據的手動陣容在資料裡是 status ready＋custom，預覽站照常畫戰績和裝備；
   // 站主在 customComps 改的名稱、評級、分區、順序蓋在上面（按更新才會進正式資料）
   const withCustomDoc = (c) => {
     const y = O.on && c?.custom && c.status !== "custom" ? O.custom.find((z) => z.id === c.id) : null;
-    return y ? { ...c, name: y.name || c.name, tier: y.tier || c.tier, lane: y.lane || c.lane, ownerOrder: y.order ?? c.ownerOrder, ownerNote: y.note || "" } : c;
+    // 站主 2026-11-27「我按隱藏為甚麼沒有用」：手動加的陣容選隱藏＝文件 hidden true（舊的只存 tier null）→ T 表真的不列
+    const hid = y && (y.hidden || ("tier" in y && y.tier === null));
+    return y ? { ...c, name: y.name || c.name, tier: y.tier || c.tier, hidden: hid ? true : c.hidden, lane: y.lane || c.lane, ownerOrder: y.order ?? c.ownerOrder, ownerNote: y.note || "" } : c;
   };
   function tierPool() {
     let xs = D.comps.filter((c) => c.status === "ready" || c.status === "custom");  // 站主 2026-11-27：手動加的陣容按「更新到正式站」就上線
@@ -858,6 +860,7 @@
       xs = xs.filter((c) => !c.custom || O.custom.some((y) => y.id === c.id)).map(withCustomDoc);
       xs = xs.concat(O.custom.filter((y) => !xs.some((x) => x.id === y.id)).map(customToComp));
     }
+    xs = xs.map((c) => (c.custom && c.tier == null && !c.hidden ? { ...c, hidden: true } : c));   // 手動加的陣容沒有評級＝站主選了隱藏
     return xs.map((c) => withOwner(c.lane ? c : { ...c, lane: c.conditional ? "conditional" : "normal" }));
   }
   const LANES = [
@@ -964,6 +967,94 @@
     };
     draw();
     return panel;
+  }
+  /* 站主 2026-11-27「每個陣容都要新增3、4、5、6等級的常見過渡，跟常見棋子排名t度表，t度表排序要綜合出場率跟名次」
+     選擇：3～6 等各一張棋子 T 度表；場數少照樣放、標場數。資料：高手 PBE 對局（MetaTFT App 錄的每一回合），Fable 5.2 設計算法（tools/s19_trans.py）。 */
+  const TR_LV = {};  // 每套目前看的等級
+  function transBox(c) {
+    const T = c.trans;
+    if (!T?.levels?.some((l) => l.n)) return null;
+    const box = h("div", { class: "trx" });
+    const pc = (v) => Math.round(v * 100) + "%";
+    const unitIco = (k, s) => h("span", { class: "cu" }, h("span", { class: "stars" }, s > 1 ? "★".repeat(s) : ""), icon("champion", k, "sm"));
+    const few = (n) => n < (T.fewAt || 15);
+    // 站主 2026-11-27「你左邊的陣容要標羈絆出來」→ 每組版面下面一排羈絆圖示（只列有開的，跟棋盤一樣用 traitBadges）
+    const boardTraits = (u) => { const a = traitsOf(u.map(([k, s]) => ({ key: k, star: s, items: [] }))).filter((t) => t.on).map(({ k, n }) => ({ k, n }));
+      return a.length ? traitBadges(activeTraits(Object.fromEntries(a.map((t) => [t.k, t.n]))), { cls: "trx-tr", px: 15 }) : null; };
+    // 站主 2026-11-27「要讓我能調整T度表」：站主在預覽站改的存資料庫 edits 的 trans19:<陣容id>（units＝{棋子: "S"|"A"|"B"|"C"|"hide"}）；
+    // 上線時寫進 site-data 的 comps[].trans.ownerT，正式站照這個排。沒改過的照資料算的。
+    const ownT = () => { const e = O.edits?.["trans19:" + c.id]; return e && e.units ? e.units : T.ownerT || null; };
+    const unitsOf = () => {
+      const ov = ownT() || {};
+      const base = (T.units || []).map((u) => (ov[u.k] ? { ...u, t: ov[u.k], own: true } : u)).filter((u) => u.t !== "hide");
+      const add = Object.entries(ov).filter(([k, t]) => t !== "hide" && !base.some((u) => u.k === k)).map(([k, t]) => ({ k, t, own: true, add: true }));
+      return [...base.filter((u) => !u.own), ...base.filter((u) => u.own), ...add];
+    };
+    const saveOwn = async (next, msg) => {
+      const key = "trans19:" + c.id, empty = !Object.keys(next).length;
+      const doc = empty ? null : { key, units: next, before: "", after: Object.entries(next).map(([k, t]) => k + ":" + t).join(","), note: "S19 前期過渡 T 度表", at: new Date().toISOString(), where: location.hash || "#home" };
+      try { if (doc) await O.db.doc("edits/" + docId(key)).set(doc); else await O.db.doc("edits/" + docId(key)).delete(); O.edits[key] = doc;
+        ownerNotice(msg + (doc ? "下次更新正式站會一起上線。" : "")); TR_SEL = null; draw(); }
+      catch (err) { ownerNotice("儲存失敗：" + (err?.message || "請再試一次")); }
+    };
+    const setUnit = (k, t) => { const next = { ...(ownT() || {}) }; const data = (T.units || []).find((u) => u.k === k);
+      if (data && data.t === t) delete next[k]; else if (!data && t === "hide") delete next[k]; else next[k] = t;
+      saveOwn(next, t === "hide" ? `${champName(k)} 已拿掉，` : `${champName(k)} 改成 ${t} 級，`); };
+    let TR_SEL = null;
+    const tierRows = () => {
+      const units = unitsOf(), own = O.on && O.db;
+      const rows = ["S", "A", "B", "C"].map((t) => {
+        const us = units.filter((u) => u.t === t);
+        if (!us.length) return null;
+        return h("div", { class: "ep-t" }, h("span", { class: "ep-tl t-" + t }, t),
+          h("div", { class: "ep-us" }, us.map((u) => h("span", { class: "ep-uc" + (own && u.own ? " own" : "") + (own && TR_SEL === u.k ? " sel" : ""), tabindex: "0",
+            onclick: own ? () => { TR_SEL = TR_SEL === u.k ? null : u.k; draw(); } : null,
+            "data-tip": u.add ? `${champName(u.k)}（${CH[u.k]?.cost ?? "?"} 費）：巧克力加的` : `${champName(u.k)}（${CH[u.k]?.cost ?? "?"} 費）：3～6 等平均 ${pc(u.share)} 的時間在場上；有放的場平均名次 ${u.avg.toFixed(2)}（這套平均 ${(T.avg ?? 0).toFixed(2)}）；${u.n} 場${u.s2 >= 0.05 ? `，${pc(u.s2)} 有升到兩星以上` : ""}` },
+            icon("champion", u.k, "sm"), h("span", { class: "ep-d" }, u.share != null ? pc(u.share) : "—")))));
+      }).filter(Boolean);
+      const out = rows.length ? rows : [h("p", { class: "empty" }, "樣本還不夠。")];
+      if (own) {
+        const ov = ownT();
+        out.push(h("div", { class: "trx-own" },
+          TR_SEL ? [h("span", { class: "xs" }, `站主：把 ${champName(TR_SEL)} 放到`), ["S", "A", "B", "C"].map((t) => h("button", { type: "button", class: "btn sm ghost", onclick: () => setUnit(TR_SEL, t) }, t)),
+            h("button", { type: "button", class: "btn sm ghost", onclick: () => setUnit(TR_SEL, "hide") }, "拿掉"), h("button", { type: "button", class: "linkbtn", onclick: () => { TR_SEL = null; draw(); } }, "取消")]
+            : h("span", { class: "xs" }, "站主：點棋子改級數或拿掉"),
+          h("button", { type: "button", class: "btn sm ghost", onclick: () => openPicker(`${c.name}：加棋子到 3～6 等 T 度表`, champGroups(new Set(units.map((u) => u.k))), (k) => { TR_SEL = null; const next = { ...(ownT() || {}), [k]: "B" }; saveOwn(next, `${champName(k)} 加到 B 級（點它可以再改），`); }) }, "＋加棋子"),
+          ov && Object.keys(ov).length ? h("button", { type: "button", class: "linkbtn", onclick: () => saveOwn({}, "已恢復成資料算的。") }, "恢復資料算的") : null));
+      }
+      return out;
+    };
+    const draw = () => {
+      const lvs = T.levels.filter((l) => l.n);
+      const L = lvs.find((l) => l.lv === TR_LV[c.id]) || lvs.find((l) => l.lv === 4) || lvs[0]; TR_LV[c.id] = L.lv;
+      box.textContent = "";
+      box.append(h("p", { class: "ep-note small" }, ui("trans.note", T.note || "高手 PBE 實際對局裡，打這套的人在 3～6 等場上擺的牌（每場拿那個等級升等前最後一盤）。T 度表是 3～6 等一起算，出場率加名次一起排，場數都標在旁邊，場數少的巧克力建議看看就好、不要照抄。追三星的賭狗場巧克力都拿掉了，這裡只算正常升等的打法；賭狗陣容只看追同一組三星的場，6 等盤是追完三星的樣子。"),
+        T.data && T.data !== "new" ? [" ", ui("trans.old", "有一部分對局是 11/23 改版前的，莉莉亞、賽特、凱能、伊澤瑞爾、卡蜜兒這幾隻的出場率會略低一點。")] : null,
+        " ", h("span", { class: "muted" }, `${T.games} 場、${T.players} 位高手${T.label ? `（${T.label}）` : ""}`), few(T.games) ? [" ", h("b", { class: "tag few" }, `樣本少：${T.games} 場`)] : null));
+      // 站主 2026-11-27「阿璃這個怎麼沒資料，你能不能用類似的陣容或是出裝去找規律」→ Fable 5.2 借場規則（自己不到 30 場才借）
+      if (T.borrowed) box.append(h("p", { class: "ep-note small trx-borrow" }, h("b", { class: "tag watch" }, "借相近對局"), " ",
+        `這套自己 ${T.own} 場，巧克力先拿最後成型差不多的對局補了 ${T.borrowed} 場${T.borrowFrom?.length ? `（主要來自 ${T.borrowFrom.join("、")}）` : ""}，當參考看就好。`));
+      box.append(h("div", { class: "ep-cols" },
+        h("section", { class: "ep-sec" }, h("h4", null, "各等級常見版面"),
+          h("div", { class: "ep-seg", role: "group", "aria-label": "選等級" }, lvs.map((l) => h("button", { type: "button", "aria-pressed": l.lv === L.lv ? "true" : "false",
+            onclick: () => { TR_LV[c.id] = l.lv; track("trans", c.id + ":" + l.lv); draw(); } }, `${l.lv} 等`, h("span", { class: "xs" }, `${l.n} 場${l.low ? "・少" : ""}`)))),
+          h("p", { class: "ep-hint" }, T.boardHint || "一場只算一次；百分比＝這套的場有幾成在這個等級放過這組牌，淡色的是彈性位。下面是這組牌開的羈絆。"),
+          h("ol", { class: "ep-bl" }, L.boards?.length ? L.boards.map((b, i) => h("li", { class: "ep-b" },
+            h("span", { class: "ep-rk" }, i + 1),
+            h("span", { class: "trx-bu" },
+              // hit＝這群盤裡每隻實際在場的比例；不到六成的是彈性位，畫淡一點（Fable 5.2 建議）
+              h("span", { class: "ep-u" }, b.u.map((x, j) => [x, b.hit?.[j] ?? 1]).sort((x, y) => (y[1] >= 0.6) - (x[1] >= 0.6) || (y[0][1] || 1) - (x[0][1] || 1)).map(([[k, s], f]) => {
+                  const el = unitIco(k, s); if (f < 0.6) el.classList.add("flex"); el.setAttribute("data-tip", `${champName(k)}：這組盤 ${pc(f)} 的場有放`); return el; }),
+                b.alt?.length ? h("span", { class: "ep-w", "data-tip": "也常換成：" + b.alt.map(([k, n]) => `${champName(k)}（${n} 場）`).join("、") }, h("span", { class: "ep-plus", "aria-hidden": "true" }, "／"), b.alt.map(([k]) => icon("champion", k, "xs"))) : null),
+              boardTraits(b.u)),
+            h("span", { class: "ep-s" }, h("b", null, pc(b.share)), h("span", null, `名次 ${b.avg.toFixed(2)}`), h("span", null, `${b.n} 場`))))
+            : h("li", { class: "empty" }, "這個等級還沒有重複出現的版面。"))),
+        h("section", { class: "ep-sec" }, h("h4", null, "3～6 等棋子 T 度表"),
+          h("p", { class: "ep-hint" }, T.unitHint || `3～6 等一起算${T.allN ? `（${T.allN} 場）` : ""}：常放、放了名次又好的排前面。頭像下面是 3～6 等平均出場率，滑過或點一下看名次和場數。`),
+          tierRows())));
+    };
+    draw();
+    return box;
   }
   let TB_LANE = "normal";  // T 度表目前的分頁（站主 2026-11-06：三個分區各自一頁）
   function renderTiers() {
@@ -2623,6 +2714,7 @@
       ...(O.on ? [[`${boardTitle(c, mainLevel(c) || 8)}（站主編輯：站位、星級、裝備）`, "棋盤", h("div", { class: "stack" }, formulaOf(c) ? formulaLinks(c) : null, c.variantKind && c.variantKind !== "formula" ? null : formulaTools(c), boardEditor(c), S19 ? plannerRow([], `${c.id}:lv${mainLevel(c) || 8}`) : null)]]
         : [formulaOf(c) ? [`站位圖（${formulasOf(formulaOf(c)).length} 個公式，點上面切換）`, "棋盤", formulaArea(c)]
           : mainLevel(c) ? [boardTitle(c, mainLevel(c)), "棋盤", boardArea(c, mainLevel(c))] : null]),
+      ["前期過渡（3～6 等常放的牌）", "前期過渡", S19 ? transBox(c) : null],
       ["升等放什麼（各人口的棋子）", "升等", levelUpBox(c)],
       ["前排替換", "前排替換", c.roles?.swap ? h("p", { class: "small" }, tx(`comp:${c.id}:roles.swap`, c.roles.swap)) : null],
       ["星級要求", "星級", ul((c.stars || []).map((s) => `${champName(s.key)}：${s.need}${s.note ? "（" + s.note + "）" : ""}`))],
@@ -3606,7 +3698,7 @@
       [cell[i], cell[j]] = [cell[j], cell[i]];
       await Promise.all(cell.map((x, k) => (x.custom ? saveCustom({ ...O.custom.find((y) => y.id === x.id), order: k }) : saveTier(x.id, { order: k }))));
     }, "已調整順序。");
-    const setT = (v) => run(() => (c.custom ? saveCustom({ ...O.custom.find((y) => y.id === c.id), tier: v === "hide" ? null : v }) : saveTier(c.id, { tier: v, order: 999 })), v === "hide" ? "已從 T 表隱藏（下面「已隱藏」可以拿回來）。" : `已改成 ${v} 級。`);
+    const setT = (v) => run(() => (c.custom ? saveCustom({ ...O.custom.find((y) => y.id === c.id), tier: v === "hide" ? null : v, hidden: v === "hide" }) : saveTier(c.id, { tier: v, order: 999 })), v === "hide" ? "已從 T 表隱藏（下面「已隱藏」可以拿回來）。" : `已改成 ${v} 級。`);
     const setL = (v) => run(() => (c.custom ? saveCustom({ ...O.custom.find((y) => y.id === c.id), lane: v }) : saveTier(c.id, { lane: v, order: 999 })), "已換分區。");
     return h("div", { class: "tc-own" },
       sel("評級", [["S", "S"], ["A", "A"], ["B", "B"], ["C", "C"], ["hide", "隱藏"]], c.hidden ? "hide" : c.tier, setT),
@@ -3632,7 +3724,7 @@
       h("p", { class: "xs muted", style: "margin:0 0 6px" }, "調整 T 表：每張卡下面可以改評級、換分區、用 ◀ ▶ 排順序。分支在這個模式會拆開成自己的卡片，方便調整。改完自動儲存，下次更新時套到正式站。"),
       h("button", { class: "btn", type: "button", onclick: () => openCustom(null) }, "＋ 手動加一套陣容"),
       O.custom.length ? h("p", { class: "xs", style: "margin:6px 0 0" }, `你加的陣容 ${O.custom.length} 套：點進去排棋盤、放裝備，按「更新到正式站」就會上線（數據之後補）。`) : null,
-      hidden.length ? h("p", { class: "xs", style: "margin:6px 0 0" }, "已隱藏：", hidden.map((c, i) => [i ? "、" : "", h("button", { class: "linkbtn", type: "button", onclick: async () => { try { await saveTier(c.id, { tier: c.tier || "B" }); renderTiers(); } catch {} } }, c.name + "（拿回來）")])) : null);
+      hidden.length ? h("p", { class: "xs", style: "margin:6px 0 0" }, "已隱藏：", hidden.map((c, i) => [i ? "、" : "", h("button", { class: "linkbtn", type: "button", onclick: async () => { try { if (c.custom) { const y = O.custom.find((z) => z.id === c.id); await saveCustom({ ...y, tier: c.tier || "B", hidden: false }); } else await saveTier(c.id, { tier: c.tier || "B" }); renderTiers(); } catch {} } }, c.name + "（拿回來）")])) : null);
   }
   async function saveCustom(x) {
     const doc = { ...x, at: new Date().toISOString() };

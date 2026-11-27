@@ -1283,7 +1283,7 @@
     if (c.rerollLevel && boardOk(c, c.rerollLevel)) return c.rerollLevel;
     const want = COST_LV[CH[c.carrier]?.cost];
     if (want && boardOk(c, want)) return want;
-    return [8, 9, 7, 6, 5].find((lv) => boardOk(c, lv)) || null;
+    return [8, 9, 10, 7, 6, 5].find((lv) => boardOk(c, lv)) || null;  // 站主 2026-11-27「你就直接讓我能放十隻就好」：10 人口的盤也算
   }
   const keysOf = (b) => champsOnly(b?.units).map((u) => u.key);
   const msDiff = (a, b) => { const left = [...b]; return a.filter((k) => { const i = left.indexOf(k); if (i < 0) return true; left.splice(i, 1); return false; }); };
@@ -1502,7 +1502,7 @@
   const formulaLinks = (c) => { const base = formulaOf(c); return h("p", { class: "small fm-links" }, "這套有幾個公式，這裡改的是「", formulasOf(base).find((f) => f.id === c.id)?.name || c.name, "」。其他公式到各自的頁面改：",
     formulasOf(base).filter((f) => f.id !== c.id).map((f, i) => [i ? "、" : "", h("a", { href: "#" + slug(f.id), class: "fm-link" }, fmKeys(f), f.name)])); };
   // 站主加的公式在預覽站馬上出現（還沒重新建置前，用存的盤面做一個公式頁）
-  const docBoards = (d) => Object.fromEntries(Object.entries(d || {}).filter(([k, b]) => /^lv\d$/.test(k) && b?.units?.length)
+  const docBoards = (d) => Object.fromEntries(Object.entries(d || {}).filter(([k, b]) => /^lv\d+$/.test(k) && b?.units?.length)
     .map(([k, b]) => [k, { status: "ok", source: "owner", units: b.units.map((u) => ({ ...u, items: u.items || [] })), ...(b.twoMarks ? { twoMarks: true } : {}) }]));
   function ownerFormulaComps() {
     for (const doc of Object.values(O.boards)) {
@@ -2028,7 +2028,7 @@
     // 站主 2026-11-05：「有些陣容的站位圖在正式版的不見了」→ 沒有站位資料的棋盤，照站主編輯器同樣的規則自動排示意站位
     // （同陣容其他等級有站位的照抄位置；其餘坦在前排、持裝輸出在後排角落）
     if (c && !champsOnly(units).every((u) => Array.isArray(u.pos))) {
-      const ref = [8, 9, 7, 6, 5].map((lv) => c.boards?.["lv" + lv]).find((x) => x?.units?.length && champsOnly(x.units).every((u) => Array.isArray(u.pos)));
+      const ref = [8, 9, 10, 7, 6, 5].map((lv) => c.boards?.["lv" + lv]).find((x) => x?.units?.length && champsOnly(x.units).every((u) => Array.isArray(u.pos)));
       units = autoPlace(units.map((u) => ({ ...u, items: u.items || [], pos: Array.isArray(u.pos) ? [...u.pos] : null })), c, ref ? champsOnly(ref.units) : null);
       auto = true;
     }
@@ -3783,16 +3783,16 @@
     if (c.rerollLevel) data[c.rerollLevel] = withPlants(autoPlace(pick(c.rerollLevel), c, d8), ip(c.rerollLevel));
     for (const lv of levelsOf(c)) if (!data[lv]) data[lv] = withPlants(autoPlace(pick(lv), c, d8), ip(lv));
     // 站主 2026-11-08：人口跟著棋子走 → 存過或資料裡有的其他人口（例：拿到剩 7 隻的 8-4 盤＝7 人口）也要載入
-    for (const lv of [5, 6, 7, 8, 9]) if (!data[lv] && (sv?.["lv" + lv]?.units?.length || dataB(lv)?.units?.length)) data[lv] = withPlants(autoPlace(pick(lv), c, d8), ip(lv));
+    for (const lv of [5, 6, 7, 8, 9, 10]) if (!data[lv] && (sv?.["lv" + lv]?.units?.length || dataB(lv)?.units?.length)) data[lv] = withPlants(autoPlace(pick(lv), c, d8), ip(lv));
     // 站主存的棋盤人口和等級對不上（例：存在 8 人口、其實只有 7 隻）→ 跟建置（owner_content.apply_boards）一樣，當作實際人口那一等（那一等沒存過才搬）
     let moved = null;
     // 主圖等級：站主存過的（sv.main）；舊的存檔沒有 main，用資料的主圖等級（不看建置換過的 ownerMain），打開編輯器時再整條一起移（boardEditor 的 relevel）
     const ml = sv ? (sv.main || mainLevel({ ...c, ownerMain: null, boards: c.boardsBase || c.boards })) : mainLevel(c);  // boardsBase＝套站主棋盤之前的資料
-    if (sv) for (const L of [9, 8, 7, 6, 5]) {
+    if (sv) for (const L of [10, 9, 8, 7, 6, 5]) {
       const us = sv["lv" + L]?.units;
       if (!us?.length || [ml, c.rerollLevel].includes(L)) continue;
       const P = champsOnly(us).reduce((n, u) => n + (CH[u.key]?.slots || 1), 0);
-      if (P !== L && P >= 5 && P <= 9 && P !== c.rerollLevel && !sv["lv" + P]?.units?.length) { data[P] = data[L]; data[L] = []; moved ||= `之前存在 ${L} 人口的棋盤場上是 ${P} 人口，改成 ${P} 人口的棋盤。按「儲存棋盤」就會存成這樣。`; }
+      if (P !== L && P >= 5 && P <= 10 && P !== c.rerollLevel && !sv["lv" + P]?.units?.length) { data[P] = data[L]; data[L] = []; moved ||= `之前存在 ${L} 人口的棋盤場上是 ${P} 人口，改成 ${P} 人口的棋盤。按「儲存棋盤」就會存成這樣。`; }
     }
     const two = (lv) => !!((sv?.["lv" + lv]) || c.boards?.["lv" + lv] || {}).twoMarks;
     const main = ml && (champsOnly(data[ml]).length || levelsOf(c).includes(ml)) ? ml : Object.keys(data).map(Number).sort((a, b) => a - b).find((lv) => champsOnly(data[lv]).length) || 8;
@@ -3867,7 +3867,7 @@
     biasAt = (cc, r, col) => (cc.id !== c.id ? undefined : (st.data[st.lv] || []).find((x) => !isPlant(x) && x.pos && x.pos[0] === r && x.pos[1] === col)?.key ?? null);
     // 編輯器的等級：資料的等級＋現在有棋子的等級（人口跟著棋子走，可能換到 5～9 任何一等）
     // 站主 2026-11-13：「5人口的話就有要有升等要補，6、7、8等」→ 主圖以上每一等都列（升等要補、調整其他人口）
-    const edLv = () => [...new Set([...levelsOf(c), st.main, ...[5, 6, 7, 8, 9].filter((L) => L > st.main), ...Object.keys(st.data).map(Number).filter((L) => champsOnly(st.data[L]).length)])].filter((L) => L >= 5 && L <= 9).sort((a, b) => a - b);
+    const edLv = () => [...new Set([...levelsOf(c), st.main, ...[5, 6, 7, 8, 9].filter((L) => L > st.main), ...Object.keys(st.data).map(Number).filter((L) => champsOnly(st.data[L]).length)])].filter((L) => L >= 5 && L <= 10).sort((a, b) => a - b);  // 站主 2026-11-27：可以放到 10 隻（10 人口的盤有放棋子才列出來）
     const mqWide = matchMedia("(min-width: 1000px)"), wide = () => mqWide.matches;   // 桌機（棋盤旁邊有一欄）／手機（單欄）
     // ---- 復原／重做（見 beKeysInit 的說明）
     const bh = () => (BHIST[c.id] ||= { stack: [], idx: -1 });
@@ -3985,7 +3985,7 @@
     //   主圖 6 等拿掉一隻＝主圖變 5 等；其他人口的棋盤不動（站主選「只有主圖變 5 等」），旁邊升等要補多出 6 等讓站主填（edLv 主圖以上每一等都列）。
     function relevel(from = st.lv) {
       const to = popOf(st.data[from]);
-      if (!from || to === from || to < 5 || to > 9 || champsOnly(st.data[to]).length) return null;
+      if (!from || to === from || to < 5 || to > 10 || champsOnly(st.data[to]).length) return null;
       if (from !== st.main && to <= st.main) return null;  // 其他人口那張（例：9 人口）拿到比主圖還少時不搬，等加回來
       st.data[to] = st.data[from]; st.data[from] = [];
       st.two[to] = !!st.two[from]; st.two[from] = false;

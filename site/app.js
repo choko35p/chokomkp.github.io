@@ -1032,7 +1032,6 @@
       const L = lvs.find((l) => l.lv === TR_LV[c.id]) || lvs.find((l) => l.lv === 4) || lvs[0]; TR_LV[c.id] = L.lv;
       box.textContent = "";
       box.append(h("p", { class: "ep-note small" }, ui("trans.note", T.note || "高手 PBE 實際對局裡，打這套的人在 3～6 等場上擺的牌（每場拿那個等級升等前最後一盤）。T 度表是 3～6 等一起算，出場率加名次一起排，場數都標在旁邊，場數少的巧克力建議看看就好、不要照抄。追三星的賭狗場巧克力都拿掉了，這裡只算正常升等的打法；賭狗陣容只看追同一組三星的場，6 等盤是追完三星的樣子。"),
-        T.data && T.data !== "new" ? [" ", ui("trans.old", "有一部分對局是 11/23 改版前的，莉莉亞、賽特、凱能、伊澤瑞爾、卡蜜兒這幾隻的出場率會略低一點。")] : null,
         " ", h("span", { class: "muted" }, `${T.games} 場、${T.players} 位高手${T.label ? `（${T.label}）` : ""}`), few(T.games) ? [" ", h("b", { class: "tag few" }, `樣本少：${T.games} 場`)] : null));
       // 站主 2026-11-27「阿璃這個怎麼沒資料，你能不能用類似的陣容或是出裝去找規律」→ Fable 5.2 借場規則（自己不到 30 場才借）
       if (T.borrowed) box.append(h("p", { class: "ep-note small trx-borrow" }, h("b", { class: "tag watch" }, "借相近對局"), " ",
@@ -2675,7 +2674,7 @@
           c.lane === "conditional" && reqHasEmblem(c.required) && c.status !== "branch" ? h("div", { class: "dreq" }, h("b", null, "需要"), reqIcons(c.required.filter((x) => x.type === "emblem")), h("span", { class: "small muted" }, reqText(c.required))) : null,
           c.heroAug ? h("div", { class: "dreq" }, h("b", null, "英雄增幅"), heroAugIco(c, 28), h("span", { class: "small muted" }, c.heroAug.name + (c.heroAug.desc ? "：" + c.heroAug.desc : ""))) : null,
           c.status === "ready" || c.status === "branch" || c.variantKind === "formula" ? dStats(c) : c.watch ? dStats(c, true) : null,
-          c.custom && c.status === "ready" ? h("p", { class: "small muted", style: "margin:4px 0 0" }, "這套是巧克力自己加的，評級是巧克力給的。") : null)));
+          c.custom && c.status === "ready" ? h("p", { class: "small muted", style: "margin:4px 0 0" }, c.tier ? "這套是巧克力自己加的，評級是巧克力給的。" : "這套是巧克力自己加的。") : null)));
     if (c.status === "custom") {
       // 站主 2026-11-27「讓我在T度表上面可以加陣容」：加了就能排棋盤、放裝備，按「更新到正式站」直接上線；數據之後補
       const M = mainLevel(c);

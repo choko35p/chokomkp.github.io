@@ -844,9 +844,10 @@
       lane: t.lane || c.lane, ownerOrder: typeof t.order === "number" ? t.order : c.ownerOrder, tierSource: t.tier ? "owner" : c.tierSource };
   };
   const customToComp = (x) => ({ id: x.id, name: x.name, carrier: x.carrier, core: [x.carrier, ...(x.units || []).filter((u) => u !== x.carrier)].slice(0, 3), units: x.units || [],
-    status: "custom", custom: true, lane: x.lane || "normal", tier: x.tier || null, ownerOrder: x.order ?? 999, ownerNote: x.note || "", required: [], rank: 999, cats: [] });
+    status: "custom", custom: true, lane: x.lane || "normal", tier: x.tier || null, ownerOrder: x.order ?? 999, ownerNote: x.note || "", required: [], rank: 999, cats: [],
+    boards: docBoards(O.boards[x.id]), ownerMain: O.boards[x.id]?.main || null });  // 站主 2026-11-27：手動加的陣容也有自己的棋盤（存在 boards/<陣容 id>）
   function tierPool() {
-    let xs = D.comps.filter((c) => c.status === "ready" || (c.status === "custom" && D.preview));
+    let xs = D.comps.filter((c) => c.status === "ready" || c.status === "custom");  // 站主 2026-11-27：手動加的陣容按「更新到正式站」就上線
     if (O.on) {
       xs = xs.filter((c) => c.status !== "custom" || O.custom.some((y) => y.id === c.id));
       xs = xs.concat(O.custom.filter((y) => !xs.some((x) => x.id === y.id)).map(customToComp));
@@ -889,7 +890,7 @@
           r.ceil ? h("span", { class: "tc-sub" }, c.watch ? h("b", { class: "tag watch" }, "研究中") : null, lvPill("下限", r.floor), lvPill("上限", r.ceil), c.watch ? h("span", { class: "tag few" }, `樣本少：${c.watch.n} 場`) : c.freq != null ? h("span", { class: "tc-freq" }, `頻率 ${pct(c.freq)}`) : null)
             : c.pbe ? h("span", { class: "tc-sub" }, h("b", { class: "tag pbe" }, "PBE"), h("span", { class: "tc-freq" }, `高手 ${c.pbe.n} 場・均名 ${c.pbe.avg.toFixed(1)}`))
             : c.pred ? h("span", { class: "tc-sub" }, h("b", { class: "tag pred" }, "預測"), c.pred.srcTier ? h("span", { class: "tc-freq" }, `${c.pred.src} ${c.pred.srcTier}`) : null)
-            : h("span", { class: "tc-sub" }, c.custom ? "待補資料" : "研究中"),
+            : h("span", { class: "tc-sub" }, c.custom ? "巧克力自己加的" : "研究中"),
           showReq ? (reqHasEmblem(c.required) ? h("span", { class: "tc-req rq", title: req }, "需要", reqIcons(c.required.filter((x) => x.type === "emblem"))) : h("span", { class: "tc-req", title: req }, "需要：", req)) : null)),
       vs.length ? h("div", { class: "tc-br" }, h("span", { class: "tc-brh" }, "分支"), vs.sort(cellSort).map((v) => {
         const g = (c.variants || []).find((x) => x.id === v.id)?.avgGain;
@@ -1583,7 +1584,7 @@
         const fid = "o" + Date.now().toString(36), id = `${base.id}__fx_${fid}`;
         msg.textContent = "新增中…";
         try {
-          const L = got?.keys.length ? Math.max(3, Math.min(10, got.pop)) : null;
+          const L = got?.keys.length ? Math.max(5, Math.min(10, got.pop)) : null;
           const bd = L ? { compId: id, main: L, ["lv" + L]: { units: got.keys.map((k) => ({ key: k, star: (CH[k]?.cost || 1) >= 5 ? 1 : 2, items: [], pos: null })) }, at: new Date().toISOString() }
             : from.value ? copyDoc(from.value, id) : { compId: id, at: new Date().toISOString() };
           await O.db.doc("boards/" + id).set(bd); O.boards[id] = bd;
@@ -2569,15 +2570,20 @@
             : c.variantKind === "formula" ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag watch" }, "公式"), h("span", { class: "small muted" }, "站主給的盤面，不另外評級；評級看"), h("a", { class: "small", href: "#" + slug(c.formulaOf) }, nameOf(c.formulaOf)))
             : c.watch ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag watch" }, "研究中"), r.ceil ? [lvPill("下限", r.floor), lvPill("上限", r.ceil)] : null, h("span", { class: "small muted" }, "數據很好、樣本還少，還沒正式評級"))
             : c.status === "branch" && c.branchOf ? h("div", { class: "tc-sub dhero-sub" }, h("b", { class: "tag watch" }, "加分版面"), h("span", { class: "small muted" }, "不另外評級；評級看"), h("a", { class: "small", href: "#" + slug(c.branchOf) }, nameOf(c.branchOf)))
-            : h("div", { class: "small muted" }, c.status === "custom" ? "站主新增，待補資料" : "研究中，尚無合資格數據"),
+            : h("div", { class: "small muted" }, c.status === "custom" ? "數據待補" : "研究中，尚無合資格數據"),
           c.lane === "conditional" && reqHasEmblem(c.required) && c.status !== "branch" ? h("div", { class: "dreq" }, h("b", null, "需要"), reqIcons(c.required.filter((x) => x.type === "emblem")), h("span", { class: "small muted" }, reqText(c.required))) : null,
           c.heroAug ? h("div", { class: "dreq" }, h("b", null, "英雄增幅"), heroAugIco(c, 28), h("span", { class: "small muted" }, c.heroAug.name + (c.heroAug.desc ? "：" + c.heroAug.desc : ""))) : null,
           c.status === "ready" || c.status === "branch" || c.variantKind === "formula" ? dStats(c) : c.watch ? dStats(c, true) : null)));
     if (c.status === "custom") {
-      v.append(h("div", { class: "notice", style: "margin-top:16px" }, h("b", null, "站主手動加的陣容"),
-        h("p", { class: "small", style: "margin:4px 0 0" }, "Claude 下次更新時會去查高手對局的數據，補上棋盤、裝備和攻略；補完才會放到正式站。")),
-        h("div", { class: "row", style: "margin-top:12px" }, (c.units || []).map((k) => h("span", { class: "unit" }, icon("champion", k, "sm"), champName(k), k === c.carrier ? "（主C）" : ""))),
-        c.ownerNote ? h("p", { class: "small" }, h("b", null, "站主說明："), c.ownerNote) : null);
+      // 站主 2026-11-27「讓我在T度表上面可以加陣容」：加了就能排棋盤、放裝備，按「更新到正式站」直接上線；數據之後補
+      const M = mainLevel(c);
+      v.append(h("div", { class: "notice", style: "margin-top:16px" }, h("b", null, "巧克力自己加的陣容"),
+        h("p", { class: "small", style: "margin:4px 0 0" }, "高手對局的數據還沒補上，先放棋盤和裝備；評級是巧克力自己給的。")));
+      if (O.on && c.ownerNote) v.append(h("p", { class: "small" }, h("b", null, "站主說明（只有你看得到）："), c.ownerNote));
+      const out = O.on ? section(`${M ? boardTitle(c, M) : "棋盤"}（站主編輯：站位、星級、裝備）`, h("div", { class: "stack" }, boardEditor(c), S19 && M ? plannerRow([], `${c.id}:lv${M}`) : null))
+        : M ? section(boardTitle(c, M), boardArea(c, M))
+        : [h("div", { class: "row", style: "margin-top:12px" }, (c.units || []).map((k) => h("span", { class: "unit" }, icon("champion", k, "sm"), champName(k), k === c.carrier ? "（主C）" : "")))];
+      if (out) v.append(...out);
       return;
     }
     // 轉職分支（站主 2026-11-06）照常顯示棋盤、裝備、升等；其他沒評級的陣容維持研究中說明
@@ -3617,7 +3623,7 @@
     return h("div", { class: "card small tb-ownbar" },
       h("p", { class: "xs muted", style: "margin:0 0 6px" }, "調整 T 表：每張卡下面可以改評級、換分區、用 ◀ ▶ 排順序。分支在這個模式會拆開成自己的卡片，方便調整。改完自動儲存，下次更新時套到正式站。"),
       h("button", { class: "btn", type: "button", onclick: () => openCustom(null) }, "＋ 手動加一套陣容"),
-      O.custom.length ? h("p", { class: "xs", style: "margin:6px 0 0" }, `你加的陣容 ${O.custom.length} 套：Claude 會去查數據、補棋盤和攻略，補完才放正式站。`) : null,
+      O.custom.length ? h("p", { class: "xs", style: "margin:6px 0 0" }, `你加的陣容 ${O.custom.length} 套：點進去排棋盤、放裝備，按「更新到正式站」就會上線（數據之後補）。`) : null,
       hidden.length ? h("p", { class: "xs", style: "margin:6px 0 0" }, "已隱藏：", hidden.map((c, i) => [i ? "、" : "", h("button", { class: "linkbtn", type: "button", onclick: async () => { try { await saveTier(c.id, { tier: c.tier || "B" }); renderTiers(); } catch {} } }, c.name + "（拿回來）")])) : null);
   }
   async function saveCustom(x) {
@@ -3640,6 +3646,21 @@
       chips.append(h("button", { class: "chip add", type: "button", onclick: () => openPicker("加棋子", champGroups(new Set(st.units)), (k) => { if (!st.units.includes(k) && st.units.length < 10) st.units.push(k); st.carrier ||= k; drawUnits(); }) }, "＋ 棋子"));
     };
     drawUnits();
+    // 站主 2026-11-27：加陣容也可以貼遊戲「戰術規劃」的分享碼，自動認出棋子（最多 10 隻）
+    const code = h("input", { type: "text", class: "fx-code-in", placeholder: "貼上遊戲戰術規劃的分享碼（02 開頭），自動認出棋子", "aria-label": "遊戲戰術規劃的分享碼", autocomplete: "off", spellcheck: "false" });
+    const seen = h("p", { class: "xs muted", "aria-live": "polite" });
+    // 站主 2026-11-27 在 S18 的 T 度表貼 S19 的碼「不能加棋子」「不能讀代碼」：S18 那邊只有 S18 的棋子 → 直接講清楚，給一顆切到 S19 的按鈕
+    const toS19 = () => h("a", { class: "btn ghost xs", href: seasonHref(19) + "#tierlist" }, "切到 S19 的 T 度表");
+    code.addEventListener("input", () => {
+      if (!code.value.trim()) { seen.textContent = ""; return; }
+      if (!S19 || !D.codeTable19) { seen.textContent = ""; seen.append("這串是 S19 的分享碼，這裡是 S18 的 T 度表，認不出來。先", toS19(), "，再按「手動加一套陣容」貼一次。"); return; }
+      const got = decode19(code.value, null);
+      if (!got || !got.keys.length) { seen.textContent = "認不出這個分享碼：要是遊戲裡戰術規劃「匯出」的那串（02 開頭）。"; return; }
+      st.units = [...new Set(got.keys)].slice(0, 10);
+      if (!st.units.includes(st.carrier)) st.carrier = st.units[0];
+      drawUnits();
+      seen.textContent = `認出 ${st.units.length} 隻。主C 先當第一隻，點棋子可以改。` + (got.odd.length ? `要確認：${got.odd.join("；")}。` : "");
+    });
     const selOf = (label, opts, val, on) => { const s = h("select", { "aria-label": label }, opts.map(([v, l]) => h("option", { value: v, selected: v === val ? true : null }, l))); s.addEventListener("change", () => on(s.value)); return s; };
     const close = () => sheet.remove();
     const save = async () => {
@@ -3647,20 +3668,35 @@
       if (!st.name) { msg.textContent = "請填陣容名稱。"; return; }
       if (!st.carrier) { msg.textContent = "請至少加一隻棋子（第一隻是主C，可以點棋子改）。"; return; }
       msg.textContent = "儲存中…";
-      try { await saveCustom(st); close(); renderTiers(); ownerNotice("已加入。Claude 下次更新時會查數據、補攻略。"); }
+      try {
+        await saveCustom(st);
+        // 第一次存：用選的棋子先做一張棋盤（主C 排第一隻；站位到那一頁排，之後以棋盤為準）
+        if (!O.boards[st.id] && st.units.length) {
+          const ks = [st.carrier, ...st.units.filter((k) => k !== st.carrier)];
+          const L = Math.max(5, Math.min(10, ks.reduce((n, k) => n + (CH[k]?.slots || 1), 0)));
+          const bd = { compId: st.id, main: L, ["lv" + L]: { units: ks.map((k) => ({ key: k, star: (CH[k]?.cost || 1) >= 5 ? 1 : 2, items: [], pos: null })) }, at: new Date().toISOString() };
+          await O.db.doc("boards/" + st.id).set(bd); O.boards[st.id] = bd;
+        }
+        close(); renderTiers(); ownerNotice("已加入。在這頁排棋盤、放裝備，按「更新到正式站」就會上線。");
+        if (!cur) location.hash = "#" + slug(st.id);
+      }
       catch (e) { msg.textContent = "儲存失敗：" + (e?.message || "請再試一次"); }
     };
     const del = async () => {
-      try { await O.db.doc("customComps/" + st.id).delete(); O.custom = O.custom.filter((y) => y.id !== st.id); close(); renderTiers(); ownerNotice("已刪除。"); }
+      try { await O.db.doc("customComps/" + st.id).delete(); O.custom = O.custom.filter((y) => y.id !== st.id);
+        try { await O.db.doc("boards/" + st.id).delete(); delete O.boards[st.id]; } catch { /* 棋盤留著也不會顯示 */ }
+        close(); renderTiers(); if (location.hash === "#" + slug(st.id)) location.hash = "#tierlist"; ownerNotice("已刪除。"); }
       catch (e) { msg.textContent = "刪除失敗：" + (e?.message || "請再試一次"); }
     };
     const sheet = h("div", { id: "editor", class: "sheet-bg", onclick: (ev) => { if (ev.target === sheet) close(); } },
       h("div", { class: "sheet", role: "dialog", "aria-label": cur ? "編輯手動加的陣容" : "手動加一套陣容" },
         h("b", null, cur ? "編輯手動加的陣容" : "手動加一套陣容"),
+        S19 || cur ? null : h("p", { class: "notice small", style: "margin:6px 0" }, "現在是 S18（停更）的 T 度表，這裡選得到的只有 S18 的棋子。要加 S19 的陣容，先", toS19(), "。"),
         h("label", { class: "small" }, "名稱", name),
         h("div", { class: "row" }, h("label", { class: "small" }, "分區", selOf("分區", LANES.map((l) => [l.id, l.label]), st.lane, (v) => (st.lane = v))),
           h("label", { class: "small" }, "評級", selOf("評級", [["S", "S"], ["A", "A"], ["B", "B"], ["C", "C"]], st.tier, (v) => (st.tier = v)))),
         h("div", { class: "small" }, h("b", null, "棋子"), h("span", { class: "xs muted" }, "（第一隻是主C，點棋子可以改主C）"), chips),
+        h("div", { class: "small" }, code, seen),
         h("label", { class: "small" }, "給 Claude 的說明（選填）", note),
         h("div", { class: "row" }, h("button", { class: "btn", type: "button", onclick: save }, "儲存"),
           cur ? h("button", { class: "btn ghost", type: "button", onclick: del }, "刪除這套") : null,

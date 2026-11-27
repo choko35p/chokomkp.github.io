@@ -846,10 +846,16 @@
   const customToComp = (x) => ({ id: x.id, name: x.name, carrier: x.carrier, core: [x.carrier, ...(x.units || []).filter((u) => u !== x.carrier)].slice(0, 3), units: x.units || [],
     status: "custom", custom: true, lane: x.lane || "normal", tier: x.tier || null, ownerOrder: x.order ?? 999, ownerNote: x.note || "", required: [], rank: 999, cats: [],
     boards: docBoards(O.boards[x.id]), ownerMain: O.boards[x.id]?.main || null });  // 站主 2026-11-27：手動加的陣容也有自己的棋盤（存在 boards/<陣容 id>）
+  // 站主 2026-11-27「預覽站看不到這些數據」：補過數據的手動陣容在資料裡是 status ready＋custom，預覽站照常畫戰績和裝備；
+  // 站主在 customComps 改的名稱、評級、分區、順序蓋在上面（按更新才會進正式資料）
+  const withCustomDoc = (c) => {
+    const y = O.on && c?.custom && c.status !== "custom" ? O.custom.find((z) => z.id === c.id) : null;
+    return y ? { ...c, name: y.name || c.name, tier: y.tier || c.tier, lane: y.lane || c.lane, ownerOrder: y.order ?? c.ownerOrder, ownerNote: y.note || "" } : c;
+  };
   function tierPool() {
     let xs = D.comps.filter((c) => c.status === "ready" || c.status === "custom");  // 站主 2026-11-27：手動加的陣容按「更新到正式站」就上線
     if (O.on) {
-      xs = xs.filter((c) => c.status !== "custom" || O.custom.some((y) => y.id === c.id));
+      xs = xs.filter((c) => !c.custom || O.custom.some((y) => y.id === c.id)).map(withCustomDoc);
       xs = xs.concat(O.custom.filter((y) => !xs.some((x) => x.id === y.id)).map(customToComp));
     }
     return xs.map((c) => withOwner(c.lane ? c : { ...c, lane: c.conditional ? "conditional" : "normal" }));
@@ -880,16 +886,17 @@
     const vs = O.tmode ? [] : pool.filter((v) => v.baseOf?.some((b) => b.id === c.id) && !v.hidden && v.tier);
     const req = showReq ? c.required.map((r) => r.text.replace(/^入場條件：/, "").replace(/（轉職）$/, "")).join("、") : "";
     const r = c.range || {};
-    const el = h("div", { class: "tc" + (c.custom ? " custom" : "") + (c.hidden ? " hid" : "") + (O.tmode ? "" : " tc-click"), "data-id": c.id, onclick: cardClick(c.id) },
+    const el = h("div", { class: "tc" + (c.status === "custom" ? " custom" : "") + (c.hidden ? " hid" : "") + (O.tmode ? "" : " tc-click"), "data-id": c.id, onclick: cardClick(c.id) },
       h("button", { class: "tc-main", type: "button", onclick: () => go(c.id) },
         icon("champion", compIcon(c), "sm"),
         h("span", { class: "tc-txt" },
           h("span", { class: "tc-nm" }, h("span", { class: "nm" }, c.name), heroAugIco(c), impArrow(c),
             c.patchImpact?.tierFrom && D.inference && c.tierSource !== "owner" ? h("span", { class: "was", title: `推測前是 ${c.patchImpact.tierFrom} 級` }, "原" + c.patchImpact.tierFrom) : null,
-            c.custom ? h("span", { class: "tag todo" }, "待補資料") : null),
+            c.status === "custom" ? h("span", { class: "tag todo" }, "待補資料") : null),  // 站主 2026-11-27：補過數據的手動陣容（status ready）不再寫待補資料
           r.ceil ? h("span", { class: "tc-sub" }, c.watch ? h("b", { class: "tag watch" }, "研究中") : null, lvPill("下限", r.floor), lvPill("上限", r.ceil), c.watch ? h("span", { class: "tag few" }, `樣本少：${c.watch.n} 場`) : c.freq != null ? h("span", { class: "tc-freq" }, `頻率 ${pct(c.freq)}`) : null)
             : c.pbe ? h("span", { class: "tc-sub" }, h("b", { class: "tag pbe" }, "PBE"), h("span", { class: "tc-freq" }, `高手 ${c.pbe.n} 場・均名 ${c.pbe.avg.toFixed(1)}`))
             : c.pred ? h("span", { class: "tc-sub" }, h("b", { class: "tag pred" }, "預測"), c.pred.srcTier ? h("span", { class: "tc-freq" }, `${c.pred.src} ${c.pred.srcTier}`) : null)
+            : c.stats?.avg != null && c.statsMeta?.games ? h("span", { class: "tc-sub" }, h("span", { class: "tc-freq" }, `${c.statsMeta.source === "metatft" ? "MetaTFT" : "高手"} ${c.statsMeta.games} 場・均名 ${c.stats.avg.toFixed(1)}`))
             : h("span", { class: "tc-sub" }, c.custom ? "巧克力自己加的" : "研究中"),
           showReq ? (reqHasEmblem(c.required) ? h("span", { class: "tc-req rq", title: req }, "需要", reqIcons(c.required.filter((x) => x.type === "emblem"))) : h("span", { class: "tc-req", title: req }, "需要：", req)) : null)),
       vs.length ? h("div", { class: "tc-br" }, h("span", { class: "tc-brh" }, "分支"), vs.sort(cellSort).map((v) => {
@@ -2544,7 +2551,7 @@
         g.v ? ["　", h("a", { href: g.v, target: "_blank", rel: "noopener" }, "看錄影")] : null])) : null,
       h("p", { class: "muted" }, D.pbeNote || "PBE 只有一般場，名次和陣容是從高手實況錄影的結算畫面辨識的；裝備圖示太小認不出，推薦裝先沿用預測版。"));
   }
-  const compById = (id) => D.comps.find((x) => x.id === id) || (O.on ? (O.custom.find((x) => x.id === id) && customToComp(O.custom.find((x) => x.id === id))) : null);
+  const compById = (id) => withCustomDoc(D.comps.find((x) => x.id === id)) || (O.on ? (O.custom.find((x) => x.id === id) && customToComp(O.custom.find((x) => x.id === id))) : null);
   function renderDetail(id) {
     const c = compById(id);
     const v = $("#detail"); v.textContent = "";
@@ -2573,7 +2580,8 @@
             : h("div", { class: "small muted" }, c.status === "custom" ? "數據待補" : "研究中，尚無合資格數據"),
           c.lane === "conditional" && reqHasEmblem(c.required) && c.status !== "branch" ? h("div", { class: "dreq" }, h("b", null, "需要"), reqIcons(c.required.filter((x) => x.type === "emblem")), h("span", { class: "small muted" }, reqText(c.required))) : null,
           c.heroAug ? h("div", { class: "dreq" }, h("b", null, "英雄增幅"), heroAugIco(c, 28), h("span", { class: "small muted" }, c.heroAug.name + (c.heroAug.desc ? "：" + c.heroAug.desc : ""))) : null,
-          c.status === "ready" || c.status === "branch" || c.variantKind === "formula" ? dStats(c) : c.watch ? dStats(c, true) : null)));
+          c.status === "ready" || c.status === "branch" || c.variantKind === "formula" ? dStats(c) : c.watch ? dStats(c, true) : null,
+          c.custom && c.status === "ready" ? h("p", { class: "small muted", style: "margin:4px 0 0" }, "這套是巧克力自己加的，評級是巧克力給的。") : null)));
     if (c.status === "custom") {
       // 站主 2026-11-27「讓我在T度表上面可以加陣容」：加了就能排棋盤、放裝備，按「更新到正式站」直接上線；數據之後補
       const M = mainLevel(c);

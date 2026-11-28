@@ -6115,6 +6115,11 @@ root.TrialsTrainingNativeRuntime = {data, buildTeam:modules.stats.buildTeam,
             (!rule.ids || rule.ids.includes(p.id)) && !rule.protect?.includes(p.id) &&
             sim.interest(sim.state.gold + sim.sellValue(p)) >= rule.min);
         }
+        // 站主 2026-11-28：備戰有棋可以賣，下回合賣掉就吃得到利息，不用硬卡著現金
+        case "goldWithBench": {
+          const sellable=sim.state.bench.filter(p=>p && !(rule.protect||[]).includes(p.id));
+          return sim.state.gold + sellable.reduce((sum,p)=>sum+sim.sellValue(p),0) >= rule.min;
+        }
         case "inventory": {
           const count = sim.state.items.filter(item => rule.items.includes(item)).length;
           return count >= (rule.min ?? (rule.max == null ? 1 : 0)) && count <= (rule.max ?? Infinity);

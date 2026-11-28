@@ -93,6 +93,8 @@
       traits:()=>sim.traits(),interest:result=>sim.interest(result),
       can(type){
         if (focus.equipmentToolAllows(q,sim.state,type)) return true;
+        // 站主 2026-11-28：裝備欄有裝備就能上裝，跟遊戲一樣
+        if (type==='equip' && sim.state.items.length>0 && !['augment','routeAugment'].includes(q.skill)) return true;
         if (q.skill==='retention') {
           const allowed=sim.round().allowed || [];
           return type==='buyTo' ? allowed.includes('buy') && allowed.includes('move') : allowed.includes(type);

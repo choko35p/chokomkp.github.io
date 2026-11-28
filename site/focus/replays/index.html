@@ -6217,6 +6217,33 @@ root.TrialsTrainingNativeRuntime = {data, buildTeam:modules.stats.buildTeam,
       }
       return copy(last);
     }
+    // 站主 2026-11-28：不卡利息的牌都要買起來，誰知道下回合怎麼進牌。
+    // 開打前的錢扣掉這回合要守的檔位還買得起、備戰也放得下的店內棋，沒買就判錯。
+    function spareFloor(s) {
+      const golds=[];
+      const walk=rule=>{if(!rule)return;if(rule.test==="gold"&&Number.isFinite(rule.min))golds.push(rule.min);
+        if(rule.test==="lossInterestWithBenchSale"&&Number.isFinite(rule.min))golds.push(rule.min*10);
+        for(const child of rule.rules||[])walk(child);};
+      for(const rule of s.rules)walk(rule);
+      if(Number.isInteger(s.interestFloor))golds.push(s.interestFloor*10);
+      return golds.length?Math.max(...golds):null;
+    }
+    function spareBuys() {
+      const s=step();
+      if(!["board","interest","retention"].includes(q.skill) || s.spareBuys===false)return null;
+      if(sim.round().shopActive===false || sim.round().type==="carousel")return null;
+      const floor=spareFloor(s);
+      if(floor==null)return null;
+      if(!sim.state.bench.some(p=>!p))return null;
+      const names=[];
+      for(const id of sim.state.shop){
+        const unit=id && catalog.units[id];
+        if(!unit)continue;
+        if(unit.locked && !(sim.state.unlocked||[]).includes(id))continue;
+        if(sim.state.gold-unit.cost>=floor && !names.includes(unit.name))names.push(unit.name);
+      }
+      return Object.assign(names,{names,floor});
+    }
     function submit() {
       if (last) return lastResult();
       const s = step();
@@ -6230,6 +6257,9 @@ root.TrialsTrainingNativeRuntime = {data, buildTeam:modules.stats.buildTeam,
       if(prep?.scoutTotal && prep.contestCount===null)return {ok:false,pending:true,needsContestCount:true,passed:false,complete:false,
         feedback:"選擇這個陣容有幾家同行。",checks:[]};
       const checks = s.rules.map(rule => ({ok: check(rule), label: rule.label || "", why: rule.why || ""}));
+      const spare=spareBuys();
+      if(spare)checks.push({ok:!spare.length,label:"不卡利息的牌要買起來",
+        why:spare.length?"還有 "+(sim.state.gold-spare.floor)+" 金不卡利息，店裡的"+spare.names.join("、")+"買起來放備戰，下回合不知道會進什麼牌。":""});
       const reviews=optionReviews(prep),chosen=reviews.find(row=>row.selected);
       if (prep) checks.push({ok:!!chosen?.accepted,label:s.routeStrategy?"開局來牌、裝備與路線":"二星持裝者與陣容交接",why:chosen?.accepted?"":chosen?.reason});
       const contestReview=prep?.scoutTotal ? reviewContests(s.routeStrategy.scout,sim.state.currentPlan,prep.contestCount) : null;
